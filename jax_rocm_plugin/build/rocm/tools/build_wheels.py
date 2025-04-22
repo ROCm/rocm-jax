@@ -105,7 +105,7 @@ def build_jaxlib_wheel(
         "python",
         "build/build.py",
         "build",
-        "--wheels=jaxlib,jax-rocm-plugin,jax-rocm-pjrt",
+        "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
         "--rocm_path=%s" % rocm_path,
         "--rocm_version=60",
         "--use_clang=%s" % use_clang,
@@ -296,28 +296,17 @@ def main():
 
     update_rocm_targets(rocm_path, GPU_DEVICE_TARGETS)
 
+    # wipe anything in dist dir before building new
+    wheel_paths = find_wheels(os.path.join(args.jax_path, "dist"))
+    for whl in wheel_paths:
+        print("Removing wheel=%r" % whl)
+        os.remove(whl)
+
     for py in python_versions:
         build_jaxlib_wheel(args.jax_path, rocm_path, py, args.xla_path, args.compiler)
         wheel_paths = find_wheels(os.path.join(args.jax_path, "dist"))
         for wheel_path in wheel_paths:
-            # skip jax wheel since it is non-platform
-            if not os.path.basename(wheel_path).startswith("jax-"):
-                fix_wheel(wheel_path, args.jax_path)
-
-    # build JAX wheel for completeness
-    build_jax_wheel(args.jax_path, python_versions[-1])
-    wheels = find_wheels(os.path.join(args.jax_path, "dist"))
-
-    # NOTE(mrodden): the jax wheel is a "non-platform wheel", so auditwheel will
-    # do nothing, and in fact will throw an Exception. we just need to copy it
-    # along with the jaxlib and plugin ones
-
-    # copy jax wheel(s) to wheelhouse
-    wheelhouse_dir = "/wheelhouse/"
-    for whl in wheels:
-        if os.path.basename(whl).startswith("jax-"):
-            LOG.info("Copying %s into %s" % (whl, wheelhouse_dir))
-            shutil.copy(whl, wheelhouse_dir)
+            fix_wheel(wheel_path, args.jax_path)
 
 
 if __name__ == "__main__":

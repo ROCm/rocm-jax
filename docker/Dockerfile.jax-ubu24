@@ -19,7 +19,7 @@ ARG ROCM_PATH=/opt/rocm-${ROCM_VERSION}
 ENV ROCM_PATH=${ROCM_PATH}
 ARG ROCM_BUILD_JOB
 ARG ROCM_BUILD_NUM
-RUN --mount=type=bind,source=build/rocm/tools/get_rocm.py,target=get_rocm.py \
+RUN --mount=type=bind,source=jax_rocm_plugin/build/rocm/tools/get_rocm.py,target=get_rocm.py \
     --mount=type=cache,target=/var/cache/apt \
     python3 get_rocm.py --rocm-version=$ROCM_VERSION --job-name=$ROCM_BUILD_JOB --build-num=$ROCM_BUILD_NUM
 
@@ -53,6 +53,11 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
         flatbuffers \
         hypothesis
 
+# install jax and jaxlib from requirements file
+RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
+    --mount=type=bind,source=build/requirements.txt,target=requirements.txt \
+    pip3 install --break-system-packages -r requirements.txt
+
 ARG JAX_VERSION
 ARG JAX_COMMIT
 ARG XLA_COMMIT
@@ -66,5 +71,4 @@ LABEL com.amdgpu.rocm_version="$ROCM_VERSION" \
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=wheelhouse,target=/wheelhouse \
     ls -lah /wheelhouse && \
-    pip3 install wheelhouse/*none*.whl wheelhouse/*jaxlib*.whl && \
-    pip3 install wheelhouse/*rocm60*.whl
+    pip3 install --break-system-packages -f /wheelhouse --no-deps --no-index jax_rocm60_plugin jax_rocm60_pjrt

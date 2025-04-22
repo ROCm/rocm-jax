@@ -124,75 +124,6 @@ def dist_wheels(
     _ = subprocess.run(cmd, check=True)
 
 
-def _fetch_jax_metadata(xla_path):
-    cmd = ["git", "rev-parse", "HEAD"]
-    jax_commit = subprocess.check_output(cmd)
-    xla_commit = b""
-
-    if xla_path:
-        try:
-            xla_commit = subprocess.check_output(cmd, cwd=xla_path)
-        except Exception as ex:
-            LOG.warning("Exception while retrieving xla_commit: %s" % ex)
-
-    cmd = ["python3", "setup.py", "-V"]
-    env = dict(os.environ)
-    env["JAX_RELEASE"] = "1"
-
-    jax_version = subprocess.check_output(cmd, env=env)
-
-    return {
-        "jax_version": jax_version.decode("utf8").strip(),
-        "jax_commit": jax_commit.decode("utf8").strip(),
-        "xla_commit": xla_commit.decode("utf8").strip(),
-    }
-
-
-def dist_docker(
-    rocm_version,
-    base_docker,
-    python_versions,
-    xla_path,
-    rocm_build_job="",
-    rocm_build_num="",
-    tag="rocm/jax-dev",
-    dockerfile=None,
-    keep_image=True,
-):
-    if not dockerfile:
-        dockerfile = "build/rocm/Dockerfile.ms"
-
-    python_version = python_versions[0]
-
-    md = _fetch_jax_metadata(xla_path)
-
-    cmd = [
-        "docker",
-        "build",
-        "-f",
-        dockerfile,
-        "--target",
-        "rt_build",
-        "--build-arg=ROCM_VERSION=%s" % rocm_version,
-        "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
-        "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
-        "--build-arg=BASE_DOCKER=%s" % base_docker,
-        "--build-arg=PYTHON_VERSION=%s" % python_version,
-        "--build-arg=JAX_VERSION=%(jax_version)s" % md,
-        "--build-arg=JAX_COMMIT=%(jax_commit)s" % md,
-        "--build-arg=XLA_COMMIT=%(xla_commit)s" % md,
-        "--tag=%s" % tag,
-    ]
-
-    if not keep_image:
-        cmd.append("--rm")
-
-    # context dir
-    cmd.append(".")
-
-    subprocess.check_call(cmd)
-
-
 def test(image_name):
     """Run unit tests like CI would inside a JAX image."""
 
@@ -240,11 +171,6 @@ def test(image_name):
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument(
-        "--base-docker",
-         default="",
-        help="Argument to override base docker in dockerfile",
-    )
 
     p.add_argument(
         "--python-versions",
@@ -289,11 +215,6 @@ def parse_args():
     testp = subp.add_parser("test")
     testp.add_argument("image_name")
 
-    ddp = subp.add_parser("dist_docker")
-    ddp.add_argument("--dockerfile", default="build/rocm/Dockerfile.ms")
-    ddp.add_argument("--keep-image", action="store_true")
-    ddp.add_argument("--image-tag", default="rocm/jax-dev")
-
     return p.parse_args()
 
 
@@ -312,27 +233,6 @@ def main():
 
     elif args.action == "test":
         test(args.image_name)
-
-    elif args.action == "dist_docker":
-        dist_wheels(
-            args.rocm_version,
-            args.python_versions,
-            args.xla_source_dir,
-            args.rocm_build_job,
-            args.rocm_build_num,
-            compiler=args.compiler,
-        )
-        dist_docker(
-            args.rocm_version,
-            args.base_docker,
-            args.python_versions,
-            args.xla_source_dir,
-            rocm_build_job=args.rocm_build_job,
-            rocm_build_num=args.rocm_build_num,
-            tag=args.image_tag,
-            dockerfile=args.dockerfile,
-            keep_image=args.keep_image,
-        )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,287 @@
+#!/usr/bin/env python3
+
+# Copyright 2024 The JAX Authors.
+# Copyright 2025 Advanced Micro Devices, Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+import argparse
+import os
+import subprocess
+import sys
+
+
+def dist_wheels(
+    rocm_version,
+    python_versions,
+    xla_path,
+    rocm_build_job="",
+    rocm_build_num="",
+    compiler="gcc",
+):
+    jax_plugin_dir = "jax_rocm_plugin"
+
+    cmd = [
+        "python3",
+        "build/rocm/ci_build",
+        "--rocm-version=%s" % rocm_version,
+        "--python-versions=%s" % ",".join(python_versions),
+        "--rocm-build-job=%s" % rocm_build_job,
+        "--rocm-build-num=%s" % rocm_build_num,
+        "--compiler=%s" % compiler,
+    ]
+
+    if xla_path:
+        xla_path = os.path.abspath(xla_path)
+        cmd.append("--xla-source-dir=%s" % xla_path)
+
+    cmd.append("dist_wheels")
+    subprocess.check_call(cmd, cwd=jax_plugin_dir)
+
+
+def _fetch_jax_metadata(xla_path):
+    cmd = ["git", "rev-parse", "HEAD"]
+    jax_commit = subprocess.check_output(cmd)
+    xla_commit = b""
+
+    if xla_path:
+        try:
+            xla_commit = subprocess.check_output(cmd, cwd=xla_path)
+        except Exception as ex:
+            LOG.warning("Exception while retrieving xla_commit: %s" % ex)
+
+    cmd = ["python3", "setup.py", "-V"]
+    env = dict(os.environ)
+    env["JAX_RELEASE"] = "1"
+
+    jax_version = subprocess.check_output(cmd, env=env)
+
+    return {
+        "jax_version": jax_version.decode("utf8").strip(),
+        "jax_commit": jax_commit.decode("utf8").strip(),
+        "xla_commit": xla_commit.decode("utf8").strip(),
+    }
+
+
+def build_dockers(
+    rocm_version: str,
+    python_versions: str,
+    rocm_build_job="",
+    rocm_build_num="",
+    tag_base=None,
+):
+
+    dockerfiles = []
+    docker_dir = "docker"
+    for f in os.listdir(docker_dir):
+        if f.startswith("Dockerfile"):
+            dockerfiles.append(os.path.join(docker_dir, f))
+
+    rocm_ver_tag = "rocm%s" % "".join(rocm_version.split("."))
+
+    for dockerfile in dockerfiles:
+        _, tag_suffix = dockerfile.split(".", 1)
+        if tag_base:
+            tag = "%s.%s.%s" % (tag_base, tag_suffix, rocm_ver_tag)
+        else:
+            tag = "%s.%s" % (tag_suffix, rocm_ver_tag)
+
+        print("Building dockerfile=%r to tag=%r" % (dockerfile, tag))
+
+        cmd = [
+            "docker",
+            "build",
+            "-f",
+            dockerfile,
+            "--build-arg=ROCM_VERSION=%s" % rocm_version,
+            "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
+            "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
+            "--tag=%s" % tag,
+        ]
+
+        # context dir
+        cmd.append(".")
+
+        subprocess.check_call(cmd)
+
+
+def test(image_name, test_cmd=None):
+    """Run unit tests like CI would inside a JAX image."""
+
+    if not test_cmd:
+        test_cmd = "./build/rocm/run_single_gpu.py -c && ./build/rocm/run_multi_gpu.sh"
+
+    gpu_args = [
+        "--device=/dev/kfd",
+        "--device=/dev/dri",
+        "--group-add",
+        "video",
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined",
+        "--shm-size",
+        "16G",
+    ]
+
+    cmd = [
+        "docker",
+        "run",
+        "--rm",
+    ]
+
+    if os.isatty(sys.stdout.fileno()):
+        cmd.append("-it")
+
+    # NOTE(mrodden): we need jax source dir for the unit test code only,
+    # JAX and jaxlib are already installed from wheels
+    mounts = [
+        "-v",
+        os.path.abspath("./jax") + ":/jax",
+    ]
+
+    cmd.extend(mounts)
+    cmd.extend(gpu_args)
+
+    container_cmd = (
+        "cd /jax && %s" % test_cmd
+    )
+
+    cmd.append(image_name)
+    cmd.extend(
+        [
+            "bash",
+            "-c",
+            container_cmd,
+        ]
+    )
+
+    subprocess.check_call(cmd)
+
+
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument(
+        "--base-docker",
+        default="",
+        help="Argument to override base docker in dockerfile",
+    )
+
+    p.add_argument(
+        "--python-versions",
+        type=lambda x: x.split(","),
+        default="3.12",
+        help="Comma separated list of CPython versions to build wheels for",
+    )
+
+    p.add_argument(
+        "--rocm-version",
+        default="6.1.1",
+        help="ROCm version used for building wheels, testing, and installing into Docker image",
+    )
+
+    p.add_argument(
+        "--rocm-build-job",
+        default="",
+        help="ROCm build job for development ROCm builds",
+    )
+
+    p.add_argument(
+        "--rocm-build-num",
+        default="",
+        help="ROCm build number for development ROCm builds",
+    )
+
+    p.add_argument(
+        "--xla-source-dir",
+        help="Path to XLA source to use during jaxlib build, instead of builtin XLA",
+    )
+
+    p.add_argument(
+        "--compiler",
+        choices=["gcc", "clang"],
+        default="clang",
+        help="Compiler backend to use when compiling jax/jaxlib",
+    )
+
+    subp = p.add_subparsers(dest="action", required=True)
+
+    dwp = subp.add_parser("dist_wheels")
+
+    dtestp = subp.add_parser("test_docker")
+    dtestp.add_argument("--docker-build-only", action="store_true")
+    dtestp.add_argument(
+        "--jax-version",
+        default="latest",
+        help="JAX version that will be install via pip in test image.",
+    )
+
+    bdp = subp.add_parser("build_dockers")
+
+    testp = subp.add_parser("test")
+    testp.add_argument("--test-cmd", help="Command which will be run inside the test container")
+    testp.add_argument("image_name")
+
+    return p.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    if args.action == "dist_wheels":
+
+        dist_wheels(
+            args.rocm_version,
+            args.python_versions,
+            args.xla_source_dir,
+            args.rocm_build_job,
+            args.rocm_build_num,
+            compiler=args.compiler,
+        )
+
+    if args.action == "build_dockers":
+        build_dockers(
+            args.rocm_version,
+            args.python_versions,
+            rocm_build_job=args.rocm_build_job,
+            rocm_build_num=args.rocm_build_num,
+        )
+
+    elif args.action == "test_docker":
+        image_name = "rocm/jax-test"
+
+        if not os.path.exists("./jax"):
+            print(
+                "Integration tests require a local 'jax' repo for jax test code.",
+                file=sys.stderr,
+            )
+            sys.exit(-1)
+
+        build_test_docker(
+            args.rocm_version,
+            args.python_versions[0],
+            rocm_build_job=args.rocm_build_job,
+            rocm_build_num=args.rocm_build_num,
+            tag=image_name,
+            jax_version=args.jax_version,
+        )
+
+        if args.docker_build_only:
+            return
+
+    elif args.action == "test":
+        test(args.image_name, args.test_cmd)
+
+
+if __name__ == "__main__":
+    main()
