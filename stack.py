@@ -1,4 +1,5 @@
 
+import os
 
 JAX_REPL_URL = "https://github.com/rocm/jax"
 XLA_REPL_URL = "https://github.com/rocm/xla"
