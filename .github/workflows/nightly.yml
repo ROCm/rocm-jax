@@ -1,0 +1,50 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+
+concurrency:
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSIONS: "3.10.13,3.12.8"
+
+jobs:
+  call-build-wheels:
+    strategy:
+      matrix:
+        rocm-version: ["6.3.3"]
+    uses: jax/rocm-jax/.github/workflows/reuseable/build-wheels.yml@master
+    with:
+      python-versions: ${{ env.PYTHON_VERSIONS }}
+      rocm-version: ${{ matrix.rocm-version }}
+  call-build-docker:
+    strategy:
+      matrix:
+        python-version: ["3.10.13,3.12.8"]
+        rocm-version: ["6.3.3"]
+    uses: jax/rocm-jax/.github/workflows/reusable/build-docker.yml@master
+    with:
+      rocm-version: ${{ matrix.python-version }}
+  run-python-unit-tests:
+    strategy:
+      matrix:
+        rocm-version: ["6.3.3"]
+    steps:
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
+      - name: Checkout JAX repo
+        uses: actions/chekcout@v4
+        with:
+          repository: jax-ml/jax
+          path: jax
+      - name: Run tests
+        env:
+          GPU_COUNT: "8"
+          GFX: "gfx90a"
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+        run: |
+          python3 build/ci_build test "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_REF_NAME}" --test-cmd "pytest tests"
+
+

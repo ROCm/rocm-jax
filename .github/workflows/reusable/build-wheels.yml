@@ -1,0 +1,44 @@
+name: Build wheels
+
+on:
+  workflow_call:
+    inputs:
+      python-versions:
+        required: true
+        type: string
+      rocm-version:
+        required: true
+        type: string
+      artifact-prefix:
+        default: 'plugin_wheels'
+
+ build-plugin-docker:
+    runs-on:  mi-250
+    steps:
+      - name: Clean up old runs
+        run: |
+          ls
+          # Make sure that we own all of the files so that we have permissions to delete them
+          docker run -v "./:/rocm-jax" ubuntu /bin/bash -c "chown -R $UID /rocm-jax/* || true"
+          # Remove any old work directories from this machine
+          rm -rf * || true
+          ls
+      - name: Print system info
+        run: |
+          whoami
+          printenv
+          df -h
+      - uses: actions/checkout@v4
+      - name: Build plugin wheels
+        run: |
+          python3 build/ci_build \
+            --compiler clang \
+            --python-versions ${{ inputs.python-versions }} \
+            --rocm-version ${{ inputs.rocm-version }} \
+            dist_wheels
+      - name: Archive plugin wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}_r${{ env.ROCM_VERSION }}
+          path: ./wheelhouse/*.whl
+
