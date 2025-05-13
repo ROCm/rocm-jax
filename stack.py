@@ -1,54 +1,174 @@
+#!/usr/bin/env python3
 
+import argparse
 import os
+import subprocess
+import sys
+
+XLA_DEV_BRANCH = "rocm-jaxlib-v0.5.0"
+
 
 JAX_REPL_URL = "https://github.com/rocm/jax"
 XLA_REPL_URL = "https://github.com/rocm/xla"
 
 
-XLA_DEV_BRANCH = "rocm-jaxlib-v0.5.0"
+MAKE_TEMPLATE = r"""
+# gfx targets for which XLA and jax custom call kernels are built for
+AMDGPU_TARGETS ?= "gfx906,gfx908,gfx90a,gfx942,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
+
+# customize to a single arch for local dev builds to reduce compile time
+#AMDGPU_TARGETS ?= "gfx908"
+
+.PHONY: test clean install
+
+.default: dist
+
+dist:
+	python3 ./build/build.py build \
+            --use_clang=true \
+            --wheels=jax-rocm-plugin,jax-rocm-pjrt \
+            --rocm_path=/opt/rocm/ \
+            --rocm_version=60 \
+            --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
+            --bazel_options="--override_repository=xla=../xla" \
+            --verbose \
+            --clang_path=%(clang_path)s
+
+clean:
+	rm -rf dist
+
+install: dist
+	pip install --force-reinstall dist/*
+
+test: install
+	python3 tests/test_plugin.py
+"""
 
 
-# dev mode setup
+def find_clang():
+    """Find a local clang compiler and return its file path."""
 
-# clone jax
-# clone xla
-# setup build/install script for above
-# setup test script for above
+    clang_path = None
+
+    # check PATH
+    try:
+        out = subprocess.check_output(["which", "clang"])
+        clang_path = out.decode("utf-8").strip()
+        return clang_path
+    except subprocess.CalledProcessError:
+        pass
+
+    # search /usr/lib/
+    top = "/usr/lib"
+    for root, dirs, files in os.walk(top):
+
+        # only walk llvm dirs
+        if root == top:
+            for d in dirs:
+                if not d.startswith("llvm"):
+                    dirs.remove(d)
+
+        for f in files:
+            if f == "clang":
+                clang_path = os.path.join(root, f)
+                return clang_path
 
 
-def setup_development():
+def setup_development(rebuild_makefile: bool = False):
     # clone jax repo for jax test case source code
-    cmd = ["git", "clone"]
-    cmd.append(JAX_REPL_URL)
 
-    subprocess.check_run(cmd)
+    if not os.path.exists("./jax"):
+        cmd = ["git", "clone"]
+        cmd.append(JAX_REPL_URL)
+        subprocess.check_call(cmd)
 
     # clone xla from source for building jax_rocm_plugin
-    cmd = ["git", "clone"]
-    cmd.extend(["--branch", XLA_DEV_BRANCH])
-    cmd.append(XLA_REPL_URL)
-
-    subprocess.check_run(cmd)
+    if not os.path.exists("./xla"):
+        cmd = ["git", "clone"]
+        cmd.extend(["--branch", XLA_DEV_BRANCH])
+        cmd.append(XLA_REPL_URL)
+        subprocess.check_call(cmd)
 
     # create build/install/test script
+    makefile_path = "./jax_rocm_plugin/Makefile"
+    if rebuild_makefile or not os.path.exists(makefile_path):
+        kvs = {
+            "clang_path": "/usr/lib/llvm-18/bin/clang",
+        }
 
+        clang_path = find_clang()
+        if clang_path:
+            print("Found clang at %r" % clang_path)
+            kvs["clang_path"] = clang_path
+        else:
+            print("No clang found. Defaulting to %r" % kvs["clang_path"])
+
+        makefile_content = MAKE_TEMPLATE % kvs
+
+        with open(makefile_path, "w") as mf:
+            mf.write(makefile_content)
+
+
+
+def dev_docker():
+    cur_abs_path = os.path.abspath(os.curdir)
+    image_name = "ubuntu:22.04"
+
+    ep = "/rocm-jax/tools/docker_dev_setup.sh"
+
+    cmd = [
+        "docker",
+        "run",
+        "-it",
+        "--network=host",
+        "--device=/dev/kfd",
+        "--device=/dev/dri",
+        "--ipc=host",
+        "--shm-size=16G",
+        "--group-add", "video",
+        "--cap-add=SYS_PTRACE",
+        "--security-opt", "seccomp=unconfined",
+        "-v",
+        "%s:/rocm-jax" % cur_abs_path,
+        "--env", "ROCM_JAX_DIR=/rocm-jax",
+        "--env", "_IS_ENTRYPOINT=1",
+        "--entrypoint=%s" % ep
+    ]
+
+
+    cmd.append(image_name)
+
+    p = subprocess.Popen(cmd)
+    p.wait()
 
 
 # build mode setup
 
 # install jax/jaxlib from known versions
 # setup build/install/test script
-
 def setup_build():
-    pass
+    raise NotImplementedError
 
 
+def parse_args():
+    p = argparse.ArgumentParser()
 
+    subp = p.add_subparsers(dest="action")
+
+    dev = subp.add_parser("develop")
+    dev.add_argument("--rebuild-makefile", help="Force rebuild of Makefile from template.", action="store_true")
+
+    docker = subp.add_parser("docker")
+
+    return p.parse_args()
 
 def main():
-    pass
-
-
+    args = parse_args()
+    if args.action == "docker":
+        dev_docker()
+    else:
+        rebuild_makefile = vars(args).get("rebuild_makefile", False)
+        setup_development(rebuild_makefile=rebuild_makefile)
 
 
 if __name__ == "__main__":

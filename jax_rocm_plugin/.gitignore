@@ -29,3 +29,5 @@ jax.iml
 /include/
 /lib/
 /share/
+
+Makefile
