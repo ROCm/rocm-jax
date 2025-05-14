@@ -5,7 +5,9 @@ import os
 import subprocess
 import sys
 
-XLA_DEV_BRANCH = "rocm-jaxlib-v0.5.0"
+
+JAX_REPO_REF = "rocm-jaxlib-v0.5.0"
+XLA_REPO_REF = "rocm-jaxlib-v0.5.0"
 
 
 JAX_REPL_URL = "https://github.com/rocm/jax"
@@ -74,18 +76,19 @@ def find_clang():
                 return clang_path
 
 
-def setup_development(rebuild_makefile: bool = False):
+def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False):
     # clone jax repo for jax test case source code
 
     if not os.path.exists("./jax"):
         cmd = ["git", "clone"]
+        cmd.extend(["--branch", jax_ref])
         cmd.append(JAX_REPL_URL)
         subprocess.check_call(cmd)
 
     # clone xla from source for building jax_rocm_plugin
     if not os.path.exists("./xla"):
         cmd = ["git", "clone"]
-        cmd.extend(["--branch", XLA_DEV_BRANCH])
+        cmd.extend(["--branch", xla_ref])
         cmd.append(XLA_REPL_URL)
         subprocess.check_call(cmd)
 
@@ -153,10 +156,12 @@ def setup_build():
 def parse_args():
     p = argparse.ArgumentParser()
 
-    subp = p.add_subparsers(dest="action")
+    subp = p.add_subparsers(dest="action", required=True)
 
     dev = subp.add_parser("develop")
     dev.add_argument("--rebuild-makefile", help="Force rebuild of Makefile from template.", action="store_true")
+    dev.add_argument("--xla-ref", help="XLA commit reference to checkout on clone", default=XLA_REPO_REF)
+    dev.add_argument("--jax-ref", help="JAX commit reference to checkout on clone", default=JAX_REPO_REF)
 
     docker = subp.add_parser("docker")
 
@@ -166,9 +171,12 @@ def main():
     args = parse_args()
     if args.action == "docker":
         dev_docker()
-    else:
-        rebuild_makefile = vars(args).get("rebuild_makefile", False)
-        setup_development(rebuild_makefile=rebuild_makefile)
+    elif args.action == "develop":
+        setup_development(
+            rebuild_makefile=args.rebuild_makefile,
+            xla_ref=args.xla_ref,
+            jax_ref=args.xla_ref,
+        )
 
 
 if __name__ == "__main__":
