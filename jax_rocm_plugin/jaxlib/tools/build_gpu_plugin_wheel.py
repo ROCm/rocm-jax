@@ -88,34 +88,6 @@ python-tag=py3
     )
 
 
-def prepare_cuda_plugin_wheel(sources_path: pathlib.Path, *, cpu, cuda_version):
-  """Assembles a source tree for the wheel in `sources_path`."""
-  copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
-
-  plugin_dir = sources_path / "jax_plugins" / f"xla_cuda{cuda_version}"
-  copy_runfiles(
-      dst_dir=sources_path,
-      src_files=[
-          "__main__/jax_plugins/cuda/pyproject.toml",
-          "__main__/jax_plugins/cuda/setup.py",
-      ],
-  )
-  build_utils.update_setup_with_cuda_version(sources_path, cuda_version)
-  write_setup_cfg(sources_path, cpu)
-  copy_runfiles(
-      dst_dir=plugin_dir,
-      src_files=[
-          "__main__/jax_plugins/cuda/__init__.py",
-          "__main__/jaxlib/version.py",
-      ],
-  )
-  copy_runfiles(
-      "__main__/jaxlib/tools/pjrt_c_api_gpu_plugin.so",
-      dst_dir=plugin_dir,
-      dst_filename="xla_cuda_plugin.so",
-  )
-
-
 def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
   """Assembles a source tree for the ROCm wheel in `sources_path`."""
   copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
@@ -138,7 +110,7 @@ def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
       ],
   )
   copy_runfiles(
-      "__main__/jaxlib/tools/pjrt_c_api_gpu_plugin.so",
+      "__main__/pjrt/pjrt_c_api_gpu_plugin.so",
       dst_dir=plugin_dir,
       dst_filename="xla_rocm_plugin.so",
   )
