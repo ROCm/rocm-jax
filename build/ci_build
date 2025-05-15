@@ -153,9 +153,7 @@ def test(image_name, test_cmd=None):
     cmd.extend(mounts)
     cmd.extend(gpu_args)
 
-    container_cmd = (
-        "cd /jax && %s" % test_cmd
-    )
+    container_cmd = "cd /jax && %s" % test_cmd
 
     cmd.append(image_name)
     cmd.extend(
@@ -229,7 +227,9 @@ def parse_args():
     bdp = subp.add_parser("build_dockers")
 
     testp = subp.add_parser("test")
-    testp.add_argument("--test-cmd", help="Command which will be run inside the test container")
+    testp.add_argument(
+        "--test-cmd", help="Command which will be run inside the test container"
+    )
     testp.add_argument("image_name")
 
     return p.parse_args()

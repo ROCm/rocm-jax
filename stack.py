@@ -112,7 +112,6 @@ def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False
             mf.write(makefile_content)
 
 
-
 def dev_docker():
     cur_abs_path = os.path.abspath(os.curdir)
     image_name = "ubuntu:22.04"
@@ -128,16 +127,19 @@ def dev_docker():
         "--device=/dev/dri",
         "--ipc=host",
         "--shm-size=16G",
-        "--group-add", "video",
+        "--group-add",
+        "video",
         "--cap-add=SYS_PTRACE",
-        "--security-opt", "seccomp=unconfined",
+        "--security-opt",
+        "seccomp=unconfined",
         "-v",
         "%s:/rocm-jax" % cur_abs_path,
-        "--env", "ROCM_JAX_DIR=/rocm-jax",
-        "--env", "_IS_ENTRYPOINT=1",
-        "--entrypoint=%s" % ep
+        "--env",
+        "ROCM_JAX_DIR=/rocm-jax",
+        "--env",
+        "_IS_ENTRYPOINT=1",
+        "--entrypoint=%s" % ep,
     ]
-
 
     cmd.append(image_name)
 
@@ -146,6 +148,7 @@ def dev_docker():
 
 
 # build mode setup
+
 
 # install jax/jaxlib from known versions
 # setup build/install/test script
@@ -159,13 +162,26 @@ def parse_args():
     subp = p.add_subparsers(dest="action", required=True)
 
     dev = subp.add_parser("develop")
-    dev.add_argument("--rebuild-makefile", help="Force rebuild of Makefile from template.", action="store_true")
-    dev.add_argument("--xla-ref", help="XLA commit reference to checkout on clone", default=XLA_REPO_REF)
-    dev.add_argument("--jax-ref", help="JAX commit reference to checkout on clone", default=JAX_REPO_REF)
+    dev.add_argument(
+        "--rebuild-makefile",
+        help="Force rebuild of Makefile from template.",
+        action="store_true",
+    )
+    dev.add_argument(
+        "--xla-ref",
+        help="XLA commit reference to checkout on clone",
+        default=XLA_REPO_REF,
+    )
+    dev.add_argument(
+        "--jax-ref",
+        help="JAX commit reference to checkout on clone",
+        default=JAX_REPO_REF,
+    )
 
     docker = subp.add_parser("docker")
 
     return p.parse_args()
+
 
 def main():
     args = parse_args()
