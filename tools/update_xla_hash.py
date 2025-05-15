@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def update_xla_hash(xla_commit, xla_repo, workspace_file_path, gh_token):
     # Verify that the workspace_file exists
     if not os.path.isfile(workspace_file_path):
-        raise ValueError(f"Workspace file '{workspace_file}' does not exist")
+        raise ValueError(f"Workspace file '{workspace_file_path}' does not exist")
 
     # If we were given a GH auth token, use it to make sure that the commit
     # exists and convert a branch name to a commit hash
@@ -59,7 +59,7 @@ def update_xla_hash(xla_commit, xla_repo, workspace_file_path, gh_token):
         # Edit the commit hash, sha256 hash, and repo
         contents = re.sub(
             'XLA_COMMIT = "[a-z0-9]*"',
-            f'XLA_COMIT = "{xla_commit_hash}"',
+            f'XLA_COMMIT = "{xla_commit_hash}"',
             contents,
             flags=re.M,
         )
@@ -100,7 +100,7 @@ def parse_args():
     )
     arg_parser.add_argument(
         "--workspace-file",
-        default=".jax_rocm_plugin/third_party/xla/workspace.bzl",
+        default="jax_rocm_plugin/third_party/xla/workspace.bzl",
         help="Path to the workspace.bzl file to put the hash. Defaults to ./third_party/xla/workspace.bzl.",
     )
     arg_parser.add_argument(
