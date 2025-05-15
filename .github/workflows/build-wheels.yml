@@ -10,10 +10,13 @@ on:
         required: true
         type: string
       artifact-prefix:
+        required: false
         default: 'plugin_wheels'
+        type: string
 
- build-plugin-docker:
-    runs-on:  mi-250
+jobs:
+  build-plugin-wheels:
+    runs-on: mi-250
     steps:
       - name: Clean up old runs
         run: |
@@ -39,6 +42,6 @@ on:
       - name: Archive plugin wheels
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.artifact-prefix }}_r${{ env.ROCM_VERSION }}
-          path: ./wheelhouse/*.whl
+          name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
+          path: ./jax_rocm_plugin/wheelhouse/*.whl
 

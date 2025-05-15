@@ -7,11 +7,13 @@ on:
         required: true
         type: string
       artifact-prefix:
+        required: false
         default: 'plugin_wheels'
+        type: string
 
 jobs:
   build-docker:
-    runs-on:  mi-250
+    runs-on: mi-250
     steps:
       - name: Clean up old runs
         run: |
@@ -28,22 +30,29 @@ jobs:
           df -h
       - uses: actions/checkout@v4
       - name: Download wheel artifacts
-        uses: actions/download-artifacts@v4
+        uses: actions/download-artifact@v4
+        with:
           name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
           path: ./wheelhouse
       - name: Build JAX docker image
         run: |
           python3 build/ci_build \
-            --rocm-version ${{ inputs.rocm-version }}
+            --rocm-version ${{ inputs.rocm-version }} \
             build_dockers
       - name: Authenticate to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Push docker images
         env:
           ROCM_VERSION: ${{ inputs.rocm-version }}
         run: |
-          docker tag "jax-ubu22.rocm${ROCM_VERSION//.}" "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_REF_NAME}"
-          docker tag "jax-ubu24.rocm${ROCM_VERSION//.}" "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_REF_NAME}"
-          docker push "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_REF_NAME}"
-          docker push "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_REF_NAME}"
+          docker tag \
+            "jax-ubu22.rocm${ROCM_VERSION//.}" \
+            "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          docker tag \
+            "jax-ubu24.rocm${ROCM_VERSION//.}" \
+            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          docker push "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          docker push "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
 

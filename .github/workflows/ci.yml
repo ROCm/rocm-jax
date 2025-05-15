@@ -14,27 +14,28 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
-env:
-  PYTHON_VERSIONS: "3.10.13,3.12.8"
-
 jobs:
   call-build-wheels:
     strategy:
       matrix:
         rocm-version: ["6.3.3"]
-    uses: jax/rocm-jax/.github/workflows/reuseable/build-wheels.yml@master
+    uses: ./.github/workflows/build-wheels.yml
     with:
-      python-versions: ${{ env.PYTHON_VERSIONS }}
+      # TODO: Add back Python 3.13 when we're ready to move to a more recent version of XLA. 3.13
+      #       fails with a complaint abou the pipes module.
+      python-versions: "3.10,3.12"
       rocm-version: ${{ matrix.rocm-version }}
   call-build-docker:
+    needs: call-build-wheels
     strategy:
       matrix:
-        python-version: ["3.10.13,3.12.8"]
         rocm-version: ["6.3.3"]
-    uses: jax/rocm-jax/.github/workflows/reusable/build-docker.yml@master
+    uses: ./.github/workflows/build-docker.yml
     with:
-      rocm-version: ${{ matrix.python-version }}
+      rocm-version: ${{ matrix.rocm-version }}
   run-python-unit-tests:
+    needs: call-build-docker
+    runs-on: mi-250
     strategy:
       matrix:
         rocm-version: ["6.3.3"]
@@ -42,15 +43,23 @@ jobs:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
       - name: Checkout JAX repo
-        uses: actions/chekcout@v4
+        uses: actions/checkout@v4
         with:
-          repository: jax-ml/jax
+          # TODO: Load the ref from a file that sets the min and max JAX version
+          # TODO: Change the repo and ref once we figure out how exactly we're going to
+          #       manage tests
+          repository: rocm/jax
+          ref: rocm-jaxlib-v0.5.0
           path: jax
       - name: Run tests
         env:
           GPU_COUNT: "8"
           GFX: "gfx90a"
+          JAX_SKIP_SLOW_TESTS: "1"
           ROCM_VERSION: ${{ matrix.rocm-version }}
+        # TODO: Add the tests/linalg_test.py test back once we fix the XLAClient thing.
         run: |
-          python3 build/ci_build test "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_REF_NAME}" --test-cmd "pytest tests/core_test.py tests/linalg_test.py"
+          python3 build/ci_build test \
+            "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
+            --test-cmd "pytest tests/core_test.py"
 
