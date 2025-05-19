@@ -16,7 +16,7 @@ jobs:
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c
         with:
           files: |
-            **/*.sh
+            **/*.py
       - name: Install pylint
         run: pip install pylint
       - name: Run pylint
@@ -40,7 +40,7 @@ jobs:
         if: steps.changed-files.outputs.all_changed_files == 'true'
         uses: psf/black@stable
         with:
-          options: '--check --verbose'
+          options: '--check --verbose -t py36'
           src: ${{ steps.changed-files.outputs.all_changed_files }}
   shellcheck:
     name: Shellcheck
