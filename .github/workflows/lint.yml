@@ -22,7 +22,7 @@ jobs:
       - name: Run pylint
         if: steps.changed-files.outputs.all_changed_files == 'true'
         run: |
-          echo "${{ steps.changed-files.outputs.all_changed_files }}" | xargs pylint
+          echo "${{ steps.changed-files.outputs.all_changed_files }}" | xargs pylint --output-format=colorized
   black:
     runs-on: ubuntu-latest
     steps:
@@ -56,11 +56,14 @@ jobs:
         with:
           files: |
             **/*.sh
+      - name: Install shellcheck
+        run: |
+          apt-get update
+          apt-get install shellcheck
       - name: Run shellcheck
-        # if: steps.changed-files.outputs.all_changed_files == 'true'
-        uses: ludeeus/action-shellcheck@master
-        with:
-          additional_files: ${{ steps.changed-files.outputs.all_changed_files }}
+        if: steps.changed-files.outputs.all_changed_files == 'true'
+        run: |
+          echo "${{ steps.changed-files.outputs.all_changed_files }}" | xargs shellcheck --color=always
   yamllint:
     name: Yamllint
     runs-on: ubuntu-latest
@@ -80,6 +83,6 @@ jobs:
         uses: karancode/yamllint-github-action@master
         with:
           yamllint_file_or_dir: ${{ steps.changed-files.outputs.all_changed_files }}
-          yamllint_strict: false
+          yamllint_strict: true
           yamllint_comment: true
 
