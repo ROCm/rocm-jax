@@ -56,14 +56,11 @@ jobs:
         with:
           files: |
             **/*.sh
-      - name: Install shellcheck
-        run: |
-          apt-get update
-          apt-get install shellcheck
       - name: Run shellcheck
         if: steps.changed-files.outputs.all_changed_files == 'true'
         run: |
-          echo "${{ steps.changed-files.outputs.all_changed_files }}" | xargs shellcheck --color=always
+          FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | sed 's|^|/mnt/|')
+          docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable --color=always $FILES
   yamllint:
     name: Yamllint
     runs-on: ubuntu-latest
