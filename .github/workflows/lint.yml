@@ -20,7 +20,7 @@ jobs:
       - name: Install pylint
         run: pip install pylint
       - name: Run pylint
-        if: steps.changed-files.outputs.all_changed_files == 'true'
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           echo "${{ steps.changed-files.outputs.all_changed_files }}" | xargs pylint --output-format=colorized
   black:
@@ -37,7 +37,7 @@ jobs:
           files: |
             **/*.py
       - name: Run black
-        if: steps.changed-files.outputs.all_changed_files == 'true'
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: psf/black@stable
         with:
           options: '--check --verbose -t py36'
@@ -57,7 +57,7 @@ jobs:
           files: |
             **/*.sh
       - name: Run shellcheck
-        if: steps.changed-files.outputs.all_changed_files == 'true'
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | sed 's|^|/mnt/|')
           docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable --color=always $FILES
@@ -76,10 +76,9 @@ jobs:
           files: |
             **/*.yml
       - name: Run yamllint
-        if: steps.changed-files.outputs.all_changed_files == 'true'
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: karancode/yamllint-github-action@master
         with:
           yamllint_file_or_dir: ${{ steps.changed-files.outputs.all_changed_files }}
           yamllint_strict: true
           yamllint_comment: true
-
