@@ -22,7 +22,8 @@ jobs:
       - name: Run pylint
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          echo "${{ steps.changed-files.outputs.all_changed_files }}" | xargs pylint --output-format=colorized
+          echo "${{ steps.changed-files.outputs.all_changed_files }}" \
+            | xargs pylint --output-format=colorized
   black:
     runs-on: ubuntu-latest
     steps:
@@ -59,7 +60,8 @@ jobs:
       - name: Run shellcheck
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | sed 's|^|/mnt/|')
+          FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" \
+            | tr ' ' '\n' | sed 's|^|/mnt/|')
           docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable --color=always $FILES
   yamllint:
     name: Yamllint
@@ -82,3 +84,4 @@ jobs:
           yamllint_file_or_dir: ${{ steps.changed-files.outputs.all_changed_files }}
           yamllint_strict: true
           yamllint_comment: true
+

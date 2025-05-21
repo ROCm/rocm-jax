@@ -1,0 +1,24 @@
+# Configuration for yamllint. See here for rules you can modify:
+# https://yamllint.readthedocs.io/en/stable/rules.html#module-yamllint.rules.line_length
+
+extends: default
+
+rules:
+  document-end:
+    present: false
+  document-start:
+    present: false
+  empty-lines:
+    max: 1
+    max-end: 1
+  indentation:
+    spaces: 2
+  line-length:
+    max: 100
+    allow-non-breakable-inline-mappings: true
+  new-lines:
+    type: unix
+  trailing-spaces: {}
+  truthy:
+    check-keys: false
+
