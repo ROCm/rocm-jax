@@ -1,7 +1,9 @@
 #!/bin/bash
 
-GREEN="\033[32;01m"
+# shellcheck disable=SC2034
 CYAN="\033[36;01m"
+GREEN="\033[32;01m"
+RED="\033[31;01m"
 OFF="\033[0m"
 
 info() {
@@ -9,7 +11,7 @@ info() {
 }
 
 error() {
-  echo -e " ${RED} ERROR${OFF}" $* >&2
+  echo -e " ${RED} ERROR${OFF}: $*" >&2
 }
 
 die() {
@@ -17,7 +19,19 @@ die() {
   exit 1
 }
 
-install_clang() {
+
+install_clang_packages() {
+  apt-get install -y \
+    software-properties-common \
+    gnupg
+
+  # from instructions at https://apt.llvm.org/
+  [[ -e llvm.sh ]] || wget https://apt.llvm.org/llvm.sh || die "error downloading LLVM install script"
+  chmod +x llvm.sh || die
+  bash llvm.sh 18 || die "error installing clang-18"
+}
+
+install_clang_from_source() {
   [[ -e /usr/lib/llvm-18/bin/clang ]] && return
 
   set -e
@@ -31,7 +45,7 @@ install_clang() {
   
   cmake -DLLVM_ENABLE_PROJECTS='clang;lld' -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/lib/llvm-18/ ../llvm
   
-  make -j$(nproc) && make -j$(nproc) install && rm -rf /tmp/llvm-project
+  make -j"$(nproc)" && make -j"$(nproc)" install && rm -rf /tmp/llvm-project
 
   popd
   set +e
@@ -54,10 +68,11 @@ apt-get install -y \
   make \
   patchelf \
   python3.10-venv \
+  lsb-release \
   cmake || die "error installing dependencies"
 
 # install a clang
-install_clang || die "error while installing clang"
+install_clang_packages || die "error while installing clang"
 
 # install a rocm
 info "Installing ROCm"
@@ -68,12 +83,14 @@ info "Setting up python virtualenv at .venv"
 python -m venv .venv
 
 info "Entering virtualenv"
+# shellcheck disable=SC1091
 . .venv/bin/activate
 
 if [ -n "$_IS_ENTRYPOINT" ]; then
   # run CMD from docker
   if [ -n "$1" ]; then
-    $@
+    # shellcheck disable=SC2048
+    $*
   else
     bash
   fi
