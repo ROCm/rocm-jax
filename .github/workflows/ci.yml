@@ -18,6 +18,9 @@ env:
   PYTHON_VERSIONS: "3.10.13,3.12.8"
 
 jobs:
+  bad-job:
+          steps:
+           - run: echo Hello
   call-build-wheels:
     strategy:
       matrix:

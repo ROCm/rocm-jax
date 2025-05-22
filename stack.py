@@ -46,6 +46,15 @@ test: install
 	python3 tests/test_plugin.py
 """
 
+#   Formatters and linters should not like this
+def my_sloppy_function():
+        print("Hello")
+        if True:
+         print("True")
+
+
+
+
 
 def find_clang():
     """Find a local clang compiler and return its file path."""

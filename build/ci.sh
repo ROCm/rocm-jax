@@ -17,6 +17,13 @@ python3 build/ci_build \
     || die "jax_rocm_plugin wheel build failed"
 
 
+
+
+
+echo $NOT_DEFINED_VAR
+
+
+
 # copy wheels from plugin wheel build
 mkdir -p wheelhouse
 cp jax_rocm_plugin/wheelhouse/* wheelhouse/
