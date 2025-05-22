@@ -3,12 +3,17 @@ name: Upstream CI Watcher
 on:
   schedule:
     - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   upstream-ci-watcher:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
       - name: Run watcher script
-        run: | 
-          ci/upstream_ci_watcher.py --teams-url ${{ secrets.MS_TEAMS_WEBHOOK_URL }} --gh-token ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ci/upstream_ci_watcher.py \
+            --teams-url ${{ secrets.MS_TEAMS_WEBHOOK_URL }} \
+            --gh-token ${{ secrets.GITHUB_TOKEN }}
 
