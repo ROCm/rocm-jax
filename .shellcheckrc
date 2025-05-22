@@ -1,0 +1,5 @@
+# Directives for Shellcheck. See directives here: https://github.com/koalaman/shellcheck/wiki/Directive
+
+# Don't follow source commands
+disable=SC1091
+

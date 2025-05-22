@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 error() {
     echo "$*" >&2
 }
