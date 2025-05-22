@@ -41,7 +41,7 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: psf/black@stable
         with:
-          options: '--check --verbose -t py36'
+          options: '--check --diff --color --verbose -t py36'
           src: ${{ steps.changed-files.outputs.all_changed_files }}
   shellcheck:
     name: Shellcheck
