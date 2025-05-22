@@ -26,7 +26,7 @@ import subprocess
 import tempfile
 
 from bazel_tools.tools.python.runfiles import runfiles
-from jaxlib.tools import build_utils
+from pjrt.tools import build_utils
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -62,10 +62,6 @@ parser.add_argument(
     help="Create an 'editable' jax cuda/rocm plugin build instead of a wheel.",
 )
 parser.add_argument(
-    "--enable-cuda",
-    default=False,
-    help="Should we build with CUDA enabled? Requires CUDA and CuDNN.")
-parser.add_argument(
     "--enable-rocm",
     default=False,
     help="Should we build with ROCM enabled?")
@@ -96,8 +92,8 @@ def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
   copy_runfiles(
       dst_dir=sources_path,
       src_files=[
-          "__main__/jax_plugins/rocm/pyproject.toml",
-          "__main__/jax_plugins/rocm/setup.py",
+          "__main__/pjrt/python/pyproject.toml",
+          "__main__/pjrt/python/setup.py",
       ],
   )
   build_utils.update_setup_with_rocm_version(sources_path, rocm_version)
@@ -105,8 +101,8 @@ def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
   copy_runfiles(
       dst_dir=plugin_dir,
       src_files=[
-          "__main__/jax_plugins/rocm/__init__.py",
-          "__main__/jaxlib/version.py",
+          "__main__/pjrt/python/__init__.py",
+          "__main__/pjrt/python/version.py",
       ],
   )
   copy_runfiles(
@@ -154,18 +150,13 @@ if sources_path is None:
 try:
   os.makedirs(args.output_path, exist_ok=True)
 
-  if args.enable_cuda:
-    prepare_cuda_plugin_wheel(
-        pathlib.Path(sources_path), cpu=args.cpu, cuda_version=args.platform_version
-    )
-    package_name = "jax cuda plugin"
-  elif args.enable_rocm:
+  if args.enable_rocm:
     prepare_rocm_plugin_wheel(
         pathlib.Path(sources_path), cpu=args.cpu, rocm_version=args.platform_version
     )
     package_name = "jax rocm plugin"
   else:
-    raise ValueError("Unsupported backend. Choose either 'cuda' or 'rocm'.")
+    raise ValueError("Unsupported backend. Choose 'rocm'.")
 
   if args.editable:
     build_utils.build_editable(sources_path, args.output_path, package_name)

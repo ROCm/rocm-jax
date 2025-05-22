@@ -1,4 +1,5 @@
 # Copyright 2018 The JAX Authors.
+# Copyright 2025 Advanced Micro Devices Corp.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +13,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 licenses(["notice"])  # Apache 2
 
 package(default_visibility = ["//visibility:public"])
 
-cc_binary(
-    name = "pjrt_c_api_gpu_plugin.so",
-    linkopts = [
-        "-Wl,--version-script,$(location :gpu_version_script.lds)",
-        "-Wl,--no-undefined",
+py_binary(
+    name = "build_gpu_plugin_wheel",
+    srcs = ["build_gpu_plugin_wheel.py"],
+    data = [
+        "LICENSE.txt",
+	"//pjrt:pjrt_c_api_gpu_plugin.so",
+        "//pjrt/python:version.py",
+        "//pjrt/python:pyproject.toml",
+        "//pjrt/python:setup.py",
+        "//pjrt/python:__init__.py",
     ],
-    linkshared = True,
     deps = [
-        ":gpu_version_script.lds",
-        "@xla//xla/pjrt/c:pjrt_c_api_gpu",
-        "@xla//xla/pjrt/c:pjrt_c_api_gpu_version_script.lds",
-        "@xla//xla/service:gpu_plugin",
-        "@xla//xla/stream_executor:rocm_platform",
+        "build_utils",
+        "@bazel_tools//tools/python/runfiles",
+        "@pypi_build//:pkg",
+        "@pypi_setuptools//:pkg",
+        "@pypi_wheel//:pkg",
     ],
+)
+
+py_library(
+    name = "build_utils",
+    srcs = ["build_utils.py"],
 )

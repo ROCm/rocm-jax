@@ -23,27 +23,6 @@ licenses(["notice"])  # Apache 2
 package(default_visibility = ["//visibility:public"])
 
 py_binary(
-    name = "build_gpu_plugin_wheel",
-    srcs = ["build_gpu_plugin_wheel.py"],
-    data = [
-        "LICENSE.txt",
-	"//pjrt:pjrt_c_api_gpu_plugin.so",
-	# TODO(mrodden): move the rest of this to pjrt dir
-        "//jaxlib:version.py",
-        "//jax_plugins/rocm:pyproject.toml",
-        "//jax_plugins/rocm:setup.py",
-        "//jax_plugins/rocm:__init__.py",
-    ],
-    deps = [
-        "build_utils",
-        "@bazel_tools//tools/python/runfiles",
-        "@pypi_build//:pkg",
-        "@pypi_setuptools//:pkg",
-        "@pypi_wheel//:pkg",
-    ],
-)
-
-py_binary(
     name = "build_gpu_kernels_wheel",
     srcs = ["build_gpu_kernels_wheel.py"],
     data = [

@@ -60,7 +60,7 @@ WHEEL_BUILD_TARGET_DICT = {
     "jax-cuda-plugin": "//jaxlib/tools:build_gpu_kernels_wheel",
     "jax-cuda-pjrt": "//jaxlib/tools:build_gpu_plugin_wheel",
     "jax-rocm-plugin": "//jaxlib/tools:build_gpu_kernels_wheel",
-    "jax-rocm-pjrt": "//jaxlib/tools:build_gpu_plugin_wheel",
+    "jax-rocm-pjrt": "//pjrt/tools:build_gpu_plugin_wheel",
 }
 
 
