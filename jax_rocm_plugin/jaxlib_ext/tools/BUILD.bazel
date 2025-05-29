@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# JAX is Autograd and XLA
-
-load("@bazel_skylib//lib:selects.bzl", "selects")
-load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
-load("//jaxlib:jax.bzl", "pytype_strict_library")
 
 licenses(["notice"])  # Apache 2
 
@@ -27,9 +22,9 @@ py_binary(
     srcs = ["build_gpu_kernels_wheel.py"],
     data = [
         "LICENSE.txt",
-        "//jaxlib:rocm_plugin_extension",
-        "//jaxlib:version.py",
-        "//jaxlib/rocm:rocm_gpu_support",
+        "@jax//jaxlib:version",
+        "@jax//jaxlib/rocm:rocm_plugin_extension",
+        "@jax//jaxlib/rocm:rocm_gpu_support",
         "//jax_plugins/rocm:plugin_pyproject.toml",
         "//jax_plugins/rocm:plugin_setup.py",
     ],
@@ -42,51 +37,7 @@ py_binary(
     ],
 )
 
-selects.config_setting_group(
-    name = "macos",
-    match_any = [
-        "@platforms//os:osx",
-        "@platforms//os:macos",
-    ],
-)
-
-selects.config_setting_group(
-    name = "arm64",
-    match_any = [
-        "@platforms//cpu:aarch64",
-        "@platforms//cpu:arm64",
-    ],
-)
-
-selects.config_setting_group(
-    name = "macos_arm64",
-    match_all = [
-        ":arm64",
-        ":macos",
-    ],
-)
-
-selects.config_setting_group(
-    name = "win_amd64",
-    match_all = [
-        "@platforms//cpu:x86_64",
-        "@platforms//os:windows",
-    ],
-)
-
-string_flag(
-    name = "jaxlib_git_hash",
-    build_setting_default = "",
-)
-
-config_setting(
-    name = "jaxlib_git_hash_nightly_or_release",
-    flag_values = {
-        ":jaxlib_git_hash": "nightly",
-    },
-)
-
-pytype_strict_library(
+py_library(
     name = "build_utils",
     srcs = ["build_utils.py"],
 )

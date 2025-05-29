@@ -75,8 +75,8 @@ def test_matrix_math():
 
 
 def print_link_info():
-    # _blas.so  _hybrid.so  _linalg.so  _prng.so  _rnn.so  _solver.so  _sparse.so  _triton.so
-    sos = ["_blas", "_hybrid", "_linalg", "_prng", "_rnn", "_solver", "_sparse", "_triton"]
+    #  _hybrid.so  _linalg.so  _prng.so  _rnn.so  _solver.so  _sparse.so  _triton.so
+    sos = ["_hybrid", "_linalg", "_prng", "_rnn", "_solver", "_sparse", "_triton"]
 
     for so in sos:
         mod = None

@@ -1,0 +1,50 @@
+diff --git a/jaxlib/BUILD b/jaxlib/BUILD
+index 373f8cd17..75cb60e9a 100644
+--- a/jaxlib/BUILD
++++ b/jaxlib/BUILD
+@@ -34,7 +34,7 @@ licenses(["notice"])
+ 
+ package(
+     default_applicable_licenses = [],
+-    default_visibility = ["//jax:internal"],
++    default_visibility = ["//visibility:public"],
+ )
+ 
+ py_library_providing_imports_info(
+diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
+index 94d75d9c1..89378ec87 100644
+--- a/jaxlib/rocm/BUILD
++++ b/jaxlib/rocm/BUILD
+@@ -26,7 +26,7 @@ licenses(["notice"])
+ 
+ package(
+     default_applicable_licenses = [],
+-    default_visibility = ["//:__subpackages__"],
++    default_visibility = ["//visibility:public"],
+ )
+ 
+ cc_library(
+@@ -387,6 +387,7 @@ nanobind_extension(
+         ":hip_vendor",
+         "//jaxlib:kernel_nanobind_helpers",
+         "@local_config_rocm//rocm:rocm_headers",
++        "@local_config_rocm//rocm:rocm_hip",
+         "@nanobind",
+     ],
+ )
+@@ -429,6 +430,7 @@ nanobind_extension(
+         "//jaxlib/cpu:lapack_kernels",
+         "@com_google_absl//absl/base",
+         "@local_config_rocm//rocm:rocm_headers",
++        "@local_config_rocm//rocm:hip",
+         "@nanobind",
+         "@xla//xla/ffi/api:ffi",
+     ],
+@@ -498,6 +500,7 @@ nanobind_extension(
+         "@com_google_absl//absl/status:statusor",
+         "@com_google_absl//absl/strings:string_view",
+         "@nanobind",
++        "@local_config_rocm//rocm:rocm_hip",
+     ],
+ )
+ 

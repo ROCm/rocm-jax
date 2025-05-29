@@ -56,10 +56,7 @@ From the root directory of the JAX repository, run
 
 # Define the build target for each wheel.
 WHEEL_BUILD_TARGET_DICT = {
-    "jaxlib": "//jaxlib/tools:build_wheel",
-    "jax-cuda-plugin": "//jaxlib/tools:build_gpu_kernels_wheel",
-    "jax-cuda-pjrt": "//jaxlib/tools:build_gpu_plugin_wheel",
-    "jax-rocm-plugin": "//jaxlib/tools:build_gpu_kernels_wheel",
+    "jax-rocm-plugin": "//jaxlib_ext/tools:build_gpu_kernels_wheel",
     "jax-rocm-pjrt": "//pjrt/tools:build_gpu_plugin_wheel",
 }
 

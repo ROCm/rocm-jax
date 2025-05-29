@@ -86,6 +86,7 @@ def _tf_http_archive_impl(ctx):
         ctx.delete(dst)
         ctx.symlink(src, dst)
 
+
 _tf_http_archive = repository_rule(
     implementation = _tf_http_archive_impl,
     attrs = {
@@ -164,3 +165,45 @@ tf_vendored = repository_rule(
         "relpath": attr.string(),
     },
 )
+
+
+def _amd_http_archive_impl(ctx):
+    patch_files = ctx.attr.patch_file
+    for patch_file in patch_files:
+        if patch_file:
+            ctx.path(Label(patch_file))
+
+    ctx.download_and_extract(
+        url = ctx.attr.urls,
+        sha256 = ctx.attr.sha256,
+        type = ctx.attr.type,
+        stripPrefix = ctx.attr.strip_prefix,
+    )
+
+    if patch_files:
+        for patch_file in patch_files:
+            patch_file = ctx.path(Label(patch_file)) if patch_file else None
+            if patch_file:
+                ctx.patch(patch_file, strip = 1)
+
+
+_amd_http_archive = repository_rule(
+    implementation = _amd_http_archive_impl,
+    attrs = {
+        "sha256": attr.string(mandatory = True),
+        "urls": attr.string_list(mandatory = True),
+        "strip_prefix": attr.string(),
+        "type": attr.string(),
+        "patch_file": attr.string_list(),
+    },
+)
+
+def amd_http_archive(name, sha256, urls, **kwargs):
+    """http_archive extended with patch_file functionality."""
+
+    _amd_http_archive(
+        name = name,
+        sha256 = sha256,
+        urls = urls,
+        **kwargs
+    )
