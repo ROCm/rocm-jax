@@ -21,14 +21,18 @@ AMDGPU_TARGETS ?= "gfx906,gfx908,gfx90a,gfx942,gfx1030,gfx1100,gfx1101,gfx1200,g
 # customize to a single arch for local dev builds to reduce compile time
 #AMDGPU_TARGETS ?= "gfx908"
 
-.PHONY: test clean install
+.PHONY: test clean install dist
 
 .default: dist
 
-dist:
+
+dist: jax_rocm60_plugin jax_rocm60_pjrt
+
+
+jax_rocm60_plugin:
 	python3 ./build/build.py build \
             --use_clang=true \
-            --wheels=jax-rocm-plugin,jax-rocm-pjrt \
+            --wheels=jax-rocm-plugin \
             --rocm_path=/opt/rocm/ \
             --rocm_version=60 \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
@@ -36,13 +40,28 @@ dist:
             --verbose \
             --clang_path=%(clang_path)s
 
+
+jax_rocm60_pjrt:
+	python3 ./build/build.py build \
+            --use_clang=true \
+            --wheels=jax-rocm-pjrt \
+            --rocm_path=/opt/rocm/ \
+            --rocm_version=60 \
+            --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
+            --bazel_options="--override_repository=xla=../xla" \
+            --verbose \
+            --clang_path=%(clang_path)s
+
+
 clean:
 	rm -rf dist
+
 
 install: dist
 	pip install --force-reinstall dist/*
 
-test: install
+
+test:
 	python3 tests/test_plugin.py
 """
 
