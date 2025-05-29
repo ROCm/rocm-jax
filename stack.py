@@ -6,8 +6,8 @@ import subprocess
 import sys
 
 
-JAX_REPO_REF = "rocm-jaxlib-v0.5.0"
-XLA_REPO_REF = "rocm-jaxlib-v0.5.0"
+JAX_REPO_REF = "rocm-jaxlib-v0.6.0"
+XLA_REPO_REF = "rocm-jaxlib-v0.6.0"
 
 
 JAX_REPL_URL = "https://github.com/rocm/jax"

@@ -23,7 +23,7 @@ import jax._src.xla_bridge as xb
 
 # rocm_plugin_extension locates inside jaxlib. `jaxlib` is for testing without
 # preinstalled jax rocm plugin packages.
-for pkg_name in ['jax_rocm60_plugin', 'jaxlib.rocm']:
+for pkg_name in ['jax_rocm7_plugin', 'jaxlib.rocm']:
   try:
     rocm_plugin_extension = importlib.import_module(
         f'{pkg_name}.rocm_plugin_extension'
@@ -111,14 +111,14 @@ def set_rocm_paths(path):
 
 
   if not bitcode_path:
-    logger.warning("jax_rocm60_plugin couldn't locate amdgpu bitcode")
+    logger.warning("jax_rocm_plugin couldn't locate amdgpu bitcode")
   else:
-    logger.info("jax_rocm60_plugin using bitcode found at %r", bitcode_path)
+    logger.info("jax_rocm_plugin using bitcode found at %r", bitcode_path)
 
   if not lld_path:
-    logger.warning("jax_rocm60_plugin couldn't locate amdgpu ld.lld")
+    logger.warning("jax_rocm_plugin couldn't locate amdgpu ld.lld")
   else:
-    logger.info("jax_rocm60_plugin using ld.lld found at %r", lld_path)
+    logger.info("jax_rocm_plugin using ld.lld found at %r", lld_path)
 
   os.environ["JAX_ROCM_PLUGIN_INTERNAL_BITCODE_PATH"] = bitcode_path
   os.environ["HIP_DEVICE_LIB_PATH"] = bitcode_path
