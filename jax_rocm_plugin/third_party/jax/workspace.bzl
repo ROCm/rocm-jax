@@ -12,6 +12,6 @@ def repo():
         urls = ["https://github.com/jax-ml/jax/archive/{commit}.tar.gz".format(commit = COMMIT)],
         patch_file = [
            "//third_party/jax:build.patch",
-	   "//third_party/jax:hipBlas_typedef.patch"
+           "//third_party/jax:hipBlas_typedef.patch"
         ],
     )
