@@ -9,6 +9,7 @@ on:
     branches:
       - master
       - 'release/*'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
@@ -18,7 +19,7 @@ jobs:
   call-build-wheels:
     strategy:
       matrix:
-        rocm-version: ["6.3.3"]
+        rocm-version: ["6.4.1"]
     uses: ./.github/workflows/build-wheels.yml
     with:
       # TODO: Add back Python 3.13 when we're ready to move to a more recent version of XLA. 3.13
@@ -29,7 +30,7 @@ jobs:
     needs: call-build-wheels
     strategy:
       matrix:
-        rocm-version: ["6.3.3"]
+        rocm-version: ["6.4.1"]
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
@@ -38,7 +39,7 @@ jobs:
     runs-on: mi-250
     strategy:
       matrix:
-        rocm-version: ["6.3.3"]
+        rocm-version: ["6.4.1"]
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4

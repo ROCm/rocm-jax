@@ -9,6 +9,16 @@ on:
       rocm-version:
         required: true
         type: string
+      rocm-build-job:
+        required: false
+        type: string
+      rocm-build-num:
+        required: false
+        type: string
+      runner-label:
+        required: false
+        type: string
+        default: "mi-250"
       artifact-prefix:
         required: false
         default: 'plugin_wheels'
@@ -16,7 +26,7 @@ on:
 
 jobs:
   build-plugin-wheels:
-    runs-on: mi-250
+    runs-on: ${{ inputs.runner-label }}
     steps:
       - name: Clean up old runs
         run: |
@@ -35,9 +45,11 @@ jobs:
       - name: Build plugin wheels
         run: |
           python3 build/ci_build \
-            --compiler clang \
-            --python-versions ${{ inputs.python-versions }} \
-            --rocm-version ${{ inputs.rocm-version }} \
+            --compiler=clang \
+            --python-versions="${{ inputs.python-versions }}" \
+            --rocm-version="${{ inputs.rocm-version }}" \
+            --rocm-build-job="${{ inputs.rocm-build-job }}" \
+            --rocm-build-num="${{ inputs.rocm-build-num }}" \
             dist_wheels
       - name: Archive plugin wheels
         uses: actions/upload-artifact@v4

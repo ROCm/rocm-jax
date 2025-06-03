@@ -6,6 +6,16 @@ on:
       rocm-version:
         required: true
         type: string
+      rocm-build-job:
+        required: false
+        type: string
+      rocm-build-num:
+        required: false
+        type: string
+      runner-label:
+        required: false
+        type: string
+        default: "mi-250"
       artifact-prefix:
         required: false
         default: 'plugin_wheels'
@@ -13,7 +23,7 @@ on:
 
 jobs:
   build-docker:
-    runs-on: mi-250
+    runs-on: ${{ inputs.runner-label }}
     steps:
       - name: Clean up old runs
         run: |
@@ -37,7 +47,9 @@ jobs:
       - name: Build JAX docker image
         run: |
           python3 build/ci_build \
-            --rocm-version ${{ inputs.rocm-version }} \
+            --rocm-version="${{ inputs.rocm-version }}" \
+            --rocm-build-job="${{ inputs.rocm-build-job }}" \
+            --rocm-build-num="${{ inputs.rocm-build-num }}" \
             build_dockers
       - name: Authenticate to GitHub Container Registry
         run: |
@@ -47,12 +59,12 @@ jobs:
         env:
           ROCM_VERSION: ${{ inputs.rocm-version }}
         run: |
-          docker tag \
-            "jax-ubu22.rocm${ROCM_VERSION//.}" \
-            "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
-          docker tag \
-            "jax-ubu24.rocm${ROCM_VERSION//.}" \
-            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
-          docker push "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
-          docker push "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          ubu22_img="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          ubu24_img="ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          echo "Ubuntu 22 image name: ${ubu22_img}"
+          echo "Ubuntu 24 image name: ${ubu24_img}"
+          docker tag "jax-ubu22.rocm${ROCM_VERSION//.}" "${ubu22_img}"
+          docker tag "jax-ubu24.rocm${ROCM_VERSION//.}" "${ubu24_img}"
+          docker push "${ubu22_img}"
+          docker push "${ubu24_img}"
 
