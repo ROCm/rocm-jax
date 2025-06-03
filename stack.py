@@ -210,7 +210,7 @@ def main():
         setup_development(
             rebuild_makefile=args.rebuild_makefile,
             xla_ref=args.xla_ref,
-            jax_ref=args.xla_ref,
+            jax_ref=args.jax_ref,
         )
 
 
