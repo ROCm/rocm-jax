@@ -32,6 +32,7 @@ def repo():
         urls = tf_mirror_urls("https://github.com/ROCm/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
         patch_file = [
             "//third_party/xla:rocm_build.patch",
+            "//third_party/xla:rocblas_v5.patch",
         ]
     )
 
