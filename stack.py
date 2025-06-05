@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
+"""Script for setting up local development environments"""
 
 import argparse
 import os
 import subprocess
-import sys
 
 
 JAX_REPO_REF = "rocm-jaxlib-v0.6.0"
@@ -94,9 +94,12 @@ def find_clang():
                 clang_path = os.path.join(root, f)
                 return clang_path
 
+    # We didn't find a clang install
+    return None
+
 
 def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False):
-    # clone jax repo for jax test case source code
+    """Clone jax repo for jax test case source code"""
 
     if not os.path.exists("./jax"):
         cmd = ["git", "clone"]
@@ -127,11 +130,12 @@ def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False
 
         makefile_content = MAKE_TEMPLATE % kvs
 
-        with open(makefile_path, "w") as mf:
+        with open(makefile_path, "w", encoding="utf-8") as mf:
             mf.write(makefile_content)
 
 
 def dev_docker():
+    """Start a docker container for local plugin development"""
     cur_abs_path = os.path.abspath(os.curdir)
     image_name = "ubuntu:22.04"
 
@@ -162,8 +166,8 @@ def dev_docker():
 
     cmd.append(image_name)
 
-    p = subprocess.Popen(cmd)
-    p.wait()
+    with subprocess.Popen(cmd) as p:
+        p.wait()
 
 
 # build mode setup
@@ -172,10 +176,12 @@ def dev_docker():
 # install jax/jaxlib from known versions
 # setup build/install/test script
 def setup_build():
+    """Setup for building the plugin locally"""
     raise NotImplementedError
 
 
 def parse_args():
+    """Parse command line arguments"""
     p = argparse.ArgumentParser()
 
     subp = p.add_subparsers(dest="action", required=True)
@@ -197,12 +203,12 @@ def parse_args():
         default=JAX_REPO_REF,
     )
 
-    docker = subp.add_parser("docker")
-
+    subp.add_parser("docker")
     return p.parse_args()
 
 
 def main():
+    """Run commands depending on command line input"""
     args = parse_args()
     if args.action == "docker":
         dev_docker()

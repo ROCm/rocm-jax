@@ -5,7 +5,9 @@ FILES=(
   stack.py
 )
 
-FILES+=($(find build -name "*.py"))
-FILES+=($(find tools -name "*.py"))
+mapfile -t FILES < <(find build -name "*.py")
+mapfile -t FILES < <(find tools -name "*.py")
 
-black -t py36 $* ${FILES[@]}
+#shellcheck disable=SC2068
+black -t py36 "$@" ${FILES[@]}
+

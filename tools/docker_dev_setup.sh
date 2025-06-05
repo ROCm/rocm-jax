@@ -69,7 +69,10 @@ apt-get install -y \
   patchelf \
   python3.10-venv \
   lsb-release \
-  cmake || die "error installing dependencies"
+  cmake \
+  yamllint \
+  shellcheck \
+  git || die "error installing dependencies"
 
 # install a clang
 install_clang_packages || die "error while installing clang"
@@ -85,6 +88,11 @@ python -m venv .venv
 info "Entering virtualenv"
 # shellcheck disable=SC1091
 . .venv/bin/activate
+
+# Install Python linting tools
+python -m pip install \
+  black \
+  pylint
 
 if [ -n "$_IS_ENTRYPOINT" ]; then
   # run CMD from docker
