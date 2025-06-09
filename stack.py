@@ -25,10 +25,10 @@ AMDGPU_TARGETS ?= "gfx906,gfx908,gfx90a,gfx942,gfx1030,gfx1100,gfx1101,gfx1200,g
 .default: dist
 
 
-dist: jax_rocm7_plugin jax_rocm7_pjrt
+dist: jax_rocm_plugin jax_rocm_pjrt
 
 
-jax_rocm7_plugin:
+jax_rocm_plugin:
 	python3 ./build/build.py build \
             --use_clang=true \
             --wheels=jax-rocm-plugin \
@@ -40,7 +40,7 @@ jax_rocm7_plugin:
             --clang_path=%(clang_path)s
 
 
-jax_rocm7_pjrt:
+jax_rocm_pjrt:
 	python3 ./build/build.py build \
             --use_clang=true \
             --wheels=jax-rocm-pjrt \
