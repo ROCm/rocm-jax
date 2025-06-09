@@ -49,7 +49,7 @@ jobs:
           # TODO: Change the repo and ref once we figure out how exactly we're going to
           #       manage tests
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.6.0-rc
+          ref: rocm-jaxlib-v0.6.0
           path: jax
       - name: Run tests
         env:
