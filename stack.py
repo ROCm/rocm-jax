@@ -26,29 +26,27 @@ AMDGPU_TARGETS ?= "gfx906,gfx908,gfx90a,gfx942,gfx1030,gfx1100,gfx1101,gfx1200,g
 .default: dist
 
 
-dist: jax_rocm60_plugin jax_rocm60_pjrt
+dist: jax_rocm7_plugin jax_rocm7_pjrt
 
 
-jax_rocm60_plugin:
+jax_rocm7_plugin:
 	python3 ./build/build.py build \
             --use_clang=true \
             --wheels=jax-rocm-plugin \
             --rocm_path=/opt/rocm/ \
-            --rocm_version=60 \
+            --rocm_version=7 \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-            --bazel_options="--override_repository=xla=../xla" \
             --verbose \
             --clang_path=%(clang_path)s
 
 
-jax_rocm60_pjrt:
+jax_rocm7_pjrt:
 	python3 ./build/build.py build \
             --use_clang=true \
             --wheels=jax-rocm-pjrt \
             --rocm_path=/opt/rocm/ \
-            --rocm_version=60 \
+            --rocm_version=7 \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-            --bazel_options="--override_repository=xla=../xla" \
             --verbose \
             --clang_path=%(clang_path)s
 
