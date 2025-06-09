@@ -35,7 +35,7 @@ jax_rocm_plugin:
             --rocm_path=/opt/rocm/ \
             --rocm_version=7 \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-	    --bazel_options="--override_repository=xla=../xla" \
+            --bazel_options="--override_repository=xla=../xla" \
             --verbose \
             --clang_path=%(clang_path)s
 
@@ -47,7 +47,7 @@ jax_rocm_pjrt:
             --rocm_path=/opt/rocm/ \
             --rocm_version=7 \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-	    --bazel_options="--override_repository=xla=../xla" \
+            --bazel_options="--override_repository=xla=../xla" \
             --verbose \
             --clang_path=%(clang_path)s
 
