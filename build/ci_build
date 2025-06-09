@@ -80,13 +80,22 @@ def build_dockers(
     rocm_build_job="",
     rocm_build_num="",
     tag_base=None,
+    docker_filters=None,
 ):
 
     dockerfiles = []
     docker_dir = "docker"
     for f in os.listdir(docker_dir):
         if f.startswith("Dockerfile"):
-            dockerfiles.append(os.path.join(docker_dir, f))
+            path = os.path.join(docker_dir, f)
+
+            if docker_filters:
+                for substr in docker_filters:
+                    if substr in f:
+                        dockerfiles.append(path)
+
+            else:
+                dockerfiles.append(path)
 
     rocm_ver_tag = "rocm%s" % "".join(rocm_version.split("."))
 
@@ -225,6 +234,13 @@ def parse_args():
     )
 
     bdp = subp.add_parser("build_dockers")
+    bdp.add_argument(
+        "--filter",
+        "-f",
+        type=str,
+        help="Comma separated strings to filter Dockerfiles to build. Substring match",
+        default="",
+    )
 
     testp = subp.add_parser("test")
     testp.add_argument(
@@ -250,11 +266,14 @@ def main():
         )
 
     if args.action == "build_dockers":
+        filters = args.filter.split(",")
+
         build_dockers(
             args.rocm_version,
             args.python_versions,
             rocm_build_job=args.rocm_build_job,
             rocm_build_num=args.rocm_build_num,
+            docker_filters=filters,
         )
 
     elif args.action == "test_docker":
