@@ -72,4 +72,4 @@ LABEL com.amdgpu.rocm_version="$ROCM_VERSION" \
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=wheelhouse,target=/wheelhouse \
     ls -lah /wheelhouse && \
-    pip3 install -f /wheelhouse --no-deps --no-index jax_rocm60_plugin jax_rocm60_pjrt
+    pip3 install -f /wheelhouse --no-deps --no-index jax_rocm7_plugin jax_rocm7_pjrt
