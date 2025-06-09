@@ -231,7 +231,7 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
   rocm_group.add_argument(
       "--rocm_version",
       type=str,
-      default="60",
+      default="7",
       help="ROCm version to use",
   )
 

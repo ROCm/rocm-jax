@@ -81,7 +81,7 @@ def build_jax_xla(xla_path, rocm_version, rocm_target, use_clang, clang_path):
         f"--use_clang={str(use_clang).lower()}",
         "--wheels=jaxlib,jax-rocm-plugin,jax-rocm-pjrt",
         f"--rocm_path=/opt/rocm-{rocm_version}/",
-        "--rocm_version=60",
+        "--rocm_version=7",
         f"--rocm_amdgpu_targets={rocm_target}",
         "--verbose"
     ]
@@ -148,7 +148,7 @@ def main():
 
     if not args.skip_uninstall:
         print("Uninstalling existing packages...")
-        packages = ["jax", "jaxlib", "jax-rocm60-pjrt", "jax-rocm60-plugin"]
+        packages = ["jax", "jaxlib", "jax-rocm7-pjrt", "jax-rocm7-plugin"]
         uninstall_existing_packages(packages)
 
     clean_dist_directory()

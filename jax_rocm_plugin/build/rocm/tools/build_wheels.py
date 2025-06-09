@@ -32,7 +32,12 @@ import shutil
 import sys
 
 
+
+
 LOG = logging.getLogger(__name__)
+
+
+ROCM_PLUGIN_NAME_VERSION = "7"
 
 
 GPU_DEVICE_TARGETS = (
@@ -109,7 +114,7 @@ def build_jaxlib_wheel(
         "build",
         "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
         "--rocm_path=%s" % rocm_path,
-        "--rocm_version=60",
+        "--rocm_version=%s" % ROCM_PLUGIN_NAME_VERSION,
         "--use_clang=%s" % use_clang,
         "--verbose",
         "--output_path=%s" % output_dir,
