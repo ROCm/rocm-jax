@@ -14,6 +14,9 @@ JAX_REPL_URL = "https://github.com/rocm/jax"
 XLA_REPL_URL = "https://github.com/rocm/xla"
 
 
+PLUGIN_NAMESPACE_VERSION = "60"
+
+
 MAKE_TEMPLATE = r"""
 # gfx targets for which XLA and jax custom call kernels are built for
 AMDGPU_TARGETS ?= "gfx906,gfx908,gfx90a,gfx942,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
@@ -34,7 +37,7 @@ jax_rocm_plugin:
             --use_clang=true \
             --wheels=jax-rocm-plugin \
             --rocm_path=/opt/rocm/ \
-            --rocm_version=7 \
+            --rocm_version=%(plugin_version)s \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
             --bazel_options="--override_repository=xla=../xla" \
             --verbose \
@@ -46,7 +49,7 @@ jax_rocm_pjrt:
             --use_clang=true \
             --wheels=jax-rocm-pjrt \
             --rocm_path=/opt/rocm/ \
-            --rocm_version=7 \
+            --rocm_version=%(plugin_version)s \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
             --bazel_options="--override_repository=xla=../xla" \
             --verbose \
@@ -119,6 +122,7 @@ def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False
     if rebuild_makefile or not os.path.exists(makefile_path):
         kvs = {
             "clang_path": "/usr/lib/llvm-18/bin/clang",
+            "plugin_version": PLUGIN_NAMESPACE_VERSION,
         }
 
         clang_path = find_clang()
