@@ -15,6 +15,8 @@ jobs:
       matrix:
         rocm-version: ["6.4.1", "7.0"]
         include:
+          - rocm-version: "6.4.1"
+            runner-label: "mi-250"
           - rocm-version: "7.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16090"
@@ -32,6 +34,8 @@ jobs:
       matrix:
         rocm-version: ["6.4.1", "7.0"]
         include:
+          - rocm-version: "6.4.1"
+            runner-label: "mi-250"
           - rocm-version: "7.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16090"
@@ -41,11 +45,12 @@ jobs:
       rocm-version: ${{ matrix.rocm-version }}
       rocm-build-job: ${{ matrix.rocm-build-job }}
       rocm-build-num: ${{ matrix.rocm-build-num }}
-      runner-label: ${{ matrix.runer-label }}
+      runner-label: ${{ matrix.runner-label }}
   run-python-unit-tests:
     needs: call-build-docker
     runs-on: mi-250
     strategy:
+      fail-fast: false
       matrix:
         rocm-version: ["6.4.1", "7.0"]
         ubuntu-version: ["22", "24"]
@@ -64,6 +69,10 @@ jobs:
           repository: rocm/jax
           ref: rocm-jaxlib-v0.6.0
           path: jax
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Run tests
         env:
           GPU_COUNT: "8"
