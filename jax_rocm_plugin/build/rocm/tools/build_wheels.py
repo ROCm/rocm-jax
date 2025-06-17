@@ -69,9 +69,9 @@ def update_rocm_targets(rocm_path, targets):
     with open(target_fp, "w", encoding="utf-8") as fd:
         fd.write("\n".join(targets.split()) + "\n")
 
-    # Mimic 'touch': create if not exists, or update modified time.
-    with open(version_fp, "a", encoding="utf-8"):
-        os.utime(version_fp, None)
+    # mimic touch
+    # pylint: disable=R1732
+    open(version_fp, "a", encoding="utf-8").close()
 
 
 def find_clang_path():
