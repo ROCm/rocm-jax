@@ -41,7 +41,7 @@ ROCM_PLUGIN_NAME_VERSION = "7"
 
 
 GPU_DEVICE_TARGETS = (
-    "gfx906 gfx908 gfx90a gfx942 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
+    "gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
 )
 
 
@@ -55,7 +55,8 @@ def build_rocm_path(rocm_version_str):
 
 def update_rocm_targets(rocm_path, targets):
     """
-    Writes the list of GPU targets to bin/target.lst under the given ROCm path,
+    Writes the list of GPU targets to bin/target.lst under the given ROCm path
+    (excluding gfx950 for ROCm < 7.0.0, since XLA doesn't support it),
     and mimics 'touch' on .info/version to signal updates.
 
     Args:
@@ -65,9 +66,20 @@ def update_rocm_targets(rocm_path, targets):
     target_fp = os.path.join(rocm_path, "bin/target.lst")
     version_fp = os.path.join(rocm_path, ".info/version")
 
+    try:
+        with open(version_fp, "r", encoding="utf-8") as f:
+            version = re.search(r"\d+\.\d+\.\d+", f.read()).group(0)
+    except (FileNotFoundError, OSError):
+        version = "0.0.0"
+
+    def supports_gfx950(v):
+        return tuple(map(int, v.split("."))) >= (7, 0, 0)
+
+    filtered = [t for t in targets.split() if t != "gfx950" or supports_gfx950(version)]
+
     # Write targets one per line.
     with open(target_fp, "w", encoding="utf-8") as fd:
-        fd.write("\n".join(targets.split()) + "\n")
+        fd.write("\n".join(filtered) + "\n")
 
     # mimic touch
     # pylint: disable=R1732

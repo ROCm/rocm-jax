@@ -15,10 +15,10 @@ ROCM_BUILD_NUM=main
 # Adjust the ROCM repo location
 # Intial release don't have the trialing '.0'
 # For example ROCM 5.7.0 is at https://repo.radeon.com/rocm/apt/5.7/
-if [ ${ROCM_VERSION##*[^0-9]} -eq '0' ]; then
+if [ "${ROCM_VERSION##*[^0-9]}" -eq '0' ]; then
 	ROCM_VERS=${ROCM_VERSION%.*}
 else
-	ROCM_VERS=$ROCM_VERSION
+	ROCM_VERS="$ROCM_VERSION"
 fi
 ROCM_DEB_REPO=${ROCM_DEB_REPO_HOME}${ROCM_VERS}/
 
@@ -29,7 +29,7 @@ if [ ! -f "/${CUSTOM_INSTALL}" ]; then
 	DEBIAN_FRONTEND=noninteractive apt install -y wget software-properties-common
 	DEBIAN_FRONTEND=noninteractive apt-get clean all
 	wget -qO - https://repo.radeon.com/rocm/rocm.gpg.key | apt-key add -
-	if [[ $ROCM_DEB_REPO == https://repo.radeon.com/rocm/* ]]; then
+	if [[ "$ROCM_DEB_REPO" == https://repo.radeon.com/rocm/* ]]; then
 		echo "deb [arch=amd64] $ROCM_DEB_REPO $ROCM_BUILD_NAME $ROCM_BUILD_NUM" >/etc/apt/sources.list.d/rocm.list
 	else
 		echo "deb [arch=amd64 trusted=yes] $ROCM_DEB_REPO $ROCM_BUILD_NAME $ROCM_BUILD_NUM" >/etc/apt/sources.list.d/rocm.list
@@ -88,12 +88,12 @@ else
 	bash "/${CUSTOM_INSTALL}"
 fi
 
-echo $ROCM_VERSION
-echo $ROCM_REPO
-echo $ROCM_PATH
-echo $GPU_DEVICE_TARGETS
+echo "$ROCM_VERSION"
+echo "$ROCM_REPO"
+echo "$ROCM_PATH"
+echo "$GPU_DEVICE_TARGETS"
 
 # Ensure the ROCm target list is set up
-GPU_DEVICE_TARGETS=${GPU_DEVICE_TARGETS:-"gfx906 gfx908 gfx90a gfx942 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"}
-printf '%s\n' ${GPU_DEVICE_TARGETS} | tee -a "$ROCM_PATH/bin/target.lst"
+GPU_DEVICE_TARGETS=${GPU_DEVICE_TARGETS:-"gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"}
+printf '%s\n' "${GPU_DEVICE_TARGETS}" | tee -a "$ROCM_PATH/bin/target.lst"
 touch "${ROCM_PATH}/.info/version"
