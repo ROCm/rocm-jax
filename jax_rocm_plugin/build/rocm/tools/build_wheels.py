@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Script to build and fix JAX ROCm plugin and PJRT wheels.
+"""
 
 # Copyright 2024 The JAX Authors.
 #
@@ -28,7 +31,6 @@ import os
 import re
 import select
 import subprocess
-import shutil
 import sys
 
 
@@ -44,11 +46,11 @@ GPU_DEVICE_TARGETS = (
 
 
 def build_rocm_path(rocm_version_str):
+    """Return appropriate ROCm installation path."""
     path = "/opt/rocm-%s" % rocm_version_str
     if os.path.exists(path):
         return path
-    else:
-        return os.path.realpath("/opt/rocm")
+    return os.path.realpath("/opt/rocm")
 
 
 def update_rocm_targets(rocm_path, targets):
@@ -60,20 +62,20 @@ def update_rocm_targets(rocm_path, targets):
         rocm_path (str): The root ROCm installation directory.
         targets (str): A space-separated string of GPU targets.
     """
-
     target_fp = os.path.join(rocm_path, "bin/target.lst")
     version_fp = os.path.join(rocm_path, ".info/version")
 
     # Write targets one per line.
-    with open(target_fp, "w") as fd:
+    with open(target_fp, "w", encoding="utf-8") as fd:
         fd.write("\n".join(targets.split()) + "\n")
 
     # Mimic 'touch': create if not exists, or update modified time.
-    with open(version_fp, "a"):
+    with open(version_fp, "a", encoding="utf-8"):
         os.utime(version_fp, None)
 
 
 def find_clang_path():
+    """Search for and return the best clang binary path."""
     llvm_base_path = "/usr/lib/"
     # Search for llvm directories and pick the highest version.
     llvm_dirs = [d for d in os.listdir(llvm_base_path) if d.startswith("llvm-")]
@@ -97,15 +99,17 @@ def find_clang_path():
         # Return versioned clang if available, otherwise return generic clang.
         if versioned_clang:
             return versioned_clang
-        elif generic_clang:
+        if generic_clang:
             return generic_clang
 
     return None
 
 
+# pylint: disable=R0913, R0917
 def build_jaxlib_wheel(
     jax_path, rocm_path, python_version, output_dir, xla_path=None, compiler="gcc"
 ):
+    """Build jaxlib and ROCm plugin wheels."""
     use_clang = "true" if compiler == "clang" else "false"
 
     # Avoid git warning by setting safe.directory.
@@ -149,13 +153,14 @@ def build_jaxlib_wheel(
     env["JAXLIB_RELEASE"] = str(1)
     env["PATH"] = "%s:%s" % (py_bin, env["PATH"])
 
-    LOG.info("Running %r from cwd=%r" % (cmd, jax_path))
+    LOG.info("Running %r from cwd=%r", cmd, jax_path)
     pattern = re.compile("Output wheel: (.+)\n")
 
     _run_scan_for_output(cmd, pattern, env=env, cwd=jax_path, capture="stderr")
 
 
 def build_jax_wheel(jax_path, python_version):
+    """Build JAX wheel."""
     cmd = [
         "python",
         "-m",
@@ -170,72 +175,74 @@ def build_jax_wheel(jax_path, python_version):
     env["JAXLIB_RELEASE"] = str(1)
     env["PATH"] = "%s:%s" % (py_bin, env["PATH"])
 
-    LOG.info("Running %r from cwd=%r" % (cmd, jax_path))
+    LOG.info("Running %r from cwd=%r", cmd, jax_path)
     pattern = re.compile(r"Successfully built jax-.+ and (jax-.+\.whl)\n")
 
     _run_scan_for_output(cmd, pattern, env=env, cwd=jax_path, capture="stdout")
 
 
+# pylint: disable=R0914
 def _run_scan_for_output(cmd, pattern, env=None, cwd=None, capture=None):
-
+    """Run subprocess and scan output for regex match."""
     buf = deque(maxlen=20000)
 
-    if capture == "stderr":
-        p = subprocess.Popen(cmd, env=env, cwd=cwd, stderr=subprocess.PIPE)
-        redir = sys.stderr
-        cap_fd = p.stderr
-    else:
-        p = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE)
-        redir = sys.stdout
-        cap_fd = p.stdout
+    popen_args = {
+        "args": cmd,
+        "env": env,
+        "cwd": cwd,
+        "stdout": subprocess.PIPE if capture != "stderr" else None,
+        "stderr": subprocess.PIPE if capture == "stderr" else None,
+    }
 
-    flags = fcntl.fcntl(cap_fd, fcntl.F_GETFL)
-    fcntl.fcntl(cap_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+    with subprocess.Popen(**popen_args) as p:
+        cap_fd = p.stderr if capture == "stderr" else p.stdout
+        redir = sys.stderr if capture == "stderr" else sys.stdout
 
-    eof = False
-    while not eof:
-        r, _, _ = select.select([cap_fd], [], [])
-        for fd in r:
-            dat = fd.read(512)
-            if dat is None:
-                continue
-            elif dat:
-                t = dat.decode("utf8")
-                redir.write(t)
-                buf.extend(t)
-            else:
-                eof = True
+        flags = fcntl.fcntl(cap_fd, fcntl.F_GETFL)
+        fcntl.fcntl(cap_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
-    # wait and drain pipes
-    _, _ = p.communicate()
+        eof = False
+        while not eof:
+            r, _, _ = select.select([cap_fd], [], [])
+            for fd in r:
+                dat = fd.read(512)
+                if dat:
+                    t = dat.decode("utf8")
+                    redir.write(t)
+                    buf.extend(t)
+                else:
+                    eof = True
 
-    if p.returncode != 0:
-        raise Exception(
-            "Child process exited with nonzero result: rc=%d" % p.returncode
-        )
+        p.communicate()
+
+        if p.returncode != 0:
+            raise RuntimeError(
+                "Child process exited with nonzero result: rc=%d" % p.returncode
+            )
 
     text = "".join(buf)
-
     matches = pattern.findall(text)
 
     if not matches:
-        LOG.error("No wheel name found in output: %r" % text)
-        raise Exception("No wheel name found in output")
+        LOG.error("No wheel name found in output: %r", text)
+        raise RuntimeError("No wheel name found in output")
 
     wheels = []
     for match in matches:
-        LOG.info("Found built wheel: %r" % match)
+        LOG.info("Found built wheel: %r", match)
         wheels.append(match)
 
     return wheels
 
 
 def to_cpy_ver(python_version):
+    """Convert Python version string (e.g., 3.10) to CPython tag (e.g., cp310)."""
     tup = python_version.split(".")
     return "cp%d%d" % (int(tup[0]), int(tup[1]))
 
 
 def fix_wheel(path, jax_path):
+    """Fix auditwheel compliance using fixwheel.py and auditwheel."""
     try:
         # NOTE(mrodden): fixwheel needs auditwheel 6.0.0, which has a min python of 3.8
         # so use one of the CPythons in /opt to run
@@ -254,14 +261,15 @@ def fix_wheel(path, jax_path):
         subprocess.run(cmd, check=True, env=env)
         LOG.info("Wheel fix completed successfully.")
     except subprocess.CalledProcessError as cpe:
-        LOG.error(f"Subprocess failed with error: {cpe}")
+        LOG.error("Subprocess failed with error: %s", cpe)
         raise
     except Exception as e:
-        LOG.error(f"An unexpected error occurred: {e}")
+        LOG.error("An unexpected error occurred: %s", e)
         raise
 
 
 def parse_args():
+    """Parse CLI arguments."""
     p = argparse.ArgumentParser()
     p.add_argument(
         "--rocm-version", default="6.1.1", help="ROCM Version to build JAX against"
@@ -290,17 +298,19 @@ def parse_args():
 
 
 def find_wheels(path):
+    """Return list of wheel files in given path."""
     wheels = []
 
     for f in os.listdir(path):
         if f.endswith(".whl"):
             wheels.append(os.path.join(path, f))
 
-    LOG.info("Found wheels: %r" % wheels)
+    LOG.info("Found wheels: %r", wheels)
     return wheels
 
 
 def main():
+    """Main entry point."""
     args = parse_args()
     python_versions = args.python_versions.split(",")
 
