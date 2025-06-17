@@ -32,8 +32,6 @@ import shutil
 import sys
 
 
-
-
 LOG = logging.getLogger(__name__)
 
 
@@ -54,13 +52,25 @@ def build_rocm_path(rocm_version_str):
 
 
 def update_rocm_targets(rocm_path, targets):
+    """
+    Writes the list of GPU targets to bin/target.lst under the given ROCm path,
+    and mimics 'touch' on .info/version to signal updates.
+
+    Args:
+        rocm_path (str): The root ROCm installation directory.
+        targets (str): A space-separated string of GPU targets.
+    """
+
     target_fp = os.path.join(rocm_path, "bin/target.lst")
     version_fp = os.path.join(rocm_path, ".info/version")
-    with open(target_fp, "w") as fd:
-        fd.write("%s\n" % targets)
 
-    # mimic touch
-    open(version_fp, "a").close()
+    # Write targets one per line.
+    with open(target_fp, "w") as fd:
+        fd.write("\n".join(targets.split()) + "\n")
+
+    # Mimic 'touch': create if not exists, or update modified time.
+    with open(version_fp, "a"):
+        os.utime(version_fp, None)
 
 
 def find_clang_path():
