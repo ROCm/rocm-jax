@@ -29,7 +29,7 @@ jobs:
         run: |
           ls
           # Make sure that we own all of the files so that we have permissions to delete them
-          docker run -v "./:/rocm-jax" ubuntu /bin/bash -c "chown -R $UID /rocm-jax/* || true"
+          docker run --rm -v "./:/rocm-jax" ubuntu /bin/bash -c "chown -R $UID /rocm-jax/* || true"
           # Remove any old work directories from this machine
           rm -rf * || true
           ls

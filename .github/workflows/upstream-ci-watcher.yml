@@ -9,6 +9,9 @@ jobs:
   upstream-ci-watcher:
     runs-on: ubuntu-latest
     steps:
+      - name: Change owners for cleanup
+        run: |
+          docker run --rm -v "./:/rocm-jax" ubuntu /bin/bash -c "chown -R $UID /rocm-jax/* || true"
       - name: Checkout plugin repo
         uses: actions/checkout@v4
       - name: Run watcher script
