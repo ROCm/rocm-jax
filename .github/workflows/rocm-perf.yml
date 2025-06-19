@@ -25,7 +25,7 @@ jobs:
       - name: Clean up old workdirs
         run: |
           ls -l
-          docker run -v "$(pwd):/rocm-jax" ubuntu bash -c "chown -R $UID /rocm-jax/* || true"
+          docker run --rm -v "$(pwd):/rocm-jax" ubuntu bash -c "chown -R $UID /rocm-jax/* || true"
           rm -rf * || true
           ls -l
 
