@@ -1,7 +1,9 @@
 name: ROCm DLM Performance Evaluations
 
 on:
-  push:
+  schedule:
+    - cron: '0 3 * * *'  # Nightly at 3:00 AM UTC
+  workflow_dispatch:
 
 jobs:
   build-and-test-jax-perf:
