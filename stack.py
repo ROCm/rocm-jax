@@ -138,7 +138,7 @@ def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False
             mf.write(makefile_content)
 
 
-def dev_docker():
+def dev_docker(rm):
     """Start a docker container for local plugin development"""
     cur_abs_path = os.path.abspath(os.curdir)
     image_name = "ubuntu:22.04"
@@ -167,6 +167,9 @@ def dev_docker():
         "_IS_ENTRYPOINT=1",
         "--entrypoint=%s" % ep,
     ]
+
+    if rm:
+        cmd.append("--rm")
 
     cmd.append(image_name)
 
@@ -207,7 +210,12 @@ def parse_args():
         default=JAX_REPO_REF,
     )
 
-    subp.add_parser("docker")
+    doc_parser = subp.add_parser("docker")
+    doc_parser.add_argument(
+        "--rm",
+        help="Remove the dev docker container after it exits",
+        action="store_true",
+    )
     return p.parse_args()
 
 
@@ -215,7 +223,7 @@ def main():
     """Run commands depending on command line input"""
     args = parse_args()
     if args.action == "docker":
-        dev_docker()
+        dev_docker(rm=args.rm)
     elif args.action == "develop":
         setup_development(
             rebuild_makefile=args.rebuild_makefile,
