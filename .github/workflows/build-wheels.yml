@@ -36,11 +36,24 @@ jobs:
           # Remove any old work directories from this machine
           rm -rf * || true
           ls
+      - name: Kill processes using ROCm GPUs
+        run: |
+          echo "Checking for KFD processes using GPUs..."
+          sudo rocm-smi --showpids
+          rocm-smi --showpids
+          for pid in $(sudo rocm-smi --showpids | awk '$1 ~ /^[0-9]+/ {print $1}'); do
+            echo "Killing process $pid using the GPU..."
+            echo sudo kill -9 "$pid"
+            sudo kill -9 "$pid" || echo "Failed to kill process $pid"
+          done
       - name: Print system info
         run: |
           whoami
           printenv
           df -h
+          rocm-smi
+          rocm-smi -a || true
+          rocminfo | grep gfx || true
       - uses: actions/checkout@v4
       - name: Build plugin wheels
         run: |
