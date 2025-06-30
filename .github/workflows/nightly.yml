@@ -19,7 +19,7 @@ jobs:
             runner-label: "mi-250"
           - rocm-version: "7.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16090"
+            rocm-build-num: "16322"
             runner-label: "internal"
     uses: ./.github/workflows/build-wheels.yml
     with:
@@ -38,7 +38,7 @@ jobs:
             runner-label: "mi-250"
           - rocm-version: "7.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16090"
+            rocm-build-num: "16322"
             runner-label: "internal"
     uses: ./.github/workflows/build-docker.yml
     with:
