@@ -59,6 +59,16 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=build/requirements.txt,target=requirements.txt \
     pip3 install -r requirements.txt
 
+# namespace patch (this patch is needed for ROCM_VERSION >= 7)
+RUN --mount=type=bind,source=../jax_rocm_plugin/third_party/jax/namespace.patch,target=/tmp/namespace.patch \
+    major_version=$(echo "$ROCM_VERSION" | cut -d. -f1) && \
+    if [ "$major_version" -ge 7 ]; then \
+        echo "Applying patch for ROCm $ROCM_VERSION..."; \
+        patch -p1 -d /usr/local/lib/python3.10/dist-packages < /tmp/namespace.patch; \
+    else \
+        echo "ROCm version $ROCM_VERSION, skipping patch."; \
+    fi
+
 ARG JAX_VERSION
 ARG JAX_COMMIT
 ARG XLA_COMMIT
