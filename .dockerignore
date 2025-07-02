@@ -2,3 +2,4 @@
 !build/*
 !wheelhouse/*
 !jax_rocm_plugin/build/rocm/*
+!jax_rocm_plugin/third_party/jax/*

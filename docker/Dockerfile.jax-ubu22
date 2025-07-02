@@ -60,14 +60,16 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     pip3 install -r requirements.txt
 
 # namespace patch (this patch is needed for ROCM_VERSION >= 7)
-RUN --mount=type=bind,source=jax_rocm_plugin/third_party/jax/namespace.patch,target=/tmp/namespace.patch \
+COPY jax_rocm_plugin/third_party/jax/namespace.patch /tmp/namespace.patch
+
+RUN bash -c '  \
     major_version=$(echo "$ROCM_VERSION" | cut -d. -f1) && \
     if [ "$major_version" -ge 7 ]; then \
 	dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])") && \
 	patch -p1 -d "$dist_packages" < /tmp/namespace.patch; \
     else \
         echo "ROCm version $ROCM_VERSION, skipping patch."; \
-    fi
+    fi'
 
 ARG JAX_VERSION
 ARG JAX_COMMIT
