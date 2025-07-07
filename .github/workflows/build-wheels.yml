@@ -51,7 +51,7 @@ jobs:
           whoami
           printenv
           df -h
-          rocm-smi
+          rocm-smi || true
           rocm-smi -a || true
           rocminfo | grep gfx || true
       - uses: actions/checkout@v4
