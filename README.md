@@ -66,7 +66,7 @@ source .venv/bin/activate
 
 To install the newly built plugin wheels, run the following command:
 ```
-pip install pip install jax_rocm_plugin/dist/*.whl
+pip install jax_rocm_plugin/dist/*.whl
 ```
 
 
