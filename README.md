@@ -118,8 +118,9 @@ pip install -r build/requirements.txt
 
 If using ROCm version >= 7, apply necessary patch for namespace change
 ```
-dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])") && \
-patch -p1 -d "$dist_packages" < jax_rocm_plugin/third_party/jax/namespace.patch
+patch -p1 \
+    -d "$(python3 -c \"import sysconfig; print(sysconfig.get_paths()['purelib'])\")" \
+    < jax_rocm_plugin/third_party/jax/namespace.patch
 
 ```
 
