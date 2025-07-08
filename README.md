@@ -35,19 +35,18 @@ There are two options for setting up your Docker environment.
 
 ### Option 1 - docker setup script
 
-Use the docker setup script in tools to set up your environment. Source the script
-for the virtual environment to be activated at the end. 
+Use the docker setup script in tools to set up your environment.
 
 ```
 cd /rocm-jax
-. tools/docker_dev_setup.sh
+bash tools/docker_dev_setup.sh
 ```
 
 This will do the following
   - Install system deps with apt-get
   - Install clang-18
   - Install ROCm
-  - Create a python virtualenv for JAX + python packages and activate it
+  - Create a python virtualenv for JAX + python packages
 
 
 After this you should re-run stack.py develop to rebuild your makefile
@@ -55,10 +54,19 @@ After this you should re-run stack.py develop to rebuild your makefile
 python stack.py develop --rebuild-makefile
 ```
 
-
 Now you can build the plugin
 ```
 (cd jax_rocm_plugin && make clean dist)
+```
+
+To activate the virtual environment, run the following:
+```
+source .venv/bin/activate
+```
+
+To install the newly built plugin wheels, run the following command:
+```
+pip install pip install jax_rocm_plugin/dist/*.whl
 ```
 
 
