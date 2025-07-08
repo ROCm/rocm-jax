@@ -35,18 +35,19 @@ There are two options for setting up your Docker environment.
 
 ### Option 1 - docker setup script
 
-Use the docker setup script in tools to set up your environment.
+Use the docker setup script in tools to set up your environment. Source the script
+for the virtual environment to be activated at the end. 
 
 ```
 cd /rocm-jax
-bash tools/docker_dev_setup.sh
+. tools/docker_dev_setup.sh
 ```
 
 This will do the following
   - Install system deps with apt-get
   - Install clang-18
   - Install ROCm
-  - Create a python virtualenv for JAX + python packages
+  - Create a python virtualenv for JAX + python packages and activate it
 
 
 After this you should re-run stack.py develop to rebuild your makefile
@@ -108,6 +109,18 @@ Create a virtualenv and activate it
 ```
 python -m venv .venv
 . .venv/bin/activate
+```
+
+Install dependencies
+```
+pip install -r build/requirements.txt
+```
+
+If using ROCm version >= 7, apply necessary patch for namespace change
+```
+dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])") && \
+patch -p1 -d "$dist_packages" < jax_rocm_plugin/third_party/jax/namespace.patch
+
 ```
 
 Run stack.py to refresh your local Makefile for the docker env

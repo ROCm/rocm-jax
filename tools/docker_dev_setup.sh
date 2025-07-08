@@ -6,6 +6,8 @@ GREEN="\033[32;01m"
 RED="\033[31;01m"
 OFF="\033[0m"
 
+ROCM_VERSION="6.4.0"
+
 info() {
   echo -e " ${GREEN}*${OFF} $*" >&2
 }
@@ -79,7 +81,7 @@ install_clang_packages || die "error while installing clang"
 
 # install a rocm
 info "Installing ROCm"
-python build/tools/get_rocm.py --rocm-version 6.4.0 || die "error while installing rocm"
+python build/tools/get_rocm.py --rocm-version "$ROCM_VERSION" || die "error while installing rocm"
 
 # set up a python virtualenv to install jax python packages into
 info "Setting up python virtualenv at .venv"
@@ -93,6 +95,20 @@ info "Entering virtualenv"
 python -m pip install \
   black \
   pylint
+
+# Install deps (jax and jaxlib)
+python -m pip install -r \
+  build/requirements.txt
+
+# Apply patch for namespace change if ROCm version >= 7
+major_version=$(echo "$ROCM_VERSION" | cut -d. -f1)
+if [ "$major_version" -ge 7 ]; then
+  echo "Applying patch for ROCm $ROCM_VERSION..."
+  dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
+  patch -p1 -d "$dist_packages" < jax_rocm_plugin/third_party/jax/namespace.patch
+else
+  echo "ROCm version $ROCM_VERSION, skipping patch."
+fi
 
 if [ -n "$_IS_ENTRYPOINT" ]; then
   # run CMD from docker
