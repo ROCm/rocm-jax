@@ -38,10 +38,12 @@ jobs:
         include:
           - rocm-version: "6.4.1"
             runner-label: "mi-250"
+            extra-cr-tag: "nightly"
           - rocm-version: "7.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16322"
             runner-label: "internal"
+            extra-cr-tag: "nightly"
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}

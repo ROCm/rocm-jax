@@ -2,7 +2,6 @@
 
 `rocm-jax` contains sources for the ROCm plugin for JAX, as well as Dockerfiles used to build AMDs `rocm/jax` images.
 
-
 # development setup
 
 Run stack.py develop to clone jax/xla
@@ -141,3 +140,35 @@ Use make to build the plugin
 ```
 (cd jax_rocm_plugin && make clean dist)
 ```
+
+# Nightly Builds
+
+We build rocm-jax nightly with [a Github Actions workflow](https://github.com/ROCm/rocm-jax/actions/workflows/nightly.yml).
+
+## Docker
+
+Nightly docker images are kept in the Github Container Registry
+
+```
+echo <MY_GITHUB_ACCESS_TOKEN> | docker login ghcr.io -u <USERNAME> --password-stdin
+docker pull ghcr.io/rocm/jax-ubu24.rocm70:nightly
+```
+
+You can also find nightly images for other Ubuntu versions and ROCm version as well as older nightly images on the [packages page](https://github.com/orgs/ROCm/packages?repo_name=rocm-jax). Images get tagged with the git commit hash of the commit that the image was built from.
+
+### Authenticating to the Container Registry
+
+Pull access to the Github CR is done by a personal access token (classic) with the `read:packages` permission. To create one, click your profile picture in the top-right of Github, select Settings > Developer settings > Personal access tokens > Tokens (classic) and then select the option to generate a new token. Make sure you select the classic token option and git it the `read:packages` permission.
+
+Once your token has been created, go back to the Tokens (classic) page and set your token's SSO settings to allow access to the ROCm Github organization.
+
+Once your token has been set up to use SSO, you can log in with the `docker` command line by running,
+
+```
+echo <MY_GITHUB_ACCESS_TOKEN> | docker login ghcr.io -u <USERNAME> --password-stdin
+```
+
+## Wheels
+
+Wheels get saved as artifacts to each run of the nightly workflow. Go to the [nightly workflow](https://github.com/ROCm/rocm-jax/actions/workflows/nightly.yml), select the run you want to get wheels from, and scroll down to the bottom of the page to find the build artifacts. Each artifact is a zip file that contains all of the wheels built for a specific ROCm version.
+
