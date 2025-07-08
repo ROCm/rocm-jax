@@ -65,7 +65,7 @@ COPY jax_rocm_plugin/third_party/jax/namespace.patch /tmp/namespace.patch
 RUN bash -c '  \
     major_version=$(echo "$ROCM_VERSION" | cut -d. -f1) && \
     if [ "$major_version" -ge 7 ]; then \
-	dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])") && \
+	dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()[\"purelib\"])") && \
 	patch -p1 -d "$dist_packages" < /tmp/namespace.patch; \
     else \
         echo "ROCm version $ROCM_VERSION, skipping patch."; \

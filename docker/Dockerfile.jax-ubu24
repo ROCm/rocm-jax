@@ -65,7 +65,7 @@ RUN bash -c '  \
     major_version=$(echo "$ROCM_VERSION" | cut -d. -f1) && \
     if [ "$major_version" -ge 7 ]; then \
         echo "Applying patch for ROCm $ROCM_VERSION..."; \
-        dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])") && \
+        dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()[\"purelib\"])") && \
         patch -p1 -d "$dist_packages" < /tmp/namespace.patch; \
     else \
         echo "ROCm version $ROCM_VERSION, skipping patch."; \
