@@ -141,6 +141,53 @@ Use make to build the plugin
 (cd jax_rocm_plugin && make clean dist)
 ```
 
+# Unit Testing Setup
+
+Clone the repository
+```
+git clone https://github.com/ROCm/rocm-jax.git && cd rocm-jax
+```
+
+Build manylinux wheels
+```
+python3 build/ci_build --compiler=clang --python-versions="3.10" --rocm-version=7.0.0 --rocm-build-job="compute-rocm-dkms-no-npi-hipclang" --rocm-build-num="16306" dist_wheels
+```
+
+If you have BuildKit error:
+```
+sudo apt-get update
+sudo apt install docker-buildx
+export DOCKER_BUILDKIT=1
+```
+
+Move the created wheels to wheelhouse directory
+```
+mkdir -p wheelhouse && mv jax_rocm_plugin/wheelhouse/* ./wheelhouse/
+```
+
+Create docker image
+```
+python3 build/ci_build --rocm-version=7.0.0 --rocm-build-job="compute-rocm-dkms-no-npi-hipclang" --rocm-build-num="16306" build_dockers --filter=ubu22
+```
+
+Create container with the image created in the previous step
+```
+alias drun='sudo docker run --name <yourID>_rocm-jax -it --network=host  --device=/dev/infiniband --device=/dev/kfd --device=/dev/dri --ipc=host --shm-size 16G --group-add video --cap-add=SYS_PTRACE --security-opt seccomp=unconfined -w /root -v /home/<yourID>/rocm-jax:/rocm-jax'
+drun jax-ubu22.rocm700 OR drun <docker image id or name of the image step 5 produced>
+```
+
+To test UTs:
+```
+apt-get install -y vim git
+cd /rocm-jax
+python stack.py develop
+
+cd jax
+pip install -r build/test-requirements.txt && pip install -r build/rocm-test-requirements.txt
+python ./build/rocm/run_single_gpu.py -c 2>&1 | tee 0.6.0_ut.log
+```
+
+
 # Nightly Builds
 
 We build rocm-jax nightly with [a Github Actions workflow](https://github.com/ROCm/rocm-jax/actions/workflows/nightly.yml).
