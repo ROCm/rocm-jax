@@ -5,6 +5,10 @@
 
 # development setup
 
+Clone the repository and switch to rocm6 branch for ROCm version 6.x.x
+
+git clone https://github.com/ROCm/rocm-jax.git -b rocm6
+
 Run stack.py develop to clone jax/xla
 ```
 python stack.py develop
