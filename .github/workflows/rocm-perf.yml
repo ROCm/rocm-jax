@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '0 3 * * *'  # Nightly at 3:00 AM UTC
   workflow_dispatch:
+  push:
 
 jobs:
   build-and-test-jax-perf:
@@ -148,3 +149,35 @@ jobs:
         run: |
           docker stop maxtext_container || true
           docker rm maxtext_container || true
+
+  upload-summary-to-db:
+    name: Upload Summary to MySQL
+    needs: build-and-test-jax-perf
+    runs-on: mysqldb
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Download training summary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: training-results
+
+      - name: Upload summary.json to MySQL database
+        env:
+          ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
+          ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
+          ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
+          ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install mysql-connector-python
+
+          python3 ci/upload_to_db.py \
+            --github-run-id "${{ github.run_id }}" \
+            --python-version "${{ needs.build-and-test-jax-perf.outputs.python_version }}" \
+            --rocm-version "${{ needs.build-and-test-jax-perf.outputs.rocm_version }}" \
+            --gfx-version gfx90a \
+            --jax-version 0.6.0
