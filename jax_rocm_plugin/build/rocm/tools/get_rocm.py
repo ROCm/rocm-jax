@@ -25,13 +25,24 @@ import argparse
 import json
 import logging
 import os
-import sys
+import shutil
+import ssl
 import subprocess
+import sys
 import urllib.request
 
 
 # pylint: disable=unspecified-encoding
 LOG = logging.getLogger(__name__)
+
+# This is kind of a hack to get around SSL. Will eventually remove this once TheRock builds
+# become the regular way that ROCm is delivered and we aren't just downloading tarballs.
+# pylint: disable=protected-access
+ssl._create_default_https_context = ssl._create_unverified_context
+
+
+class RocmInstallException(Exception):
+    """Exceptions thrown when trying to install ROCm"""
 
 
 class RocmInstallException(Exception):
@@ -184,6 +195,40 @@ def get_system():
     raise RocmInstallException("No system for %r" % md)
 
 
+def _install_therock(rocm_version, therock_path):
+    """Install TheRock onto the system. This can be done in two different ways,
+    1. By copying a directory containing TheRock into the regular ROCm install location
+    2. By downloading a tarball from ThehRock's release page and unpacking it into the regular
+       ROCm install location
+    """
+    rocm_sym_path = "/opt/rocm"
+    rocm_real_path = "%s-%s" % (rocm_sym_path, rocm_version)
+
+    # If therock_path is a directory, just copy it into ROCm's regular install location
+    if os.path.isdir(therock_path):
+        shutil.copytree(therock_path, rocm_real_path, symlinks=True)
+    # Not a directory, so it must be a remote tarball
+    else:
+        os.makedirs(rocm_real_path)
+        tar_path = "/tmp/therock.tar.gz"
+        with urllib.request.urlopen(therock_path) as response:
+            if response.status == 200:
+                with open(tar_path, "wb") as tar_file:
+                    tar_file.write(response.read())
+        cmd = ["tar", "-xzf", tar_path, "-C", rocm_real_path]
+        LOG.info("Running %r", cmd)
+        subprocess.check_call(cmd)
+
+    os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
+
+    # Make a symlink to amdgcn to fix LLVM not being able to find binaries
+    os.symlink(
+        rocm_real_path + "/lib/llvm/amdgcn/",
+        rocm_real_path + "/amdgcn",
+        target_is_directory=True,
+    )
+
+
 def _setup_internal_repo(system, rocm_version, job_name, build_num):
     """Set up repos for getting internal ROCm builds"""
     # wget is required by amdgpu-repo
@@ -221,22 +266,23 @@ def _setup_internal_repo(system, rocm_version, job_name, build_num):
     subprocess.check_call(cmd, env=env)
 
 
-def install_rocm(rocm_version, job_name=None, build_num=None):
+def install_rocm(rocm_version, job_name=None, build_num=None, therock_path=None):
     """Download and install the requested version of ROCm."""
-
-    s = get_system()
-
-    if job_name and build_num:
-        _setup_internal_repo(s, rocm_version, job_name, build_num)
+    if therock_path:
+        _install_therock(rocm_version, therock_path)
     else:
-        if s == RHEL8:
-            setup_repos_el8(rocm_version)
-        elif s == UBUNTU:
-            setup_repos_ubuntu(rocm_version)
+        s = get_system()
+        if job_name and build_num:
+            _setup_internal_repo(s, rocm_version, job_name, build_num)
         else:
-            raise RocmInstallException("Platform not supported")
+            if s == RHEL8:
+                setup_repos_el8(rocm_version)
+            elif s == UBUNTU:
+                setup_repos_ubuntu(rocm_version)
+            else:
+                raise RocmInstallException("Platform not supported")
 
-    s.install_rocm()
+        s.install_rocm()
 
 
 def install_amdgpu_installer_internal(rocm_version):
@@ -386,6 +432,7 @@ def parse_args():
     p.add_argument("--rocm-version", help="ROCm version to install", default="latest")
     p.add_argument("--job-name", default=None)
     p.add_argument("--build-num", default=None)
+    p.add_argument("--therock-path", default=None)
     return p.parse_args()
 
 
@@ -407,7 +454,12 @@ def main():
     else:
         rocm_version = args.rocm_version
 
-    install_rocm(rocm_version, job_name=args.job_name, build_num=args.build_num)
+    install_rocm(
+        rocm_version,
+        job_name=args.job_name,
+        build_num=args.build_num,
+        therock_path=args.therock_path,
+    )
 
 
 if __name__ == "__main__":

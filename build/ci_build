@@ -18,16 +18,19 @@
 
 import argparse
 import os
+from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 
 def dist_wheels(
     rocm_version,
     python_versions,
-    xla_path,
+    xla_source_dir,
     rocm_build_job="",
     rocm_build_num="",
+    therock_path=None,
     compiler="gcc",
 ):
     jax_plugin_dir = "jax_rocm_plugin"
@@ -39,11 +42,12 @@ def dist_wheels(
         "--python-versions=%s" % ",".join(python_versions),
         "--rocm-build-job=%s" % rocm_build_job,
         "--rocm-build-num=%s" % rocm_build_num,
+        "--therock-path=%s" % therock_path,
         "--compiler=%s" % compiler,
     ]
 
-    if xla_path:
-        xla_path = os.path.abspath(xla_path)
+    if xla_source_dir:
+        xla_path = os.path.abspath(xla_source_dir)
         cmd.append("--xla-source-dir=%s" % xla_path)
 
     cmd.append("dist_wheels")
@@ -79,6 +83,7 @@ def build_dockers(
     python_versions: str,
     rocm_build_job="",
     rocm_build_num="",
+    therock_path=None,
     tag_base=None,
     docker_filters=None,
 ):
@@ -118,6 +123,17 @@ def build_dockers(
             "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
             "--tag=%s" % tag,
         ]
+
+        if therock_path and Path(therock_path).exists():
+            cmd.append("--build-arg=THEROCK_PATH=/tmp/therock/")
+            cmd.append("--build-context=therock=%s" % therock_path)
+        else:
+            if therock_path:
+                cmd.append("--build-arg=THEROCK_PATH=%s" % therock_path)
+            print(tempfile.tempdir)
+            temp_path = Path(tempfile.mkdtemp()) / "therock"
+            temp_path.mkdir(exist_ok=True)
+            cmd.append("--build-context=therock=%s" % temp_path)
 
         # context dir
         cmd.append(".")
@@ -200,13 +216,19 @@ def parse_args():
     p.add_argument(
         "--rocm-build-job",
         default="",
-        help="ROCm build job for development ROCm builds",
+        help="ROCm build job for development ROCm builds. Requires --rocm-build-num to also be set. Is mutually exclusive with --therock-path.",
     )
 
     p.add_argument(
         "--rocm-build-num",
         default="",
-        help="ROCm build number for development ROCm builds",
+        help="ROCm build number for development ROCm builds. Requires --rocm-build-job to also be set. Is mutually exclusive with --therock-path.",
+    )
+
+    p.add_argument(
+        "--therock-path",
+        default="",
+        help="URL to download a tarball of TheRock, or a local directory name pointing to a tarball or directory containing TheRock. This argument is mutually exclusive with --rocm-build-job and --rocm-build-num.",
     )
 
     p.add_argument(
@@ -248,7 +270,17 @@ def parse_args():
     )
     testp.add_argument("image_name")
 
-    return p.parse_args()
+    args = p.parse_args()
+
+    # Make sure that the user hasn't tried to set both --therock-path and either --rocm-build-job or --rocm-build-num
+    if args.therock_path and (args.rocm_build_job or args.rocm_build_num):
+        p.error("You cannot set both --therock-path and --rocm-build-job/--rocm-build-num.")
+
+    # Make sure that the user has set both a build job and build number if trying to get ROCm from the mainline build
+    if (args.rocm_build_job and not args.rocm_build_num) or (args.rocm_build_num and not args.rocm_build_job):
+        p.error("You must set both --rocm-build-num and --rocm-build-job, not just one")
+
+    return args
 
 
 def main():
@@ -257,11 +289,12 @@ def main():
     if args.action == "dist_wheels":
 
         dist_wheels(
-            args.rocm_version,
-            args.python_versions,
-            args.xla_source_dir,
-            args.rocm_build_job,
-            args.rocm_build_num,
+            rocm_version=args.rocm_version,
+            python_versions=args.python_versions,
+            xla_source_dir=args.xla_source_dir,
+            rocm_build_job=args.rocm_build_job,
+            rocm_build_num=args.rocm_build_num,
+            therock_path=args.therock_path,
             compiler=args.compiler,
         )
 
@@ -269,10 +302,11 @@ def main():
         filters = args.filter.split(",")
 
         build_dockers(
-            args.rocm_version,
-            args.python_versions,
+            rocm_version=args.rocm_version,
+            python_versions=args.python_versions,
             rocm_build_job=args.rocm_build_job,
             rocm_build_num=args.rocm_build_num,
+            therock_path=args.therock_path,
             docker_filters=filters,
         )
 
