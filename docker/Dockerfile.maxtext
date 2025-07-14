@@ -1,0 +1,16 @@
+ARG BASE_IMAGE=jax-ubu22.rocm641
+FROM ${BASE_IMAGE}
+
+# Install git
+RUN apt-get update && apt-get install -y git
+
+# Clone MaxText from rv_jax branch.
+ARG MAXTEXT_BRANCH=rv_jax
+RUN git clone --depth=1 --branch ${MAXTEXT_BRANCH} https://github.com/ROCm/maxtext.git /maxtext
+
+# Set working directory.
+WORKDIR /maxtext
+
+# Install MaxText dependencies.
+RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
+    pip install -r requirements.txt && pip freeze

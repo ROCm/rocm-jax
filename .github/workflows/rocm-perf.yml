@@ -61,12 +61,17 @@ jobs:
             build_dockers \
             --filter ubu22
 
-      - name: Checkout MaxText source
-        uses: actions/checkout@v4
-        with:
-          repository: ROCm/maxtext
-          ref: rv_jax
-          path: ${{ env.WORKSPACE_DIR }}/maxtext
+      - name: Build Docker image for MaxText
+        run: |
+          IMAGE=ghcr.io/rocm/maxtext-jax-rocm${ROCM_VERSION//.}
+          docker build \
+            --build-arg BASE_IMAGE=jax-ubu22.rocm${ROCM_VERSION//.} \
+            --build-arg MAXTEXT_BRANCH=rv_jax \
+            -f docker/Dockerfile.maxtext \
+            -t $IMAGE:nightly \
+            -t $IMAGE:${{ github.sha }} \
+            -t $IMAGE:run${{ github.run_id }} \
+            .
 
       - name: Launch container
         run: |
@@ -79,36 +84,9 @@ jobs:
             --group-add=video \
             --cap-add=SYS_PTRACE \
             --security-opt seccomp=unconfined \
-            -v "$(pwd)/${{ env.WORKSPACE_DIR }}/maxtext:/maxtext" \
             -w /maxtext \
-            "jax-ubu22.rocm${ROCM_VERSION//.}" \
+            ghcr.io/rocm/maxtext-jax-rocm${ROCM_VERSION//.}:run${{ github.run_id }} \
             tail -f /dev/null
-
-      - name: Install git inside the container
-        run: |
-          docker exec maxtext_container bash -c "apt-get update && apt-get install -y git"
-
-      - name: Install requirements and show pip list
-        run: |
-          docker exec maxtext_container bash -c "pip install -r requirements.txt && pip list"
-
-      - name: Patch jaxlib/plugin_support.py in container
-        run: |
-          docker exec maxtext_container bash -c '
-            JAXLIB_SITE=$(pip show jaxlib | grep Location | awk "{print \$2}")
-            echo "$JAXLIB_SITE"
-
-            sed -i \
-              "s|\"jax_rocm60_plugin\"|[\"jax_rocm60_plugin\", \"jax_rocm7_plugin\"]|g" \
-              "$JAXLIB_SITE/jaxlib/plugin_support.py"
-
-            sed -i \
-              "s|_PLUGIN_MODULE_NAME\\[|*_PLUGIN_MODULE_NAME\\[|g" \
-              "$JAXLIB_SITE/jaxlib/plugin_support.py"
-
-            grep -A 10 "_PLUGIN_MODULE_NAME" \
-              "$JAXLIB_SITE/jaxlib/plugin_support.py"
-          '
 
       - name: Run MaxText training and save logs
         run: |
@@ -142,6 +120,18 @@ jobs:
           path: |
             logs_*.log
             summary.json
+
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push Docker image to GHCR
+        run: |
+          IMAGE=ghcr.io/rocm/maxtext-jax-rocm${ROCM_VERSION//.}
+          docker push $IMAGE:nightly
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:run${{ github.run_id }}
 
       - name: Cleanup container
         if: always()
