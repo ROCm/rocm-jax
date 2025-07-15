@@ -1,5 +1,8 @@
 # rocm-jax
 
+[![CI](https://github.com/ROCm/rocm-jax/actions/workflows/ci.yml/badge.svg?branch=master&event=push)](https://github.com/ROCm/rocm-jax/actions/workflows/ci.yml)
+[![Nightly](https://github.com/ROCm/rocm-jax/actions/workflows/nightly.yml/badge.svg)](https://github.com/ROCm/rocm-jax/actions/workflows/nightly.yml)
+
 `rocm-jax` contains sources for the ROCm plugin for JAX, as well as Dockerfiles used to build AMDs `rocm/jax` images.
 
 # development setup
