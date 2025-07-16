@@ -181,3 +181,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# vscode local settings
+/.vscode
+
+# script produced by tools/docker_dev_setup.sh
+/llvm.sh
