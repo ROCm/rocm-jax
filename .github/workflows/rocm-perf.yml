@@ -67,7 +67,7 @@ jobs:
           docker build \
             --build-arg BASE_IMAGE=jax-ubu22.rocm${ROCM_VERSION//.} \
             --build-arg MAXTEXT_BRANCH=rv_jax \
-            -f docker/Dockerfile.maxtext \
+            -f ci/Dockerfile.maxtext \
             -t $IMAGE:nightly \
             -t $IMAGE:${{ github.sha }} \
             -t $IMAGE:run${{ github.run_id }} \
