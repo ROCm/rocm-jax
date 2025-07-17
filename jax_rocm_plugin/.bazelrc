@@ -256,6 +256,16 @@ build:ci_windows_amd64 --color=yes
 # Flag to enable remote config
 common --experimental_repo_remote_exec
 
+## vvvv -- updates for bazel 7.4.1  -- vvvv
+# that's how JAX/XLA uses it
+common --noenable_bzlmod
+common --noincompatible_enable_cc_toolchain_resolution
+# --repo_env USE_HERMETIC_CC_TOOLCHAIN=0 doesn't seem to be used anywhere yet,
+# but it's there in build:clang_local rule of the upstream XLA and rocm/xla
+# rocm-main branch, so it'll be needed here soon too.
+build:clang --repo_env USE_HERMETIC_CC_TOOLCHAIN=0
+## ^^^^ -- updates for bazel 7.4.1  -- ^^^^
+
 # Allow creation of resultstore URLs for any bazel invocation
 build:resultstore --google_default_credentials
 build:resultstore --bes_backend=buildeventservice.googleapis.com
