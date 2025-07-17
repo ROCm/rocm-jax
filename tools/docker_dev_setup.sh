@@ -6,8 +6,6 @@ GREEN="\033[32;01m"
 RED="\033[31;01m"
 OFF="\033[0m"
 
-ROCM_VERSION="6.4.0"
-
 info() {
   echo -e " ${GREEN}*${OFF} $*" >&2
 }
@@ -20,6 +18,22 @@ die() {
   [ -n "$1" ] && error "$*"
   exit 1
 }
+
+# Default values
+rocm_version="6.4.0"
+rocm_build_number=""
+rocm_job_name=""
+
+# Parse named command-line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --rocm_version) rocm_version="$2"; shift ;;
+        --rocm_build_number) rocm_build_number="$2"; shift ;;
+        --rocm_job_name) rocm_job_name="$2"; shift ;;
+        *) error "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
 
 
 install_clang_packages() {
@@ -79,9 +93,37 @@ apt-get install -y \
 # install a clang
 install_clang_packages || die "error while installing clang"
 
-# install a rocm
-info "Installing ROCm"
-python build/tools/get_rocm.py --rocm-version "$ROCM_VERSION" || die "error while installing rocm"
+# install ROCm (if needed)
+# extract the major version
+major_version=$(echo "$rocm_version" | cut -d. -f1)
+
+# check if ROCm is installed using rocminfo or fallback to checking /opt/rocm
+if command -v rocminfo &> /dev/null; then
+  info "ROCm is already installed (found via rocminfo). Skipping installation."
+elif [[ -d "/opt/rocm" ]]; then
+  info "ROCm directory found at /opt/rocm. Assuming ROCm is installed. Skipping installation."
+else
+  info "ROCm is not installed. Proceeding with installation..."
+
+  # if major version is 7, then build number and name must be provided
+  if [[ "$major_version" == "7" ]]; then
+    if [[ -z "$rocm_build_number" || -z "$rocm_job_name" ]]; then
+      info "ERROR: For ROCm version 7.x, both --rocm_build_number and --rocm_job_name must be provided."
+      exit 1
+    fi
+  fi
+
+  info "Installing ROCm version: $rocm_version"
+  
+  # run get_rocm.py with appropriate arguments based on major version
+  if (( major_version > 6 )); then
+    info "Running get_rocm.py with build number $rocm_build_number and build name $rocm_job_name"
+    python build/tools/get_rocm.py --rocm-version "$rocm_version"  --job-name "$rocm_job_name" --build-num "$rocm_build_number"|| die "error while installing rocm"
+  else
+    info "Running get_rocm.py with version only..."
+    python build/tools/get_rocm.py --rocm-version "$rocm_version" || die "error while installing rocm"
+  fi
+fi
 
 # set up a python virtualenv to install jax python packages into
 info "Setting up python virtualenv at .venv"
@@ -101,13 +143,12 @@ python -m pip install -r \
   build/requirements.txt
 
 # Apply patch for namespace change if ROCm version >= 7
-major_version=$(echo "$ROCM_VERSION" | cut -d. -f1)
 if [ "$major_version" -ge 7 ]; then
-  echo "Applying patch for ROCm $ROCM_VERSION..."
+  info "Applying patch for ROCm $rocm_version..."
   dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
   patch -p1 -d "$dist_packages" < jax_rocm_plugin/third_party/jax/namespace.patch
 else
-  echo "ROCm version $ROCM_VERSION, skipping patch."
+  info "ROCm version $rocm_version, skipping patch."
 fi
 
 if [ -n "$_IS_ENTRYPOINT" ]; then
