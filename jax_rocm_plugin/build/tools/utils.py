@@ -168,12 +168,12 @@ def get_compiler_path_or_exit(compiler_path_flag, compiler_name):
         # If we've found a compiler on the path, need to get the fully resolved path
         # to ensure that system headers are found.
         return str(pathlib.Path(which_compiler_output).resolve())
-    else:
-        print(
-            f"--{compiler_path_flag} is unset and {compiler_name} cannot be found"
-            " on the PATH. Please pass --{compiler_path_flag} directly."
-        )
-        sys.exit(-1)
+
+    print(
+        f"--{compiler_path_flag} is unset and {compiler_name} cannot be found"
+        " on the PATH. Please pass --{compiler_path_flag} directly."
+    )
+    sys.exit(-1)
 
 
 def get_gcc_path_or_exit():
@@ -246,7 +246,6 @@ def _parse_string_as_bool(s):
     lower = s.lower()
     if lower == "true":
         return True
-    elif lower == "false":
+    if lower == "false":
         return False
-    else:
-        raise ValueError(f"Expected either 'true' or 'false'; got {s}")
+    raise ValueError(f"Expected either 'true' or 'false'; got {s}")
