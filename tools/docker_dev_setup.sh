@@ -22,7 +22,7 @@ die() {
 # Default values
 rocm_version="6.4.0"
 rocm_build_number=""
-rocm_job_name=""
+rocm_job_name="compute-rocm-dkms-no-npi-hipclang"
 
 # Parse named command-line arguments
 while [[ "$#" -gt 0 ]]; do
@@ -105,10 +105,10 @@ elif [[ -d "/opt/rocm" ]]; then
 else
   info "ROCm is not installed. Proceeding with installation..."
 
-  # if major version is 7, then build number and name must be provided
-  if [[ "$major_version" == "7" ]]; then
+  # if major version is >= 7, then build number and name must be provided
+  if [ "$major_version" -ge 7 ]; then
     if [[ -z "$rocm_build_number" || -z "$rocm_job_name" ]]; then
-      info "ERROR: For ROCm version 7.x, both --rocm_build_number and --rocm_job_name must be provided."
+      info "ERROR: For ROCm version >= 7.x, both --rocm_build_number and --rocm_job_name must be provided."
       exit 1
     fi
   fi
@@ -116,7 +116,7 @@ else
   info "Installing ROCm version: $rocm_version"
   
   # run get_rocm.py with appropriate arguments based on major version
-  if (( major_version > 6 )); then
+  if [ "$major_version" -ge 7 ]; then
     info "Running get_rocm.py with build number $rocm_build_number and build name $rocm_job_name"
     python build/tools/get_rocm.py --rocm-version "$rocm_version"  --job-name "$rocm_job_name" --build-num "$rocm_build_number"|| die "error while installing rocm"
   else
