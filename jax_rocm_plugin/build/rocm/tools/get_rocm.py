@@ -24,12 +24,15 @@ import argparse
 import json
 import logging
 import os
-import sys
+import shutil
+import ssl
 import subprocess
+import sys
 import urllib.request
 
 
 LOG = logging.getLogger(__name__)
+ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def latest_rocm():
@@ -147,6 +150,18 @@ def get_system():
     raise Exception("No system for %r" % md)
 
 
+def _install_therock(system, rocm_version, therock_path):
+    rocm_sym_path = "/opt/rocm"
+    rocm_real_path = "%s-%s" % (rocm_sym_path, rocm_version)
+
+    # Copy TheRock into the regular /opt path
+    shutil.copytree(therock_path, rocm_real_path, symlinks=True)
+    os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
+
+    # Make a symlink to amdgcn to fix LLVM not being able to find binaries
+    os.symlink(rocm_real_path + "/lib/llvm/amdgcn/", rocm_real_path + "/amdgcn", target_is_directory=True)
+
+
 def _setup_internal_repo(system, rocm_version, job_name, build_num):
     # wget is required by amdgpu-repo
     system.install_packages(["wget"])
@@ -186,20 +201,22 @@ def _setup_internal_repo(system, rocm_version, job_name, build_num):
     subprocess.check_call(cmd, env=env)
 
 
-def install_rocm(rocm_version, job_name=None, build_num=None):
+def install_rocm(rocm_version, job_name=None, build_num=None, therock_path=None):
     s = get_system()
-
-    if job_name and build_num:
-        _setup_internal_repo(s, rocm_version, job_name, build_num)
+    if therock_path:
+        _install_therock(s, rocm_version, therock_path)
     else:
-        if s == RHEL8:
-            setup_repos_el8(rocm_version)
-        elif s == UBUNTU:
-            setup_repos_ubuntu(rocm_version)
+        if job_name and build_num:
+            _setup_internal_repo(s, rocm_version, job_name, build_num)
         else:
-            raise Exception("Platform not supported")
+            if s == RHEL8:
+                setup_repos_el8(rocm_version)
+            elif s == UBUNTU:
+                setup_repos_ubuntu(rocm_version)
+            else:
+                raise Exception("Platform not supported")
 
-    s.install_rocm()
+        s.install_rocm()
 
 
 def install_amdgpu_installer_internal(rocm_version):
@@ -338,6 +355,7 @@ def parse_args():
     p.add_argument("--rocm-version", help="ROCm version to install", default="latest")
     p.add_argument("--job-name", default=None)
     p.add_argument("--build-num", default=None)
+    p.add_argument("--therock-path", default=None)
     return p.parse_args()
 
 
@@ -356,7 +374,7 @@ def main():
     else:
         rocm_version = args.rocm_version
 
-    install_rocm(rocm_version, job_name=args.job_name, build_num=args.build_num)
+    install_rocm(rocm_version, job_name=args.job_name, build_num=args.build_num, therock_path=args.therock_path)
 
 
 if __name__ == "__main__":
