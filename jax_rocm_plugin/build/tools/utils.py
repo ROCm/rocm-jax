@@ -13,6 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 # Helper script for tools/utilities used by the JAX build CLI.
+""""Helper script for tools/utilities used by the JAX build CLI."""
+
 import collections
 import hashlib
 import logging
@@ -147,6 +149,7 @@ def get_bazel_path(bazel_path_flag):
 
 
 def get_bazel_version(bazel_path):
+    """dummy docstring"""
     try:
         version_output = subprocess.run(
             [bazel_path, "--version"],
@@ -163,6 +166,7 @@ def get_bazel_version(bazel_path):
 
 
 def get_compiler_path_or_exit(compiler_path_flag, compiler_name):
+    """dummy docstring"""
     which_compiler_output = shutil.which(compiler_name)
     if which_compiler_output:
         # If we've found a compiler on the path, need to get the fully resolved path
@@ -177,14 +181,17 @@ def get_compiler_path_or_exit(compiler_path_flag, compiler_name):
 
 
 def get_gcc_path_or_exit():
+    """dummy docstring"""
     return get_compiler_path_or_exit("gcc_path", "gcc")
 
 
 def get_clang_path_or_exit():
+    """dummy docstring"""
     return get_compiler_path_or_exit("clang_path", "clang")
 
 
 def get_clang_major_version(clang_path):
+    """dummy docstring"""
     clang_version_proc = subprocess.run(
         [clang_path, "-E", "-P", "-"],
         input="__clang_major__",
@@ -198,6 +205,7 @@ def get_clang_major_version(clang_path):
 
 
 def get_gcc_major_version(gcc_path: str):
+    """dummy docstring"""
     gcc_version_proc = subprocess.run(
         [gcc_path, "-dumpversion"],
         check=True,
@@ -230,6 +238,7 @@ def get_jax_configure_bazel_options(bazel_command: list[str]):
 
 
 def get_githash():
+    """dummy docstring"""
     try:
         return subprocess.run(
             ["git", "rev-parse", "HEAD"],
