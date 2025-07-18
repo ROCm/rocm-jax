@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 # Helper script for tools/utilities used by the JAX build CLI.
-""""Helper script for tools/utilities used by the JAX build CLI."""
+"""Helper script for tools/utilities used by the JAX build CLI."""
 
 import collections
 import hashlib
