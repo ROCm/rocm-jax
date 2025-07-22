@@ -18,11 +18,8 @@ PLUGIN_NAMESPACE_VERSION = "7"
 
 
 MAKE_TEMPLATE = r"""
-# gfx targets for which XLA and jax custom call kernels are built for
-AMDGPU_TARGETS ?= "gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
-
 # customize to a single arch for local dev builds to reduce compile time
-#AMDGPU_TARGETS ?= "gfx908"
+#AMDGPU_TARGETS ?= "$(shell rocminfo | grep -o -m 1 'gfx.*')"
 
 .PHONY: test clean install dist
 
