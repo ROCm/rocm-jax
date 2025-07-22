@@ -19,7 +19,7 @@ PLUGIN_NAMESPACE_VERSION = "7"
 
 MAKE_TEMPLATE = r"""
 # customize to a single arch for local dev builds to reduce compile time
-#AMDGPU_TARGETS ?= "$(shell rocminfo | grep -o -m 1 'gfx.*')"
+AMDGPU_TARGETS ?= "$(shell rocminfo | grep -o -m 1 'gfx.*')"
 
 .PHONY: test clean install dist
 
