@@ -1,7 +1,9 @@
 FROM ubuntu:24.04
 
+# Install python3 packages and solution for breaking system package 
 RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y python3 python-is-python3 python3-pip
+    apt-get update && apt-get install -y python3 python-is-python3 python3-pip && \
+    mv /usr/lib/python3.12/EXTERNALLY-MANAGED /usr/lib/python3.12/EXTERNALLY-MANAGED.old
 
 # Install bzip2 and sqlite3 packages
 RUN apt-get update && apt-get install -y \
