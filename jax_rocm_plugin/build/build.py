@@ -25,6 +25,7 @@ import os
 import platform
 import sys
 import copy
+import subprocess
 
 from tools import command, utils
 
@@ -317,6 +318,7 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
 
 
 def get_rocm_version():
+    """Returns the ROCm version as a string, e.g., '6.4.2'. Returns None on error."""
     try:
         version = subprocess.check_output(
             "cat /opt/rocm/.info/version | cut -d '-' -f 1", shell=True
