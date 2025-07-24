@@ -316,6 +316,17 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
     )
 
 
+def get_rocm_version():
+    try:
+        version = subprocess.check_output(
+            "cat /opt/rocm/.info/version | cut -d '-' -f 1", shell=True
+        )
+        return version.decode("utf-8").strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Error fetching ROCm version: {e}")
+        return None
+
+
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements
 async def main():
     """
@@ -578,6 +589,21 @@ async def main():
                 f'--action_env=ROCM_PATH="{args.rocm_path}"'
             )
         if args.rocm_amdgpu_targets:
+            rocm_version_str = get_rocm_version()
+            rocm_version = (
+                tuple(map(int, rocm_version_str.split(".")))
+                if rocm_version_str
+                else None
+            )
+
+            targets = args.rocm_amdgpu_targets.split(",")
+            if rocm_version and rocm_version < (7, 0, 0):
+                if "gfx950" in targets:
+                    logging.debug("Removing gfx950 since ROCm version is < 7.0.0")
+                    targets.remove("gfx950")
+
+            args.rocm_amdgpu_targets = ",".join(targets)
+
             logging.debug("ROCm AMD GPU targets: %s", args.rocm_amdgpu_targets)
             wheel_build_command_base.append(
                 f"--action_env=TF_ROCM_AMDGPU_TARGETS={args.rocm_amdgpu_targets}"
