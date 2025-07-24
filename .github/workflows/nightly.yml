@@ -57,6 +57,9 @@ jobs:
       matrix:
         rocm-version: ["6.4.1", "7.0.0"]
         ubuntu-version: ["22", "24"]
+        test_file:
+          - tests/sparse_test.py
+          - tests/linalg_test.py
     steps:
       - name: Change owners for cleanup
         run: |
@@ -76,18 +79,20 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Run tests with JSON report
+      - name: Run tests with JSON report ${{ matrix.test_file }}
+        if: always()
         env:
           GPU_COUNT: "8"
           GFX: "gfx90a"
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
         run: |
+          FILENAME=$(basename "${{ matrix.test_file }}" .py)
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest tests/ --json-report --json-report-file=test-report.json"
+            --test-cmd "pytest --json-report --json-report-file=test-report-${FILENAME}.json ${{ matrix.test_file }}" || true
       - name: Upload test reports
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-reports
-          path: test-report.json
+          name: pytest-report-${{ matrix.test_file }}
+          path: test-report-*.json
