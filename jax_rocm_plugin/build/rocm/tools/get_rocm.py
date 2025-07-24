@@ -83,16 +83,25 @@ class System(object):
 
     def install_packages(self, package_specs):
         """Install packages from a list of specifications, i.e. ['wget'. 'cowsay>6.0']"""
+        
+        # Update package lists before installing
+        env = dict(os.environ)
+        if self.pkgbin == "apt":
+            env["DEBIAN_FRONTEND"] = "noninteractive"
+            update_cmd = [self.pkgbin, "update"]
+            LOG.info("Running %r", update_cmd)
+            subprocess.check_call(update_cmd, env=env)
+        elif self.pkgbin == "dnf":
+            update_cmd = [self.pkgbin, "makecache"]
+            LOG.info("Running %r", update_cmd)
+            subprocess.check_call(update_cmd, env=env)
+
         cmd = [
             self.pkgbin,
             "install",
             "-y",
         ]
         cmd.extend(package_specs)
-
-        env = dict(os.environ)
-        if self.pkgbin == "apt":
-            env["DEBIAN_FRONTEND"] = "noninteractive"
 
         LOG.info("Running %r", cmd)
         subprocess.check_call(cmd, env=env)
