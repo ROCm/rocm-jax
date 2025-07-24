@@ -83,7 +83,6 @@ class System(object):
 
     def install_packages(self, package_specs):
         """Install packages from a list of specifications, i.e. ['wget'. 'cowsay>6.0']"""
-        
         # Update package lists before installing
         env = dict(os.environ)
         if self.pkgbin == "apt":
