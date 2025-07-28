@@ -79,6 +79,8 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Create directory for test logs
+        run: mkdir -p jax/test_logs
       - name: Run tests with JSON report ${{ matrix.test_file }}
         if: always()
         env:
@@ -90,9 +92,9 @@ jobs:
           FILENAME=$(basename "${{ matrix.test_file }}" .py)
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest --json-report --json-report-file=test-report-${FILENAME}.json ${{ matrix.test_file }}" || true
+            --test-cmd "pytest --json-report --json-report-file=/jax/test_logs/test-report-${FILENAME}.json ${{ matrix.test_file }}" || true
       - name: Upload test reports
         uses: actions/upload-artifact@v4
         with:
           name: pytest-report-${{ matrix.test_file }}
-          path: test-report-*.json
+          path: jax/test_logs/test-report-*.json
