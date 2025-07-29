@@ -81,7 +81,7 @@ jobs:
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Create directory for test logs
         run: mkdir -p jax/test_logs
-      - name: Run tests with JSON report ${{ matrix.test_file }}
+      - name: Run test with JSON report ${{ matrix.test_file }}
         if: always()
         env:
           GPU_COUNT: "8"
@@ -90,11 +90,21 @@ jobs:
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
         run: |
           FILENAME=$(basename "${{ matrix.test_file }}" .py)
+          TESTNAME="test-report-${FILENAME}_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest --json-report --json-report-file=/jax/test_logs/test-report-${FILENAME}__rocm${ROCM_VERSION//.}__ubu${UBUNTU_VERSION}.json ${{ matrix.test_file }}" || true
-      - name: Upload test reports
+            --test-cmd "pytest --json-report --json-report-file=/jax/test_logs/${TESTNAME}.json ${{ matrix.test_file }}" || true
+      - name: Compute TESTNAME for artifact
+        id: compute
+        run: |
+          ROCM_VERSION="${{ matrix.rocm-version }}"
+          UBUNTU_VERSION="${{ matrix.ubuntu-version }}"
+          FILENAME=$(basename "${{ matrix.test_file }}" .py)
+          TESTNAME="test-report-${FILENAME}_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
+          echo "testname=$TESTNAME" >> $GITHUB_OUTPUT
+      - name: Upload test report
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-report
-          path: jax/test_logs/test-report-*.json
+          name: ${{ steps.compute.outputs.testname }}
+          path: jax/test_logs/${{ steps.compute.outputs.testname }}.json
+          if-no-files-found: ignore
