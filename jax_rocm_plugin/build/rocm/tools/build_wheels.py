@@ -284,11 +284,11 @@ def parse_args():
     """Parse CLI arguments."""
     p = argparse.ArgumentParser()
     p.add_argument(
-        "--rocm-version", default="6.1.1", help="ROCM Version to build JAX against"
+        "--rocm-version", default="7.1.0", help="ROCM Version to build JAX against"
     )
     p.add_argument(
         "--python-versions",
-        default=["3.10.19,3.12"],
+        default=["3.10.19,3.12.11"],
         help="Comma separated CPython versions that wheels will be built and output for",
     )
     p.add_argument(
