@@ -57,9 +57,6 @@ jobs:
       matrix:
         rocm-version: ["6.4.1", "7.0.0"]
         ubuntu-version: ["22", "24"]
-        test_file:
-          - tests/sparse_test.py
-          - tests/linalg_test.py
     steps:
       - name: Change owners for cleanup
         run: |
@@ -79,9 +76,7 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Create directory for test logs
-        run: mkdir -p jax/test_logs
-      - name: Run test with JSON report ${{ matrix.test_file }}
+      - name: Run test with JSON report
         if: always()
         env:
           GPU_COUNT: "8"
@@ -89,20 +84,19 @@ jobs:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
         run: |
-          FILENAME=$(basename "${{ matrix.test_file }}" .py)
-          TESTNAME="test-report-${FILENAME}_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
+          SKIPARGS="$(tr '\n' ' ' < ci/pytest_ignores.txt)"
+          TESTNAME="test-log_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest --json-report --json-report-file=/jax/test_logs/${TESTNAME}.json ${{ matrix.test_file }}" || true
+            --test-cmd "pytest $SKIPARGS --json-report --json-report-file=/jax/test_logs/${TESTNAME}.json tests/"
       - name: Compute TESTNAME for artifact
         id: compute
         run: |
           ROCM_VERSION="${{ matrix.rocm-version }}"
           UBUNTU_VERSION="${{ matrix.ubuntu-version }}"
-          FILENAME=$(basename "${{ matrix.test_file }}" .py)
-          TESTNAME="test-report-${FILENAME}_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
+          TESTNAME="test-log_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
           echo "testname=$TESTNAME" >> $GITHUB_OUTPUT
-      - name: Upload test report
+      - name: Upload test log
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.compute.outputs.testname }}
