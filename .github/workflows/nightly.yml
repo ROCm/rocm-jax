@@ -76,7 +76,7 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Run test with JSON report
+      - name: Run test using run_single_gpu.py
         if: always()
         env:
           GPU_COUNT: "8"
@@ -84,21 +84,19 @@ jobs:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
         run: |
-          SKIPARGS="$(tr '\n' ' ' < ci/pytest_ignores.txt)"
-          TESTNAME="test-log_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest $SKIPARGS --json-report --json-report-file=/jax/test_logs/${TESTNAME}.json tests/"
-      - name: Compute TESTNAME for artifact
+            --test-cmd "python build/rocm/run_single_gpu.py -c 2>&1 | tee jax/logs/logs_output.log"
+      - name: Compute FOLDERNAME for artifact
         id: compute
         run: |
           ROCM_VERSION="${{ matrix.rocm-version }}"
           UBUNTU_VERSION="${{ matrix.ubuntu-version }}"
-          TESTNAME="test-log_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
-          echo "testname=$TESTNAME" >> $GITHUB_OUTPUT
-      - name: Upload test log
+          FOLDERNAME="logs_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
+          echo "foldername=$FOLDERNAME" >> $GITHUB_OUTPUT
+      - name: Upload test logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.compute.outputs.testname }}
-          path: jax/test_logs/${{ steps.compute.outputs.testname }}.json
-          if-no-files-found: ignore
+          name: ${{ steps.compute.outputs.foldername }}
+          path: jax/logs/
