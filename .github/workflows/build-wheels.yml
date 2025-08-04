@@ -30,12 +30,17 @@ jobs:
     steps:
       - name: Clean up old runs
         run: |
-          ls
+          ls -lah
           # Make sure that we own all of the files so that we have permissions to delete them
           docker run --rm -v "./:/rocm-jax" ubuntu /bin/bash -c "chown -R $UID /rocm-jax/* || true"
           # Remove any old work directories from this machine
           rm -rf * || true
-          ls
+          ls -lah
+          # Clean up any docker stuff that's more than a week old
+          docker system prune -a --filter "until=168h"
+          # Stop any containers running for more than 12 hours. No CI job should take this long.
+          docker ps --format="{{.RunningFor}} {{.Names}}" | grep hours \
+              | awk -F: '{if($1>12)print$1}' | awk ' {print $4} ' | xargs docker stop || true
       - name: Print system info
         run: |
           whoami
