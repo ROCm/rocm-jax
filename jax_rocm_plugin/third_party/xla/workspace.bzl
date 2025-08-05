@@ -1,4 +1,4 @@
-# Copyright 2023 The JAX Authors.
+# Copyright 2025 The JAX Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,36 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# buildifier: disable=module-docstring
-load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-# To update XLA to a new revision,
-# a) update XLA_COMMIT to the new git commit hash
-# b) get the sha256 hash of the commit by running:
-#    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
-#    and update XLA_SHA256 with the result.
-
-XLA_COMMIT = "44f7d8796da5b42f3b9483fd6750edaf8018f538"
-XLA_SHA256 = "48f5b405824d88d440c990608e107c7ed05c1322cfe5a4aca0530fc0a15d6bad"
+XLA_BRANCH = "rocm-jaxlib-v0.7.0"
 
 def repo():
-    tf_http_archive(
+    git_repository(
         name = "xla",
-        sha256 = XLA_SHA256,
-        strip_prefix = "xla-{commit}".format(commit = XLA_COMMIT),
-        urls = tf_mirror_urls("https://github.com/ROCm/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
-        patch_file = [],
+        remote = "https://github.com/ROCm/xla.git",
+        branch = "{xla_branch}".format(xla_branch = XLA_BRANCH)
+        # init_submodules = True,      # if the repo uses submodules
+        # Optional: apply patches to the checkout
+        # patches = ["@//third_party:xla_fix.patch"],
+        # patch_args = ["-p1"],
     )
-
-    # For development, one often wants to make changes to the TF repository as well
-    # as the JAX repository. You can override the pinned repository above with a
-    # local checkout by either:
-    # a) overriding the TF repository on the build.py command line by passing a flag
-    #    like:
-    #    python build/build.py build --local_xla_path=/path/to/xla
-    #    or
-    # b) by commenting out the http_archive above and uncommenting the following:
-    # local_repository(
-    #    name = "xla",
-    #    path = "/path/to/xla",
-    # )
