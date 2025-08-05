@@ -38,7 +38,6 @@ jobs:
         include:
           - rocm-version: "6.4.1"
             runner-label: "mi-250"
-            extra-cr-tag: "nightly"
           - rocm-version: "7.0.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16322"
@@ -49,6 +48,7 @@ jobs:
       rocm-build-job: ${{ matrix.rocm-build-job }}
       rocm-build-num: ${{ matrix.rocm-build-num }}
       runner-label: ${{ matrix.runner-label }}
+      extra-cr-tag: "nightly"
   run-python-unit-tests:
     needs: call-build-docker
     runs-on: mi-250
