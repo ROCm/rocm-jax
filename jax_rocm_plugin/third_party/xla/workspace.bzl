@@ -1,8 +1,3 @@
-# Copyright 2023 The JAX Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
 #
 #     https://www.apache.org/licenses/LICENSE-2.0
 #
@@ -21,8 +16,8 @@ load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
 #    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
 #    and update XLA_SHA256 with the result.
 
-XLA_COMMIT = "50860e943202307ad17ef3bc513289dfbd1b92bc"
-XLA_SHA256 = "0d8a10fc1674a347542f280c724167f1fbe7f53cc8d59f49ee5d196166c8ee0c"
+XLA_COMMIT = "225165671ce671113c900299d660848a98bcdb2b"
+XLA_SHA256 = "eda6ec5f452683b2cb9408c34e71319337fff77542783e065a562df59162dd61"
 
 def repo():
     tf_http_archive(
