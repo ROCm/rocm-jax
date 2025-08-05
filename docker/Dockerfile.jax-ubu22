@@ -27,6 +27,7 @@ RUN --mount=type=bind,source=jax_rocm_plugin/build/rocm/tools/get_rocm.py,target
 ENV PATH="$PATH:/opt/rocm/bin:/opt/rocm/llvm/bin"
 ENV ln -s "/opt/rocm-${ROCM_RELEASE}/lib/librocblas.so.5" "/opt/rocm-${ROCM_RELEASE}/lib/librocblas.so.4"
 ENV LD_LIBRARY_PATH="/opt/rocm-${ROCM_VERSION}/lib:$LD_LIBRARY_PATH"
+ENV LLVM_PATH="/opt/rocm-${ROCM_VERSION}/llvm"
 
 # Set up paths
 ENV HCC_HOME=$ROCM_PATH/hcc
