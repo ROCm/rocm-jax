@@ -77,7 +77,8 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Run tests
+      - name: Run test using run_single_gpu.py
+        if: always()
         env:
           GPU_COUNT: "8"
           GFX: "gfx90a"
@@ -86,4 +87,17 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest tests/"
+            --test-cmd "python build/rocm/run_single_gpu.py -c"
+      - name: Compute FOLDERNAME for artifact
+        id: compute
+        run: |
+          ROCM_VERSION="${{ matrix.rocm-version }}"
+          UBUNTU_VERSION="${{ matrix.ubuntu-version }}"
+          FOLDERNAME="logs_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
+          echo "foldername=$FOLDERNAME" >> $GITHUB_OUTPUT
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.compute.outputs.foldername }}
+          path: jax/logs/
