@@ -12,7 +12,7 @@ Run stack.py develop to clone jax/xla
 python stack.py develop
 ```
 
-Create a fresh ubuntu 22.04 container
+Create a fresh ubuntu 24.04 container
 ```
 sudo docker run -it --network=host \
     --device=/dev/kfd \
@@ -24,7 +24,7 @@ sudo docker run -it --network=host \
     --security-opt seccomp=unconfined \
     --rm \
     -v ./:/rocm-jax \
-    ubuntu:22.04
+    ubuntu:24.04
 ```
 
 ## Docker environment setup
@@ -86,7 +86,7 @@ apt-get install -y \
   build-essential \
   make \
   patchelf \
-  python3.10-venv \
+  python3.12-venv \
   lsb-release \
   cmake \
   yamllint \
@@ -112,7 +112,7 @@ popd
 Install ROCm
 ```
 cd /rocm-jax
-python build/tools/get_rocm.py --rocm-version 6.4.0
+python build/tools/get_rocm.py --rocm-version 7.1.0
 ```
 
 Create a virtualenv and activate it
@@ -153,7 +153,7 @@ git clone https://github.com/ROCm/rocm-jax.git && cd rocm-jax
 
 Build manylinux wheels
 ```
-python3 build/ci_build --compiler=clang --python-versions="3.10" --rocm-version=7.0.0 --rocm-build-job="compute-rocm-dkms-no-npi-hipclang" --rocm-build-num="16306" dist_wheels
+python3 build/ci_build --compiler=clang --python-versions="3.12" --rocm-version=7.1.0 --rocm-build-job="compute-rocm-dkms-no-npi-hipclang" --rocm-build-num="16449" dist_wheels
 ```
 
 If you have BuildKit error:
@@ -170,13 +170,13 @@ mkdir -p wheelhouse && mv jax_rocm_plugin/wheelhouse/* ./wheelhouse/
 
 Create docker image
 ```
-python3 build/ci_build --rocm-version=7.0.0 --rocm-build-job="compute-rocm-dkms-no-npi-hipclang" --rocm-build-num="16306" build_dockers --filter=ubu22
+python3 build/ci_build --rocm-version=7.1.0 --rocm-build-job="compute-rocm-dkms-no-npi-hipclang" --rocm-build-num="16449" build_dockers --filter=ubu24
 ```
 
 Create container with the image created in the previous step
 ```
 alias drun='sudo docker run --name <yourID>_rocm-jax -it --network=host  --device=/dev/infiniband --device=/dev/kfd --device=/dev/dri --ipc=host --shm-size 16G --group-add video --cap-add=SYS_PTRACE --security-opt seccomp=unconfined -w /root -v /home/<yourID>/rocm-jax:/rocm-jax'
-drun jax-ubu22.rocm700 OR drun <docker image id or name of the image step 5 produced>
+drun jax-ubu24.rocm710 OR drun <docker image id or name of the image step 5 produced>
 ```
 
 To test UTs:
@@ -187,7 +187,7 @@ python stack.py develop
 
 cd jax
 pip install -r build/test-requirements.txt && pip install -r build/rocm-test-requirements.txt
-python ./build/rocm/run_single_gpu.py -c 2>&1 | tee 0.6.0_ut.log
+python ./build/rocm/run_single_gpu.py -c 2>&1 | tee run_single_gpu_ut.log
 ```
 
 

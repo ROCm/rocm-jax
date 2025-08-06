@@ -20,7 +20,7 @@ die() {
 }
 
 # Default values
-rocm_version="6.4.0"
+rocm_version="7.1.0"
 rocm_build_number=""
 rocm_job_name="compute-rocm-dkms-no-npi-hipclang"
 
@@ -83,7 +83,7 @@ apt-get install -y \
   build-essential \
   make \
   patchelf \
-  python3.10-venv \
+  python3.12-venv \
   lsb-release \
   cmake \
   yamllint \
