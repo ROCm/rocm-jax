@@ -133,7 +133,6 @@ UBUNTU = System(
 RHEL8 = System(
     pkgbin="dnf",
     rocm_package_list=[
-        "libdrm-amdgpu",
         "rocm-dev",
         "rocm-ml-sdk",
         "miopen-hip ",
@@ -236,16 +235,8 @@ def _setup_internal_repo(system, rocm_version, job_name, build_num):
 
     install_amdgpu_installer_internal(rocm_version)
 
-    amdgpu_build = None
-    with urllib.request.urlopen(
-        "http://rocm-ci.amd.com/job/%s/%s/artifact/amdgpu_kernel_info.txt"
-        % (job_name, build_num)
-    ) as kernel_info:
-        amdgpu_build = kernel_info.read().decode("utf8").strip()
-
     cmd = [
         "amdgpu-repo",
-        "--amdgpu-build=%s" % amdgpu_build,
         "--rocm-build=%s/%s" % (job_name, build_num),
     ]
     LOG.info("Running %r", cmd)
@@ -369,12 +360,6 @@ def setup_repos_ubuntu(rocm_version_str):
     keyadd = "wget -qO - https://repo.radeon.com/rocm/rocm.gpg.key | sudo apt-key add -"
     subprocess.check_call(keyadd, shell=True)
 
-    with open("/etc/apt/sources.list.d/amdgpu.list", "w") as fd:
-        fd.write(
-            ("deb [arch=amd64] " "https://repo.radeon.com/amdgpu/%s/ubuntu %s main\n")
-            % (rocm_version_str, codename)
-        )
-
     with open("/etc/apt/sources.list.d/rocm.list", "w") as fd:
         fd.write(
             ("deb [arch=amd64] " "https://repo.radeon.com/rocm/apt/%s %s main\n")
@@ -412,20 +397,7 @@ gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
             % rocm_version_str
         )
 
-    with open("/etc/yum.repos.d/amdgpu.repo", "w") as afd:
-        afd.write(
-            """
-[amdgpu]
-name=amdgpu
-baseurl=https://repo.radeon.com/amdgpu/%s/rhel/8.8/main/x86_64/
-enabled=1
-gpgcheck=1
-gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
-"""
-            % rocm_version_str
-        )
-
-
+  
 def parse_args():
     """Parse command-line arguments"""
     p = argparse.ArgumentParser()
