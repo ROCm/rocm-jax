@@ -76,6 +76,13 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Compute FOLDERNAME for artifact
+        id: fold
+        run: |
+          ROCM_VERSION="${{ matrix.rocm-version }}"
+          UBUNTU_VERSION="${{ matrix.ubuntu-version }}"
+          FOLDERNAME="logs_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
+          echo "foldername=$FOLDERNAME" >> $GITHUB_OUTPUT
       - name: Run test using run_single_gpu.py
         if: always()
         env:
@@ -84,19 +91,27 @@ jobs:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
         run: |
+          LOGS_DIR="jax/${{ steps.fold.outputs.foldername }}"
+          mkdir -p "$LOGS_DIR"
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python build/rocm/run_single_gpu.py -c 2>&1 | tee jax/logs/logs_output.log"
-      - name: Compute FOLDERNAME for artifact
-        id: compute
-        run: |
-          ROCM_VERSION="${{ matrix.rocm-version }}"
-          UBUNTU_VERSION="${{ matrix.ubuntu-version }}"
-          FOLDERNAME="logs_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
-          echo "foldername=$FOLDERNAME" >> $GITHUB_OUTPUT
-      - name: Upload test logs
+            --test-cmd "python build/rocm/run_single_gpu.py -c 2>&1 | tee ${LOGS_DIR}/run_out.log"
+      - name: Upload logs to DB
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.compute.outputs.foldername }}
-          path: jax/logs/
+        env:
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+          UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
+          LOGS_DIR: "jax/${{ steps.fold.outputs.foldername }}"
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install mysql-connector-python
+
+          python ci/upload_test_to_db.py \
+          --logs_dir "$LOGS_DIR" \
+          --runner_label "mi-250" \
+          --ubuntu-version "${UBUNTU_VERSION}" \
+          --rocm-version "${ROCM_VERSION//.}" \
+          --github-run-id "${{ github.run_id }}" \
+          --commit-sha "${{ github.sha }}"
