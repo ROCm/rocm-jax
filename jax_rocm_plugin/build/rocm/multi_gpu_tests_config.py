@@ -68,6 +68,7 @@ MULTI_GPU_TESTS = {
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1 and sys.argv[1] == "--list":
         # Print all multi-GPU tests, one per line (for bash scripts)
         for test in MULTI_GPU_TESTS:
@@ -77,4 +78,5 @@ if __name__ == "__main__":
         print(f"Total tests: {len(MULTI_GPU_TESTS)}")
         print("\nTo get the list for bash scripts, run:")
         print("python3 multi_gpu_tests_config.py --list")
+
 
