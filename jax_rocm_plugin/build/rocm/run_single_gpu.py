@@ -498,7 +498,11 @@ def _update_html_json_data(
             f"GPU ID: {gpu_id}"
         )
         new_test = {
-            "testId": test_name if ("::" in test_name and test_name.startswith("tests/")) else f"tests/{testfile}.py::{test_name}",
+            "testId": (
+                test_name
+                if ("::" in test_name and test_name.startswith("tests/"))
+                else f"tests/{testfile}.py::{test_name}"
+            ),
             "id": test_id,
             "log": log_msg,
             "extras": [],
@@ -522,7 +526,7 @@ def _update_html_json_data(
             html_content,
         )
 
-    except ( # pylint: disable=broad-exception-caught
+    except (  # pylint: disable=broad-exception-caught
         json.JSONDecodeError,
         Exception,
     ) as ex:  # pylint: disable=broad-exception-caught
@@ -637,7 +641,11 @@ def _create_new_html_file(
             },
             "tests": {
                 "test_0": {
-                    "testId": test_name if ("::" in test_name and test_name.startswith("tests/")) else f"tests/{testfile}.py::{test_name}",
+                    "testId": (
+                        test_name
+                        if ("::" in test_name and test_name.startswith("tests/"))
+                        else f"tests/{testfile}.py::{test_name}"
+                    ),
                     "id": "test_0",
                     "log": log_msg,
                     "extras": [],
@@ -860,7 +868,9 @@ def run_parallel(all_testmodules, p, c):
 
 def find_num_gpus():
     """Find the number of AMD/ATI GPUs available."""
-    cmd = [r"rocm-smi | grep -E '^Device' -A 1000 | awk '$1 ~ /^[0-9]+$/ {count++} END {print count}'"]
+    cmd = [
+        r"rocm-smi | grep -E '^Device' -A 1000 | awk '$1 ~ /^[0-9]+$/ {count++} END {print count}'"
+    ]
     _, _, stdout = run_shell_command(cmd, shell=True)
     return int(stdout)
 
@@ -891,5 +901,3 @@ if __name__ == "__main__":
         print(f"{sys_gpu_count} GPUs detected.")
 
     main(parsed_args)
-
-

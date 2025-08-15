@@ -78,5 +78,3 @@ if __name__ == "__main__":
         print(f"Total tests: {len(MULTI_GPU_TESTS)}")
         print("\nTo get the list for bash scripts, run:")
         print("python3 multi_gpu_tests_config.py --list")
-
-
