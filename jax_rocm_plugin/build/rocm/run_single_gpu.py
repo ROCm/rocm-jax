@@ -510,8 +510,8 @@ def _update_html_json_data(
                 '<td class="col-result">Failed</td>',
                 (
                     f'<td class="col-name">'
-                    f'{test_name if ("::" in test_name and test_name.startswith("tests/")) else f"tests/{testfile}.py::{test_name}"}' # pylint: disable=line-too-long
-                    f'</td>'
+                    f'{test_name if ("::" in test_name and test_name.startswith("tests/")) else f"tests/{testfile}.py::{test_name}"}'  # pylint: disable=line-too-long
+                    f"</td>"
                 ),
                 f'<td class="col-duration">{duration_str}</td>',
                 '<td class="col-links"></td>',
@@ -657,8 +657,8 @@ def _create_new_html_file(
                         '<td class="col-result">Failed</td>',
                         (
                             f'<td class="col-name">'
-                            f'{test_name if ("::" in test_name and test_name.startswith("tests/")) else f"tests/{testfile}.py::{test_name}"}' # pylint: disable=line-too-long
-                            f'</td>'
+                            f'{test_name if ("::" in test_name and test_name.startswith("tests/")) else f"tests/{testfile}.py::{test_name}"}'  # pylint: disable=line-too-long
+                            f"</td>"
                         ),
                         f'<td class="col-duration">{duration_str}</td>',
                         '<td class="col-links"></td>',
