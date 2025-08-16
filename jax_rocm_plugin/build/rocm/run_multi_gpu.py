@@ -144,7 +144,7 @@ def run_multi_gpu_test(test_file, gpu_count, max_gpus=None):
             "XLA_PYTHON_CLIENT_ALLOCATOR": "default",
         }
     )
-
+    # pylint: disable=duplicate-code
     # Build pytest command
     cmd = [
         "python3",
