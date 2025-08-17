@@ -151,11 +151,19 @@ def collect_testmodules():
     for test_file in test_files:
         # Convert absolute path to relative path for comparison
         relative_path = os.path.relpath(test_file)
-        if relative_path not in MULTI_GPU_TESTS:
+
+        # Normalize the path to match config format
+        if relative_path.startswith("jax/"):
+            normalized_path = relative_path[4:]  # Remove "jax/" prefix
+        else:
+            normalized_path = relative_path
+
+        if normalized_path not in MULTI_GPU_TESTS:
             filtered_test_files.add(test_file)
+            print(f"Including: {normalized_path}")
         else:
             excluded_count += 1
-            print(f"Excluding multi-GPU test: {relative_path}")
+            print(f"Excluding multi-GPU test: {normalized_path}")
 
     print(f"Found {len(filtered_test_files)} test modules.")
     print(f"Excluded {excluded_count} multi-GPU test modules.")
