@@ -43,10 +43,6 @@ MAX_GPUS_PER_TEST = 8  # Limit for stability
 def detect_amd_gpus():
     """Detect number of AMD/ATI GPUs using rocm-smi."""
     try:
-        result = subprocess.run(
-            ["rocm-smi"], capture_output=True, text=True, check=True
-        )
-        # Use same logic as bash script
         cmd = [
             "bash",
             "-c",
@@ -257,10 +253,8 @@ def main():
 
             if exit_code == 0:
                 passed_tests.append(test_file)
-                print(f"✓ PASSED: {test_file}")
             else:
                 failed_tests.append((test_file, exit_code))
-                print(f"✗ FAILED: {test_file} (exit code: {exit_code})")
 
         except KeyboardInterrupt:
             print(f"\nInterrupted during {test_file}")
