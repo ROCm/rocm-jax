@@ -21,6 +21,14 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import datetime
+import json
+from pathlib import Path
+
+
+
+def repo_root() -> Path:
+    return Path(__file__).resolve().parent.parent
 import tempfile
 
 
@@ -53,30 +61,88 @@ def dist_wheels(
     cmd.append("dist_wheels")
     subprocess.check_call(cmd, cwd=jax_plugin_dir)
 
+def get_repo_commit_info(repo_path, repo_name):
 
-def _fetch_jax_metadata(xla_path):
-    cmd = ["git", "rev-parse", "HEAD"]
-    jax_commit = subprocess.check_output(cmd)
-    xla_commit = b""
+    try:
+        if not repo_path or not os.path.exists(repo_path):
+            return {
+                "commit": "unknown",
+                "commit_title": "unknown", 
+                "commit_date": "unknown"
+            }
+        
+        if not os.path.exists(os.path.join(repo_path, ".git")):
+            return {
+                "commit": "unknown",
+                "commit_title": "unknown",
+                "commit_date": "unknown"
+            }
+        
 
-    if xla_path:
-        try:
-            xla_commit = subprocess.check_output(cmd, cwd=xla_path)
-        except Exception as ex:
-            LOG.warning("Exception while retrieving xla_commit: %s" % ex)
+        commit_cmd = ["git", "rev-parse", "HEAD"]
+        commit_hash = subprocess.check_output(commit_cmd, cwd=repo_path).decode("utf8").strip()
+        
+        title_cmd = ["git", "log", "-1", "--pretty=format:%s"]
+        commit_title = subprocess.check_output(title_cmd, cwd=repo_path).decode("utf8").strip()
 
-    cmd = ["python3", "setup.py", "-V"]
-    env = dict(os.environ)
-    env["JAX_RELEASE"] = "1"
+        date_cmd = ["git", "log", "-1", "--pretty=format:%ci"]
+        commit_date_raw = subprocess.check_output(date_cmd, cwd=repo_path).decode("utf8").strip()
+        commit_date = commit_date_raw.split()[0] 
+        
+        return {
+            "commit": commit_hash,
+            "commit_title": commit_title,
+            "commit_date": commit_date
+        }
+        
+    except subprocess.CalledProcessError as ex:
+        return {
+            "commit": "unknown",
+            "commit_title": "unknown",
+            "commit_date": "unknown"
+        }
+    except Exception as ex:
+        return {
+            "commit": "unknown", 
+            "commit_title": "unknown",
+            "commit_date": "unknown"
+        }
 
-    jax_version = subprocess.check_output(cmd, env=env)
-
-    return {
-        "jax_version": jax_version.decode("utf8").strip(),
-        "jax_commit": jax_commit.decode("utf8").strip(),
-        "xla_commit": xla_commit.decode("utf8").strip(),
+def _fetch_jax_metadata(xla_path, jax_path=".", plugin_path="."):
+    
+    repos = {
+        "rocm/jax": {"path": Path(jax_path)},
+        "rocm/xla": {"path": Path(xla_path) if xla_path else None},
+        "rocm/rocm-jax": {"path": Path(plugin_path)},
     }
 
+    metadata = {
+        "build_timestamp": datetime.datetime.utcnow().isoformat(),
+        "build_date": datetime.date.today().isoformat(),
+    }
+
+    for repo_id, cfg in repos.items():
+        p = cfg["path"]
+        info = get_repo_commit_info(str(p), repo_id) if p else {
+            "commit": "unknown", "commit_title": "unknown", "commit_date": "unknown"
+        }
+        safe = repo_id.replace("/", "_").replace("-", "_")
+        metadata[f"{safe}_commit"] = info["commit"]
+        metadata[f"{safe}_commit_title"] = info["commit_title"]
+        metadata[f"{safe}_commit_date"] = info["commit_date"]
+
+    try:
+        jax_version = subprocess.check_output(
+            ["python3", "setup.py", "-V"],
+            env={**os.environ, "JAX_RELEASE": "1"},
+            cwd=str(jax_path),
+            text=True,
+        ).strip()
+        metadata["jax_version"] = jax_version
+    except Exception as ex:
+        metadata["jax_version"] = "unknown"
+
+    return metadata
 
 def build_dockers(
     rocm_version: str,
@@ -86,7 +152,11 @@ def build_dockers(
     therock_path=None,
     tag_base=None,
     docker_filters=None,
+    metadata=None
 ):
+
+    if metadata is None:
+        metadata = {}
 
     dockerfiles = []
     docker_dir = "docker"
@@ -120,7 +190,18 @@ def build_dockers(
             dockerfile,
             "--build-arg=ROCM_VERSION=%s" % rocm_version,
             "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
-            "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
+            "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num, 
+            "--build-arg=ROCM_JAX_COMMIT=%s" % metadata.get('rocm_jax_commit', 'unknown'),
+            "--build-arg=ROCM_JAX_COMMIT_TITLE=%s" % metadata.get('rocm_jax_commit_title', 'unknown'),
+            "--build-arg=ROCM_JAX_COMMIT_DATE=%s" % metadata.get('rocm_jax_commit_date', 'unknown'),
+            "--build-arg=ROCM_XLA_COMMIT=%s" % metadata.get('rocm_xla_commit', 'unknown'),
+            "--build-arg=ROCM_XLA_COMMIT_TITLE=%s" % metadata.get('rocm_xla_commit_title', 'unknown'),
+            "--build-arg=ROCM_XLA_COMMIT_DATE=%s" % metadata.get('rocm_xla_commit_date', 'unknown'),
+            "--build-arg=ROCM_ROCM_JAX_COMMIT=%s" % metadata.get('rocm_rocm_jax_commit', 'unknown'),
+            "--build-arg=ROCM_ROCM_JAX_COMMIT_TITLE=%s" % metadata.get('rocm_rocm_jax_commit_title', 'unknown'),
+            "--build-arg=ROCM_ROCM_JAX_COMMIT_DATE=%s" % metadata.get('rocm_rocm_jax_commit_date', 'unknown'),
+            "--build-arg=BUILD_DATE=%s" % metadata.get('build_date', ''),
+            "--build-arg=BUILD_TIMESTAMP=%s" % metadata.get('build_timestamp', ''),
             "--tag=%s" % tag,
         ]
 
@@ -140,9 +221,71 @@ def build_dockers(
 
         subprocess.check_call(cmd)
 
+def print_docker_build_info(image_name):
+    """Extract and print build information from Docker image labels."""
+    try:
+        # Get Docker labels
+        result = subprocess.run(
+            ["docker", "inspect", "--format", "{{json .Config.Labels}}", image_name],
+            capture_output=True, 
+            text=True,
+            check=True
+        )
+        
+        labels = json.loads(result.stdout.strip())
+        
+      
+        print("=" * 70)
+        print("ROCm JAX Docker Build Information")
+        print("=" * 70)
+        print(f"Build Date : {labels.get('com.amdgpu.build_date', 'unknown')}")
+        print()
+        
+
+        jax_commit = labels.get('com.amdgpu.rocm_jax.commit', 'unknown')
+        jax_date = labels.get('com.amdgpu.rocm_jax.commit_date', 'unknown')
+        jax_title = labels.get('com.amdgpu.rocm_jax.commit_title', 'unknown')
+        
+        print(f"rocm/jax Commit Hash : {jax_commit} ({jax_date})")
+        if jax_title != 'unknown':
+            print(f"rocm/jax Commit Title : {jax_title}")
+            print()
+        
+
+        xla_commit = labels.get('com.amdgpu.rocm_xla.commit', 'unknown')
+        xla_date = labels.get('com.amdgpu.rocm_xla.commit_date', 'unknown')
+        xla_title = labels.get('com.amdgpu.rocm_xla.commit_title', 'unknown')
+        
+        print(f"rocm/xla Commit Hash : {xla_commit} ({xla_date})")
+        if xla_title != 'unknown':
+            print(f"rocm/xla Commit Title : {xla_title}")
+            print()
+
+        plugin_commit = labels.get('com.amdgpu.rocm_rocm_jax.commit', 'unknown')
+        plugin_date = labels.get('com.amdgpu.rocm_rocm_jax.commit_date', 'unknown')
+        plugin_title = labels.get('com.amdgpu.rocm_rocm_jax.commit_title', 'unknown')
+        
+        print(f"rocm/rocm-jax Commit Hash: {plugin_commit} ({plugin_date})")
+        if plugin_title != 'unknown':
+            print(f"rocm/rocm-jax Commit Title: {plugin_title}")
+            print()
+
+        
+        print("=" * 70)
+        print()
+        
+    except subprocess.CalledProcessError:
+        print(f"Failed to inspect Docker image: {image_name}")
+    except json.JSONDecodeError:
+        print(f"Failed to parse Docker labels")
+    except Exception as e:
+        print(f" Error: {e}")
+
 
 def test(image_name, test_cmd=None):
     """Run unit tests like CI would inside a JAX image."""
+
+    print_docker_build_info(image_name)
 
     if not test_cmd:
         test_cmd = "./build/rocm/run_single_gpu.py -c && ./build/rocm/run_multi_gpu.sh"
@@ -285,21 +428,30 @@ def parse_args():
 
 def main():
     args = parse_args()
-
+    root = repo_root()  
+    jax_path = root / "jax"
+    xla_candidate = root / "xla"
+    xla_path = xla_candidate if xla_candidate.exists() else None
+    plugin_path = root
     if args.action == "dist_wheels":
 
         dist_wheels(
-            rocm_version=args.rocm_version,
-            python_versions=args.python_versions,
-            xla_source_dir=args.xla_source_dir,
-            rocm_build_job=args.rocm_build_job,
-            rocm_build_num=args.rocm_build_num,
-            therock_path=args.therock_path,
+            args.rocm_version,
+            args.python_versions,
+            args.xla_source_dir,
+            args.rocm_build_job,
+            args.rocm_build_num,
             compiler=args.compiler,
         )
 
     if args.action == "build_dockers":
         filters = args.filter.split(",")
+
+        md = _fetch_jax_metadata(
+            xla_path=xla_path,               
+            jax_path=str(jax_path),
+            plugin_path=str(plugin_path),
+    )
 
         build_dockers(
             rocm_version=args.rocm_version,
@@ -308,6 +460,7 @@ def main():
             rocm_build_num=args.rocm_build_num,
             therock_path=args.therock_path,
             docker_filters=filters,
+            metadata=md
         )
 
     elif args.action == "test_docker":
