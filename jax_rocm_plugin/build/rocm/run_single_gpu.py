@@ -132,6 +132,8 @@ def collect_testmodules():
             "python3",
             "-m",
             "pytest",
+            "-c",
+            "ci/pytest_skips.ini",
             "--collect-only",
             "-qq",
             "./jax/tests",
