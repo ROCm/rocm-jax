@@ -430,17 +430,17 @@ def main():
     args = parse_args()
     root = repo_root()  
     jax_path = root / "jax"
-    xla_candidate = root / "xla"
-    xla_path = xla_candidate if xla_candidate.exists() else None
+    xla_path = root / "xla"
     plugin_path = root
     if args.action == "dist_wheels":
 
         dist_wheels(
-            args.rocm_version,
-            args.python_versions,
-            args.xla_source_dir,
-            args.rocm_build_job,
-            args.rocm_build_num,
+            rocm_version=args.rocm_version,
+            python_versions=args.python_versions,
+            xla_path=xla_path,
+            rocm_build_job=args.rocm_build_job,
+            rocm_build_num=args.rocm_build_num,
+            therock_path=args.therock_path,
             compiler=args.compiler,
         )
 
@@ -448,7 +448,7 @@ def main():
         filters = args.filter.split(",")
 
         md = _fetch_jax_metadata(
-            xla_path=xla_path,               
+            xla_path=str(xla_path),           
             jax_path=str(jax_path),
             plugin_path=str(plugin_path),
     )
