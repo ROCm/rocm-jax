@@ -77,15 +77,45 @@ RUN bash -c '  \
         echo "ROCm version $ROCM_VERSION, skipping patch."; \
     fi'
 
-ARG JAX_VERSION
-ARG JAX_COMMIT
-ARG XLA_COMMIT
+# Build metadata (wired from your Python build args)
+ARG PYTHON_VERSION=3.10
+ARG BUILD_DATE=""
+ARG BUILD_TIMESTAMP=""
 
-LABEL com.amdgpu.rocm_version="$ROCM_VERSION" \
-      com.amdgpu.python_version="3.10" \
-      com.amdgpu.jax_version="$JAX_VERSION" \
-      com.amdgpu.jax_commit="$JAX_COMMIT" \
-      com.amdgpu.xla_commit="$XLA_COMMIT"
+# rocm/jax
+ARG ROCM_JAX_COMMIT="unknown"
+ARG ROCM_JAX_COMMIT_TITLE="unknown"
+ARG ROCM_JAX_COMMIT_DATE="unknown"
+# rocm/xla
+ARG ROCM_XLA_COMMIT="unknown"
+ARG ROCM_XLA_COMMIT_TITLE="unknown"
+ARG ROCM_XLA_COMMIT_DATE="unknown"
+# rocm/rocm-jax (plugin)
+ARG ROCM_ROCM_JAX_COMMIT="unknown"
+ARG ROCM_ROCM_JAX_COMMIT_TITLE="unknown"
+ARG ROCM_ROCM_JAX_COMMIT_DATE="unknown"
+
+# Legacy (optional; keep if other tooling reads these)
+ARG JAX_VERSION=""
+ARG JAX_COMMIT=""
+ARG XLA_COMMIT=""
+
+# Labels that match your Python inspector
+LABEL \
+  com.amdgpu.build_date="${BUILD_DATE}" \
+  com.amdgpu.build_timestamp="${BUILD_TIMESTAMP}" \
+  com.amdgpu.rocm_version="${ROCM_VERSION}" \
+  com.amdgpu.python_version="${PYTHON_VERSION}" \
+  com.amdgpu.jax_version="${JAX_VERSION}" \
+  com.amdgpu.rocm_jax.commit="${ROCM_JAX_COMMIT}" \
+  com.amdgpu.rocm_jax.commit_title="${ROCM_JAX_COMMIT_TITLE}" \
+  com.amdgpu.rocm_jax.commit_date="${ROCM_JAX_COMMIT_DATE}" \
+  com.amdgpu.rocm_xla.commit="${ROCM_XLA_COMMIT}" \
+  com.amdgpu.rocm_xla.commit_title="${ROCM_XLA_COMMIT_TITLE}" \
+  com.amdgpu.rocm_xla.commit_date="${ROCM_XLA_COMMIT_DATE}" \
+  com.amdgpu.rocm_rocm_jax.commit="${ROCM_ROCM_JAX_COMMIT}" \
+  com.amdgpu.rocm_rocm_jax.commit_title="${ROCM_ROCM_JAX_COMMIT_TITLE}" \
+  com.amdgpu.rocm_rocm_jax.commit_date="${ROCM_ROCM_JAX_COMMIT_DATE}"
 
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=wheelhouse,target=/wheelhouse \
