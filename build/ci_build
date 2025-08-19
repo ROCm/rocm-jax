@@ -145,7 +145,7 @@ def test(image_name, test_cmd=None):
     """Run unit tests like CI would inside a JAX image."""
 
     if not test_cmd:
-        test_cmd = "./build/rocm/run_single_gpu.py -c && ./build/rocm/run_multi_gpu.sh"
+        test_cmd = "./jax_rocm_plugin/build/rocm/run_single_gpu.py -c && ./jax_rocm_plugin/build/rocm/run_multi_gpu.sh"
 
     gpu_args = [
         "--device=/dev/kfd",
@@ -172,13 +172,13 @@ def test(image_name, test_cmd=None):
     # JAX and jaxlib are already installed from wheels
     mounts = [
         "-v",
-        os.path.abspath("./jax") + ":/jax",
+        os.path.abspath(".") + ":/rocm-jax",
     ]
 
     cmd.extend(mounts)
     cmd.extend(gpu_args)
 
-    container_cmd = "cd /jax && %s" % test_cmd
+    container_cmd = "cd /rocm-jax && %s" % test_cmd
 
     cmd.append(image_name)
     cmd.extend(
