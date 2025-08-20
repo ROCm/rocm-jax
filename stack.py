@@ -13,6 +13,7 @@ XLA_REPO_REF = "rocm-jaxlib-v0.6.0"
 JAX_REPL_URL = "https://github.com/rocm/jax"
 XLA_REPL_URL = "https://github.com/rocm/xla"
 
+DEFAULT_XLA_DIR = "../xla"
 
 PLUGIN_NAMESPACE_VERSION = "7"
 
@@ -39,7 +40,7 @@ jax_rocm_plugin:
             --rocm_path=/opt/rocm/ \
             --rocm_version=%(plugin_version)s \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-            --bazel_options="--override_repository=xla=../xla" \
+            --bazel_options="--override_repository=xla=%(xla_dir)s" \
             --verbose \
             --clang_path=%(clang_path)s
 
@@ -51,7 +52,7 @@ jax_rocm_pjrt:
             --rocm_path=/opt/rocm/ \
             --rocm_version=%(plugin_version)s \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-            --bazel_options="--override_repository=xla=../xla" \
+            --bazel_options="--override_repository=xla=%(xla_dir)s" \
             --verbose \
             --clang_path=%(clang_path)s
 
@@ -101,7 +102,9 @@ def find_clang():
     return None
 
 
-def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False):
+def setup_development(
+    jax_ref: str, xla_ref: str, xla_dir: str, rebuild_makefile: bool = False
+):
     """Clone jax repo for jax test case source code"""
 
     if not os.path.exists("./jax"):
@@ -110,8 +113,9 @@ def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False
         cmd.append(JAX_REPL_URL)
         subprocess.check_call(cmd)
 
-    # clone xla from source for building jax_rocm_plugin
-    if not os.path.exists("./xla"):
+    # clone xla from source for building jax_rocm_plugin if the user didn't
+    # specify an existing XLA directory
+    if not os.path.exists("./xla") and xla_dir != DEFAULT_XLA_DIR:
         cmd = ["git", "clone"]
         cmd.extend(["--branch", xla_ref])
         cmd.append(XLA_REPL_URL)
@@ -123,6 +127,7 @@ def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False
         kvs = {
             "clang_path": "/usr/lib/llvm-18/bin/clang",
             "plugin_version": PLUGIN_NAMESPACE_VERSION,
+            "xla_dir": xla_dir,
         }
 
         clang_path = find_clang()
@@ -205,6 +210,14 @@ def parse_args():
         default=XLA_REPO_REF,
     )
     dev.add_argument(
+        "--xla-dir",
+        help=(
+            "Set the XLA path in the Makefile. This must either be a path "
+            "relative to jax_rocm_plugin or an absolute path."
+        ),
+        default=DEFAULT_XLA_DIR,
+    )
+    dev.add_argument(
         "--jax-ref",
         help="JAX commit reference to checkout on clone",
         default=JAX_REPO_REF,
@@ -228,6 +241,7 @@ def main():
         setup_development(
             rebuild_makefile=args.rebuild_makefile,
             xla_ref=args.xla_ref,
+            xla_dir=args.xla_dir,
             jax_ref=args.jax_ref,
         )
 

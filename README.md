@@ -5,12 +5,20 @@
 
 `rocm-jax` contains sources for the ROCm plugin for JAX, as well as Dockerfiles used to build AMDs `rocm/jax` images.
 
-# development setup
+# Development Setup
+
+This sets up a development environment that allows you to build the ROCm
+plugins via `make`. You can tune the environment and build process to
+fit your specific build needs by editing the `jax_rocm_plugin/Makefile`
+that `stack.py` creates for you.
 
 Run stack.py develop to clone jax/xla
 ```
 python stack.py develop
 ```
+
+Note: When running the above, you can use an already existing
+XLA repository by setting `--xla-dir`.
 
 Create a fresh ubuntu 22.04 container
 ```
