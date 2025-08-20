@@ -5,7 +5,6 @@
 
 `rocm-jax` contains sources for the ROCm plugin for JAX, as well as Dockerfiles used to build AMD's `rocm/jax` images.
 
-
 # Nightly Builds
 
 We build rocm-jax nightly with [a Github Actions workflow](https://github.com/ROCm/rocm-jax/actions/workflows/nightly.yml).

@@ -6,13 +6,15 @@ import os
 import subprocess
 
 
-JAX_REPO_REF = "rocm-jaxlib-v0.6.0"
+TEST_JAX_REPO_REF = "rocm-jaxlib-v0.6.0"
 XLA_REPO_REF = "rocm-jaxlib-v0.6.0"
 
 
 JAX_REPL_URL = "https://github.com/rocm/jax"
 XLA_REPL_URL = "https://github.com/rocm/xla"
 
+DEFAULT_XLA_DIR = "../xla"
+DEFAULT_KERNELS_JAX_DIR = "../jax"
 
 PLUGIN_NAMESPACE_VERSION = "7"
 
@@ -23,6 +25,13 @@ MAKE_TEMPLATE = r"""
 
 # customize to a single arch for local dev builds to reduce compile time
 AMDGPU_TARGETS ?= "$(shell rocminfo | grep -o -m 1 'gfx.*')"
+
+# Use your local XLA for building jax_rocm_pjrt
+XLA_OVERRIDE_OPTION="--override_repository=xla=%(xla_dir)s"
+
+# Use your local JAX for building the kernels in jax_rocm_plugin
+# KERNELS_JAX_OVERRIDE_OPTION="--override_repository=jax=../jax"
+KERNELS_JAX_OVERRIDE_OPTION="%(kernels_jax_override)s"
 
 .PHONY: test clean install dist
 
@@ -39,7 +48,8 @@ jax_rocm_plugin:
             --rocm_path=/opt/rocm/ \
             --rocm_version=%(plugin_version)s \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-            --bazel_options="--override_repository=xla=../xla" \
+            --bazel_options=${XLA_OVERRIDE_OPTION} \
+            --bazel_options=${KERNELS_JAX_OVERRIDE_OPTION} \
             --verbose \
             --clang_path=%(clang_path)s
 
@@ -51,7 +61,8 @@ jax_rocm_pjrt:
             --rocm_path=/opt/rocm/ \
             --rocm_version=%(plugin_version)s \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-            --bazel_options="--override_repository=xla=../xla" \
+            --bazel_options=${XLA_OVERRIDE_OPTION} \
+            --bazel_options=${KERNELS_JAX_OVERRIDE_OPTION} \
             --verbose \
             --clang_path=%(clang_path)s
 
@@ -66,6 +77,29 @@ install: dist
 
 test:
 	python3 tests/test_plugin.py
+
+
+# Sometimes developers might want to build their own jaxlib. Usually, we can
+# just use the one from upstream, but we might want to build our own if we
+# suspect that jaxlib isn't loading the plugin properly or if ROCm-specific
+# code is somehow making its way into jaxlib.
+
+jaxlib:
+	(cd %(kernels_jax_dir)s && python3 ./build/build.py build \
+            --use_clang=true \
+            --clang_path=%(clang_path)s \
+			--wheels=jaxlib \
+			--bazel_options=${XLA_OVERRIDE_OPTION} \
+            --verbose \
+	)
+
+
+jaxlib_clean:
+	rm -f %(kernels_jax_dir)s/dist/*
+
+
+jaxlib_install:
+	pip install --force-reinstall %(kernels_jax_dir)s/dist/*
 """
 
 
@@ -101,17 +135,25 @@ def find_clang():
     return None
 
 
-def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False):
-    """Clone jax repo for jax test case source code"""
+def setup_development(
+    xla_ref: str,
+    xla_dir: str,
+    test_jax_ref: str,
+    kernels_jax_dir: str,
+    rebuild_makefile: bool = False,
+):
+    """Clone jax and xla repos, and set up Makefile for developers"""
 
+    # Always clone the JAX repo that we'll use for running unit tests
     if not os.path.exists("./jax"):
         cmd = ["git", "clone"]
-        cmd.extend(["--branch", jax_ref])
+        cmd.extend(["--branch", test_jax_ref])
         cmd.append(JAX_REPL_URL)
         subprocess.check_call(cmd)
 
-    # clone xla from source for building jax_rocm_plugin
-    if not os.path.exists("./xla"):
+    # clone xla from source for building jax_rocm_plugin if the user didn't
+    # specify an existing XLA directory
+    if not os.path.exists("./xla") and xla_dir != DEFAULT_XLA_DIR:
         cmd = ["git", "clone"]
         cmd.extend(["--branch", xla_ref])
         cmd.append(XLA_REPL_URL)
@@ -123,6 +165,16 @@ def setup_development(jax_ref: str, xla_ref: str, rebuild_makefile: bool = False
         kvs = {
             "clang_path": "/usr/lib/llvm-18/bin/clang",
             "plugin_version": PLUGIN_NAMESPACE_VERSION,
+            "xla_dir": xla_dir,
+            # If the user wants to use their own JAX for building the plugin wheel
+            # that contains all the jaxlib kernel code (jax_rocm7_plugin), add that
+            # to the Makefile.
+            "kernels_jax_override": (
+                (" --override_repository=jax=%s" % kernels_jax_dir)
+                if kernels_jax_dir
+                else ""
+            ),
+            "kernels_jax_dir": kernels_jax_dir if kernels_jax_dir else "",
         }
 
         clang_path = find_clang()
@@ -205,9 +257,26 @@ def parse_args():
         default=XLA_REPO_REF,
     )
     dev.add_argument(
+        "--xla-dir",
+        help=(
+            "Set the XLA path in the Makefile. This must either be a path "
+            "relative to jax_rocm_plugin or an absolute path."
+        ),
+        default=DEFAULT_XLA_DIR,
+    )
+    dev.add_argument(
         "--jax-ref",
         help="JAX commit reference to checkout on clone",
-        default=JAX_REPO_REF,
+        default=TEST_JAX_REPO_REF,
+    )
+    dev.add_argument(
+        "--kernel-jax-dir",
+        help=(
+            "If you want to use a local JAX directory for building the "
+            "plugin kernels wheel (jax_rocm7_plugin), the path to the "
+            "directory of repo. Defaults to %s" % DEFAULT_KERNELS_JAX_DIR
+        ),
+        default=DEFAULT_KERNELS_JAX_DIR,
     )
 
     doc_parser = subp.add_parser("docker")
@@ -226,9 +295,11 @@ def main():
         dev_docker(rm=args.rm)
     elif args.action == "develop":
         setup_development(
-            rebuild_makefile=args.rebuild_makefile,
             xla_ref=args.xla_ref,
-            jax_ref=args.jax_ref,
+            xla_dir=args.xla_dir,
+            test_jax_ref=args.jax_ref,
+            kernels_jax_dir=args.kernel_jax_dir,
+            rebuild_makefile=args.rebuild_makefile,
         )
 
 
