@@ -24,9 +24,12 @@ import pathlib
 import stat
 import subprocess
 import tempfile
+import textwrap
+import json
 
 from bazel_tools.tools.python.runfiles import runfiles
 from jaxlib_ext.tools import build_utils
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -80,6 +83,36 @@ plat_name={tag}
 """)
 
 
+def load_build_metadata():
+    """Load build metadata from JSON file."""
+    r = runfiles.Create()
+    metadata_path = r.Rlocation("__main__/jaxlib_ext/tools/build_metadata.json")
+    
+    try:
+        with open(metadata_path, 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {
+            # Build timestamps
+            'build_timestamp': 'unknown',
+            'build_date': 'unknown',
+                        
+            # rocm/jax repository info
+            'rocm_jax_commit': 'unknown',
+            'rocm_jax_commit_title': 'unknown',
+            'rocm_jax_commit_date': 'unknown',
+            
+            # rocm/xla repository info
+            'rocm_xla_commit': 'unknown',
+            'rocm_xla_commit_title': 'unknown',
+            'rocm_xla_commit_date': 'unknown',
+            
+            # rocm/rocm-jax repository info (plugin)
+            'rocm_rocm_jax_commit': 'unknown',
+            'rocm_rocm_jax_commit_title': 'unknown',
+            'rocm_rocm_jax_commit_date': 'unknown',
+        }
+
 def prepare_wheel_rocm(
     sources_path: pathlib.Path, *, cpu, rocm_version
 ):
@@ -100,6 +133,8 @@ def prepare_wheel_rocm(
   write_setup_cfg(sources_path, cpu)
 
   plugin_dir = sources_path / f"jax_rocm{rocm_version}_plugin"
+ 
+
   copy_runfiles(
       dst_dir=plugin_dir,
       src_files=[
@@ -114,6 +149,37 @@ def prepare_wheel_rocm(
           "jax/jaxlib/version.py",
       ],
   )
+
+  metadata = load_build_metadata()
+
+  #Write an output file called commit_info.py that gets included into the wheel 
+  (plugin_dir / "commit_info.py").write_text(
+        textwrap.dedent(f"""\
+        # auto-generated; do not edit
+        
+        # ROCm JAX Plugin (rocm-jax) info - this is the main plugin being built
+
+        # Build info
+        build_timestamp = "{metadata.get('build_timestamp', 'unknown')}"
+        build_date = "{metadata.get('build_date', 'unknown')}"
+        
+
+        rocm_jax_commit = "{metadata.get('rocm_jax_commit', 'unknown')}"
+        rocm_jax_commit_title = "{metadata.get('rocm_jax_commit_title', 'unknown')}"
+        rocm_jax_commit_date = "{metadata.get('rocm_jax_commit_title', 'unknown')}"
+
+        jax_commit_hash = "{metadata.get('rocm_rocm_jax_commit', 'unknown')}"
+        jax_commit_title = "{metadata.get('rocm_rocm_jax_commit_title', 'unknown')}"
+        jax_commit_date = "{metadata.get('rocm_rocm_jax_commit_date', 'unknown')}"
+
+    
+        xla_commit_hash = "{metadata.get('rocm_xla_commit', 'unknown')}"
+        xla_commit_title = "{metadata.get('rocm_xla_commit_title', 'unknown')}"
+        xla_commit_date = "{metadata.get('rocm_xla_commit_date', 'unknown')}"
+
+        """)
+    )
+
 
   # NOTE(mrodden): this is a hack to change/set rpath values
   # in the shared objects that are produced by the bazel build
