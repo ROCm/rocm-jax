@@ -23,7 +23,8 @@ py_binary(
     srcs = ["build_gpu_plugin_wheel.py"],
     data = [
         "LICENSE.txt",
-	"//pjrt:pjrt_c_api_gpu_plugin.so",
+        "build_metadata.json", 
+	    "//pjrt:pjrt_c_api_gpu_plugin.so",
         "//pjrt/python:version.py",
         "//pjrt/python:pyproject.toml",
         "//pjrt/python:setup.py",
