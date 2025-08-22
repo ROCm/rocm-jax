@@ -131,18 +131,50 @@ def _fetch_jax_metadata(xla_path, jax_path=".", plugin_path="."):
         metadata[f"{safe}_commit_title"] = info["commit_title"]
         metadata[f"{safe}_commit_date"] = info["commit_date"]
 
-    try:
-        jax_version = subprocess.check_output(
-            ["python3", "setup.py", "-V"],
-            env={**os.environ, "JAX_RELEASE": "1"},
-            cwd=str(jax_path),
-            text=True,
-        ).strip()
-        metadata["jax_version"] = jax_version
-    except Exception as ex:
-        metadata["jax_version"] = "unknown"
-
     return metadata
+
+
+def dist_wheels(
+    rocm_version,
+    python_versions,
+    xla_path,
+    rocm_build_job="",
+    rocm_build_num="",
+    compiler="gcc",
+    metadata=None
+):
+
+    jax_plugin_dir = "jax_rocm_plugin"
+
+    #Create a json file with the commit metadata to generate the commit_info.py for the wheels
+    jaxlib_tools_dir = Path("jax_rocm_plugin/jaxlib_ext/tools")    
+    metadata_file = jaxlib_tools_dir / "build_metadata.json"
+    with open(metadata_file, 'w') as f:
+        json.dump(metadata, f, indent=2)
+
+
+    pjrt_tools_dir = Path("jax_rocm_plugin/pjrt/tools")  
+    metadata_file = pjrt_tools_dir / "build_metadata.json"
+    with open(metadata_file, 'w') as f:
+        json.dump(metadata, f, indent=2)
+
+    cmd = [
+        "python3",
+        "build/rocm/ci_build",
+        "--rocm-version=%s" % rocm_version,
+        "--python-versions=%s" % ",".join(python_versions),
+        "--rocm-build-job=%s" % rocm_build_job,
+        "--rocm-build-num=%s" % rocm_build_num,
+        "--compiler=%s" % compiler,
+    ]
+
+    if xla_path:
+        xla_path = os.path.abspath(xla_path)
+        cmd.append("--xla-source-dir=%s" % xla_path)
+
+    cmd.append("dist_wheels")
+    subprocess.check_call(cmd, cwd=jax_plugin_dir)
+
 
 def build_dockers(
     rocm_version: str,
@@ -432,7 +464,13 @@ def main():
     jax_path = root / "jax"
     xla_path = root / "xla"
     plugin_path = root
+
     if args.action == "dist_wheels":
+        md = _fetch_jax_metadata(
+            xla_path=str(xla_path),           
+            jax_path=str(jax_path),
+            plugin_path=str(plugin_path),
+    )
 
         dist_wheels(
             rocm_version=args.rocm_version,
@@ -442,6 +480,7 @@ def main():
             rocm_build_num=args.rocm_build_num,
             therock_path=args.therock_path,
             compiler=args.compiler,
+            metadata=md
         )
 
     if args.action == "build_dockers":
