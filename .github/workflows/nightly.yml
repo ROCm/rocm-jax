@@ -10,13 +10,53 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  call-build-wheels:
+    strategy:
+      fail-fast: false
+      matrix:
+        rocm-version: ["6.4.1", "7.0.0"]
+        include:
+          - rocm-version: "6.4.1"
+            runner-label: "mi-250"
+          - rocm-version: "7.0.0"
+            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
+            rocm-build-num: "16322"
+            runner-label: "internal"
+    uses: ./.github/workflows/build-wheels.yml
+    with:
+      python-versions: "3.10,3.12"
+      rocm-version: ${{ matrix.rocm-version }}
+      rocm-build-job: ${{ matrix.rocm-build-job }}
+      rocm-build-num: ${{ matrix.rocm-build-num }}
+      runner-label: ${{ matrix.runner-label }}
+  call-build-docker:
+    needs: call-build-wheels
+    strategy:
+      fail-fast: false
+      matrix:
+        rocm-version: ["6.4.1", "7.0.0"]
+        include:
+          - rocm-version: "6.4.1"
+            runner-label: "mi-250"
+          - rocm-version: "7.0.0"
+            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
+            rocm-build-num: "16322"
+            runner-label: "internal"
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      rocm-version: ${{ matrix.rocm-version }}
+      rocm-build-job: ${{ matrix.rocm-build-job }}
+      rocm-build-num: ${{ matrix.rocm-build-num }}
+      runner-label: ${{ matrix.runner-label }}
+      extra-cr-tag: "nightly"
   run-python-unit-tests:
+    needs: call-build-docker
     runs-on: mi-250
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["6.4.1"]
-        ubuntu-version: ["22"]
+        rocm-version: ["6.4.1", "7.0.0"]
+        ubuntu-version: ["22", "24"]
     steps:
       - name: Change owners for cleanup
         run: |
@@ -36,14 +76,7 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Compute FOLDERNAME for artifact
-        id: fold
-        run: |
-          ROCM_VERSION="${{ matrix.rocm-version }}"
-          UBUNTU_VERSION="${{ matrix.ubuntu-version }}"
-          FOLDERNAME="logs_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
-          echo "foldername=$FOLDERNAME" >> $GITHUB_OUTPUT
-      - name: Run tests using run_single_gpu.py + run_multi_gpu.py
+      - name: Run tests using run_single_gpu.py (TODO use rocm-jax repo)
         if: always()
         env:
           GPU_COUNT: "8"
@@ -51,47 +84,34 @@ jobs:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
         run: |
-          HOST_LOGS_DIR="jax/${{ steps.fold.outputs.foldername }}"
-          CONT_LOGS_DIR="/jax/${{ steps.fold.outputs.foldername }}"
-
           python3 build/ci_build test \
-            "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:87d07eea0b415de6a30d8b1fcc4ec2dbef257c2a" \
+            "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
             --test-cmd "python build/rocm/run_single_gpu.py -c 2>&1 | tee ut.log"
-      - name: Rename logs dir (per-matrix)
+      - name: Collect logs directory (per-matrix)
         run: |
-          mv jax/logs jax/${{ steps.fold.outputs.foldername }}
+          mv jax/logs jax/logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
           rm -rf jax/logs
-      - name: Upload logs artifact (per-matrix)
+      - name: Upload logs to artifact (per-matrix)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.fold.outputs.foldername }}
-          path: jax/${{ steps.fold.outputs.foldername }}/
+          name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
+          path: jax/logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}/
   upload-test-to-db:
     needs: run-python-unit-tests
     runs-on: mysqldb
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["6.4.1"]
-        ubuntu-version: ["22"]
+        rocm-version: ["6.4.1", "7.0.0"]
+        ubuntu-version: ["22", "24"]
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
-      - name: Compute FOLDERNAME for artifact
-        id: fold2
-        run: |
-          ROCM_VERSION="${{ matrix.rocm-version }}"
-          UBUNTU_VERSION="${{ matrix.ubuntu-version }}"
-          FOLDERNAME="logs_rocm${ROCM_VERSION//.}_ubu${UBUNTU_VERSION}"
-          echo "foldername=$FOLDERNAME" >> $GITHUB_OUTPUT
-
-      - name: Download training summary artifact
+      - name: Download logs from artifact (per-matrix)
         uses: actions/download-artifact@v4
         with:
-          name: ${{ steps.fold2.outputs.foldername }}
-          path: ${{ steps.fold2.outputs.foldername }}
-
+          name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
+          path: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
       - name: Upload logs to MySQL database
         env:
           ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
@@ -100,7 +120,7 @@ jobs:
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
-          LOGS_DIR: ${{ steps.fold2.outputs.foldername }}
+          LOGS_DIR: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
         run: |
           python3 -m venv venv
           source venv/bin/activate
@@ -114,5 +134,5 @@ jobs:
           --ubuntu-version "${UBUNTU_VERSION}" \
           --rocm-version "${ROCM_VERSION//.}" \
           --commit-sha "${{ github.sha }}" \
-          --build-num "16306" \
+          --build-num "${{ matrix.rocm-build-num || 0 }}" \
           --github-run-id "${{ github.run_id }}"
