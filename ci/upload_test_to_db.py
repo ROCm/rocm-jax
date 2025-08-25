@@ -9,9 +9,9 @@ Tables:
 
 from __future__ import annotations
 
+import argparse
 import os
 import re
-import ast
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -31,10 +31,6 @@ SKIP_FILES = {
     "final_compiled_report.json",
     "final_compiled_report.html",
     "collect_module_log.jsonl",
-    "test_abort_log.json",
-    "test_abort_log.html",
-    "test_seg_fault_log.json",
-    "test_seg_fault_log.html",
 }
 DEFAULT_LABEL = "Skipped Upstream"
 
@@ -42,34 +38,39 @@ DEFAULT_LABEL = "Skipped Upstream"
 # -----------------------------
 # Helpers
 # -----------------------------
-def shorten(s: Optional[str], limit: int = TEXT_LIMIT) -> Optional[str]:
-    """Return string limited to `limit` characters, or None."""
-    if s is None:
-        return None
-    s = str(s)
-    return s if len(s) <= limit else s[:limit]
-
-
 def extract_skip_reason(reason: str) -> str:
     """Parse pytest skip longrepr tuple-string into its reason text.
 
     Example input: "('/path/test_x.py', 42, 'Skipped: some reason')"
     """
-    try:
-        tup = ast.literal_eval(reason)
-        if isinstance(tup, tuple) and len(tup) >= 3:
-            return str(tup[2])
-    except Exception:
-        pass
-    return reason
+    if not isinstance(reason, str):
+        return str(reason)
+
+    s = reason.strip()
+    if not (s.startswith("(") and s.endswith(")")):
+        return s
+
+    parts = s[1:-1].split(",", 2)
+    if len(parts) != 3:
+        return s
+
+    msg = parts[2].strip()
+    if msg[:1] in {"'", '"'} and msg[-1:] == msg[:1]:
+        msg = msg[1:-1]
+    return msg
 
 
 def nodeid_parts(nodeid: str) -> Tuple[str, str, str]:
     """Split pytest nodeid into (filename, classname, test_name).
 
-    Assumes the invariant "file::Class::test" is satisfied by all nodeids.
+    Support both variants: "file::Class::test" and "file::test" in nodeids.
     """
-    f, c, t = nodeid.split("::", 2)
+    parts = nodeid.split("::", 2)
+    f = parts[0]
+    if len(parts) == 2:
+        return f, "", parts[1]
+    c = parts[1]
+    t = parts[2]
     return f, c, t
 
 
@@ -95,7 +96,8 @@ def load_from_per_test_jsons(files: Iterable[Path]) -> Tuple[datetime, List[dict
     created_values: List[float] = []
 
     for path in files:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        with path.open("r", encoding="utf-8") as fh:
+            data = json.load(fh)
         if "created" not in data:
             raise ValueError(f"Missing 'created' in {path.name}")
         created_values.append(float(data["created"]))
@@ -130,13 +132,15 @@ def extract_result_fields(
         and longrepr_raw.endswith(")")
     ):
         longrepr_raw = extract_skip_reason(longrepr_raw)
-    longrepr = shorten(longrepr_raw)
+    longrepr = str(longrepr_raw)[:TEXT_LIMIT] if longrepr_raw is not None else None
 
     message = None
     crash = call.get("crash")
     if isinstance(crash, dict):
         # Normalize excessive/irregular whitespace, then truncate.
-        message = shorten(" ".join(str(crash.get("message", "")).split())) or None
+        raw_msg = crash.get("message", "")
+        msg = " ".join(str(raw_msg).split())
+        message = msg[:TEXT_LIMIT] if msg else None
 
     return nodeid, outcome, duration, longrepr, message
 
@@ -144,6 +148,81 @@ def extract_result_fields(
 # -----------------------------
 # Skip reason categorizer
 # -----------------------------
+# Precompile skip categorization rules (regex etc.) once.
+# categorize_reason() reuses them; lru_cache avoids recompute.
+_RULES_RAW = [
+    # ROCm
+    {
+        "any": ["skip on rocm", "skip for rocm"],
+        "label": "Skipped on ROCm",
+    },
+    # Mosaic
+    {"contains": "mosaic", "label": "Mosaic"},
+    # Memory
+    {
+        "contains": "memory size limit exceeded",
+        "label": "Memory Limit Exceeded",
+    },
+    # Device constraints / applicability
+    {
+        "any": [
+            "tpu",
+            "x64",
+            "x32",
+            "backend is not cpu",
+            "only for cpu",
+            "at least",
+        ],
+        "label": "Device Inapplicability",
+    },
+    {
+        "contains": "memories do not work on cpu and gpu backends yet",
+        "label": "Device Inapplicability",
+    },
+    {
+        "contains": "test enabled only for cpu",
+        "label": "Device Inapplicability",
+    },
+    {
+        "contains": "jax implements eig only on cpu",
+        "label": "Device Inapplicability",
+    },
+    {
+        "contains": "schur decomposition is only implemented on cpu",
+        "label": "Device Inapplicability",
+    },
+    {"all": ["test", "requires", "device"], "label": "Device Inapplicability"},
+    # Missing module / API / plugin
+    {
+        "any": ["cuda", "sm90", "sm80", "cudnn", "magma is not installed"],
+        "label": "Missing Module/API/Plugin",
+    },
+    {"contains": "no module named", "label": "Missing Module/API/Plugin"},
+    {
+        "regex": r"tests?\s+require(?:s)?\s+.+\s+plugin",
+        "label": "Missing Module/API/Plugin",
+    },
+    {"contains": "requires", "label": "Missing Module/API/Plugin"},
+    # Upstream / generic
+    {"contains": "not supported on device", "label": "Skipped Upstream"},
+    {
+        "contains": "skipping big tests under sanitizers due to slowdown",
+        "label": "Skipped Upstream",
+    },
+    {"contains": "not implemented", "label": "Skipped Upstream"},
+    {"contains": "not relevant", "label": "Skipped Upstream"},
+    {"contains": "dimension", "label": "Skipped Upstream"},
+    {"contains": "support", "label": "Skipped Upstream"},
+]
+_CATEG_RULES = []
+for _raw in _RULES_RAW:
+    _rule = dict(_raw)
+    if "regex" in _rule:
+        _rule["regex"] = re.compile(_rule["regex"])
+    _CATEG_RULES.append(_rule)
+_CATEG_RULES = tuple(_CATEG_RULES)
+
+
 @lru_cache(maxsize=4096)
 def categorize_reason(reason: Optional[str]) -> str:
     """Map a skip/crash reason to a category label.
@@ -156,92 +235,15 @@ def categorize_reason(reason: Optional[str]) -> str:
 
     s = " ".join(str(reason).split()).casefold()
 
-    # Lazily compile rules once and cache them on the function object.
-    try:
-        rules = categorize_reason._RULES  # type: ignore[attr-defined]
-    except AttributeError:
-        rules_raw = [
-            # ROCm
-            {
-                "any": ["skip on rocm", "skip for rocm"],
-                "label": "Skipped on ROCm",
-            },
-            # Mosaic
-            {"contains": "mosaic", "label": "Mosaic"},
-            # Memory
-            {
-                "contains": "memory size limit exceeded",
-                "label": "Memory Limit Exceeded",
-            },
-            # Device constraints / applicability
-            {
-                "any": [
-                    "tpu",
-                    "x64",
-                    "x32",
-                    "backend is not cpu",
-                    "only for cpu",
-                    "at least",
-                ],
-                "label": "Device Inapplicability",
-            },
-            {
-                "contains": "memories do not work on cpu and gpu backends yet",
-                "label": "Device Inapplicability",
-            },
-            {
-                "contains": "test enabled only for cpu",
-                "label": "Device Inapplicability",
-            },
-            {
-                "contains": "jax implements eig only on cpu",
-                "label": "Device Inapplicability",
-            },
-            {
-                "contains": "schur decomposition is only implemented on cpu",
-                "label": "Device Inapplicability",
-            },
-            {"all": ["test", "requires", "device"], "label": "Device Inapplicability"},
-            # Missing module / API / plugin
-            {
-                "any": ["cuda", "sm90", "sm80", "cudnn", "magma is not installed"],
-                "label": "Missing Module/API/Plugin",
-            },
-            {"contains": "no module named", "label": "Missing Module/API/Plugin"},
-            {
-                "regex": r"tests?\s+require(?:s)?\s+.+\s+plugin",
-                "label": "Missing Module/API/Plugin",
-            },
-            {"contains": "requires", "label": "Missing Module/API/Plugin"},
-            # Upstream / generic
-            {"contains": "not supported on device", "label": "Skipped Upstream"},
-            {
-                "contains": "skipping big tests under sanitizers due to slowdown",
-                "label": "Skipped Upstream",
-            },
-            {"contains": "not implemented", "label": "Skipped Upstream"},
-            {"contains": "not relevant", "label": "Skipped Upstream"},
-            {"contains": "dimension", "label": "Skipped Upstream"},
-            {"contains": "support", "label": "Skipped Upstream"},
-        ]
-        compiled = []
-        for r in rules_raw:
-            r = dict(r)
-            if "regex" in r:
-                r["regex"] = re.compile(r["regex"])
-            compiled.append(r)
-        categorize_reason._RULES = tuple(compiled)  # type: ignore[attr-defined]
-        rules = categorize_reason._RULES
-
-    for r in rules:
-        if "contains" in r and r["contains"] in s:
-            return r["label"]
-        if "any" in r and any(k in s for k in r["any"]):
-            return r["label"]
-        if "all" in r and all(k in s for k in r["all"]):
-            return r["label"]
-        if "regex" in r and r["regex"].search(s):
-            return r["label"]
+    for rule in _CATEG_RULES:
+        if "contains" in rule and rule["contains"] in s:
+            return rule["label"]
+        if "any" in rule and any(k in s for k in rule["any"]):
+            return rule["label"]
+        if "all" in rule and all(k in s for k in rule["all"]):
+            return rule["label"]
+        if "regex" in rule and rule["regex"].search(s):
+            return rule["label"]
     return DEFAULT_LABEL
 
 
@@ -370,15 +372,15 @@ def batch_insert_results(
 # -----------------------------
 # Entry point
 # -----------------------------
-def upload_pytest_results(
+def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-locals
     logs_dir: Path,
     *,
     runner_label: str,
     ubuntu_version: str,
     rocm_version: str,
     commit_sha: str,
-    build_num: str,
-    github_run_id: str,
+    build_num: Optional[int],
+    github_run_id: int,
     run_tag: str,
 ) -> None:
     """Load per-test JSON reports and upload results to MySQL.
@@ -410,13 +412,8 @@ def upload_pytest_results(
                 "ubuntu_version": ubuntu_version,
                 "rocm_version": rocm_version,
                 "commit_sha": commit_sha,
-                # force cast numeric-like fields to match DB INT/BIGINT if possible
-                "build_num": int(build_num) if str(build_num).isdigit() else build_num,
-                "github_run_id": (
-                    int(github_run_id)
-                    if str(github_run_id).isdigit()
-                    else github_run_id
-                ),
+                "build_num": build_num,
+                "github_run_id": github_run_id,
                 "run_tag": run_tag,
                 "logs_dir": str(logs_dir),
             },
@@ -449,10 +446,11 @@ def upload_pytest_results(
         print(
             f"[summary] run_id={run_id} total_results={len(rows)} unique_tests={len(test_id_map)}"
         )
+        # NOTE: optionally print Grafana dashboard URL, e.g. {URL}?var-run_id={id}
     except MySQLError as e:
         conn.rollback()
         print(f"MySQL error: {e}")
-        raise SystemExit(10)  # db error
+        raise SystemExit(10) from e  # db error
     except Exception:
         conn.rollback()
         raise
@@ -461,21 +459,29 @@ def upload_pytest_results(
         conn.close()
 
 
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for pytest DB uploader."""
+
+    p = argparse.ArgumentParser(description="Upload pytest JSON reports to MySQL")
+
+    p.add_argument("--logs_dir", required=True, help="Directory with JSON files")
+    p.add_argument("--run-tag", required=True, help="Run label, e.g. ci-run")
+    p.add_argument("--runner-label", required=True, help="Runner label e.g. MI250")
+    p.add_argument("--ubuntu-version", required=True, help="Ubuntu ver, e.g. 22")
+    p.add_argument("--rocm-version", required=True, help="ROCm version, e.g. 641")
+    p.add_argument("--commit-sha", required=True, help="Git commit SHA under test")
+    p.add_argument(
+        "--build-num", required=False, type=int, help="Build number (int, opt)"
+    )
+    p.add_argument(
+        "--github-run-id", required=True, type=int, help="Actions run id (int)"
+    )
+
+    return p.parse_args()
+
+
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Upload pytest JSON reports to MySQL")
-    parser.add_argument("--logs_dir", required=True)
-    parser.add_argument("--run-tag", required=True)
-    parser.add_argument("--runner-label", required=True)
-    parser.add_argument("--ubuntu-version", required=True)
-    parser.add_argument("--rocm-version", required=True)
-    parser.add_argument("--commit-sha", required=True)
-    parser.add_argument("--build-num", required=True)
-    parser.add_argument("--github-run-id", required=True)
-
-    args = parser.parse_args()
-
+    args = parse_args()
     upload_pytest_results(
         Path(args.logs_dir),
         run_tag=args.run_tag,
