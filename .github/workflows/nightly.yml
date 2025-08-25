@@ -76,7 +76,7 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Run tests using run_single_gpu.py (TODO use rocm-jax repo)
+      - name: Run tests using run_single_gpu.py
         if: always()
         env:
           GPU_COUNT: "8"
