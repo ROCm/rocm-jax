@@ -16,11 +16,14 @@
 
 licenses(["notice"])  # Apache 2
 
+load("//third_party/xla:workspace.bzl", xla_commit = "XLA_COMMIT")
+
 package(default_visibility = ["//visibility:public"])
 
 py_binary(
     name = "build_gpu_plugin_wheel",
     srcs = ["build_gpu_plugin_wheel.py"],
+    args = ["--xla-commit", xla_commit],
     data = [
         "LICENSE.txt",
 	"//pjrt:pjrt_c_api_gpu_plugin.so",

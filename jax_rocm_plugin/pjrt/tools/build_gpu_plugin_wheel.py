@@ -65,7 +65,13 @@ parser.add_argument(
     "--enable-rocm",
     default=False,
     help="Should we build with ROCM enabled?")
+parser.add_argument(
+    "--xla-commit",
+    help="")
 args = parser.parse_args()
+
+print("XLA COMMIT HASH", args.xla_commit)
+print("JAXLIB GIT HASH", args.jaxlib_git_hash)
 
 r = runfiles.Create()
 

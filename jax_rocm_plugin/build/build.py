@@ -474,6 +474,7 @@ async def main():
         wheel_build_command_base.append("--config=nonccl")
 
     git_hash = utils.get_githash()
+    print("build.py git_hash:", git_hash)
 
     clang_path = ""
     if args.use_clang:
