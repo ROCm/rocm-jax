@@ -15,7 +15,7 @@ import re
 import json
 from functools import lru_cache
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Iterable, List, Tuple, Optional, Dict
 
 # pylint: disable=import-error
@@ -43,18 +43,15 @@ def extract_skip_reason(reason: str) -> str:
 
     Example input: "('/path/test_x.py', 42, 'Skipped: some reason')"
     """
-    if not isinstance(reason, str):
-        return str(reason)
 
-    s = reason.strip()
-    if not (s.startswith("(") and s.endswith(")")):
-        return s
-
-    parts = s[1:-1].split(",", 2)
+    # strip outer parentheses,
+    # then split into 3 parts
+    parts = reason[1:-1].split(",", 2)
     if len(parts) != 3:
-        return s
+        return reason
 
     msg = parts[2].strip()
+    # drop matching quotes if any
     if msg[:1] in {"'", '"'} and msg[-1:] == msg[:1]:
         msg = msg[1:-1]
     return msg
@@ -103,7 +100,7 @@ def load_from_per_test_jsons(files: Iterable[Path]) -> Tuple[datetime, List[dict
         created_values.append(float(data["created"]))
         tests.extend(data.get("tests", []))
 
-    created_at = datetime.fromtimestamp(max(created_values), tz=timezone.utc)
+    created_at = datetime.fromtimestamp(max(created_values))
     return created_at, tests
 
 
@@ -199,7 +196,7 @@ _RULES_RAW = [
     },
     {"contains": "no module named", "label": "Missing Module/API/Plugin"},
     {
-        "regex": r"tests?\s+require(?:s)?\s+.+\s+plugin",
+        "regex": re.compile(r"tests?\s+require?\s+(.+?)\s+plugin", re.I),
         "label": "Missing Module/API/Plugin",
     },
     {"contains": "requires", "label": "Missing Module/API/Plugin"},
@@ -214,18 +211,13 @@ _RULES_RAW = [
     {"contains": "dimension", "label": "Skipped Upstream"},
     {"contains": "support", "label": "Skipped Upstream"},
 ]
-_CATEG_RULES = []
-for _raw in _RULES_RAW:
-    _rule = dict(_raw)
-    if "regex" in _rule:
-        _rule["regex"] = re.compile(_rule["regex"])
-    _CATEG_RULES.append(_rule)
-_CATEG_RULES = tuple(_CATEG_RULES)
+
+_CATEG_RULES = tuple(dict(r) for r in _RULES_RAW)
 
 
 @lru_cache(maxsize=4096)
 def categorize_reason(reason: Optional[str]) -> str:
-    """Map a skip/crash reason to a category label.
+    """Map a skip reason to a category label.
 
     Matching is case- and whitespace-insensitive. Rules are evaluated in order;
     the first match wins. Unknown/empty reasons fall back to DEFAULT_LABEL.
