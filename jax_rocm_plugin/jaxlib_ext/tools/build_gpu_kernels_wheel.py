@@ -36,7 +36,7 @@ parser.add_argument(
     help="Path to which the output wheel should be written. Required.",
 )
 parser.add_argument(
-    "--jaxlib_git_hash",
+    "--rocm_jax_git_hash",
     default="",
     required=True,
     help="Git hash. Empty if unknown. Optional.",
@@ -63,11 +63,17 @@ parser.add_argument(
     "--enable-rocm",
     default=False,
     help="Should we build with ROCM enabled?")
+parser.add_argument(
+    "--xla-commit",
+    help="")
+parser.add_argument(
+    "--jax-commit",
+    help="")
+
 args = parser.parse_args()
 
 r = runfiles.Create()
 pyext = "pyd" if build_utils.is_windows() else "so"
-
 
 def write_setup_cfg(sources_path, cpu):
   tag = build_utils.platform_tag(cpu)
@@ -98,8 +104,8 @@ def prepare_wheel_rocm(
   )
   build_utils.update_setup_with_rocm_version(sources_path, rocm_version)
   write_setup_cfg(sources_path, cpu)
-
   plugin_dir = sources_path / f"jax_rocm{rocm_version}_plugin"
+  build_utils.write_commit_info(plugin_dir, args.xla_commit, args.jax_commit, args.rocm_jax_git_hash)
   copy_runfiles(
       dst_dir=plugin_dir,
       src_files=[
@@ -166,7 +172,7 @@ try:
   if args.editable:
     build_utils.build_editable(sources_path, args.output_path, package_name)
   else:
-    git_hash = build_utils.get_githash(args.jaxlib_git_hash)
+    git_hash = build_utils.get_githash(args.rocm_jax_git_hash)
     build_utils.build_wheel(
         sources_path,
         args.output_path,

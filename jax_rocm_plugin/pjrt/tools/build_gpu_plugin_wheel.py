@@ -28,6 +28,7 @@ import tempfile
 from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--sources_path",
@@ -42,7 +43,7 @@ parser.add_argument(
     help="Path to which the output wheel should be written. Required.",
 )
 parser.add_argument(
-    "--jaxlib_git_hash",
+    "--rocm_jax_git_hash",
     default="",
     required=True,
     help="Git hash. Empty if unknown. Optional.",
@@ -68,10 +69,11 @@ parser.add_argument(
 parser.add_argument(
     "--xla-commit",
     help="")
+parser.add_argument(
+    "--jax-commit",
+    help="")
 args = parser.parse_args()
 
-print("XLA COMMIT HASH", args.xla_commit)
-print("JAXLIB GIT HASH", args.jaxlib_git_hash)
 
 r = runfiles.Create()
 
@@ -104,6 +106,7 @@ def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
   )
   build_utils.update_setup_with_rocm_version(sources_path, rocm_version)
   write_setup_cfg(sources_path, cpu)
+  build_utils.write_commit_info(plugin_dir, args.xla_commit, args.jax_commit, args.rocm_jax_git_hash)
   copy_runfiles(
       dst_dir=plugin_dir,
       src_files=[
@@ -167,7 +170,7 @@ try:
   if args.editable:
     build_utils.build_editable(sources_path, args.output_path, package_name)
   else:
-    git_hash = build_utils.get_githash(args.jaxlib_git_hash)
+    git_hash = build_utils.get_githash(args.rocm_jax_git_hash)
     build_utils.build_wheel(
         sources_path,
         args.output_path,
