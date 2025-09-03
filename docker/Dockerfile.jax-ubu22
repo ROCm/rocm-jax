@@ -58,7 +58,7 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
         matplotlib \
         absl-py \
         flatbuffers \
-        hypothesis
+        hypothesis 
 
 # install jax and jaxlib from requirements file
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
@@ -78,14 +78,16 @@ RUN bash -c '  \
     fi'
 
 ARG JAX_VERSION
-ARG JAX_COMMIT
 ARG XLA_COMMIT
+ARG JAX_COMMIT
+ARG ROCM_JAX_COMMIT
 
 LABEL com.amdgpu.rocm_version="$ROCM_VERSION" \
       com.amdgpu.python_version="3.10" \
       com.amdgpu.jax_version="$JAX_VERSION" \
       com.amdgpu.jax_commit="$JAX_COMMIT" \
-      com.amdgpu.xla_commit="$XLA_COMMIT"
+      com.amdgpu.xla_commit="$XLA_COMMIT" \ 
+      com.amdgpu.rocm_jax_commit="$ROCM_JAX_COMMIT" 
 
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=wheelhouse,target=/wheelhouse \
