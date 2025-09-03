@@ -24,6 +24,7 @@ import sys
 import subprocess
 import glob
 from collections.abc import Sequence
+import textwrap
 
 
 def is_windows() -> bool:
@@ -122,3 +123,19 @@ def update_setup_with_rocm_version(file_dir: pathlib.Path, rocm_version: str):
   )
   with open(src_file, "w") as f:
     f.write(content)
+
+def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
+  os.makedirs(plugin_dir, exist_ok=True)
+  commit_info_content = textwrap.dedent(f"""
+      # auto-generated; do not edit
+
+      # Commit information
+      xla_commit = "{xla_commit}"
+      jax_commit = "{jax_commit}"
+      rocm_jax_commit = "{rocm_jax_commit}"
+  """)
+
+  commit_info_path = plugin_dir / "commit_info.py"
+
+  with open(commit_info_path, 'w') as f:
+      f.write(commit_info_content)
