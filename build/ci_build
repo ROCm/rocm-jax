@@ -22,7 +22,33 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import glob
+import zipfile
+import json
 
+
+def _get_labels(image_name):
+    out = subprocess.check_output(
+        ["docker", "inspect", "--format", "{{json .Config.Labels}}", image_name]
+    )
+    labels = json.loads(out)
+    return labels
+
+def _get_commit_info_from_wheel():
+    wheel_file = glob.glob("wheelhouse/*jax_rocm7_plugin*.whl")[0]
+    
+    with zipfile.ZipFile(wheel_file, 'r') as wheel:
+        commit_content = wheel.read("jax_rocm7_plugin/commit_info.py").decode('utf-8')
+    
+    namespace = {}
+    exec(commit_content, namespace)
+    print(namespace["xla_commit"])
+    
+    return {
+        "xla_commit": namespace["xla_commit"],
+        "jax_commit": namespace["jax_commit"], 
+        "rocm_jax_commit": namespace["rocm_jax_commit"]
+    }
 
 def dist_wheels(
     rocm_version,
@@ -87,7 +113,7 @@ def build_dockers(
     tag_base=None,
     docker_filters=None,
 ):
-
+    commit_info = _get_commit_info_from_wheel()
     dockerfiles = []
     docker_dir = "docker"
     for f in os.listdir(docker_dir):
@@ -121,6 +147,9 @@ def build_dockers(
             "--build-arg=ROCM_VERSION=%s" % rocm_version,
             "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
             "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
+            "--build-arg=XLA_COMMIT=%s" % commit_info["xla_commit"],
+            "--build-arg=JAX_COMMIT=%s" % commit_info["jax_commit"], 
+            "--build-arg=ROCM_JAX_COMMIT=%s" % commit_info["rocm_jax_commit"],
             "--tag=%s" % tag,
         ]
 
@@ -143,6 +172,17 @@ def build_dockers(
 
 def test(image_name, test_cmd=None):
     """Run unit tests like CI would inside a JAX image."""
+
+    labels = _get_labels(image_name)
+
+    print("ROCm JAX Build Information")
+    if "com.amdgpu.rocm_jax_commit" in labels:
+        print(f"rocm/rocm-jax commit hash: {labels['com.amdgpu.rocm_jax_commit']}")
+    if "com.amdgpu.jax_commit" in labels:
+        print(f"rocm/jax commit hash: {labels['com.amdgpu.jax_commit']}")
+    if "com.amdgpu.xla_commit" in labels:
+        print(f"rocm/xla commit hash: {labels['com.amdgpu.xla_commit']}")
+
 
     if not test_cmd:
         test_cmd = "./build/rocm/run_single_gpu.py -c && ./build/rocm/run_multi_gpu.sh"
@@ -177,6 +217,7 @@ def test(image_name, test_cmd=None):
 
     cmd.extend(mounts)
     cmd.extend(gpu_args)
+
 
     container_cmd = "cd /jax && %s" % test_cmd
 
