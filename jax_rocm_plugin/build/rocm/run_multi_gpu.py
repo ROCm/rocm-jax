@@ -146,6 +146,8 @@ def run_multi_gpu_test(test_file, gpu_count, max_gpus=None):
         "python3",
         "-m",
         "pytest",
+        "-c",
+        "ci/pytest_skips.ini",
         "--json-report",
         f"--json-report-file={abs_json_log_file}",
         f"--html={abs_html_log_file}",
