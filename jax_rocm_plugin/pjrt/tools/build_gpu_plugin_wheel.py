@@ -46,7 +46,7 @@ parser.add_argument(
     "--rocm_jax_git_hash",
     default="",
     required=True,
-    help="Git hash. Empty if unknown. Optional.",
+    help="rocm-jax Git hash. Empty if unknown. Optional.",
 )
 parser.add_argument(
     "--cpu", default=None, required=True, help="Target CPU architecture. Required."
@@ -63,15 +63,20 @@ parser.add_argument(
     help="Create an 'editable' jax cuda/rocm plugin build instead of a wheel.",
 )
 parser.add_argument(
-    "--enable-rocm",
-    default=False,
-    help="Should we build with ROCM enabled?")
+    "--enable-rocm", default=False, help="Should we build with ROCM enabled?"
+)
 parser.add_argument(
     "--xla-commit",
-    help="")
+    default="",
+    required=True,
+    help="rocm/xla Git hash. Empty if unknown. Optional.",
+)
 parser.add_argument(
     "--jax-commit",
-    help="")
+    default="",
+    required=True,
+    help="rocm/jax Git hash. Empty if unknown. Optional.",
+)
 args = parser.parse_args()
 
 
@@ -79,104 +84,108 @@ r = runfiles.Create()
 
 
 def write_setup_cfg(sources_path, cpu):
-  tag = build_utils.platform_tag(cpu)
-  with open(sources_path / "setup.cfg", "w") as f:
-    f.write(
-        f"""[metadata]
+    tag = build_utils.platform_tag(cpu)
+    with open(sources_path / "setup.cfg", "w") as f:
+        f.write(
+            f"""[metadata]
 license_files = LICENSE.txt
 
 [bdist_wheel]
 plat_name={tag}
 python-tag=py3
 """
-    )
+        )
 
 
 def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
-  """Assembles a source tree for the ROCm wheel in `sources_path`."""
-  copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
+    """Assembles a source tree for the ROCm wheel in `sources_path`."""
+    copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
 
-  plugin_dir = sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
-  copy_runfiles(
-      dst_dir=sources_path,
-      src_files=[
-          "__main__/pjrt/python/pyproject.toml",
-          "__main__/pjrt/python/setup.py",
-      ],
-  )
-  build_utils.update_setup_with_rocm_version(sources_path, rocm_version)
-  write_setup_cfg(sources_path, cpu)
-  build_utils.write_commit_info(plugin_dir, args.xla_commit, args.jax_commit, args.rocm_jax_git_hash)
-  copy_runfiles(
-      dst_dir=plugin_dir,
-      src_files=[
-          "__main__/pjrt/python/__init__.py",
-          "__main__/pjrt/python/version.py",
-      ],
-  )
-  copy_runfiles(
-      "__main__/pjrt/pjrt_c_api_gpu_plugin.so",
-      dst_dir=plugin_dir,
-      dst_filename="xla_rocm_plugin.so",
-  )
-
-  # NOTE(mrodden): this is a hack to change/set rpath values
-  # in the shared objects that are produced by the bazel build
-  # before they get pulled into the wheel build process.
-  # we have to do this change here because setting rpath
-  # using bazel requires the rpath to be valid during the build
-  # which won't be correct until we make changes to
-  # the xla/tsl/jax plugin build
-
-  try:
-    subprocess.check_output(["which", "patchelf"])
-  except subprocess.CalledProcessError as ex:
-    mesg = (
-        "rocm plugin and kernel wheel builds require patchelf. "
-        "please install 'patchelf' and run again"
+    plugin_dir = sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
+    copy_runfiles(
+        dst_dir=sources_path,
+        src_files=[
+            "__main__/pjrt/python/pyproject.toml",
+            "__main__/pjrt/python/setup.py",
+        ],
     )
-    raise Exception(mesg) from ex
+    build_utils.update_setup_with_rocm_version(sources_path, rocm_version)
+    write_setup_cfg(sources_path, cpu)
+    build_utils.write_commit_info(
+        plugin_dir, args.xla_commit, args.jax_commit, args.rocm_jax_git_hash
+    )
+    copy_runfiles(
+        dst_dir=plugin_dir,
+        src_files=[
+            "__main__/pjrt/python/__init__.py",
+            "__main__/pjrt/python/version.py",
+        ],
+    )
+    copy_runfiles(
+        "__main__/pjrt/pjrt_c_api_gpu_plugin.so",
+        dst_dir=plugin_dir,
+        dst_filename="xla_rocm_plugin.so",
+    )
 
-  shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
-  runpath = '$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib'
-  # patchelf --force-rpath --set-rpath $RUNPATH $so
-  fix_perms = False
-  perms = os.stat(shared_obj_path).st_mode
-  if not perms & stat.S_IWUSR:
-      fix_perms = True
-      os.chmod(shared_obj_path, perms | stat.S_IWUSR)
-  subprocess.check_call(["patchelf", "--force-rpath", "--set-rpath", runpath, shared_obj_path])
-  if fix_perms:
-      os.chmod(shared_obj_path, perms)
+    # NOTE(mrodden): this is a hack to change/set rpath values
+    # in the shared objects that are produced by the bazel build
+    # before they get pulled into the wheel build process.
+    # we have to do this change here because setting rpath
+    # using bazel requires the rpath to be valid during the build
+    # which won't be correct until we make changes to
+    # the xla/tsl/jax plugin build
+
+    try:
+        subprocess.check_output(["which", "patchelf"])
+    except subprocess.CalledProcessError as ex:
+        mesg = (
+            "rocm plugin and kernel wheel builds require patchelf. "
+            "please install 'patchelf' and run again"
+        )
+        raise Exception(mesg) from ex
+
+    shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
+    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib"
+    # patchelf --force-rpath --set-rpath $RUNPATH $so
+    fix_perms = False
+    perms = os.stat(shared_obj_path).st_mode
+    if not perms & stat.S_IWUSR:
+        fix_perms = True
+        os.chmod(shared_obj_path, perms | stat.S_IWUSR)
+    subprocess.check_call(
+        ["patchelf", "--force-rpath", "--set-rpath", runpath, shared_obj_path]
+    )
+    if fix_perms:
+        os.chmod(shared_obj_path, perms)
 
 
 tmpdir = None
 sources_path = args.sources_path
 if sources_path is None:
-  tmpdir = tempfile.TemporaryDirectory(prefix="jaxgpupjrt")
-  sources_path = tmpdir.name
+    tmpdir = tempfile.TemporaryDirectory(prefix="jaxgpupjrt")
+    sources_path = tmpdir.name
 
 try:
-  os.makedirs(args.output_path, exist_ok=True)
+    os.makedirs(args.output_path, exist_ok=True)
 
-  if args.enable_rocm:
-    prepare_rocm_plugin_wheel(
-        pathlib.Path(sources_path), cpu=args.cpu, rocm_version=args.platform_version
-    )
-    package_name = "jax rocm plugin"
-  else:
-    raise ValueError("Unsupported backend. Choose 'rocm'.")
+    if args.enable_rocm:
+        prepare_rocm_plugin_wheel(
+            pathlib.Path(sources_path), cpu=args.cpu, rocm_version=args.platform_version
+        )
+        package_name = "jax rocm plugin"
+    else:
+        raise ValueError("Unsupported backend. Choose 'rocm'.")
 
-  if args.editable:
-    build_utils.build_editable(sources_path, args.output_path, package_name)
-  else:
-    git_hash = build_utils.get_githash(args.rocm_jax_git_hash)
-    build_utils.build_wheel(
-        sources_path,
-        args.output_path,
-        package_name,
-        git_hash=git_hash,
-    )
+    if args.editable:
+        build_utils.build_editable(sources_path, args.output_path, package_name)
+    else:
+        git_hash = build_utils.get_githash(args.rocm_jax_git_hash)
+        build_utils.build_wheel(
+            sources_path,
+            args.output_path,
+            package_name,
+            git_hash=git_hash,
+        )
 finally:
-  if tmpdir:
-    tmpdir.cleanup()
+    if tmpdir:
+        tmpdir.cleanup()
