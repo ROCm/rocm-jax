@@ -34,21 +34,23 @@ def _get_labels(image_name):
     labels = json.loads(out)
     return labels
 
+
 def _get_commit_info_from_wheel():
     wheel_file = glob.glob("wheelhouse/*jax_rocm7_plugin*.whl")[0]
-    
-    with zipfile.ZipFile(wheel_file, 'r') as wheel:
-        commit_content = wheel.read("jax_rocm7_plugin/commit_info.py").decode('utf-8')
-    
+
+    with zipfile.ZipFile(wheel_file, "r") as wheel:
+        commit_content = wheel.read("jax_rocm7_plugin/commit_info.py").decode("utf-8")
+
     namespace = {}
     exec(commit_content, namespace)
     print(namespace["xla_commit"])
-    
+
     return {
         "xla_commit": namespace["xla_commit"],
-        "jax_commit": namespace["jax_commit"], 
-        "rocm_jax_commit": namespace["rocm_jax_commit"]
+        "jax_commit": namespace["jax_commit"],
+        "rocm_jax_commit": namespace["rocm_jax_commit"],
     }
+
 
 def dist_wheels(
     rocm_version,
@@ -148,7 +150,7 @@ def build_dockers(
             "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
             "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
             "--build-arg=XLA_COMMIT=%s" % commit_info["xla_commit"],
-            "--build-arg=JAX_COMMIT=%s" % commit_info["jax_commit"], 
+            "--build-arg=JAX_COMMIT=%s" % commit_info["jax_commit"],
             "--build-arg=ROCM_JAX_COMMIT=%s" % commit_info["rocm_jax_commit"],
             "--tag=%s" % tag,
         ]
@@ -183,7 +185,6 @@ def test(image_name, test_cmd=None):
     if "com.amdgpu.xla_commit" in labels:
         print(f"rocm/xla commit hash: {labels['com.amdgpu.xla_commit']}")
 
-
     if not test_cmd:
         test_cmd = "./build/rocm/run_single_gpu.py -c && ./build/rocm/run_multi_gpu.sh"
 
@@ -217,7 +218,6 @@ def test(image_name, test_cmd=None):
 
     cmd.extend(mounts)
     cmd.extend(gpu_args)
-
 
     container_cmd = "cd /jax && %s" % test_cmd
 
@@ -315,10 +315,14 @@ def parse_args():
 
     # Make sure that the user hasn't tried to set both --therock-path and either --rocm-build-job or --rocm-build-num
     if args.therock_path and (args.rocm_build_job or args.rocm_build_num):
-        p.error("You cannot set both --therock-path and --rocm-build-job/--rocm-build-num.")
+        p.error(
+            "You cannot set both --therock-path and --rocm-build-job/--rocm-build-num."
+        )
 
     # Make sure that the user has set both a build job and build number if trying to get ROCm from the mainline build
-    if (args.rocm_build_job and not args.rocm_build_num) or (args.rocm_build_num and not args.rocm_build_job):
+    if (args.rocm_build_job and not args.rocm_build_num) or (
+        args.rocm_build_num and not args.rocm_build_job
+    ):
         p.error("You must set both --rocm-build-num and --rocm-build-job, not just one")
 
     return args

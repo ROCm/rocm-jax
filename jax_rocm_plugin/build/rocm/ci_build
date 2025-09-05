@@ -105,9 +105,8 @@ def dist_wheels(
 
     cmd = ["docker", "run"]
 
-   
     mounts = [
-         "-v",
+        "-v",
         os.path.abspath("../") + ":/repo",
         "-v",
         os.path.abspath("./") + ":/jax",
@@ -128,8 +127,10 @@ def dist_wheels(
         [
             "--init",
             "--rm",
-            "-e", "GIT_DIR=/repo/.git",
-            "-e", "GIT_WORK_TREE=/repo",
+            "-e",
+            "GIT_DIR=/repo/.git",
+            "-e",
+            "GIT_WORK_TREE=/repo",
             image,
             "bash",
             "-c",
