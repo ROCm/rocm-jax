@@ -86,14 +86,14 @@ r = runfiles.Create()
 
 def write_setup_cfg(sources_path, cpu):
     tag = build_utils.platform_tag(cpu)
-    with open(sources_path / "setup.cfg", "w") as f:
+    cfg_path = sources_path / "setup.cfg"
+    with open(cfg_path, "w", encoding="utf-8") as f:
         f.write(
             f"""[metadata]
 license_files = LICENSE.txt
 
 [bdist_wheel]
 plat_name={tag}
-python-tag=py3
 """
         )
 
