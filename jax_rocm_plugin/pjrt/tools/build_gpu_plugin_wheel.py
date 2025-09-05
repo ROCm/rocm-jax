@@ -25,6 +25,7 @@ import stat
 import subprocess
 import tempfile
 
+# pylint: disable=import-error
 from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
 

@@ -43,7 +43,10 @@ def _get_commit_info_from_wheel():
 
     namespace = {}
     exec(commit_content, namespace)
-    print(namespace["xla_commit"])
+
+    print("This wheel built with XLA commit:", namespace["xla_commit"])
+    print("This wheel built with JAX commit:", namespace["jax_commit"])
+    print("This wheel built with ROCM-JAX commit:", namespace["rocm_jax_commit"])
 
     return {
         "xla_commit": namespace["xla_commit"],

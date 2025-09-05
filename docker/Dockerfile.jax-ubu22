@@ -58,7 +58,7 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
         matplotlib \
         absl-py \
         flatbuffers \
-        hypothesis 
+        hypothesis
 
 # install jax and jaxlib from requirements file
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
