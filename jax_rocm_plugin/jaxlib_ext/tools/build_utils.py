@@ -138,6 +138,7 @@ def update_setup_with_rocm_version(file_dir: pathlib.Path, rocm_version: str):
 
 
 def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
+    """Write commit hash information into commit_info.py inside `plugin_dir`."""
     os.makedirs(plugin_dir, exist_ok=True)
     commit_info_content = textwrap.dedent(
         f"""
@@ -152,5 +153,5 @@ def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
 
     commit_info_path = plugin_dir / "commit_info.py"
 
-    with open(commit_info_path, "w") as f:
+    with open(commit_info_path, "w", encoding="utf-8") as f:
         f.write(commit_info_content)
