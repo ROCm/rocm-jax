@@ -22,11 +22,12 @@ py_binary(
     srcs = ["build_gpu_kernels_wheel.py"],
     data = [
         "LICENSE.txt",
+        "build_metadata.json", 
         "@jax//jaxlib:version",
         "@jax//jaxlib/rocm:rocm_plugin_extension",
         "@jax//jaxlib/rocm:rocm_gpu_support",
         "//jax_plugins/rocm:plugin_pyproject.toml",
-        "//jax_plugins/rocm:plugin_setup.py",
+        "//jax_plugins/rocm:plugin_setup.py",   
     ],
     deps = [
         "build_utils",
