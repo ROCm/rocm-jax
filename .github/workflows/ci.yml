@@ -43,7 +43,8 @@ jobs:
     steps:
       - name: Change owners for cleanup
         run: |
-          docker run --rm -v "./:/rocm-jax" ubuntu /bin/bash -c "chown -R $UID /rocm-jax/* || true"
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
       - name: Checkout plugin repo
         uses: actions/checkout@v4
       - name: Checkout JAX repo
@@ -76,5 +77,5 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest tests/core_test.py"
+            --test-cmd "pytest jax/tests/core_test.py"
 
