@@ -90,7 +90,7 @@ mkdir -p wheelhouse && mv jax_rocm_plugin/wheelhouse/* wheelhouse
 ```
 Be mindful of what version of Python your Dockerfiles require. As of the
 writing of this guide, we currently build images for Ubuntu 22 and Ubuntu 24,
-which require Python 3.10 and Python 3.12 respectively. The kernels wheel
+which require Python 3.11 and Python 3.12 respectively. The kernels wheel
 (`jax_rocmX_plugin`) build builds a different wheel for each Python version.
 
 Run the build script 

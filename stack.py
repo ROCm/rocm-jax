@@ -267,7 +267,7 @@ def parse_args():
     dev.add_argument(
         "--jax-ref",
         help="JAX commit reference to checkout on clone",
-        default=TEST_JAX_REPO_REF,
+        default=JAX_REPO_REF,
     )
     dev.add_argument(
         "--kernel-jax-dir",
