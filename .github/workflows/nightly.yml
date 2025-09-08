@@ -77,7 +77,7 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Run tests using run_single_gpu.py
+      - name: Run tests using run_single_gpu.py + run_multi_gpu.py
         env:
           GPU_COUNT: "8"
           GFX: "gfx90a"
@@ -86,13 +86,14 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python build/rocm/run_single_gpu.py -c 2>&1 | tee ut.log"
+            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && \
+                        python jax_rocm_plugin/build/rocm/run_multi_gpu.py"
       - name: Upload logs to artifact (per-matrix)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
-          path: jax/logs/
+          path: logs/
   upload-test-to-db:
     needs: run-python-unit-tests
     runs-on: mysqldb
