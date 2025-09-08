@@ -145,7 +145,7 @@ def test(image_name, test_cmd=None):
     """Run unit tests like CI would inside a JAX image."""
 
     if not test_cmd:
-        test_cmd = "./jax_rocm_plugin/build/rocm/run_single_gpu.py -c && ./jax_rocm_plugin/build/rocm/run_multi_gpu.sh"
+        test_cmd = "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && python jax_rocm_plugin/build/rocm/run_multi_gpu.py"
 
     gpu_args = [
         "--device=/dev/kfd",
