@@ -46,7 +46,7 @@ More complete build instructions can be [found here](BUILDING.md).
 
 ```shell
 PYTHON_VERSION=3.12
-ROCM_VERSION=6.4.1
+ROCM_VERSION=7.1.0
 
 # Clear out old builds
 rm -f jax_rocm_plugin/wheelhouse/*
@@ -70,7 +70,7 @@ python3 build/ci_build \
     --filter 24
 
 # Run basic tests
-build/ci_build test jax-ubu24.rocm641:latest \
+build/ci_build test jax-ubu24.rocm710:latest \
     --test-cmd "pytest jax_rocm_plugin/tests"
 ```
 
@@ -102,4 +102,3 @@ Once inside the container,
 ```shell
 python3 stack.py develop --rebuild-makefile
 ```
-
