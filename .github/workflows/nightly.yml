@@ -14,13 +14,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["6.4.1", "7.0"]
+        rocm-version: ["6.4.1", "7.0.0"]
         include:
           - rocm-version: "6.4.1"
             runner-label: "mi-250"
-          - rocm-version: "7.0"
-            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16322"
+          - rocm-version: "7.0.0"
+            rocm-build-job: "compute-rocm-rel-7.0"
+            rocm-build-num: "29"
             runner-label: "internal"
     uses: ./.github/workflows/build-wheels.yml
     with:
@@ -34,14 +34,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["6.4.1", "7.0"]
+        rocm-version: ["6.4.1", "7.0.0"]
         include:
           - rocm-version: "6.4.1"
             runner-label: "mi-250"
             extra-cr-tag: "nightly"
-          - rocm-version: "7.0"
-            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16322"
+          - rocm-version: "7.0.0"
+            rocm-build-job: "compute-rocm-rel-7.0"
+            rocm-build-num: "29"
             runner-label: "internal"
             extra-cr-tag: "nightly"
     uses: ./.github/workflows/build-docker.yml
@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["6.4.1", "7.0"]
+        rocm-version: ["6.4.1", "7.0.0"]
         ubuntu-version: ["22", "24"]
     steps:
       - name: Change owners for cleanup
