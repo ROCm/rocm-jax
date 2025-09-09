@@ -6,8 +6,8 @@ import os
 import subprocess
 
 
-TEST_JAX_REPO_REF = "rocm-jaxlib-v0.6.0"
-XLA_REPO_REF = "rocm-jaxlib-v0.6.0"
+JAX_REPO_REF = "rocm-jaxlib-v0.7.1"
+XLA_REPO_REF = "rocm-jaxlib-v0.7.1"
 
 
 JAX_REPL_URL = "https://github.com/rocm/jax"
@@ -153,7 +153,7 @@ def setup_development(
 
     # clone xla from source for building jax_rocm_plugin if the user didn't
     # specify an existing XLA directory
-    if not os.path.exists("./xla") and xla_dir != DEFAULT_XLA_DIR:
+    if not os.path.exists("./xla") and xla_dir == "":
         cmd = ["git", "clone"]
         cmd.extend(["--branch", xla_ref])
         cmd.append(XLA_REPL_URL)
@@ -262,12 +262,12 @@ def parse_args():
             "Set the XLA path in the Makefile. This must either be a path "
             "relative to jax_rocm_plugin or an absolute path."
         ),
-        default=DEFAULT_XLA_DIR,
+        default="",
     )
     dev.add_argument(
         "--jax-ref",
         help="JAX commit reference to checkout on clone",
-        default=TEST_JAX_REPO_REF,
+        default=JAX_REPO_REF,
     )
     dev.add_argument(
         "--kernel-jax-dir",
