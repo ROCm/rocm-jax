@@ -77,7 +77,7 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Run tests
+      - name: Run tests using run_single_gpu.py + run_multi_gpu.py
         env:
           GPU_COUNT: "8"
           GFX: "gfx90a"
@@ -86,4 +86,51 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c"
+            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && \
+                        python jax_rocm_plugin/build/rocm/run_multi_gpu.py"
+      - name: Upload logs to artifact (per-matrix)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
+          path: logs/
+  upload-test-to-db:
+    needs: run-python-unit-tests
+    runs-on: mysqldb
+    strategy:
+      fail-fast: false
+      matrix:
+        rocm-version: ["6.4.1", "7.0.0"]
+        ubuntu-version: ["22", "24"]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Download logs from artifact (per-matrix)
+        uses: actions/download-artifact@v4
+        with:
+          name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
+          path: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
+      - name: Upload logs to MySQL database
+        env:
+          ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
+          ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
+          ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
+          ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+          UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
+          LOGS_DIR: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install mysql-connector-python
+
+          python ci/upload_test_to_db.py \
+          --logs_dir "$LOGS_DIR" \
+          --run-tag "ci-run" \
+          --runner-label "MI250" \
+          --ubuntu-version "${UBUNTU_VERSION}" \
+          --rocm-version "${ROCM_VERSION//.}" \
+          --commit-sha "${{ github.sha }}" \
+          --build-num "${{ matrix.rocm-build-num || 0 }}" \
+          --github-run-id "${{ github.run_id }}"
