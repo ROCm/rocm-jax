@@ -61,7 +61,8 @@ jobs:
     steps:
       - name: Change owners for cleanup
         run: |
-          docker run --rm -v "./:/rocm-jax" ubuntu /bin/bash -c "chown -R $UID /rocm-jax/* || true"
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
       - name: Checkout plugin repo
         uses: actions/checkout@v4
       - name: Checkout JAX repo
