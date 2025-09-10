@@ -38,18 +38,17 @@ jobs:
         include:
           - rocm-version: "6.4.1"
             runner-label: "mi-250"
-            extra-cr-tag: "nightly"
           - rocm-version: "7.0.0"
             rocm-build-job: "compute-rocm-rel-7.0"
             rocm-build-num: "40"
             runner-label: "internal"
-            extra-cr-tag: "nightly"
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
       rocm-build-job: ${{ matrix.rocm-build-job }}
       rocm-build-num: ${{ matrix.rocm-build-num }}
       runner-label: ${{ matrix.runner-label }}
+      extra-cr-tag: "nightly"
   run-python-unit-tests:
     needs: call-build-docker
     runs-on: mi-250
@@ -61,7 +60,8 @@ jobs:
     steps:
       - name: Change owners for cleanup
         run: |
-          docker run --rm -v "./:/rocm-jax" ubuntu /bin/bash -c "chown -R $UID /rocm-jax/* || true"
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
       - name: Checkout plugin repo
         uses: actions/checkout@v4
       - name: Checkout JAX repo
@@ -86,4 +86,4 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest tests/"
+            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c"
