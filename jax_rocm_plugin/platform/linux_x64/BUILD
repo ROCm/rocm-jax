@@ -11,7 +11,7 @@ platform(
         "@bazel_tools//tools/cpp:clang",
     ],
     exec_properties = {
-	"container-image": "ghcr.io/rocm/jax-manylinux_2_28_x86_64_rocm700@sha256:4cd60135bd4b275c5c46e1453f87a3c9c023421007389f916da888183d439b53",
+	"container-image": "docker://938540721288.dkr.ecr.us-east-1.amazonaws.com/amd/rbe@sha256:ff07b8fa3425b1317bd19b8f9f63dd7e70b01769def1536d9d7076ce0fd60760",
         "OSFamily": "Linux",
     },
 )
