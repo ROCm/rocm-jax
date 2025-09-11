@@ -26,28 +26,6 @@ build --output_filter=DONT_MATCH_ANYTHING
 
 build --copt=-DMLIR_PYTHON_PACKAGE_PREFIX=jaxlib.mlir.
 
-# ###########
-# EngFlow RBE
-# ###########
-
-build:engflow_common --define=EXECUTOR=remote
-
-build:remote_linux_x64 --host_platform=//platform/linux_x64
-build:remote_linux_x64 --platforms=//platform/linux_x64
-
-build:remote_linux_x64 --remote_cache=grpcs://wardite.cluster.engflow.com
-build:remote_linux_x64 --remote_executor=grpcs://wardite.cluster.engflow.com
-build:remote_linux_x64 --bes_backend=grpcs://wardite.cluster.engflow.com
-build:remote_linux_x64 --bes_results_url=https://wardite.cluster.engflow.com/invocation/
-build:remote_linux_x64 --extra_toolchains=//platform/linux_x64:cc-toolchain
-
-# Authenticate to the EngFlow cluster using mTLS certificate
-#build:remote_linux_x64 --tls_client_certificate=/home/chahofer/dockerx/rocm/engflow/project/ci-cert.crt
-#build:remote_linux_x64 --tls_client_key=/home/chahofer/dockerx/rocm/engflow/project/ci-cert.key
-build:remote_linux_x64 --tls_client_certificate=/rocm-jax/ci-cert.crt
-build:remote_linux_x64 --tls_client_key=/rocm-jax/ci-cert.key
-build:remote_linux_x64 --config=engflow_common
-
 
 # #############################################################################
 # Platform Specific configs below. These are automatically picked up by Bazel
