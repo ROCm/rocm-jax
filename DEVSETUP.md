@@ -55,6 +55,12 @@ targets,
   - `install` will install the wheels in `dist/` with `pip`
   - `test` runs the basic plugin unit tests
   - `clean` will delete all wheels in `dist/`
+  - `refresh` is a shortcut for `clean dist install`
+  - and a set of dedicated targets to locally build `jaxlib` when necessary:
+    - `jaxlib_clean` to remove old wheels in `$jax_dir/dist/`,
+    - `jaxlib` to build and
+    - `jaxlib_install` to install the wheel
+    - `refresh_jaxlib` is a shortcut to `jaxlib_clean jaxlib jaxlib_install`
 
 To build and install the plugins in your virtual environment, run
 ```shell
