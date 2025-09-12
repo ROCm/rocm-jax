@@ -474,6 +474,7 @@ async def main():
         wheel_build_command_base.append("--config=nonccl")
 
     git_hash = utils.get_githash()
+    print("build.py git_hash:", git_hash)
 
     clang_path = ""
     if args.use_clang:
@@ -686,7 +687,7 @@ async def main():
                 wheel_build_command.append("--enable-rocm=True")
                 wheel_build_command.append(f"--platform_version={args.rocm_version}")
 
-            wheel_build_command.append(f"--jaxlib_git_hash={git_hash}")
+            wheel_build_command.append(f"--rocm_jax_git_hash={git_hash}")
 
             result = await executor.run(
                 wheel_build_command.get_command_as_string(),
