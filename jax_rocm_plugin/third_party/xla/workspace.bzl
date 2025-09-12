@@ -1,8 +1,3 @@
-# Copyright 2023 The JAX Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
 #
 #     https://www.apache.org/licenses/LICENSE-2.0
 #
@@ -13,7 +8,7 @@
 # limitations under the License.
 
 # buildifier: disable=module-docstring
-load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
+load("//third_party:repo.bzl", "amd_http_archive")
 
 # To update XLA to a new revision,
 # a) update XLA_COMMIT to the new git commit hash
@@ -21,15 +16,15 @@ load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
 #    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
 #    and update XLA_SHA256 with the result.
 
-XLA_COMMIT = "50860e943202307ad17ef3bc513289dfbd1b92bc"
-XLA_SHA256 = "0d8a10fc1674a347542f280c724167f1fbe7f53cc8d59f49ee5d196166c8ee0c"
+XLA_COMMIT = "104647d7abd13d81b9050184ababa3154563eef5"
+XLA_SHA256 = "6f873c30e15e8644bd42a1856681f07a2457fdf0ec2f3109c52803aa53f6963d"
 
 def repo():
-    tf_http_archive(
+    amd_http_archive(
         name = "xla",
         sha256 = XLA_SHA256,
         strip_prefix = "xla-{commit}".format(commit = XLA_COMMIT),
-        urls = tf_mirror_urls("https://github.com/ROCm/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
+        urls = ["https://github.com/ROCm/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)],
         patch_file = [],
     )
 

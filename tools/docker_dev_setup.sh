@@ -20,7 +20,7 @@ die() {
 }
 
 # Default values
-rocm_version="6.4.0"
+rocm_version="7.1.0"
 rocm_build_number=""
 rocm_job_name="compute-rocm-dkms-no-npi-hipclang"
 
@@ -83,7 +83,7 @@ apt-get install -y \
   build-essential \
   make \
   patchelf \
-  python3.10-venv \
+  python3.12-venv \
   lsb-release \
   cmake \
   yamllint \
@@ -141,15 +141,6 @@ python -m pip install \
 # Install deps (jax and jaxlib)
 python -m pip install -r \
   build/requirements.txt
-
-# Apply patch for namespace change if ROCm version >= 7
-if [ "$major_version" -ge 7 ]; then
-  info "Applying patch for ROCm $rocm_version..."
-  dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
-  patch -p1 -d "$dist_packages" < jax_rocm_plugin/third_party/jax/namespace.patch
-else
-  info "ROCm version $rocm_version, skipping patch."
-fi
 
 if [ -n "$_IS_ENTRYPOINT" ]; then
   # run CMD from docker

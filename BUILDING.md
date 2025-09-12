@@ -13,7 +13,7 @@ It requires that you have an installation of Docker and Python 3.6 or newer.
 
 Run the `build/ci_build` script,
 ```shell
-PYTHON_VERSION="3.10,3.12"
+PYTHON_VERSION="3.11,3.12"
 ROCM_VERSION=6.4.1
 
 python3 build/ci_build \
@@ -26,10 +26,10 @@ You can also build with ROCm versions that are built internally at AMD by
 setting `--rocm-build-job` and `--rocm-build-num` and with your own local
 copy of XLA. For example,
 ```shell
-PYTHON_VERSION="3.10,3.12"
-ROCM_VERSION=7.0.0
+PYTHON_VERSION="3.11,3.12"
+ROCM_VERSION=7.1.0
 ROCM_BUILD_JOB=compute-rocm-dkms-no-npi-hipclang
-ROCM_BUILD_NUM=16306
+ROCM_BUILD_NUM=16623
 XLA_SOURCE=~/path/to/xla
 
 python3 build/ci_build \
@@ -90,7 +90,7 @@ mkdir -p wheelhouse && mv jax_rocm_plugin/wheelhouse/* wheelhouse
 ```
 Be mindful of what version of Python your Dockerfiles require. As of the
 writing of this guide, we currently build images for Ubuntu 22 and Ubuntu 24,
-which require Python 3.10 and Python 3.12 respectively. The kernels wheel
+which require Python 3.11 and Python 3.12 respectively. The kernels wheel
 (`jax_rocmX_plugin`) build builds a different wheel for each Python version.
 
 Run the build script 
@@ -106,9 +106,9 @@ Like the wheel build, you can also install versions of ROCm that were built
 internally at AMD. You can also filter on the Dockerfile names in `docker/`,
 and only build images from select Dockerfiles with the `--filter` option.
 ```shell
-ROCM_VERSION=7.0.0
+ROCM_VERSION=7.1.0
 ROCM_BUILD_JOB=compute-rocm-dkms-no-npi-hipclang
-ROCM_BUILD_NUM=16322
+ROCM_BUILD_NUM=16623
 
 python3 build/ci_build \
     --rocm-version $ROCM_VERSION \
@@ -129,18 +129,18 @@ Python being installed in your Docker image.
 
 JAX ROCm plugin tests are usually run in a container via the build script,
 ```shell
-TEST_IMAGE="jax-ubu24.rocm641:latest"
+TEST_IMAGE="jax-ubu24.rocm710:latest"
 python3 build/ci_build test $TEST_IMAGE --test-cmd "pytest jax_rocm_plugin/tests"
 ```
 
 We keep unit tests in the `rocm/jax` repository, and you'll need to clone it
 to run the regular JAX unit tests with ROCm,
 ```shell
-git clone --depth 1 --branch rocm-jaxlib-v0.6.0 git@github.com:ROCm/jax.git
+git clone --depth 1 --branch rocm-jaxlib-v0.7.1 git@github.com:ROCm/jax.git
 # Each release of the ROCm plugin has a corresponding branch. You can find
 # more at https://github.com/ROCm/rocm-jax/branches/all?query=rocm-jaxlib
 
-TEST_IMAGE="jax-ubu24.rocm641:latest"
+TEST_IMAGE="jax-ubu24.rocm710:latest"
 python3 build/ci_build test $TEST_IMAGE --test-cmd "pytest jax/tests"
 ```
 
@@ -149,13 +149,13 @@ the full suite of JAX unit tests. These are handy because they run tests in
 parallel on systems with multiple accelerators, and they produce reports and
 logs in the `jax/logs` directory.
 ```shell
-TEST_IMAGE="jax-ubu24.rocm641:latest"
+TEST_IMAGE="jax-ubu24.rocm710:latest"
 python3 build/ci_build test $TEST_IMAGE \
     --test-cmd "python build/rocm/run_single_gpu.py -c"
 ```
 or
 ```shell
-TEST_IMAGE="jax-ubu24.rocm641:latest"
+TEST_IMAGE="jax-ubu24.rocm710:latest"
 python3 build/ci_build test $TEST_IMAGE \
     --test-cmd "python build/rocm/run_multi_gpu.py -c"
 ```
@@ -179,7 +179,7 @@ sudo docker run \
     --security-opt seccomp=unconfined \
     -w /root \
     -v <path to your rocm-jax>:/rocm-jax \
-    jax-ubu24.rocm641:latest \
+    jax-ubu24.rocm710:latest \
     /bin/bash
 ```
 

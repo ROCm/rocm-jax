@@ -6,8 +6,8 @@ import os
 import subprocess
 
 
-TEST_JAX_REPO_REF = "rocm-jaxlib-v0.6.0"
-XLA_REPO_REF = "rocm-jaxlib-v0.6.0"
+JAX_REPO_REF = "rocm-jaxlib-v0.7.1"
+XLA_REPO_REF = "rocm-jaxlib-v0.7.1"
 
 
 JAX_REPL_URL = "https://github.com/rocm/jax"
@@ -409,7 +409,7 @@ def parse_args():
     dev.add_argument(
         "--jax-ref",
         help="JAX commit reference to checkout on clone",
-        default=TEST_JAX_REPO_REF,
+        default=JAX_REPO_REF,
     )
     dev.add_argument(
         "--kernel-jax-dir",
