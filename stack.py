@@ -26,8 +26,9 @@ MAKE_TEMPLATE = r"""
 # customize to a single arch for local dev builds to reduce compile time
 AMDGPU_TARGETS ?= "$(shell rocminfo | grep -o -m 1 'gfx.*')"
 
-# Use your local XLA for building jax_rocm_pjrt
-XLA_OVERRIDE_OPTION="--override_repository=xla=%(xla_dir)s"
+# Defines a value for '--bazel_options' for each of 3 build types (pjrt, plugin + jaxlib).
+# By default, uses local XLA for each wheel. Redefine to whatever option is needed for your case
+ALL_BAZEL_OPTIONS="--override_repository=xla=%(xla_dir)s"
 
 # Use your local JAX for building the kernels in jax_rocm_plugin
 # KERNELS_JAX_OVERRIDE_OPTION="--override_repository=jax=../jax"
@@ -45,10 +46,11 @@ jax_rocm_plugin:
 	python3 ./build/build.py build \
             --use_clang=true \
             --wheels=jax-rocm-plugin \
+            --target_cpu_features=native \
             --rocm_path=/opt/rocm/ \
             --rocm_version=%(plugin_version)s \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-            --bazel_options=${XLA_OVERRIDE_OPTION} \
+            --bazel_options=${ALL_BAZEL_OPTIONS} \
             --bazel_options=${KERNELS_JAX_OVERRIDE_OPTION} \
             --verbose \
             --clang_path=%(clang_path)s
@@ -58,10 +60,11 @@ jax_rocm_pjrt:
 	python3 ./build/build.py build \
             --use_clang=true \
             --wheels=jax-rocm-pjrt \
+            --target_cpu_features=native \
             --rocm_path=/opt/rocm/ \
             --rocm_version=%(plugin_version)s \
             --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-            --bazel_options=${XLA_OVERRIDE_OPTION} \
+            --bazel_options=${ALL_BAZEL_OPTIONS} \
             --bazel_options=${KERNELS_JAX_OVERRIDE_OPTION} \
             --verbose \
             --clang_path=%(clang_path)s
@@ -86,10 +89,11 @@ test:
 
 jaxlib:
 	(cd %(kernels_jax_dir)s && python3 ./build/build.py build \
+            --target_cpu_features=native \
             --use_clang=true \
             --clang_path=%(clang_path)s \
-			--wheels=jaxlib \
-			--bazel_options=${XLA_OVERRIDE_OPTION} \
+            --wheels=jaxlib \
+            --bazel_options=${ALL_BAZEL_OPTIONS} \
             --verbose \
 	)
 
@@ -170,7 +174,7 @@ def setup_development(
             # that contains all the jaxlib kernel code (jax_rocm7_plugin), add that
             # to the Makefile.
             "kernels_jax_override": (
-                (" --override_repository=jax=%s" % kernels_jax_dir)
+                ("--override_repository=jax=%s" % kernels_jax_dir)
                 if kernels_jax_dir
                 else ""
             ),
