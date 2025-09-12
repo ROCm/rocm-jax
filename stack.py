@@ -167,7 +167,8 @@ def find_clang():
 
 
 def _resolve_relative_paths(xla_dir: str, kernels_jax_dir: str) -> tuple[str, str, str]:
-    """Transforms relative to absolute paths. This is needed to properly support symbol information remapping"""
+    """Transforms relative to absolute paths. This is needed to properly support
+    symbolic information remapping"""
     this_repo_root = os.path.dirname(os.path.realpath(__file__))
 
     xla_path = (
@@ -175,9 +176,9 @@ def _resolve_relative_paths(xla_dir: str, kernels_jax_dir: str) -> tuple[str, st
         if os.path.isabs(xla_dir)
         else os.path.abspath(f"{this_repo_root}/jax_rocm_plugin/{xla_dir}")
     )
-    assert os.path.isdir(xla_path), (
-        f"XLA path (specified as '{xla_dir}') doesn't resolve to existing directory at '{xla_path}'"
-    )
+    assert os.path.isdir(
+        xla_path
+    ), f"XLA path (specified as '{xla_dir}') doesn't resolve to existing directory at '{xla_path}'"
 
     if kernels_jax_dir:
         kernels_jax_path = (
@@ -185,9 +186,10 @@ def _resolve_relative_paths(xla_dir: str, kernels_jax_dir: str) -> tuple[str, st
             if os.path.isabs(kernels_jax_dir)
             else os.path.abspath(f"{this_repo_root}/jax_rocm_plugin/{kernels_jax_dir}")
         )
-        assert os.path.isdir(kernels_jax_path), (
-            f"XLA path (specified as '{kernels_jax_dir}') doesn't resolve to existing directory at '{kernels_jax_path}'"
-        )
+        # pylint: disable=line-too-long
+        assert os.path.isdir(
+            kernels_jax_path
+        ), f"XLA path (specified as '{kernels_jax_dir}') doesn't resolve to existing directory at '{kernels_jax_path}'"
     else:
         kernels_jax_path = None
     return this_repo_root, xla_path, kernels_jax_path
@@ -201,6 +203,8 @@ def _add_externals_symlink(this_repo_root: str, xla_path: str, kernels_jax_path:
     # checking 'bazel' is executable. We only support essentially bazelisk here.
     # Supporting individual bazel binaries installed by the upstream build system
     # when it can't find bazel is a TODO for the future.
+    # Broad exceptions aren't a problem here
+    # pylint: disable=broad-exception-caught
     try:
         v = (
             subprocess.run(
@@ -255,7 +259,7 @@ def _add_externals_symlink(this_repo_root: str, xla_path: str, kernels_jax_path:
     if kernels_jax_path:
         _make_external(kernels_jax_path)
 
-
+# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals
 def setup_development(
     xla_ref: str,
     xla_dir: str,
