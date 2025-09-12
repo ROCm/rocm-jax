@@ -2,6 +2,11 @@
 /xla
 /jax
 
+# temporary working files
+/_my
+# bazel external dependencies directory mapping for individual bazel workspaces that might be used
+/jax_rocm_plugin/external
+
 # vim droppings
 *.swp
 
