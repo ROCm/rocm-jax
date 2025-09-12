@@ -78,6 +78,9 @@ install: dist
 	pip install --force-reinstall dist/*
 
 
+refresh: clean dist install
+
+
 test:
 	python3 tests/test_plugin.py
 
@@ -104,6 +107,9 @@ jaxlib_clean:
 
 jaxlib_install:
 	pip install --force-reinstall %(kernels_jax_dir)s/dist/*
+
+
+refresh_jaxlib: jaxlib_clean jaxlib jaxlib_install
 """
 
 
