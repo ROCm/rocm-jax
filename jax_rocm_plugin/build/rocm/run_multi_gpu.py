@@ -105,7 +105,7 @@ def check_system_resources():
     except (subprocess.CalledProcessError, ValueError, IndexError):
         return True  # Continue if check fails
 
-
+# pylint: disable=too-many-locals
 def run_multi_gpu_test(test_file, gpu_count, continue_on_fail, max_gpus=None):
     """Run a single multi-GPU test."""
     if max_gpus and gpu_count > max_gpus:
@@ -168,7 +168,7 @@ def run_multi_gpu_test(test_file, gpu_count, continue_on_fail, max_gpus=None):
             "-x",
             "-v",
             f"./jax/{test_file}",
-        ]        
+        ]
 
     print(f"Running: {' '.join(cmd)}")
 
@@ -267,7 +267,9 @@ def main():
         print(f"\n[{i}/{len(tests_to_run)}] Running {test_file}")
 
         try:
-            exit_code = run_multi_gpu_test(test_file, args.gpu_count, args.continue_on_fail, args.max_gpus)
+            exit_code = run_multi_gpu_test(
+                test_file, args.gpu_count, args.continue_on_fail, args.max_gpus
+            )
 
             if exit_code == 0:
                 passed_tests.append(test_file)
