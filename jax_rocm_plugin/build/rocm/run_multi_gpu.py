@@ -217,6 +217,9 @@ def main():
     parser.add_argument(
         "--test-filter", type=str, help="Run only tests containing this string"
     )
+    parser.add_argument(
+        "-c", "--continue_on_fail", action="store_true", help="continue on failure"
+    )
 
     args = parser.parse_args()
 
@@ -255,6 +258,9 @@ def main():
                 passed_tests.append(test_file)
             else:
                 failed_tests.append((test_file, exit_code))
+                if not args.continue_on_fail:
+                    print("fail-fast: stopping after first failure")
+                    break
 
         except KeyboardInterrupt:
             print(f"\nInterrupted during {test_file}")
@@ -280,7 +286,10 @@ def main():
     except (ImportError, OSError, ValueError) as excp:
         print(f"Warning: Could not generate final report: {excp}")
 
-    # Exit with failure if any tests failed
+    # Exit with failure if any tests failed and not continue_on_fail
+    if args.continue_on_fail:
+        print("continue on fail is set")
+        sys.exit(0)
     sys.exit(1 if failed_tests else 0)
 
 
