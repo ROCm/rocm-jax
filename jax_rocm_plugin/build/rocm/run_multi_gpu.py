@@ -142,18 +142,33 @@ def run_multi_gpu_test(test_file, gpu_count, max_gpus=None):
     )
     # pylint: disable=duplicate-code
     # Build pytest command
-    cmd = [
-        "python3",
-        "-m",
-        "pytest",
-        "--json-report",
-        f"--json-report-file={abs_json_log_file}",
-        f"--html={abs_html_log_file}",
-        "--reruns",
-        "3",
-        "-v",
-        f"./jax/{test_file}",
-    ]
+    if continue_on_fail:
+        cmd = [
+            "python3",
+            "-m",
+            "pytest",
+            "--json-report",
+            f"--json-report-file={abs_json_log_file}",
+            f"--html={abs_html_log_file}",
+            "--reruns",
+            "3",
+            "-v",
+            f"./jax/{test_file}",
+        ]
+    else:
+        cmd = [
+            "python3",
+            "-m",
+            "pytest",
+            "--json-report",
+            f"--json-report-file={abs_json_log_file}",
+            f"--html={abs_html_log_file}",
+            "--reruns",
+            "3",
+            "-x",
+            "-v",
+            f"./jax/{test_file}",
+        ]        
 
     print(f"Running: {' '.join(cmd)}")
 
