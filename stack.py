@@ -26,7 +26,7 @@ MAKE_TEMPLATE = r"""
 # customize to a single arch for local dev builds to reduce compile time
 AMDGPU_TARGETS ?= "$(shell rocminfo | grep -o -m 1 'gfx.*')"
 
-###### auxiliary vars. Note the absense of quotes around variable values, - these vars are expected to be put into other quoted vars
+###### auxiliary vars. Note the absence of quotes around variable values, - these vars are expected to be put into other quoted vars
 # Bazel options to build repos in a certain mode.
 CFG_DEBUG=--config=debug --compilation_mode=dbg --strip=never --copt=-g3 --copt=-O0 --cxxopt=-g3 --cxxopt=-O0
 CFG_RELEASE_WITH_SYM=--strip=never --copt=-g3 --cxxopt=-g3
