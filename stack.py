@@ -153,7 +153,7 @@ def setup_development(
 
     # clone xla from source for building jax_rocm_plugin if the user didn't
     # specify an existing XLA directory
-    if not os.path.exists("./xla") and xla_dir != DEFAULT_XLA_DIR:
+    if not os.path.exists("./xla") and xla_dir == DEFAULT_XLA_DIR:
         cmd = ["git", "clone"]
         cmd.extend(["--branch", xla_ref])
         cmd.append(XLA_REPL_URL)
