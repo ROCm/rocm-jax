@@ -259,6 +259,7 @@ def _add_externals_symlink(this_repo_root: str, xla_path: str, kernels_jax_path:
     if kernels_jax_path:
         _make_external(kernels_jax_path)
 
+
 # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals
 def setup_development(
     xla_ref: str,
