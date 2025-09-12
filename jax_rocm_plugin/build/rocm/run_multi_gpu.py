@@ -106,7 +106,7 @@ def check_system_resources():
         return True  # Continue if check fails
 
 
-def run_multi_gpu_test(test_file, gpu_count, max_gpus=None):
+def run_multi_gpu_test(test_file, gpu_count, max_gpus=None, continue_on_fail):
     """Run a single multi-GPU test."""
     if max_gpus and gpu_count > max_gpus:
         gpu_count = max_gpus
@@ -267,7 +267,7 @@ def main():
         print(f"\n[{i}/{len(tests_to_run)}] Running {test_file}")
 
         try:
-            exit_code = run_multi_gpu_test(test_file, args.gpu_count, args.max_gpus)
+            exit_code = run_multi_gpu_test(test_file, args.gpu_count, args.max_gpus, args.continue_on_fail)
 
             if exit_code == 0:
                 passed_tests.append(test_file)
