@@ -413,16 +413,22 @@ gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
         )
 
     with open("/etc/yum.repos.d/amdgpu.repo", "w") as afd:
+        if rocm_version_str.startswith("7"):
+            repodir = "graphics"
+            rhel_minor = 10
+        else:
+            repodir = "amdgpu"
+            rhel_minor = 8
         afd.write(
             """
 [amdgpu]
 name=amdgpu
-baseurl=https://repo.radeon.com/amdgpu/%s/rhel/8.8/main/x86_64/
+baseurl=https://repo.radeon.com/%s/%s/rhel/8.{rhel}/main/x86_64/
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
 """
-            % rocm_version_str
+            % (repodir, rocm_version_str, rhel_minor)
         )
 
 
