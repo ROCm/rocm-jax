@@ -12,7 +12,7 @@ RELEASE_VERSION=$2
 WHEELHOUSE="$JAX_HOME/wheelhouse"
 
 # Projects to upload separately to PyPI.
-PROJECTS=("jax_rocm60_pjrt" "jax_rocm60_plugin")
+PROJECTS=("jax_rocm7_pjrt" "jax_rocm7_plugin")
 
 # PyPI API Token.
 PYPI_API_TOKEN=${PYPI_API_TOKEN:-"pypi-replace_with_token"}
