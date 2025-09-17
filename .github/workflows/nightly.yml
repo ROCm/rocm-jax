@@ -19,9 +19,7 @@ jobs:
           - rocm-version: "6.4.1"
             runner-label: "mi-250"
           - rocm-version: "7.0.0"
-            rocm-build-job: "compute-rocm-rel-7.0"
-            rocm-build-num: "40"
-            runner-label: "internal"
+            runner-label: "mi-250"
     uses: ./.github/workflows/build-wheels.yml
     with:
       python-versions: "3.10,3.12"
