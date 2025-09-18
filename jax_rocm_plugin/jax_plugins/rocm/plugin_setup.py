@@ -25,24 +25,29 @@ package_name = f"jax_rocm{rocm_version}_plugin"
 # Extract ROCm version from the `ROCM_PATH` environment variable.
 default_rocm_path = "/opt/rocm"
 rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
-rocm_detected_version = rocm_path.split('-')[-1] if '-' in rocm_path else "unknown"
+rocm_detected_version = rocm_path.split("-")[-1] if "-" in rocm_path else "unknown"
+
 
 def load_version_module(pkg_path):
-  spec = importlib.util.spec_from_file_location(
-    'version', os.path.join(pkg_path, 'version.py'))
-  module = importlib.util.module_from_spec(spec)
-  spec.loader.exec_module(module)
-  return module
+    spec = importlib.util.spec_from_file_location(
+        "version", os.path.join(pkg_path, "version.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 
 _version_module = load_version_module(package_name)
 __version__ = _version_module._get_version_for_build()
 _cmdclass = _version_module._get_cmdclass(package_name)
 
-class BinaryDistribution(Distribution):
-  """This class makes 'bdist_wheel' include an ABI tag on the wheel."""
 
-  def has_ext_modules(self):
-    return True
+class BinaryDistribution(Distribution):
+    """This class makes 'bdist_wheel' include an ABI tag on the wheel."""
+
+    def has_ext_modules(self):
+        return True
+
 
 setup(
     name=project_name,
@@ -60,7 +65,6 @@ setup(
     license="Apache-2.0",
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
