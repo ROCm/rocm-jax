@@ -73,6 +73,11 @@ parser.add_argument(
     help="rocm/xla Git hash. Empty if unknown. Optional.",
 )
 parser.add_argument(
+    "--use_local_xla",
+    required=True,
+    help="Use local XLA repository instead of pinned commit hash",
+)
+parser.add_argument(
     "--jax-commit",
     default="",
     required=True,
@@ -98,6 +103,36 @@ plat_name={tag}
         )
 
 
+def get_xla_commit_hash():
+    """Determines the XLA commit hash to use, either from the local repository or a pinned version."""
+    if args.use_local_xla:
+        try:
+            git_head_path = "/xla/.git/HEAD"
+
+            with open(git_head_path, "r") as f:
+                head_content = f.read().strip()
+
+            if head_content.startswith("ref: "):
+                ref_path = head_content[5:]
+                ref_file_path = f"/xla/.git/{ref_path}"
+
+                with open(ref_file_path, "r") as ref_f:
+                    xla_commit_hash = ref_f.read().strip()
+            else:
+                xla_commit_hash = head_content
+
+            print(f"Using local XLA commit hash: {xla_commit_hash}")
+
+        except:
+            xla_commit_hash = "Custom"
+            print("Could not read XLA commit hash, using 'Custom'")
+
+    else:
+        xla_commit_hash = args.xla_commit
+        print(f"Using pinned XLA commit hash: {xla_commit_hash}")
+
+    return xla_commit_hash
+
 def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
     """Assembles a source tree for the ROCm wheel in `sources_path`."""
     copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
@@ -112,8 +147,9 @@ def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
     )
     build_utils.update_setup_with_rocm_version(sources_path, rocm_version)
     write_setup_cfg(sources_path, cpu)
+    xla_commit_hash = get_xla_commit_hash()
     build_utils.write_commit_info(
-        plugin_dir, args.xla_commit, args.jax_commit, args.rocm_jax_git_hash
+        plugin_dir, xla_commit_hash, args.jax_commit, args.rocm_jax_git_hash
     )
     copy_runfiles(
         dst_dir=plugin_dir,
