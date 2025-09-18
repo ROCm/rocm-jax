@@ -105,7 +105,7 @@ plat_name={tag}
 
 def get_xla_commit_hash():
     """Determines the XLA commit hash to use, either from the local repository or a pinned version."""
-    if args.use_local_xla:
+    if args.use_local_xla == "True":
         try:
             git_head_path = "/xla/.git/HEAD"
 
