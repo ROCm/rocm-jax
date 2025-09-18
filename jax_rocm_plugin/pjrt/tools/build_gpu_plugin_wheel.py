@@ -104,7 +104,7 @@ plat_name={tag}
 
 
 def get_xla_commit_hash():
-    """Determines the XLA commit hash to use, either from the local repository or a pinned version."""
+     """Determines the XLA commit hash to use - local repository or a pinned."""
     if args.use_local_xla == "True":
         try:
             git_head_path = "/xla/.git/HEAD"
@@ -123,7 +123,7 @@ def get_xla_commit_hash():
 
             print(f"Using local XLA commit hash: {xla_commit_hash}")
 
-        except:
+        except (FileNotFoundError, IOError):
             xla_commit_hash = "Custom"
             print("Could not read XLA commit hash, using 'Custom'")
 
