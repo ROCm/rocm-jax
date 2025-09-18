@@ -133,6 +133,7 @@ def get_xla_commit_hash():
 
     return xla_commit_hash
 
+
 def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
     """Assembles a source tree for the ROCm wheel in `sources_path`."""
     copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)

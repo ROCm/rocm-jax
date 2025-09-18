@@ -132,7 +132,7 @@ def get_xla_commit_hash():
     else:
         xla_commit_hash = args.xla_commit
         print(f"Using pinned XLA commit hash: {xla_commit_hash}")
-    
+
     return xla_commit_hash
 
 

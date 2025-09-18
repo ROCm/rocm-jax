@@ -459,11 +459,16 @@ async def main():
     }
     target_cpu = wheel_cpus[args.target_cpu] if args.target_cpu is not None else arch
 
+    logging.error("Local XLA path: %s", args.local_xla_path)
+    use_local_xla = False
     if args.local_xla_path:
         logging.debug("Local XLA path: %s", args.local_xla_path)
         wheel_build_command_base.append(
             f'--override_repository=xla="{args.local_xla_path}"'
         )
+
+    if any("--override_repository=xla=" in opt for opt in args.bazel_options):
+        use_local_xla = True
 
     if args.target_cpu:
         logging.debug("Target CPU: %s", args.target_cpu)
@@ -474,7 +479,6 @@ async def main():
         wheel_build_command_base.append("--config=nonccl")
 
     git_hash = utils.get_githash()
-    print("build.py git_hash:", git_hash)
 
     clang_path = ""
     if args.use_clang:
@@ -688,6 +692,8 @@ async def main():
                 wheel_build_command.append(f"--platform_version={args.rocm_version}")
 
             wheel_build_command.append(f"--rocm_jax_git_hash={git_hash}")
+
+            wheel_build_command.append(f"--use_local_xla={use_local_xla}")
 
             result = await executor.run(
                 wheel_build_command.get_command_as_string(),
