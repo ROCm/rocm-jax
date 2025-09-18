@@ -104,19 +104,19 @@ plat_name={tag}
 
 
 def get_xla_commit_hash():
-     """Determines the XLA commit hash to use - local repository or a pinned."""
+    """Determines the XLA commit hash to use - local repository or a pinned."""
     if args.use_local_xla == "True":
         try:
             git_head_path = "/xla/.git/HEAD"
 
-            with open(git_head_path, "r") as f:
+            with open(git_head_path, "r", encoding="utf-8") as f:
                 head_content = f.read().strip()
 
             if head_content.startswith("ref: "):
                 ref_path = head_content[5:]
                 ref_file_path = f"/xla/.git/{ref_path}"
 
-                with open(ref_file_path, "r") as ref_f:
+                with open(ref_file_path, "r", encoding="utf-8") as ref_f:
                     xla_commit_hash = ref_f.read().strip()
             else:
                 xla_commit_hash = head_content
