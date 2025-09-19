@@ -307,7 +307,7 @@ def setup_development(
             if plugin_namespace_version == "6":
                 # note the inconsistency in numbering - ROCm 6 is "60" but ROCm 7 is "7"
                 plugin_namespace_version = "60"
-            elif plugin_namespace_version != 7:
+            elif plugin_namespace_version != "7":
                 # assume that other versions will be one digit like 7
                 print(
                     "Warning: using unexpected ROCm version {plugin_namespace_version}"
