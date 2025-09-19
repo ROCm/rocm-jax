@@ -47,12 +47,15 @@ jobs:
             /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
       - name: Checkout plugin repo
         uses: actions/checkout@v4
+        with:
+          clean: false
       - name: Checkout JAX repo
         uses: actions/checkout@v4
         with:
           # TODO: Load the ref from a file that sets the min and max JAX version
           # TODO: Change the repo and ref once we figure out how exactly we're going to
           #       manage tests
+          clean: false
           repository: rocm/jax
           ref: rocm-jaxlib-v0.7.1
           path: jax
