@@ -37,9 +37,6 @@ import sys
 LOG = logging.getLogger(__name__)
 
 
-ROCM_PLUGIN_NAME_VERSION = "7"
-
-
 GPU_DEVICE_TARGETS = (
     "gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
 )
@@ -119,7 +116,7 @@ def find_clang_path():
 
 # pylint: disable=R0913, R0917
 def build_jaxlib_wheel(
-    jax_path, rocm_path, python_version, output_dir, xla_path=None, compiler="gcc"
+    jax_path, rocm_version, python_version, output_dir, xla_path=None, compiler="gcc"
 ):
     """Build jaxlib and ROCm plugin wheels."""
     use_clang = "true" if compiler == "clang" else "false"
@@ -133,6 +130,11 @@ def build_jaxlib_wheel(
     except subprocess.CalledProcessError as e:
         print(f"Failed to configure Git safe directory: {e}")
         raise
+    
+    version_string=rocm_version[0]
+    if version_string == "6":
+        version_string = "60"
+    rocm_path = build_rocm_path(rocm_version)
 
     cmd = [
         "python",
@@ -140,7 +142,7 @@ def build_jaxlib_wheel(
         "build",
         "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
         "--rocm_path=%s" % rocm_path,
-        "--rocm_version=%s" % ROCM_PLUGIN_NAME_VERSION,
+        "--rocm_version=%s" % version_string,
         "--use_clang=%s" % use_clang,
         "--verbose",
         "--output_path=%s" % output_dir,
@@ -350,7 +352,7 @@ def main():
 
     for py in python_versions:
         build_jaxlib_wheel(
-            args.jax_path, rocm_path, py, full_output_path, args.xla_path, args.compiler
+            args.jax_path, args.rocm_version, py, full_output_path, args.xla_path, args.compiler
         )
         wheel_paths = find_wheels(full_output_path)
         for wheel_path in wheel_paths:
