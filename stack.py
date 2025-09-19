@@ -310,7 +310,7 @@ def setup_development(
             elif plugin_namespace_version != "7":
                 # assume that other versions will be one digit like 7
                 print(
-                    "Warning: using unexpected ROCm version {plugin_namespace_version}"
+                    f"Warning: using unexpected ROCm version {plugin_namespace_version}"
                 )
         except Exception as e:
             print(
