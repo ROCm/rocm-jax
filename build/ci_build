@@ -103,6 +103,9 @@ def build_dockers(
                 dockerfiles.append(path)
 
     rocm_ver_tag = "rocm%s" % "".join(rocm_version.split("."))
+    plugin_namespace = rocm_version[0]
+    if plugin_namespace == "6":
+        plugin_namespace = "60"
 
     for dockerfile in dockerfiles:
         _, tag_suffix = dockerfile.split(".", 1)
@@ -121,6 +124,7 @@ def build_dockers(
             "--build-arg=ROCM_VERSION=%s" % rocm_version,
             "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
             "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
+            "--build-arg=PLUGIN_NAMESPACE=%s" % plugin_namespace,
             "--tag=%s" % tag,
         ]
 
@@ -274,10 +278,14 @@ def parse_args():
 
     # Make sure that the user hasn't tried to set both --therock-path and either --rocm-build-job or --rocm-build-num
     if args.therock_path and (args.rocm_build_job or args.rocm_build_num):
-        p.error("You cannot set both --therock-path and --rocm-build-job/--rocm-build-num.")
+        p.error(
+            "You cannot set both --therock-path and --rocm-build-job/--rocm-build-num."
+        )
 
     # Make sure that the user has set both a build job and build number if trying to get ROCm from the mainline build
-    if (args.rocm_build_job and not args.rocm_build_num) or (args.rocm_build_num and not args.rocm_build_job):
+    if (args.rocm_build_job and not args.rocm_build_num) or (
+        args.rocm_build_num and not args.rocm_build_job
+    ):
         p.error("You must set both --rocm-build-num and --rocm-build-job, not just one")
 
     return args
