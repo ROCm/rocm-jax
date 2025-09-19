@@ -5,7 +5,19 @@ ARG ROCM_BUILD_JOB
 ARG ROCM_BUILD_NUM
 ARG THEROCK_PATH
 
-# Install system GCC and C++ libraries, and build deps
+# Run as the engflow user
+#RUN groupadd \
+#  --gid 114 \
+#  engflow && \
+#  useradd \
+#  --home-dir /home/engflow \
+#  --create-home \
+#  --uid 108 \
+#  --gid 114 \
+#  engflow
+#ENV HOME=/home/engflow
+
+# Install build deps
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y patchelf numactl-devel
 
@@ -13,10 +25,11 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     --mount=type=bind,source=build/rocm/tools/get_rocm.py,target=get_rocm.py \
     --mount=type=bind,from=therock,target=/tmp/therock/ \
     python3 get_rocm.py --rocm-version=$ROCM_VERSION --job-name=$ROCM_BUILD_JOB --build-num=$ROCM_BUILD_NUM --therock-path=$THEROCK_PATH
+#RUN usermod -a -G render,video engflow
 ENV PATH="$PATH:/opt/rocm/bin:/opt/rocm/llvm/bin"
 
 ARG GPU_DEVICE_TARGETS="gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
-RUN printf '%s\n' > /opt/rocm/bin/target.lst ${GPU_DEVICE_TARGETS}
+RUN printf '%s\n' > /opt/rocm/bin/target.lst ${GPU_DEVICE_TARGETS} #&& chmod 666 /opt/rocm/bin/target.lst /opt/rocm/.info/version
 
 # Install LLVM 18 and dependencies.
 RUN --mount=type=cache,target=/var/cache/dnf \
@@ -29,3 +42,6 @@ COPY ./build/rocm/build_wheels/clang.cfg /usr/lib/llvm-18/bin/clang++.cfg
 COPY ./build/rocm/build_wheels/clang.cfg /usr/lib/llvm-18/bin/clang.cfg
 COPY ./build/rocm/build_wheels/clang.cfg /opt/rocm/llvm/bin/clang++.cfg
 COPY ./build/rocm/build_wheels/clang.cfg /opt/rocm/llvm/bin/clang.cfg
+
+#USER engflow
+
