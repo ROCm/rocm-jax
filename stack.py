@@ -297,21 +297,25 @@ def setup_development(
             _add_externals_symlink(this_repo_root, xla_path, kernels_jax_path)
         else:  # not modifying the build unless asked
             plugin_bazel_options, jaxlib_bazel_options, custom_options = "", "", ""
-        
+
         # try to detect the  namespace version from the ROCm version
         plugin_namespace_version = 7
         try:
             with open(os.path.join(rocm_path, ".info", "version")) as versionfile:
-                full_version=versionfile.readline()
-            plugin_namespace_version=full_version[0]
-            if plugin_namespace_version == '6':
+                full_version = versionfile.readline()
+            plugin_namespace_version = full_version[0]
+            if plugin_namespace_version == "6":
                 # note the inconsistency in numbering - ROCm 6 is "60" but ROCm 7 is "7"
                 plugin_namespace_version = "60"
             elif plugin_namespace_version != 7:
                 # assume that other versions will be one digit like 7
-                print("Warning: using unexpected ROCm version {plugin_namespace_version}")               
+                print(
+                    "Warning: using unexpected ROCm version {plugin_namespace_version}"
+                )
         except Exception as e:
-            print(f"Could not detect ROCm version because {e}. Using default {plugin_namespace_version}")
+            print(
+                f"Could not detect ROCm version because {e}. Using default {plugin_namespace_version}"
+            )
 
         kvs = {
             "clang_path": "/usr/lib/llvm-18/bin/clang",
@@ -443,7 +447,7 @@ def parse_args():
         "links to corresponding workspaces pointing to bazel's dependencies storage.",
         action="store_true",
     )
-    
+
     dev.add_argument(
         "--rocm-path",
         help="Location of the ROCm to use for building Jax",

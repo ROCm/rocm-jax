@@ -130,8 +130,8 @@ def build_jaxlib_wheel(
     except subprocess.CalledProcessError as e:
         print(f"Failed to configure Git safe directory: {e}")
         raise
-    
-    version_string=rocm_version[0]
+
+    version_string = rocm_version[0]
     if version_string == "6":
         version_string = "60"
     rocm_path = build_rocm_path(rocm_version)
@@ -352,7 +352,12 @@ def main():
 
     for py in python_versions:
         build_jaxlib_wheel(
-            args.jax_path, args.rocm_version, py, full_output_path, args.xla_path, args.compiler
+            args.jax_path,
+            args.rocm_version,
+            py,
+            full_output_path,
+            args.xla_path,
+            args.compiler,
         )
         wheel_paths = find_wheels(full_output_path)
         for wheel_path in wheel_paths:
