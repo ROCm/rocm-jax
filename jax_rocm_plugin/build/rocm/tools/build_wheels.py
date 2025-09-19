@@ -119,7 +119,7 @@ def build_jaxlib_wheel(
     jax_path, rocm_version, python_version, output_dir, xla_path=None, compiler="gcc"
 ):
     """Build jaxlib and ROCm plugin wheels."""
-    use_clang = "true" if compiler == "clang" else "false"
+    use_clang = compiler == "clang"
 
     # Avoid git warning by setting safe.directory.
     try:
@@ -134,14 +134,13 @@ def build_jaxlib_wheel(
     version_string = rocm_version[0]
     if version_string == "6":
         version_string = "60"
-    rocm_path = build_rocm_path(rocm_version)
 
     cmd = [
         "python",
         "build/build.py",
         "build",
         "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
-        "--rocm_path=%s" % rocm_path,
+        "--rocm_path=%s" % build_rocm_path(rocm_version),
         "--rocm_version=%s" % version_string,
         "--use_clang=%s" % use_clang,
         "--verbose",
@@ -149,7 +148,7 @@ def build_jaxlib_wheel(
     ]
 
     # Add clang path if clang is used.
-    if compiler == "clang":
+    if use_clang:
         clang_path = find_clang_path()
         if clang_path:
             cmd.append("--clang_path=%s" % clang_path)

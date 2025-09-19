@@ -299,22 +299,18 @@ def setup_development(
             plugin_bazel_options, jaxlib_bazel_options, custom_options = "", "", ""
 
         # try to detect the  namespace version from the ROCm version
-        plugin_namespace_version = 7
-        try:
-            with open(os.path.join(rocm_path, ".info", "version")) as versionfile:
-                full_version = versionfile.readline()
-            plugin_namespace_version = full_version[0]
-            if plugin_namespace_version == "6":
-                # note the inconsistency in numbering - ROCm 6 is "60" but ROCm 7 is "7"
-                plugin_namespace_version = "60"
-            elif plugin_namespace_version != 7:
-                # assume that other versions will be one digit like 7
-                print(
-                    "Warning: using unexpected ROCm version {plugin_namespace_version}"
-                )
-        except Exception as e:
+        # this is expected to throw an exception if the specified ROCm path is invalid, for example
+        # if there is no .info/version
+        with open(os.path.join(rocm_path, ".info", "version"), encoding="utf-8") as versionfile:
+            full_version = versionfile.readline()
+        plugin_namespace_version = full_version[0]
+        if plugin_namespace_version == "6":
+            # note the inconsistency in numbering - ROCm 6 is "60" but ROCm 7 is "7"
+            plugin_namespace_version = "60"
+        elif plugin_namespace_version != 7:
+            # assume that other versions will be one digit like 7
             print(
-                f"Could not detect ROCm version because {e}. Using default {plugin_namespace_version}"
+                "Warning: using unexpected ROCm version {plugin_namespace_version}"
             )
 
         kvs = {
