@@ -45,10 +45,6 @@ class RocmInstallException(Exception):
     """Exceptions thrown when trying to install ROCm"""
 
 
-class RocmInstallException(Exception):
-    """Exceptions thrown when trying to install ROCm"""
-
-
 def latest_rocm():
     """
     Retrieve and return a version of the newest release from repo.radeon.com
