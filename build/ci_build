@@ -25,6 +25,7 @@ import tempfile
 import glob
 import zipfile
 import json
+import re
 
 
 def _get_labels(image_name):
@@ -36,22 +37,23 @@ def _get_labels(image_name):
 
 
 def _get_commit_info_from_wheel():
-    wheel_file = glob.glob("wheelhouse/*jax_rocm7_plugin*.whl")[0]
+    """Extract commit hashes from commit_info.py inside a jax_rocm*_plugin wheel."""
 
-    with zipfile.ZipFile(wheel_file, "r") as wheel:
-        commit_content = wheel.read("jax_rocm7_plugin/commit_info.py").decode("utf-8")
+    wheel_file = glob.glob("wheelhouse/*jax_rocm*_plugin*.whl")[0]
 
-    namespace = {}
-    exec(commit_content, namespace)
+    with zipfile.ZipFile(wheel_file, "r") as whl:
+        commit_info_file = next(
+            f for f in whl.namelist() if f.endswith("commit_info.py")
+        )
+        commit_content = whl.read(commit_info_file).decode("utf-8")
 
-    print("This wheel built with XLA commit:", namespace["xla_commit"])
-    print("This wheel built with JAX commit:", namespace["jax_commit"])
-    print("This wheel built with ROCM-JAX commit:", namespace["rocm_jax_commit"])
+    pattern = re.compile(r'(\w+)\s*=\s*[\'"]([0-9a-fA-F]+)[\'"]')
+    commits = dict(pattern.findall(commit_content))
 
     return {
-        "xla_commit": namespace["xla_commit"],
-        "jax_commit": namespace["jax_commit"],
-        "rocm_jax_commit": namespace["rocm_jax_commit"],
+        "xla_commit": commits["xla_commit"],
+        "jax_commit": commits["jax_commit"],
+        "rocm_jax_commit": commits["rocm_jax_commit"],
     }
 
 
