@@ -465,6 +465,10 @@ async def main():
             f'--override_repository=xla="{args.local_xla_path}"'
         )
 
+    use_local_xla = any(
+        "--override_repository=xla=" in opt for opt in args.bazel_options
+    )
+
     if args.target_cpu:
         logging.debug("Target CPU: %s", args.target_cpu)
         wheel_build_command_base.append(f"--cpu={args.target_cpu}")
@@ -686,7 +690,9 @@ async def main():
                 wheel_build_command.append("--enable-rocm=True")
                 wheel_build_command.append(f"--platform_version={args.rocm_version}")
 
-            wheel_build_command.append(f"--jaxlib_git_hash={git_hash}")
+            wheel_build_command.append(f"--rocm_jax_git_hash={git_hash}")
+
+            wheel_build_command.append(f"--use_local_xla={use_local_xla}")
 
             result = await executor.run(
                 wheel_build_command.get_command_as_string(),
