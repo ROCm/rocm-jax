@@ -459,16 +459,15 @@ async def main():
     }
     target_cpu = wheel_cpus[args.target_cpu] if args.target_cpu is not None else arch
 
-    logging.error("Local XLA path: %s", args.local_xla_path)
-    use_local_xla = False
+
     if args.local_xla_path:
         logging.debug("Local XLA path: %s", args.local_xla_path)
         wheel_build_command_base.append(
             f'--override_repository=xla="{args.local_xla_path}"'
         )
 
-    if any("--override_repository=xla=" in opt for opt in args.bazel_options):
-        use_local_xla = True
+
+    use_local_xla = any("--override_repository=xla=" in opt for opt in args.bazel_options)
 
     if args.target_cpu:
         logging.debug("Target CPU: %s", args.target_cpu)
