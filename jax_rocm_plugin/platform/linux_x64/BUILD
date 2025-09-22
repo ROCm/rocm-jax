@@ -12,7 +12,7 @@ platform(
     ],
     exec_properties = {
 	#"container-image": "docker://rocm/tensorflow-build:2.19-noble-python3.12-rocm6.4.0@sha256:7f03657c78a71f63adcaa996bdfdbc1c276b55594076cc47365b8713b2030fdd",
-	"container-image": "docker://938540721288.dkr.ecr.us-east-1.amazonaws.com/amd/rbe@sha256:d77247cae361ba785c70d5da712b3bb187526dd61bc4f1b2bdc6df53a1f66c2c",
+	"container-image": "docker://938540721288.dkr.ecr.us-east-1.amazonaws.com/amd/rbe@sha256:48515bbef9780ce32bdadd6e236d344217009fec4ed47a7809f41707ef8b8551",
         "OSFamily": "Linux",
     },
 )
