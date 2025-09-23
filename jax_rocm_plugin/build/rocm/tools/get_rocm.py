@@ -417,7 +417,7 @@ gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
             """
 [amdgpu]
 name=amdgpu
-baseurl=https://repo.radeon.com/amdgpu/%s/rhel/8.8/main/x86_64/
+baseurl=https://repo.radeon.com/amdgpu/%s/rhel/8.9/main/x86_64/
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
