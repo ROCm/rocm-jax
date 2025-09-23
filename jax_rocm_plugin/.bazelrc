@@ -160,8 +160,13 @@ build:win_clang --compiler=clang-cl
 
 #build:rocm_base --config=clang_local
 #build:rocm_base --noincompatible_enable_cc_toolchain_resolution
-#build:rocm_base --repo_env USE_HERMETIC_CC_TOOLCHAIN=0
+#build:rocm_base --repo_env USE_HERMETIC_CC_TOOLCHAIN=1
 #build:rocm_base --@rules_ml_toolchain//common:enable_hermetic_cc=False
+#
+
+#build:rocm --repo_env="OS=almalinux"
+#build:rocm --repo_env="ROCM_VERSION=6.4.1"
+#build:rocm --@local_config_rocm//rocm:rocm_path_type=hermetic
 
 build:rocm_base --crosstool_top=@local_config_rocm//crosstool:toolchain
 build:rocm_base --define=using_rocm=true --define=using_rocm_hipcc=true
