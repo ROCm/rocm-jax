@@ -35,6 +35,7 @@ ARG ROCM_PATH=/opt/rocm-${ROCM_VERSION}
 ENV ROCM_PATH=${ROCM_PATH}
 ARG ROCM_BUILD_JOB
 ARG ROCM_BUILD_NUM
+ARG PLUGIN_NAMESPACE
 ARG THEROCK_PATH
 RUN --mount=type=bind,source=jax_rocm_plugin/build/rocm/tools/get_rocm.py,target=get_rocm.py \
     --mount=type=cache,target=/var/cache/apt \
@@ -93,4 +94,4 @@ LABEL com.amdgpu.rocm_version="$ROCM_VERSION" \
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=wheelhouse,target=/wheelhouse \
     ls -lah /wheelhouse && \
-    pip3 install -f /wheelhouse --no-deps --no-index jax_rocm7_plugin jax_rocm7_pjrt
+    pip3 install -f /wheelhouse --no-deps --no-index "jax_rocm${PLUGIN_NAMESPACE}_plugin" "jax_rocm${PLUGIN_NAMESPACE}_pjrt"
