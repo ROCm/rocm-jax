@@ -42,6 +42,17 @@ GPU_DEVICE_TARGETS = (
 )
 
 
+def get_rocm_version(rocm_path):
+    try:
+        version = subprocess.check_output(
+            f"cat {rocm_path}/.info/version | cut -d '-' -f 1", shell=True
+        )
+        return version.decode("utf-8").strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Error fetching ROCm version: {e}")
+        return None
+
+
 def build_rocm_path(rocm_version_str):
     """Return appropriate ROCm installation path."""
     path = "/opt/rocm-%s" % rocm_version_str
@@ -116,7 +127,7 @@ def find_clang_path():
 
 # pylint: disable=R0913, R0917
 def build_jaxlib_wheel(
-    jax_path, rocm_version, python_version, output_dir, xla_path=None, compiler="gcc"
+    jax_path, rocm_path, rocm_version, python_version, output_dir, xla_path=None, compiler="gcc"
 ):
     """Build jaxlib and ROCm plugin wheels."""
     use_clang = compiler == "clang"
@@ -140,7 +151,7 @@ def build_jaxlib_wheel(
         "build/build.py",
         "build",
         "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
-        "--rocm_path=%s" % build_rocm_path(rocm_version),
+        "--rocm_path=%s" % rocm_path,
         "--rocm_version=%s" % version_string,
         "--use_clang=%s" % use_clang,
         "--verbose",
@@ -170,28 +181,6 @@ def build_jaxlib_wheel(
     pattern = re.compile("Output wheel: (.+)\n")
 
     _run_scan_for_output(cmd, pattern, env=env, cwd=jax_path, capture="stderr")
-
-
-def build_jax_wheel(jax_path, python_version):
-    """Build JAX wheel."""
-    cmd = [
-        "python",
-        "-m",
-        "build",
-    ]
-
-    cpy = to_cpy_ver(python_version)
-    py_bin = "/opt/python/%s-%s/bin" % (cpy, cpy)
-
-    env = dict(os.environ)
-    env["JAX_RELEASE"] = str(1)
-    env["JAXLIB_RELEASE"] = str(1)
-    env["PATH"] = "%s:%s" % (py_bin, env["PATH"])
-
-    LOG.info("Running %r from cwd=%r", cmd, jax_path)
-    pattern = re.compile(r"Successfully built jax-.+ and (jax-.+\.whl)\n")
-
-    _run_scan_for_output(cmd, pattern, env=env, cwd=jax_path, capture="stdout")
 
 
 # pylint: disable=R0914
@@ -284,8 +273,12 @@ def fix_wheel(path, jax_path):
 def parse_args():
     """Parse CLI arguments."""
     p = argparse.ArgumentParser()
-    p.add_argument(
-        "--rocm-version", default="6.1.1", help="ROCM Version to build JAX against"
+    rocm_spec = p.add_mutually_exclusive_group()
+    rocm_spec.add_argument(
+        "--rocm-version", help="ROCM Version to build JAX against"
+    )
+    rocm_spec.add_argument(
+        "rocm-path", help="Path to ROCM to build JAX against"
     )
     p.add_argument(
         "--python-versions",
@@ -329,14 +322,22 @@ def main():
 
     manylinux_output_dir = "dist_manylinux"
 
-    print("ROCM_VERSION=%s" % args.rocm_version)
+    rocm_path=args.rocm_path
+    if args.rocm_version:
+        rocm_path = build_rocm_path(args.rocm_version)
+        rocm_version = args.rocm_version
+    else:
+        if rocm_path is None:
+            rocm_path = "/opt/rocm"
+        rocm_version=get_rocm_version(rocm_path)
+
+    print("ROCM_PATH=%s" % rocm_path)
+    print("ROCM_VERSION=%s" % rocm_version)
     print("PYTHON_VERSIONS=%r" % python_versions)
     print("JAX_PATH=%s" % args.jax_path)
     print("XLA_PATH=%s" % args.xla_path)
     print("COMPILER=%s" % args.compiler)
     print("OUTPUT_DIR=%s" % manylinux_output_dir)
-
-    rocm_path = build_rocm_path(args.rocm_version)
 
     update_rocm_targets(rocm_path, GPU_DEVICE_TARGETS)
 
@@ -352,7 +353,8 @@ def main():
     for py in python_versions:
         build_jaxlib_wheel(
             args.jax_path,
-            args.rocm_version,
+            rocm_path,
+            rocm_version,
             py,
             full_output_path,
             args.xla_path,
