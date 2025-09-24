@@ -1,8 +1,21 @@
+diff --git a/jax_plugins/rocm/__init__.py b/jax_plugins/rocm/__init__.py
+index cf2a625fa..097f2be6a 100644
+--- a/jax_plugins/rocm/__init__.py
++++ b/jax_plugins/rocm/__init__.py
+@@ -23,7 +23,7 @@ import jax._src.xla_bridge as xb
+ 
+ # rocm_plugin_extension locates inside jaxlib. `jaxlib` is for testing without
+ # preinstalled jax rocm plugin packages.
+-for pkg_name in ['jax_rocm60_plugin', 'jaxlib.cuda']:
++for pkg_name in ['jax_rocm7_plugin', 'jax_rocm60_plugin', 'jaxlib.cuda']:
+   try:
+     rocm_plugin_extension = importlib.import_module(
+         f'{pkg_name}.rocm_plugin_extension'
 diff --git a/jaxlib/BUILD b/jaxlib/BUILD
-index 373f8cd17..75cb60e9a 100644
+index 408683f0e..b600c2fa6 100644
 --- a/jaxlib/BUILD
 +++ b/jaxlib/BUILD
-@@ -34,7 +34,7 @@ licenses(["notice"])
+@@ -38,7 +38,7 @@ licenses(["notice"])
  
  package(
      default_applicable_licenses = [],
@@ -10,9 +23,9 @@ index 373f8cd17..75cb60e9a 100644
 +    default_visibility = ["//visibility:public"],
  )
  
- py_library_providing_imports_info(
+ package_group(
 diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
-index 94d75d9c1..89378ec87 100644
+index 04884262c..384fdc7ce 100644
 --- a/jaxlib/rocm/BUILD
 +++ b/jaxlib/rocm/BUILD
 @@ -26,7 +26,7 @@ licenses(["notice"])
@@ -24,27 +37,27 @@ index 94d75d9c1..89378ec87 100644
  )
  
  cc_library(
-@@ -387,6 +387,7 @@ nanobind_extension(
-         ":hip_vendor",
+@@ -357,6 +357,7 @@ nanobind_extension(
          "//jaxlib:kernel_nanobind_helpers",
+         "@local_config_rocm//rocm:hip_runtime",
          "@local_config_rocm//rocm:rocm_headers",
-+        "@local_config_rocm//rocm:rocm_hip",
++        "@local_config_rocm//rocm:hip",
          "@nanobind",
      ],
  )
-@@ -429,6 +430,7 @@ nanobind_extension(
-         "//jaxlib/cpu:lapack_kernels",
+@@ -400,6 +401,7 @@ nanobind_extension(
          "@com_google_absl//absl/base",
+         "@local_config_rocm//rocm:hip_runtime",
          "@local_config_rocm//rocm:rocm_headers",
 +        "@local_config_rocm//rocm:hip",
          "@nanobind",
          "@xla//xla/ffi/api:ffi",
      ],
-@@ -498,6 +500,7 @@ nanobind_extension(
+@@ -469,6 +471,7 @@ nanobind_extension(
          "@com_google_absl//absl/status:statusor",
          "@com_google_absl//absl/strings:string_view",
+         "@local_config_rocm//rocm:hip_runtime",
++        "@local_config_rocm//rocm:hip",
          "@nanobind",
-+        "@local_config_rocm//rocm:rocm_hip",
      ],
  )
- 

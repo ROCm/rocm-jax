@@ -138,6 +138,9 @@ def build_dockers(
                 dockerfiles.append(path)
 
     rocm_ver_tag = "rocm%s" % "".join(rocm_version.split("."))
+    plugin_namespace = rocm_version[0]
+    if plugin_namespace == "6":
+        plugin_namespace = "60"
 
     for dockerfile in dockerfiles:
         _, tag_suffix = dockerfile.split(".", 1)
@@ -159,6 +162,8 @@ def build_dockers(
             "--build-arg=XLA_COMMIT=%s" % commit_info["xla_commit"],
             "--build-arg=JAX_COMMIT=%s" % commit_info["jax_commit"],
             "--build-arg=ROCM_JAX_COMMIT=%s" % commit_info["rocm_jax_commit"],
+            "--build-arg=PLUGIN_NAMESPACE=%s" % plugin_namespace,
+
             "--tag=%s" % tag,
         ]
 
@@ -193,7 +198,7 @@ def test(image_name, test_cmd=None):
         print(f"rocm/xla commit hash: {labels['com.amdgpu.xla_commit']}")
 
     if not test_cmd:
-        test_cmd = "./build/rocm/run_single_gpu.py -c && ./build/rocm/run_multi_gpu.sh"
+        test_cmd = "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && python jax_rocm_plugin/build/rocm/run_multi_gpu.py"
 
     gpu_args = [
         "--device=/dev/kfd",
@@ -220,13 +225,13 @@ def test(image_name, test_cmd=None):
     # JAX and jaxlib are already installed from wheels
     mounts = [
         "-v",
-        os.path.abspath("./jax") + ":/jax",
+        os.path.abspath(".") + ":/rocm-jax",
     ]
 
     cmd.extend(mounts)
     cmd.extend(gpu_args)
 
-    container_cmd = "cd /jax && %s" % test_cmd
+    container_cmd = "cd /rocm-jax && %s" % test_cmd
 
     cmd.append(image_name)
     cmd.extend(
@@ -257,7 +262,7 @@ def parse_args():
 
     p.add_argument(
         "--rocm-version",
-        default="6.1.1",
+        default="7.1.0",
         help="ROCm version used for building wheels, testing, and installing into Docker image",
     )
 

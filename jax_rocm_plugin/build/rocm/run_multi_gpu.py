@@ -106,7 +106,8 @@ def check_system_resources():
         return True  # Continue if check fails
 
 
-def run_multi_gpu_test(test_file, gpu_count, max_gpus=None):
+# pylint: disable=too-many-locals
+def run_multi_gpu_test(test_file, gpu_count, continue_on_fail, max_gpus=None):
     """Run a single multi-GPU test."""
     if max_gpus and gpu_count > max_gpus:
         gpu_count = max_gpus
@@ -142,18 +143,33 @@ def run_multi_gpu_test(test_file, gpu_count, max_gpus=None):
     )
     # pylint: disable=duplicate-code
     # Build pytest command
-    cmd = [
-        "python3",
-        "-m",
-        "pytest",
-        "--json-report",
-        f"--json-report-file={abs_json_log_file}",
-        f"--html={abs_html_log_file}",
-        "--reruns",
-        "3",
-        "-v",
-        f"./jax/{test_file}",
-    ]
+    if continue_on_fail:
+        cmd = [
+            "python3",
+            "-m",
+            "pytest",
+            "--json-report",
+            f"--json-report-file={abs_json_log_file}",
+            f"--html={abs_html_log_file}",
+            "--reruns",
+            "3",
+            "-v",
+            f"./jax/{test_file}",
+        ]
+    else:
+        cmd = [
+            "python3",
+            "-m",
+            "pytest",
+            "--json-report",
+            f"--json-report-file={abs_json_log_file}",
+            f"--html={abs_html_log_file}",
+            "--reruns",
+            "3",
+            "-x",
+            "-v",
+            f"./jax/{test_file}",
+        ]
 
     print(f"Running: {' '.join(cmd)}")
 
@@ -217,6 +233,9 @@ def main():
     parser.add_argument(
         "--test-filter", type=str, help="Run only tests containing this string"
     )
+    parser.add_argument(
+        "-c", "--continue_on_fail", action="store_true", help="continue on failure"
+    )
 
     args = parser.parse_args()
 
@@ -249,12 +268,17 @@ def main():
         print(f"\n[{i}/{len(tests_to_run)}] Running {test_file}")
 
         try:
-            exit_code = run_multi_gpu_test(test_file, args.gpu_count, args.max_gpus)
+            exit_code = run_multi_gpu_test(
+                test_file, args.gpu_count, args.continue_on_fail, args.max_gpus
+            )
 
             if exit_code == 0:
                 passed_tests.append(test_file)
             else:
                 failed_tests.append((test_file, exit_code))
+                if not args.continue_on_fail:
+                    print("fail-fast: stopping after first failure")
+                    break
 
         except KeyboardInterrupt:
             print(f"\nInterrupted during {test_file}")
@@ -280,7 +304,10 @@ def main():
     except (ImportError, OSError, ValueError) as excp:
         print(f"Warning: Could not generate final report: {excp}")
 
-    # Exit with failure if any tests failed
+    # Exit with failure if any tests failed and not continue_on_fail
+    if args.continue_on_fail:
+        print("continue on fail is set")
+        sys.exit(0)
     sys.exit(1 if failed_tests else 0)
 
 

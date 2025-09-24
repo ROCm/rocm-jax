@@ -19,9 +19,17 @@ die() {
   exit 1
 }
 
+# Set timezone up front (pick your zone)
+ln -fs /usr/share/zoneinfo/UTC /etc/localtime
+# or: export TZ=UTC
+
+# Install tzdata without prompting
+TZ=UTC DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
+dpkg-reconfigure --frontend noninteractive tzdata
+
 # Default values
-rocm_version="6.4.0"
-rocm_build_number=""
+rocm_version="7.1.0"
+rocm_build_number="16623"
 rocm_job_name="compute-rocm-dkms-no-npi-hipclang"
 
 # Parse named command-line arguments
@@ -35,6 +43,32 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+install_python_v311() {
+  #install python3.11
+PY_VERSION=3.11.13
+
+# System packages needed to compile Python and installed bzip2, sqlite3 packages
+apt-get update && \
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential            \
+    wget curl ca-certificates  \
+    libssl-dev zlib1g-dev      \
+    libreadline-dev libffi-dev \
+    sqlite3 libsqlite3-dev     \
+    libbz2-dev liblzma-dev     \
+    libncursesw5-dev xz-utils  \
+    tk-dev uuid-dev            \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Download and unpack python-v3.11
+ pushd . \
+ && mkdir -p /tmp && cd /tmp && wget https://www.python.org/ftp/python/${PY_VERSION}/Python-${PY_VERSION}.tgz \
+ && tar -xzf Python-${PY_VERSION}.tgz \
+ && rm Python-${PY_VERSION}.tgz \
+ && cd /tmp/Python-${PY_VERSION} && ./configure --enable-optimizations --with-lto \
+ && make -j"$(nproc)" && make install && ln -s /usr/local/bin/python3 /usr/local/bin/python \
+ && popd
+}
 
 install_clang_packages() {
   apt-get install -y \
@@ -67,16 +101,17 @@ install_clang_from_source() {
   set +e
 }
 
+
 if [ -n "$ROCM_JAX_DIR" ]; then
   info "ROCM_JAX_DIR is ${ROCM_JAX_DIR}"
   cd "${ROCM_JAX_DIR}"
 fi
 
+install_python_v311 || die "error while installing python3.11"
+
 # install system deps
 apt-get update
 apt-get install -y \
-  python3 \
-  python-is-python3 \
   wget \
   curl \
   vim \
@@ -89,7 +124,6 @@ apt-get install -y \
   yamllint \
   shellcheck \
   git || die "error installing dependencies"
-
 # install a clang
 install_clang_packages || die "error while installing clang"
 
@@ -117,10 +151,10 @@ else
   
   # run get_rocm.py with appropriate arguments based on major version
   if [ "$major_version" -ge 7 ]; then
-    info "Running get_rocm.py with build number $rocm_build_number and build name $rocm_job_name"
+    info "Running get_rocm.py with rocm_version $rocm_version, build number $rocm_build_number and build name $rocm_job_name"
     python build/tools/get_rocm.py --rocm-version "$rocm_version"  --job-name "$rocm_job_name" --build-num "$rocm_build_number"|| die "error while installing rocm"
   else
-    info "Running get_rocm.py with version only..."
+    info "Running get_rocm.py with version $rocm_version only..."
     python build/tools/get_rocm.py --rocm-version "$rocm_version" || die "error while installing rocm"
   fi
 fi
@@ -141,15 +175,6 @@ python -m pip install \
 # Install deps (jax and jaxlib)
 python -m pip install -r \
   build/requirements.txt
-
-# Apply patch for namespace change if ROCm version >= 7
-if [ "$major_version" -ge 7 ]; then
-  info "Applying patch for ROCm $rocm_version..."
-  dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
-  patch -p1 -d "$dist_packages" < jax_rocm_plugin/third_party/jax/namespace.patch
-else
-  info "ROCm version $rocm_version, skipping patch."
-fi
 
 if [ -n "$_IS_ENTRYPOINT" ]; then
   # run CMD from docker

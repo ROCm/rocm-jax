@@ -19,18 +19,18 @@ jobs:
   call-build-wheels:
     strategy:
       matrix:
-        rocm-version: ["6.4.1"]
+        rocm-version: ["7.0.0"]
     uses: ./.github/workflows/build-wheels.yml
     with:
       # TODO: Add back Python 3.13 when we're ready to move to a more recent version of XLA. 3.13
       #       fails with a complaint abou the pipes module.
-      python-versions: "3.10,3.12"
+      python-versions: "3.11,3.12"
       rocm-version: ${{ matrix.rocm-version }}
   call-build-docker:
     needs: call-build-wheels
     strategy:
       matrix:
-        rocm-version: ["6.4.1"]
+        rocm-version: ["7.0.0"]
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
@@ -39,21 +39,25 @@ jobs:
     runs-on: mi-250
     strategy:
       matrix:
-        rocm-version: ["6.4.1"]
+        rocm-version: ["7.0.0"]
     steps:
       - name: Change owners for cleanup
         run: |
-          docker run --rm -v "./:/rocm-jax" ubuntu /bin/bash -c "chown -R $UID /rocm-jax/* || true"
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
       - name: Checkout plugin repo
         uses: actions/checkout@v4
+        with:
+          clean: false
       - name: Checkout JAX repo
         uses: actions/checkout@v4
         with:
           # TODO: Load the ref from a file that sets the min and max JAX version
           # TODO: Change the repo and ref once we figure out how exactly we're going to
           #       manage tests
+          clean: false
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.6.0
+          ref: rocm-jaxlib-v0.7.1
           path: jax
       - name: Authenticate to GitHub Container Registry
         run: |
@@ -76,5 +80,5 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest tests/core_test.py"
+            --test-cmd "pytest jax/tests/core_test.py"
 

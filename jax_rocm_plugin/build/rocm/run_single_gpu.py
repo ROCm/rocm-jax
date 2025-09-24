@@ -133,6 +133,7 @@ def collect_testmodules():
             "-m",
             "pytest",
             "--collect-only",
+            "-qq",
             "./jax/tests",
             f"--report-log={log_file}",
         ]
@@ -160,7 +161,6 @@ def collect_testmodules():
 
         if normalized_path not in MULTI_GPU_TESTS:
             filtered_test_files.add(test_file)
-            print(f"Including: {normalized_path}")
         else:
             excluded_count += 1
             print(f"Excluding multi-GPU test: {normalized_path}")
@@ -168,7 +168,6 @@ def collect_testmodules():
     print(f"Found {len(filtered_test_files)} test modules.")
     print(f"Excluded {excluded_count} multi-GPU test modules.")
     print("--------------------------------------------")
-    print("\n".join(filtered_test_files))
     return filtered_test_files
 
 
