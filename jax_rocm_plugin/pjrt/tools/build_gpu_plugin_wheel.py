@@ -74,7 +74,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--use_local_xla",
-    required=True,
+    action="store_true",
     help="Use local XLA repository instead of pinned commit hash",
 )
 parser.add_argument(
@@ -105,7 +105,7 @@ plat_name={tag}
 
 def get_xla_commit_hash():
     """Determines the XLA commit hash to use - local repository or a pinned."""
-    if args.use_local_xla == "True":
+    if args.use_local_xla:
         try:
             git_head_path = "/xla/.git/HEAD"
 

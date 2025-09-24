@@ -25,6 +25,7 @@ import stat
 import subprocess
 import tempfile
 
+
 # pylint: disable=import-error
 from bazel_tools.tools.python.runfiles import runfiles
 from jaxlib_ext.tools import build_utils
@@ -74,7 +75,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--use_local_xla",
-    required=True,
+    action="store_true",
     help="Use local XLA repository instead of pinned commit hash",
 )
 
@@ -107,7 +108,7 @@ plat_name={tag}
 
 def get_xla_commit_hash():
     """Determines the XLA commit hash to use - local repository or a pinned."""
-    if args.use_local_xla == "True":
+    if args.use_local_xla:
         try:
             git_head_path = "/xla/.git/HEAD"
 
