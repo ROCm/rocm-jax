@@ -138,6 +138,6 @@ jobs:
           --ubuntu-version "${UBUNTU_VERSION}" \
           --rocm-version "${ROCM_VERSION//.}" \
           --commit-sha "${{ github.sha }}" \
-          --jax-sha "${JAX-COMMIT-SHA}" \
+          --jax-commit-sha "${JAX-COMMIT-SHA}" \
           --build-num "${{ matrix.rocm-build-num || 0 }}" \
           --github-run-id "${{ github.run_id }}"
