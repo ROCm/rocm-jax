@@ -89,7 +89,7 @@ jobs:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
         run: |
-          python3 build/ci_build test \
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
             --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && \
                         python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c"
