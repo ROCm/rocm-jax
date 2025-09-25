@@ -322,7 +322,7 @@ def main():
 
     manylinux_output_dir = "dist_manylinux"
 
-    rocm_path=args.rocm_path
+    rocm_path = args.rocm_path
     if args.rocm_version:
         rocm_path = build_rocm_path(args.rocm_version)
         rocm_version = args.rocm_version
