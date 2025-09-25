@@ -321,7 +321,7 @@ def get_rocm_version(rocm_path: str = None):
     """Returns the ROCm version as a string, e.g., '6.4.2'. Returns None on error."""
     try:
         if rocm_path is None:
-            rocm_path="/opt/rocm"
+            rocm_path = "/opt/rocm"
         version = subprocess.check_output(
             f"cat {rocm_path}/.info/version | cut -d '-' -f 1", shell=True
         )
