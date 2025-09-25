@@ -18,6 +18,8 @@
 # allowing for optional uninstallation of existing packages,
 # and custom paths for ROCm and XLA repositories.
 
+# pylint: disable=missing-module-docstring,missing-function-docstring
+
 import argparse
 import os
 import shutil
@@ -25,6 +27,8 @@ import subprocess
 import sys
 
 
+#pylint: disable=R0801
+# This function reads the version file from inside a ROCm installation
 def get_rocm_version(rocm_path):
     try:
         version = subprocess.check_output(

@@ -22,6 +22,7 @@ Script to build and fix JAX ROCm plugin and PJRT wheels.
 # needs be compatible with Python 3.6. Please do not include these
 # in any "upgrade" scripts
 
+# pylint: disable=missing-module-docstring,missing-function-docstring
 
 import argparse
 from collections import deque
@@ -42,6 +43,8 @@ GPU_DEVICE_TARGETS = (
 )
 
 
+#pylint: disable=R0801
+# This function reads the version file from inside a ROCm installation
 def get_rocm_version(rocm_path):
     try:
         version = subprocess.check_output(
@@ -125,7 +128,7 @@ def find_clang_path():
     return None
 
 
-# pylint: disable=R0913, R0917
+# pylint: disable=R0913, R0917, too-many-locals
 def build_jaxlib_wheel(
     jax_path,
     rocm_path,
@@ -136,6 +139,7 @@ def build_jaxlib_wheel(
     compiler="gcc",
 ):
     """Build jaxlib and ROCm plugin wheels."""
+    use_clang = compiler == "clang"
 
     # Avoid git warning by setting safe.directory.
     try:
@@ -158,13 +162,13 @@ def build_jaxlib_wheel(
         "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
         "--rocm_path=%s" % rocm_path,
         "--rocm_version=%s" % version_string,
-        "--use_clang=%s" % compiler == "clang",
+        "--use_clang=%s" % use_clang,
         "--verbose",
         "--output_path=%s" % output_dir,
     ]
 
     # Add clang path if clang is used.
-    if compiler == "clang":
+    if use_clang:
         clang_path = find_clang_path()
         if clang_path:
             cmd.append("--clang_path=%s" % clang_path)
