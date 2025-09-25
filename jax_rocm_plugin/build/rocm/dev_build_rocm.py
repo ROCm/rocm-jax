@@ -15,7 +15,8 @@
 # limitations under the License.
 
 # NOTE(ruturaj4): This script automates the build process for JAX and XLA on ROCm,
-# allowing for optional uninstallation of existing packages, and custom paths for ROCm and XLA repositories.
+# allowing for optional uninstallation of existing packages,
+# and custom paths for ROCm and XLA repositories.
 
 import argparse
 import os
@@ -64,9 +65,6 @@ def clean_dist_directory():
         print("Cleaned dist directory.")
     except FileNotFoundError:
         print("dist directory not found, skipping cleanup.")
-    except Exception as e:
-        print(f"Failed to clean dist directory: {e}")
-        sys.exit(1)
 
 
 def build_jax_xla(xla_path, rocm_path, rocm_target, use_clang, clang_path):
@@ -86,9 +84,9 @@ def build_jax_xla(xla_path, rocm_path, rocm_target, use_clang, clang_path):
         f"--rocm_path={rocm_path}/",
         f"--rocm_version={rocm_namespace}",
         f"--rocm_amdgpu_targets={rocm_target}",
-        "--verbose"
+        "--verbose",
     ]
-    
+
     if bazel_options:
         build_command.append(bazel_options)
     if clang_option:
