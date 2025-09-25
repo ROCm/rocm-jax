@@ -70,7 +70,7 @@ def clean_dist_directory():
 
 
 def build_jax_xla(xla_path, rocm_path, rocm_target, use_clang, clang_path):
-    rocm_namespace=get_rocm_version(rocm_path)[0]
+    rocm_namespace = get_rocm_version(rocm_path)[0]
     if rocm_namespace == "6":
         rocm_namespace = "60"
     bazel_options = (
