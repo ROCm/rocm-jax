@@ -10,47 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-build-wheels:
-    strategy:
-      fail-fast: false
-      matrix:
-        rocm-version: ["7.0.0", "7.1.0"]
-        include:
-          - rocm-version: "7.0.0"
-            runner-label: "mi-250"
-          - rocm-version: "7.1.0"
-            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16674"
-            runner-label: "internal"
-    uses: ./.github/workflows/build-wheels.yml
-    with:
-      python-versions: "3.11,3.12"
-      rocm-version: ${{ matrix.rocm-version }}
-      rocm-build-job: ${{ matrix.rocm-build-job }}
-      rocm-build-num: ${{ matrix.rocm-build-num }}
-      runner-label: ${{ matrix.runner-label }}
-  call-build-docker:
-    needs: call-build-wheels
-    strategy:
-      fail-fast: false
-      matrix:
-        rocm-version: ["7.0.0", "7.1.0"]
-        include:
-          - rocm-version: "7.0.0"
-            runner-label: "mi-250"
-          - rocm-version: "7.1.0"
-            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16674"
-            runner-label: "internal"
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      rocm-version: ${{ matrix.rocm-version }}
-      rocm-build-job: ${{ matrix.rocm-build-job }}
-      rocm-build-num: ${{ matrix.rocm-build-num }}
-      runner-label: ${{ matrix.runner-label }}
-      extra-cr-tag: "nightly"
   run-python-unit-tests:
-    needs: call-build-docker
     runs-on: mi-250
     strategy:
       fail-fast: false
@@ -78,27 +38,6 @@ jobs:
       - name: Get JAX commit SHA
         id: get-jax-sha
         run: echo "sha=$(git -C jax rev-parse HEAD)" >> "GITHUB_OUTPUT"
-      - name: Authenticate to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Run tests
-        env:
-          GPU_COUNT: "8"
-          GFX: "gfx90a"
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-          UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
-        run: |
-          PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 build/ci_build test \
-            "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && \
-                        python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c"
-      - name: Upload logs to artifact (per-matrix)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
-          path: logs/
   upload-test-to-db:
     needs: run-python-unit-tests
     runs-on: mysqldb
@@ -113,6 +52,7 @@ jobs:
       - name: Download logs from artifact (per-matrix)
         uses: actions/download-artifact@v4
         with:
+          run-id: 17982438023 
           name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
           path: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
       - name: Upload logs to MySQL database
