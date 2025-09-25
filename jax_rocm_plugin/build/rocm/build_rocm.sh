@@ -22,4 +22,4 @@ set -eux
 python -V
 ROCM_PATH=${ROCM_PATH:=/opt/rocm}
 printf "Detected jaxlib version: %s\n" "$(pip3 list | grep jaxlib | tr -s ' ' | cut -d ' ' -f 2 | cut -d '+' -f 1)"
-printf "Detected ROCm version: %s\n" "$(cat $ROCM_PATH/.info/version | cut -d '-' -f 1)"
+printf "Detected ROCm version: %s\n" "$(cat "$ROCM_PATH"/.info/version | cut -d '-' -f 1)"
