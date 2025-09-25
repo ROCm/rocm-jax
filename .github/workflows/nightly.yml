@@ -52,7 +52,7 @@ jobs:
       - name: Download logs from artifact (per-matrix)
         uses: actions/download-artifact@v4
         with:
-          run-id: 17982438023 
+          run-id: 17689844889
           name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
           path: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
       - name: Upload logs to MySQL database
