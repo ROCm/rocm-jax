@@ -14,17 +14,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["6.4.1", "7.0.0"]
+        rocm-version: ["7.0.0", "7.1.0"]
         include:
-          - rocm-version: "6.4.1"
-            runner-label: "mi-250"
           - rocm-version: "7.0.0"
-            rocm-build-job: "compute-rocm-rel-7.0"
-            rocm-build-num: "40"
+            runner-label: "mi-250"
+          - rocm-version: "7.1.0"
+            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
+            rocm-build-num: "16674"
             runner-label: "internal"
     uses: ./.github/workflows/build-wheels.yml
     with:
-      python-versions: "3.10,3.12"
+      python-versions: "3.11,3.12"
       rocm-version: ${{ matrix.rocm-version }}
       rocm-build-job: ${{ matrix.rocm-build-job }}
       rocm-build-num: ${{ matrix.rocm-build-num }}
@@ -34,13 +34,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["6.4.1", "7.0.0"]
+        rocm-version: ["7.0.0", "7.1.0"]
         include:
-          - rocm-version: "6.4.1"
-            runner-label: "mi-250"
           - rocm-version: "7.0.0"
-            rocm-build-job: "compute-rocm-rel-7.0"
-            rocm-build-num: "40"
+            runner-label: "mi-250"
+          - rocm-version: "7.1.0"
+            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
+            rocm-build-num: "16674"
             runner-label: "internal"
     uses: ./.github/workflows/build-docker.yml
     with:
@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["6.4.1", "7.0.0"]
+        rocm-version: ["7.0.0", "7.1.0"]
         ubuntu-version: ["22", "24"]
     steps:
       - name: Change owners for cleanup
@@ -71,13 +71,13 @@ jobs:
           # TODO: Change the repo and ref once we figure out how exactly we're going to
           #       manage tests
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.6.0
+          ref: rocm-jaxlib-v0.7.1
           path: jax
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Run tests using run_single_gpu.py + run_multi_gpu.py
+      - name: Run tests
         env:
           GPU_COUNT: "8"
           GFX: "gfx90a"
@@ -100,7 +100,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["6.4.1", "7.0.0"]
+        rocm-version: ["7.0.0", "7.1.0"]
         ubuntu-version: ["22", "24"]
     steps:
       - name: Checkout source

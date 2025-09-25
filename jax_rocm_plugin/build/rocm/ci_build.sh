@@ -38,18 +38,17 @@
 set -eux
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/build_common.sh"
+source "./build_common.sh"
 CONTAINER_TYPE="rocm"
 
 DOCKERFILE_PATH="${SCRIPT_DIR}/Dockerfile.ms"
-DOCKER_CONTEXT_PATH="${SCRIPT_DIR}"
-KEEP_IMAGE="--rm"
-PYTHON_VERSION="3.10"
-ROCM_VERSION="6.1.3"
+#DOCKER_CONTEXT_PATH="${SCRIPT_DIR}"
+#KEEP_IMAGE="--rm"
+PYTHON_VERSION="3.12"
+ROCM_VERSION="7.1.0"
 ROCM_BUILD_JOB=""
 ROCM_BUILD_NUM=""
-BASE_DOCKER="ubuntu:22.04"
-CUSTOM_INSTALL=""
+BASE_DOCKER="ubuntu:24.04"
 JAX_USE_CLANG=""
 POSITIONAL_ARGS=()
 
@@ -63,11 +62,11 @@ while [[ $# -gt 0 ]]; do
           ;;
         --dockerfile)
           DOCKERFILE_PATH="$2"
-          DOCKER_CONTEXT_PATH=$(dirname "${DOCKERFILE_PATH}")
+          #DOCKER_CONTEXT_PATH=$(dirname "${DOCKERFILE_PATH}")
           shift 2
           ;;
         --keep_image)
-          KEEP_IMAGE=""
+          #KEEP_IMAGE=""
           shift 1
           ;;
         --runtime)
@@ -75,7 +74,7 @@ while [[ $# -gt 0 ]]; do
           shift 1
           ;;
         --keep_container)
-          KEEP_CONTAINER=""
+          #KEEP_CONTAINER=""
           shift 1
           ;;
         --rocm_version)
@@ -157,19 +156,19 @@ fi
 # 'dist_docker' will run 'dist_wheels' followed by a Docker build to create the "JAX image",
 # which is the ROCm image that is shipped for users to use (i.e. distributable).
 ./build/rocm/ci_build \
-    --rocm-version $ROCM_VERSION \
-    --base-docker $BASE_DOCKER \
-    --python-versions $PYTHON_VERSION \
-    --xla-source-dir=$XLA_CLONE_DIR \
-    --rocm-build-job=$ROCM_BUILD_JOB \
-    --rocm-build-num=$ROCM_BUILD_NUM \
-    --compiler=$JAX_COMPILER \
+    --rocm-version "$ROCM_VERSION" \
+    --base-docker "$BASE_DOCKER" \
+    --python-versions "$PYTHON_VERSION" \
+    --xla-source-dir="$XLA_CLONE_DIR" \
+    --rocm-build-job="$ROCM_BUILD_JOB" \
+    --rocm-build-num="$ROCM_BUILD_NUM" \
+    --compiler="$JAX_COMPILER" \
     dist_docker \
-    --dockerfile $DOCKERFILE_PATH \
-    --image-tag $DOCKER_IMG_NAME
+    --dockerfile "$DOCKERFILE_PATH" \
+    --image-tag "$DOCKER_IMG_NAME"
 
-# Check build status
-if [[ $? != "0" ]]; then
+# Check build status ($? exit status of the last command is non zero)
+if [ $? ]; then
     die "ERROR: docker build failed. Dockerfile is at ${DOCKERFILE_PATH}"
 fi
 

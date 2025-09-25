@@ -16,7 +16,7 @@ ARG GPU_DEVICE_TARGETS="gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx11
 ENV GPU_DEVICE_TARGETS=${GPU_DEVICE_TARGETS}
 
 # Install ROCM
-ARG ROCM_VERSION=6.2.0
+ARG ROCM_VERSION=7.1.0
 ARG ROCM_PATH=/opt/rocm-${ROCM_VERSION}
 ENV ROCM_PATH=${ROCM_PATH}
 ARG ROCM_BUILD_JOB
@@ -66,19 +66,6 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=build/requirements.txt,target=requirements.txt \
     pip3 install --break-system-packages -r requirements.txt
-
-# namespace patch (this patch is needed for ROCM_VERSION >= 7)
-COPY jax_rocm_plugin/third_party/jax/namespace.patch /tmp/namespace.patch
-
-RUN bash -c '  \
-    major_version=$(echo "$ROCM_VERSION" | cut -d. -f1) && \
-    if [ "$major_version" -ge 7 ]; then \
-        echo "Applying patch for ROCm $ROCM_VERSION..."; \
-        dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()[\"purelib\"])") && \
-        patch -p1 -d "$dist_packages" < /tmp/namespace.patch; \
-    else \
-        echo "ROCm version $ROCM_VERSION, skipping patch."; \
-    fi'
 
 ARG JAX_VERSION
 ARG JAX_COMMIT
