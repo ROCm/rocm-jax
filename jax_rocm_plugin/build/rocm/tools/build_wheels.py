@@ -329,7 +329,7 @@ def main():
     else:
         if rocm_path is None:
             rocm_path = "/opt/rocm"
-        rocm_version=get_rocm_version(rocm_path)
+        rocm_version = get_rocm_version(rocm_path)
 
     print("ROCM_PATH=%s" % rocm_path)
     print("ROCM_VERSION=%s" % rocm_version)
