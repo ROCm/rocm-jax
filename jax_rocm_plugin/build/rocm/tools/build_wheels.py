@@ -275,10 +275,10 @@ def parse_args():
     p = argparse.ArgumentParser()
     rocm_spec = p.add_mutually_exclusive_group()
     rocm_spec.add_argument(
-        "--rocm-version", help="ROCM Version to build JAX against"
+        "--rocm-version", help="ROCM Version to build JAX against", default = None
     )
     rocm_spec.add_argument(
-        "rocm-path", help="Path to ROCM to build JAX against"
+        "--rocm-path", help="Path to ROCM to build JAX against", default = None
     )
     p.add_argument(
         "--python-versions",
