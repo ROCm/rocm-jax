@@ -132,7 +132,6 @@ def collect_testmodules():
             "python3",
             "-m",
             "pytest",
-            "--import-mode=prepend",
             "--collect-only",
             "./jax/tests",
             f"--report-log={log_file}",
