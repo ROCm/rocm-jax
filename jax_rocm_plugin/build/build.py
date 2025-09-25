@@ -317,7 +317,7 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def get_rocm_version(rocm_path:str = None):
+def get_rocm_version(rocm_path: str = None):
     """Returns the ROCm version as a string, e.g., '6.4.2'. Returns None on error."""
     try:
         if rocm_path is None:
