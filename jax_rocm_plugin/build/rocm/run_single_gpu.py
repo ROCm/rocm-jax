@@ -124,20 +124,26 @@ def parse_test_log(log_file):
     return test_files
 
 
-def collect_testmodules():
+def collect_testmodules(ignore_skipfile):
     """Collect all test modules, excluding multi-GPU tests."""
     log_file = f"{BASE_DIR}/collect_module_log.jsonl"
-    return_code, stderr, stdout = run_shell_command(
-        [
-            "python3",
-            "-m",
-            "pytest",
-            "--collect-only",
-            "-qq",
-            "./jax/tests",
-            f"--report-log={log_file}",
-        ]
-    )
+    pytest_cmd = [
+        "python3",
+        "-m",
+        "pytest",
+        "--collect-only",
+        "-qq",
+        "./jax/tests",
+        f"--report-log={log_file}",
+    ]
+    if not ignore_skipfile:
+        pytest_cmd.extend(
+            [
+                "-c",
+                "ci/pytest_skips.ini",
+            ]
+        )
+    return_code, stderr, stdout = run_shell_command(pytest_cmd)
     if return_code != 0:
         print("Test module discovery failed.")
         print("STDOUT:", stdout)
@@ -892,7 +898,7 @@ def find_num_gpus():
 
 def main(args):
     """Main function to run all test modules."""
-    all_testmodules = collect_testmodules()
+    all_testmodules = collect_testmodules(args.ignore_skipfile)
     run_parallel(all_testmodules, args.parallel, args.continue_on_fail)
     generate_final_report()
     sys.exit(LAST_CODE)
@@ -906,6 +912,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-c", "--continue_on_fail", action="store_true", help="continue on failure"
+    )
+    parser.add_argument(
+        "-s",
+        "--ignore_skipfile",
+        action="store_true",
+        help="Ignore the test skip file and run all single GPU tests",
     )
     parsed_args = parser.parse_args()
     if parsed_args.continue_on_fail:
