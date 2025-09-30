@@ -166,7 +166,6 @@ def collect_testmodules(ignore_skipfile):
             normalized_path = relative_path
 
         if normalized_path not in MULTI_GPU_TESTS:
-            print("---------------", test_file, "normalized", normalized_path)
             filtered_test_files.add(test_file)
         else:
             excluded_count += 1
