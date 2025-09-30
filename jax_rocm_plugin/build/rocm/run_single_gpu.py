@@ -120,7 +120,7 @@ def parse_test_log(log_file):
             if "nodeid" in report:
                 module = report["nodeid"].split("::")[0]
                 if module and ".py" in module:
-                    test_files.add(os.path.abspath("./jax/" + module))
+                    test_files.add(os.path.abspath("./jax/tests/" + module))
     return test_files
 
 
@@ -166,6 +166,7 @@ def collect_testmodules(ignore_skipfile):
             normalized_path = relative_path
 
         if normalized_path not in MULTI_GPU_TESTS:
+            print("---------------", test_file, "normalized", normalized_path)
             filtered_test_files.add(test_file)
         else:
             excluded_count += 1
