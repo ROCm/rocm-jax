@@ -120,7 +120,7 @@ def parse_test_log(log_file):
             if "nodeid" in report:
                 module = report["nodeid"].split("::")[0]
                 if module and ".py" in module:
-                    test_files.add(os.path.abspath("./jax/" + module))
+                    test_files.add(os.path.abspath("./jax/tests/" + module))
     return test_files
 
 
