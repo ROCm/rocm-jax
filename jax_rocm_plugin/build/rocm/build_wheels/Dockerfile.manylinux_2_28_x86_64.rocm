@@ -31,15 +31,8 @@ COPY ./build/rocm/build_wheels/clang.cfg /opt/rocm/llvm/bin/clang++.cfg
 COPY ./build/rocm/build_wheels/clang.cfg /opt/rocm/llvm/bin/clang.cfg
 
 # Set up Engflow user
-RUN groupadd \
-  --gid 114 \
-  engflow && \
-  useradd \
-  --home-dir /home/engflow \
-  --create-home \
-  --uid 108 \
-  --gid 114 \
-  --groups render,video \
-  engflow
+RUN groupadd --gid 122 engflow
+RUN groupmod -g 109 render
+RUN useradd --home-dir /home/engflow --create-home --uid 121 --gid 122 --groups render,video engflow
 ENV HOME=/home/engflow
 
