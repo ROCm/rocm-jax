@@ -129,7 +129,7 @@ def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
     raise Exception(mesg) from ex
 
   shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
-  runpath = '$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib'
+  runpath = '$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib'
   # patchelf --force-rpath --set-rpath $RUNPATH $so
   fix_perms = False
   perms = os.stat(shared_obj_path).st_mode

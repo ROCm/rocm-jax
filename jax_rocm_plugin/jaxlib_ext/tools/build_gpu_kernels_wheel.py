@@ -142,7 +142,7 @@ def prepare_wheel_rocm(
       f"_triton.{pyext}",
       f"rocm_plugin_extension.{pyext}",
   ]
-  runpath = '$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib'
+  runpath = '$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib'
   # patchelf --force-rpath --set-rpath $RUNPATH $so
   for f in files:
     so_path = os.path.join(plugin_dir, f)
