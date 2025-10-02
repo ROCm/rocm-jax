@@ -152,7 +152,7 @@ def prepare_wheel_rocm(rocm_sources_path: pathlib.Path, *, cpu, rocm_version):
         f"rocm_plugin_extension.{PYEXT}",
     ]
     runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
-    # patchelf --force-rpath --set-rpath $RUNPATH $so
+    # patchelf --set-rpath $RUNPATH $so
     for fname in files:
         so_path = os.path.join(plugin_dir, fname)
         fix_perms = False
@@ -161,7 +161,7 @@ def prepare_wheel_rocm(rocm_sources_path: pathlib.Path, *, cpu, rocm_version):
             fix_perms = True
             os.chmod(so_path, perms | stat.S_IWUSR)
         subprocess.check_call(
-            ["patchelf", "--force-rpath", "--set-rpath", runpath, so_path]
+            ["patchelf", "--set-rpath", runpath, so_path]
         )
         if fix_perms:
             os.chmod(so_path, perms)
