@@ -16,6 +16,7 @@
 # run via bazel run as part of the jax cuda plugin build process.
 
 # Most users should not run this script directly; use build.py instead.
+# pylint: disable=duplicate-code
 
 """
 Script to build a JAX ROCm kernel plugin wheel. Intended for use via Bazel.
