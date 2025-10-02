@@ -120,7 +120,9 @@ def parse_test_log(log_file):
             if "nodeid" in report:
                 module = report["nodeid"].split("::")[0]
                 if module and ".py" in module:
-                    test_files.add(os.path.abspath("./jax/tests/" + module))
+                    # test_files.add(os.path.abspath("./jax/tests/" + module))
+                    prefix = "" if module.startswith("tests/") else "tests/"
+                    test_files.add(os.path.abspath("./jax/" + prefix + module))
     return test_files
 
 
@@ -131,6 +133,7 @@ def collect_testmodules(ignore_skipfile):
         "python3",
         "-m",
         "pytest",
+        "--import-mode=prepend",
         "--collect-only",
         "-qq",
         "./jax/tests",
@@ -898,7 +901,7 @@ def find_num_gpus():
 
 def main(args):
     """Main function to run all test modules."""
-    all_testmodules = collect_testmodules(args.ignore_skipfile)
+    all_testmodules = collect_testmodules(not args.ignore_skipfile)
     run_parallel(all_testmodules, args.parallel, args.continue_on_fail)
     generate_final_report()
     sys.exit(LAST_CODE)
