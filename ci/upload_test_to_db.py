@@ -258,13 +258,15 @@ def insert_run(cur, created_at: datetime, meta: dict) -> int:
     cur.execute(
         """
        INSERT INTO ci_runs (
-           created_at, commit_sha, runner_label, ubuntu_version,
-           rocm_version, build_num, github_run_id, run_tag, logs_path
-       ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+           created_at, commit_sha, jax_commit_sha,
+           runner_label, ubuntu_version, rocm_version,
+           build_num, github_run_id, run_tag, logs_path
+       ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
        """,
         (
             created_at,
             meta["commit_sha"],
+            meta["jax_commit_sha"],
             meta["runner_label"],
             meta["ubuntu_version"],
             meta["rocm_version"],
@@ -371,6 +373,7 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
     ubuntu_version: str,
     rocm_version: str,
     commit_sha: str,
+    jax_commit_sha: str,
     build_num: Optional[int],
     github_run_id: int,
     run_tag: str,
@@ -404,6 +407,7 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
                 "ubuntu_version": ubuntu_version,
                 "rocm_version": rocm_version,
                 "commit_sha": commit_sha,
+                "jax_commit_sha": jax_commit_sha,
                 "build_num": build_num,
                 "github_run_id": github_run_id,
                 "run_tag": run_tag,
@@ -461,7 +465,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--runner-label", required=True, help="Runner label e.g. MI250")
     p.add_argument("--ubuntu-version", required=True, help="Ubuntu ver, e.g. 22")
     p.add_argument("--rocm-version", required=True, help="ROCm version, e.g. 641")
-    p.add_argument("--commit-sha", required=True, help="Git commit SHA under test")
+    p.add_argument("--commit-sha", required=True, help="Plugin repo commit SHA")
+    p.add_argument("--jax-commit-sha", required=True, help="JAX repo commit SHA")
     p.add_argument(
         "--build-num", required=False, type=int, help="Build number (int, opt)"
     )
@@ -481,6 +486,7 @@ if __name__ == "__main__":
         ubuntu_version=args.ubuntu_version,
         rocm_version=args.rocm_version,
         commit_sha=args.commit_sha,
+        jax_commit_sha=args.jax_commit_sha,
         build_num=args.build_num,
         github_run_id=args.github_run_id,
     )

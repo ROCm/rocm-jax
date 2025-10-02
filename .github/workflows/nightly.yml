@@ -57,6 +57,8 @@ jobs:
       matrix:
         rocm-version: ["7.0.0", "7.1.0"]
         ubuntu-version: ["22", "24"]
+    outputs:
+      jax-sha: ${{ steps.get-jax-sha.outputs.sha }}
     steps:
       - name: Change owners for cleanup
         run: |
@@ -73,6 +75,9 @@ jobs:
           repository: rocm/jax
           ref: rocm-jaxlib-v0.7.1
           path: jax
+      - name: Get JAX commit SHA
+        id: get-jax-sha
+        run: echo "sha=$(git -C jax rev-parse HEAD)" >> "GITHUB_OUTPUT"
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
@@ -119,6 +124,7 @@ jobs:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
           LOGS_DIR: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
+          JAX_COMMIT_SHA: ${{ needs.run-python-unit-tests.outputs.jax-sha }}
         run: |
           python3 -m venv venv
           source venv/bin/activate
@@ -132,5 +138,6 @@ jobs:
           --ubuntu-version "${UBUNTU_VERSION}" \
           --rocm-version "${ROCM_VERSION//.}" \
           --commit-sha "${{ github.sha }}" \
+          --jax-commit-sha "${JAX-COMMIT-SHA}" \
           --build-num "${{ matrix.rocm-build-num || 0 }}" \
           --github-run-id "${{ github.run_id }}"
