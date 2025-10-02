@@ -17,8 +17,6 @@
 
 # Most users should not run this script directly; use build.py instead.
 
-# pylint: disable=R0801
-
 """
 Script to build a JAX ROCm plugin wheel. Intended for use via Bazel.
 """
@@ -36,7 +34,6 @@ from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
 
 
-# pylint: disable=R0801
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--sources_path",
@@ -74,7 +71,6 @@ parser.add_argument(
     "--enable-rocm", default=False, help="Should we build with ROCM enabled?"
 )
 args = parser.parse_args()
-# pylint: enable=R0801
 
 r = runfiles.Create()
 
@@ -82,8 +78,8 @@ r = runfiles.Create()
 def write_setup_cfg(setup_cfg_path, cpu):
     """Write setup.cfg with platform tag."""
     tag = build_utils.platform_tag(cpu)
-    with open(setup_cfg_path / "setup.cfg", "w", encoding="utf-8") as f:
-        f.write(
+    with open(setup_cfg_path / "setup.cfg", "w", encoding="utf-8") as cfg_file:
+        cfg_file.write(
             f"""[metadata]
 license_files = LICENSE.txt
 
@@ -146,9 +142,7 @@ def prepare_rocm_plugin_wheel(rocm_sources_path: pathlib.Path, *, cpu, rocm_vers
     if not perms & stat.S_IWUSR:
         fix_perms = True
         os.chmod(shared_obj_path, perms | stat.S_IWUSR)
-    subprocess.check_call(
-        ["patchelf", "--set-rpath", runpath, shared_obj_path]
-    )
+    subprocess.check_call(["patchelf", "--set-rpath", runpath, shared_obj_path])
     if fix_perms:
         os.chmod(shared_obj_path, perms)
 

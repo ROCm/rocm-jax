@@ -17,8 +17,6 @@
 
 # Most users should not run this script directly; use build.py instead.
 
-# pylint: disable=R0801
-
 """
 Script to build a JAX ROCm kernel plugin wheel. Intended for use via Bazel.
 """
@@ -35,7 +33,6 @@ import tempfile
 from bazel_tools.tools.python.runfiles import runfiles
 from jaxlib_ext.tools import build_utils
 
-# pylint: enable=R0801
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--output_path",
@@ -80,8 +77,8 @@ PYEXT = "pyd" if build_utils.is_windows() else "so"
 def write_setup_cfg(setup_cfg_path, cpu):
     """Write setup.cfg with platform tag."""
     tag = build_utils.platform_tag(cpu)
-    with open(setup_cfg_path / "setup.cfg", "w", encoding="utf-8") as f:
-        f.write(
+    with open(setup_cfg_path / "setup.cfg", "w", encoding="utf-8") as cfg_file:
+        cfg_file.write(
             f"""[metadata]
 license_files = LICENSE.txt
 
@@ -160,9 +157,7 @@ def prepare_wheel_rocm(rocm_sources_path: pathlib.Path, *, cpu, rocm_version):
         if not perms & stat.S_IWUSR:
             fix_perms = True
             os.chmod(so_path, perms | stat.S_IWUSR)
-        subprocess.check_call(
-            ["patchelf", "--set-rpath", runpath, so_path]
-        )
+        subprocess.check_call(["patchelf", "--set-rpath", runpath, so_path])
         if fix_perms:
             os.chmod(so_path, perms)
 
