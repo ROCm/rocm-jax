@@ -317,11 +317,13 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def get_rocm_version():
+def get_rocm_version(rocm_path: str = None):
     """Returns the ROCm version as a string, e.g., '6.4.2'. Returns None on error."""
     try:
+        if rocm_path is None:
+            rocm_path = "/opt/rocm"
         version = subprocess.check_output(
-            "cat /opt/rocm/.info/version | cut -d '-' -f 1", shell=True
+            f"cat {rocm_path}/.info/version | cut -d '-' -f 1", shell=True
         )
         return version.decode("utf-8").strip()
     except subprocess.CalledProcessError as e:
@@ -591,7 +593,7 @@ async def main():
                 f'--action_env=ROCM_PATH="{args.rocm_path}"'
             )
         if args.rocm_amdgpu_targets:
-            rocm_version_str = get_rocm_version()
+            rocm_version_str = get_rocm_version(args.rocm_path)
             rocm_version = (
                 tuple(map(int, rocm_version_str.split(".")))
                 if rocm_version_str

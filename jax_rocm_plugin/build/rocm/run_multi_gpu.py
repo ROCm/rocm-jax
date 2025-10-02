@@ -107,7 +107,10 @@ def check_system_resources():
 
 
 # pylint: disable=too-many-locals
-def run_multi_gpu_test(test_file, gpu_count, continue_on_fail, max_gpus=None):
+# pylint: disable=too-many-statements
+def run_multi_gpu_test(
+    test_file, gpu_count, continue_on_fail, max_gpus=None, ignore_skipfile=False
+):
     """Run a single multi-GPU test."""
     if max_gpus and gpu_count > max_gpus:
         gpu_count = max_gpus
@@ -170,6 +173,13 @@ def run_multi_gpu_test(test_file, gpu_count, continue_on_fail, max_gpus=None):
             "-v",
             f"./jax/{test_file}",
         ]
+    if not ignore_skipfile:
+        cmd.extend(
+            [
+                "-c",
+                "ci/pytest_skips.ini",
+            ]
+        )
 
     print(f"Running: {' '.join(cmd)}")
 
@@ -236,7 +246,12 @@ def main():
     parser.add_argument(
         "-c", "--continue_on_fail", action="store_true", help="continue on failure"
     )
-
+    parser.add_argument(
+        "-s",
+        "--ignore_skipfile",
+        action="store_true",
+        help="Ignore the test skip file and run all mutli GPU tests",
+    )
     args = parser.parse_args()
 
     # Detect GPU count if not specified
@@ -269,7 +284,11 @@ def main():
 
         try:
             exit_code = run_multi_gpu_test(
-                test_file, args.gpu_count, args.continue_on_fail, args.max_gpus
+                test_file,
+                args.gpu_count,
+                args.continue_on_fail,
+                max_gpus=args.max_gpus,
+                ignore_skipfile=args.ignore_skipfile,
             )
 
             if exit_code == 0:

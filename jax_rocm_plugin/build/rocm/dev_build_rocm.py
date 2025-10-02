@@ -15,7 +15,10 @@
 # limitations under the License.
 
 # NOTE(ruturaj4): This script automates the build process for JAX and XLA on ROCm,
-# allowing for optional uninstallation of existing packages, and custom paths for ROCm and XLA repositories.
+# allowing for optional uninstallation of existing packages,
+# and custom paths for ROCm and XLA repositories.
+
+# pylint: disable=missing-module-docstring,missing-function-docstring
 
 import argparse
 import os
@@ -24,10 +27,12 @@ import subprocess
 import sys
 
 
-def get_rocm_version():
+# pylint: disable=R0801
+# This function reads the version file from inside a ROCm installation
+def get_rocm_version(rocm_path):
     try:
         version = subprocess.check_output(
-            "cat /opt/rocm/.info/version | cut -d '-' -f 1", shell=True
+            f"cat {rocm_path}/.info/version | cut -d '-' -f 1", shell=True
         )
         return version.decode("utf-8").strip()
     except subprocess.CalledProcessError as e:
@@ -64,12 +69,12 @@ def clean_dist_directory():
         print("Cleaned dist directory.")
     except FileNotFoundError:
         print("dist directory not found, skipping cleanup.")
-    except Exception as e:
-        print(f"Failed to clean dist directory: {e}")
-        sys.exit(1)
 
 
-def build_jax_xla(xla_path, rocm_version, rocm_target, use_clang, clang_path):
+def build_jax_xla(xla_path, rocm_path, rocm_target, use_clang, clang_path):
+    rocm_namespace = get_rocm_version(rocm_path)[0]
+    if rocm_namespace == "6":
+        rocm_namespace = "60"
     bazel_options = (
         f"--bazel_options=--override_repository=xla={xla_path}" if xla_path else ""
     )
@@ -80,12 +85,12 @@ def build_jax_xla(xla_path, rocm_version, rocm_target, use_clang, clang_path):
         "build",
         f"--use_clang={str(use_clang).lower()}",
         "--wheels=jaxlib,jax-rocm-plugin,jax-rocm-pjrt",
-        f"--rocm_path=/opt/rocm-{rocm_version}/",
-        "--rocm_version=7",
+        f"--rocm_path={rocm_path}/",
+        f"--rocm_version={rocm_namespace}",
         f"--rocm_amdgpu_targets={rocm_target}",
-        "--verbose"
+        "--verbose",
     ]
-    
+
     if bazel_options:
         build_command.append(bazel_options)
     if clang_option:
@@ -129,6 +134,9 @@ def main():
     parser.add_argument(
         "--xla-path", type=str, default="", help="Specify the XLA repository path"
     )
+    parser.add_argument(
+        "--rocm-path", type=str, default="/opt/rocm", help="Specify the ROCm path"
+    )
 
     args = parser.parse_args()
 
@@ -136,7 +144,7 @@ def main():
         args.xla_path = os.path.abspath(args.xla_path)
         print(f"Converted XLA path to absolute: {args.xla_path}")
 
-    rocm_version = get_rocm_version()
+    rocm_version = get_rocm_version(args.rocm_path)
     if not rocm_version:
         print("Could not determine ROCm version. Exiting.")
         sys.exit(1)

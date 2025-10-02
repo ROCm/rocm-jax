@@ -120,23 +120,30 @@ def parse_test_log(log_file):
             if "nodeid" in report:
                 module = report["nodeid"].split("::")[0]
                 if module and ".py" in module:
-                    test_files.add(os.path.abspath("./jax/" + module))
+                    test_files.add(os.path.abspath("./jax/tests/" + module))
     return test_files
 
 
-def collect_testmodules():
+def collect_testmodules(ignore_skipfile):
     """Collect all test modules, excluding multi-GPU tests."""
     log_file = f"{BASE_DIR}/collect_module_log.jsonl"
-    return_code, stderr, stdout = run_shell_command(
-        [
-            "python3",
-            "-m",
-            "pytest",
-            "--collect-only",
-            "./jax/tests",
-            f"--report-log={log_file}",
-        ]
-    )
+    pytest_cmd = [
+        "python3",
+        "-m",
+        "pytest",
+        "--collect-only",
+        "-qq",
+        "./jax/tests",
+        f"--report-log={log_file}",
+    ]
+    if not ignore_skipfile:
+        pytest_cmd.extend(
+            [
+                "-c",
+                "ci/pytest_skips.ini",
+            ]
+        )
+    return_code, stderr, stdout = run_shell_command(pytest_cmd)
     if return_code != 0:
         print("Test module discovery failed.")
         print("STDOUT:", stdout)
@@ -160,7 +167,6 @@ def collect_testmodules():
 
         if normalized_path not in MULTI_GPU_TESTS:
             filtered_test_files.add(test_file)
-            print(f"Including: {normalized_path}")
         else:
             excluded_count += 1
             print(f"Excluding multi-GPU test: {normalized_path}")
@@ -168,7 +174,6 @@ def collect_testmodules():
     print(f"Found {len(filtered_test_files)} test modules.")
     print(f"Excluded {excluded_count} multi-GPU test modules.")
     print("--------------------------------------------")
-    print("\n".join(filtered_test_files))
     return filtered_test_files
 
 
@@ -893,7 +898,7 @@ def find_num_gpus():
 
 def main(args):
     """Main function to run all test modules."""
-    all_testmodules = collect_testmodules()
+    all_testmodules = collect_testmodules(args.ignore_skipfile)
     run_parallel(all_testmodules, args.parallel, args.continue_on_fail)
     generate_final_report()
     sys.exit(LAST_CODE)
@@ -907,6 +912,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-c", "--continue_on_fail", action="store_true", help="continue on failure"
+    )
+    parser.add_argument(
+        "-s",
+        "--ignore_skipfile",
+        action="store_true",
+        help="Ignore the test skip file and run all single GPU tests",
     )
     parsed_args = parser.parse_args()
     if parsed_args.continue_on_fail:

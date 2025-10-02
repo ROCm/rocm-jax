@@ -1,3 +1,3 @@
 [MESSAGES CONTROL]
 
-disable = consider-using-f-string
+disable = consider-using-f-string,duplicate-code
