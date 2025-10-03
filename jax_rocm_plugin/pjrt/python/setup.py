@@ -24,7 +24,7 @@ package_name = f"jax_plugins.xla_rocm{rocm_version}"
 # Extract ROCm version from the `ROCM_PATH` environment variable.
 default_rocm_path = "/opt/rocm"
 rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
-rocm_detected_version = rocm_path.split('-')[-1] if '-' in rocm_path else "unknown"
+rocm_detected_version = rocm_path.split('-')[-1] if '-' in rocm_path else "7.0"
 
 def load_version_module(pkg_path):
   spec = importlib.util.spec_from_file_location(
@@ -49,14 +49,14 @@ setup(
     description=f"JAX XLA PJRT Plugin for AMD GPUs (ROCm:{rocm_detected_version})",
     long_description="",
     long_description_content_type="text/markdown",
-    author="Ruturaj4",
-    author_email="Ruturaj.Vaidya@amd.com",
+    author="GulsumGA-AMD",
+    author_email="Gulsum.GudukbayAkbulut@amd.com",
     packages=packages,
     install_requires=[],
-    url="https://github.com/jax-ml/jax",
+    url="https://github.com/ROCm/rocm-jax",
     license="Apache-2.0",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3",
     ],
     package_data={
