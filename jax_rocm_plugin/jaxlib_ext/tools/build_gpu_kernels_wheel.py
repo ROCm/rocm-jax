@@ -110,25 +110,31 @@ def get_xla_commit_hash():
     """Determines the XLA commit hash to use - local repository or a pinned."""
     if args.use_local_xla:
         try:
-            git_head_path = "/xla/.git/HEAD"
+            # XLA is mounted at /xla if built using ci_build else at /rocm/xla if buulf using stack.py
+            xla_paths = ["/xla", "/rocm-jax/xla"]
+            xla_commit_hash = None
 
-            with open(git_head_path, "r", encoding="utf-8") as f:
-                head_content = f.read().strip()
+            for xla_path in xla_paths:
+                if os.path.exists(os.path.join(xla_path, ".git")):
+                    result = subprocess.run(
+                        ["git", "rev-parse", "HEAD"],
+                        cwd=xla_path,
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    xla_commit_hash = result.stdout.strip()
+                    print(f"Using local XLA commit hash: {xla_commit_hash}")
+                    break
 
-            if head_content.startswith("ref: "):
-                ref_path = head_content[5:]
-                ref_file_path = f"/xla/.git/{ref_path}"
+            if xla_commit_hash is None:
+                raise FileNotFoundError(
+                    "XLA repository not found in any expected location"
+                )
 
-                with open(ref_file_path, "r", encoding="utf-8") as ref_f:
-                    xla_commit_hash = ref_f.read().strip()
-            else:
-                xla_commit_hash = head_content
-
-            print(f"Using local XLA commit hash: {xla_commit_hash}")
-
-        except (FileNotFoundError, IOError):
+        except (FileNotFoundError, subprocess.CalledProcessError) as e:
             xla_commit_hash = "Custom"
-            print("Could not read XLA commit hash, using 'Custom'")
+            print(f"Could not read XLA commit hash, using 'Custom': {e}")
 
     else:
         xla_commit_hash = args.xla_commit
