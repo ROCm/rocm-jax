@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Setup script for the ROCm JAX runtime Python convenience wheel.
+
+Minimal file whose only responsibility is to expose the correct version and
+package metadata for the ROCm plugin. The real build logic lives in the
+version module that is generated alongside the package.
+"""
 
 import importlib
 import os
@@ -18,31 +24,38 @@ from setuptools import setup
 from setuptools.dist import Distribution
 
 __version__ = None
-rocm_version = 0  # placeholder
+rocm_version = 0  # placeholder  # pylint: disable=invalid-name
 project_name = f"jax-rocm{rocm_version}-plugin"
 package_name = f"jax_rocm{rocm_version}_plugin"
 
 # Extract ROCm version from the `ROCM_PATH` environment variable.
-default_rocm_path = "/opt/rocm"
-rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
-rocm_detected_version = rocm_path.split('-')[-1] if '-' in rocm_path else "7.0"
+DEFAULT_ROCM_PATH = "/opt/rocm"
+rocm_path = os.getenv("ROCM_PATH", DEFAULT_ROCM_PATH)
+rocm_detected_version = rocm_path.split("-")[-1] if "-" in rocm_path else "7.0"
+
 
 def load_version_module(pkg_path):
-  spec = importlib.util.spec_from_file_location(
-    'version', os.path.join(pkg_path, 'version.py'))
-  module = importlib.util.module_from_spec(spec)
-  spec.loader.exec_module(module)
-  return module
+    """Dynamically import and return the version helper module for the package."""
+    spec = importlib.util.spec_from_file_location(
+        "version", os.path.join(pkg_path, "version.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)  # type: ignore[attr-defined]
+    return module
+
 
 _version_module = load_version_module(package_name)
-__version__ = _version_module._get_version_for_build()
-_cmdclass = _version_module._get_cmdclass(package_name)
+__version__ = _version_module._get_version_for_build()  # pylint: disable=protected-access
+_cmdclass = _version_module._get_cmdclass(package_name)  # pylint: disable=protected-access
+
 
 class BinaryDistribution(Distribution):
-  """This class makes 'bdist_wheel' include an ABI tag on the wheel."""
+    """This class makes 'bdist_wheel' include an ABI tag on the wheel."""
 
-  def has_ext_modules(self):
-    return True
+    def has_ext_modules(self):  # type: ignore[override]
+        """Return True to force wheel build to include an ABI tag."""
+        return True
+
 
 setup(
     name=project_name,

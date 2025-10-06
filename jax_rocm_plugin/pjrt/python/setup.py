@@ -11,37 +11,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Setup script for the ROCm JAX PJRT plugin package.
+
+Holds only lightweight metadata wiring; build/version logic resides in the
+generated version helper inside the package hierarchy.
+"""
 
 import importlib
 import os
 from setuptools import setup, find_namespace_packages
 
 __version__ = None
-rocm_version = 0  # placeholder
+rocm_version = 0  # placeholder (runtime substituted)  # pylint: disable=invalid-name
 project_name = f"jax-rocm{rocm_version}-pjrt"
 package_name = f"jax_plugins.xla_rocm{rocm_version}"
 
 # Extract ROCm version from the `ROCM_PATH` environment variable.
-default_rocm_path = "/opt/rocm"
-rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
-rocm_detected_version = rocm_path.split('-')[-1] if '-' in rocm_path else "7.0"
+DEFAULT_ROCM_PATH = "/opt/rocm"
+rocm_path = os.getenv("ROCM_PATH", DEFAULT_ROCM_PATH)
+rocm_detected_version = rocm_path.split("-")[-1] if "-" in rocm_path else "7.0"
+
 
 def load_version_module(pkg_path):
-  spec = importlib.util.spec_from_file_location(
-    'version', os.path.join(pkg_path, 'version.py'))
-  module = importlib.util.module_from_spec(spec)
-  spec.loader.exec_module(module)
-  return module
+    """Import and return the package's version helper module dynamically."""
+    spec = importlib.util.spec_from_file_location(
+        "version", os.path.join(pkg_path, "version.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)  # type: ignore[attr-defined]
+    return module
+
 
 _version_module = load_version_module(f"jax_plugins/xla_rocm{rocm_version}")
-__version__ = _version_module._get_version_for_build()
+__version__ = _version_module._get_version_for_build()  # pylint: disable=protected-access
 
-packages = find_namespace_packages(
-    include=[
-        package_name,
-        f"{package_name}.*",
-    ]
-)
+packages = find_namespace_packages(include=[package_name, f"{package_name}.*"])
 
 setup(
     name=project_name,
