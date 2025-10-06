@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=protected-access
 """Setup script for the ROCm JAX runtime Python convenience wheel.
 
 Minimal file whose only responsibility is to expose the correct version and
@@ -45,8 +46,12 @@ def load_version_module(pkg_path):
 
 
 _version_module = load_version_module(package_name)
-__version__ = _version_module._get_version_for_build()  # pylint: disable=protected-access
-_cmdclass = _version_module._get_cmdclass(package_name)  # pylint: disable=protected-access
+__version__ = (
+    _version_module._get_version_for_build()
+)  # protected helper from generated module
+_cmdclass = _version_module._get_cmdclass(
+    package_name
+)  # protected helper from generated module
 
 
 class BinaryDistribution(Distribution):
