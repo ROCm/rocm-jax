@@ -11,6 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=protected-access
+"""Setup script for the ROCm JAX runtime Python convenience wheel.
+
+Minimal file whose only responsibility is to expose the correct version and
+package metadata for the ROCm plugin. The real build logic lives in the
+version module that is generated alongside the package.
+"""
 
 import importlib
 import os
@@ -18,31 +25,42 @@ from setuptools import setup
 from setuptools.dist import Distribution
 
 __version__ = None
-rocm_version = 0  # placeholder
-project_name = f"jax-rocm{rocm_version}-plugin"
-package_name = f"jax_rocm{rocm_version}_plugin"
+rocm_version = 0  # placeholder  # pylint: disable=invalid-name
+project_name = f"jax-rocm{rocm_version}-plugin"  # pylint: disable=invalid-name
+package_name = f"jax_rocm{rocm_version}_plugin"  # pylint: disable=invalid-name
 
 # Extract ROCm version from the `ROCM_PATH` environment variable.
-default_rocm_path = "/opt/rocm"
-rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
-rocm_detected_version = rocm_path.split('-')[-1] if '-' in rocm_path else "unknown"
+DEFAULT_ROCM_PATH = "/opt/rocm"
+rocm_path = os.getenv("ROCM_PATH", DEFAULT_ROCM_PATH)
+rocm_detected_version = rocm_path.split("-")[-1] if "-" in rocm_path else "7.0"
+
 
 def load_version_module(pkg_path):
-  spec = importlib.util.spec_from_file_location(
-    'version', os.path.join(pkg_path, 'version.py'))
-  module = importlib.util.module_from_spec(spec)
-  spec.loader.exec_module(module)
-  return module
+    """Dynamically import and return the version helper module for the package."""
+    spec = importlib.util.spec_from_file_location(
+        "version", os.path.join(pkg_path, "version.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)  # type: ignore[attr-defined]
+    return module
+
 
 _version_module = load_version_module(package_name)
-__version__ = _version_module._get_version_for_build()
-_cmdclass = _version_module._get_cmdclass(package_name)
+__version__ = (
+    _version_module._get_version_for_build()
+)  # protected helper from generated module
+_cmdclass = _version_module._get_cmdclass(
+    package_name
+)  # protected helper from generated module
+
 
 class BinaryDistribution(Distribution):
-  """This class makes 'bdist_wheel' include an ABI tag on the wheel."""
+    """This class makes 'bdist_wheel' include an ABI tag on the wheel."""
 
-  def has_ext_modules(self):
-    return True
+    def has_ext_modules(self):  # type: ignore[override]
+        """Return True to force wheel build to include an ABI tag."""
+        return True
+
 
 setup(
     name=project_name,
@@ -51,18 +69,16 @@ setup(
     description=f"JAX Plugin for AMD GPUs (ROCm:{rocm_detected_version})",
     long_description="",
     long_description_content_type="text/markdown",
-    author="Ruturaj4",
-    author_email="Ruturaj.Vaidya@amd.com",
+    author="GulsumGA-AMD",
+    author_email="Gulsum.GudukbayAkbulut@amd.com",
     packages=[package_name],
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     install_requires=[f"jax-rocm{rocm_version}-pjrt=={__version__}"],
-    url="https://github.com/jax-ml/jax",
+    url="https://github.com/ROCm/rocm-jax",
     license="Apache-2.0",
     classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Programming Language :: Python :: 3.9",
+        "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
     ],
     package_data={
