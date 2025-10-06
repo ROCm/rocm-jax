@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=protected-access
 """Setup script for the ROCm JAX PJRT plugin package.
 
 Holds only lightweight metadata wiring; build/version logic resides in the
@@ -43,9 +44,7 @@ def load_version_module(pkg_path):
 
 
 _version_module = load_version_module(f"jax_plugins/xla_rocm{rocm_version}")
-__version__ = (
-    _version_module._get_version_for_build()
-)  # pylint: disable=protected-access
+__version__ = _version_module._get_version_for_build()
 
 packages = find_namespace_packages(include=[package_name, f"{package_name}.*"])
 
