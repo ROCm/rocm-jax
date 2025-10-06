@@ -24,8 +24,8 @@ from setuptools import setup, find_namespace_packages
 
 __version__ = None
 rocm_version = 0  # placeholder (runtime substituted)  # pylint: disable=invalid-name
-project_name = f"jax-rocm{rocm_version}-pjrt"
-package_name = f"jax_plugins.xla_rocm{rocm_version}"
+project_name = f"jax-rocm{rocm_version}-pjrt"  # pylint: disable=invalid-name
+package_name = f"jax_plugins.xla_rocm{rocm_version}"  # pylint: disable=invalid-name
 
 # Extract ROCm version from the `ROCM_PATH` environment variable.
 DEFAULT_ROCM_PATH = "/opt/rocm"
