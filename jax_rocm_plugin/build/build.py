@@ -469,6 +469,10 @@ async def main():
         "--override_repository=xla=" in opt for opt in args.bazel_options
     )
 
+    use_local_jax = any(
+        "--override_repository=jax=" in opt for opt in args.bazel_options
+    )
+
     if args.target_cpu:
         logging.debug("Target CPU: %s", args.target_cpu)
         wheel_build_command_base.append(f"--cpu={args.target_cpu}")
@@ -694,6 +698,9 @@ async def main():
 
             if use_local_xla:
                 wheel_build_command.append("--use_local_xla")
+
+            if use_local_jax:
+                wheel_build_command.append("--use_local_jax")
 
             result = await executor.run(
                 wheel_build_command.get_command_as_string(),
