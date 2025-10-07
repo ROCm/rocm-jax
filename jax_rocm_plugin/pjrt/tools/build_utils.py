@@ -155,3 +155,30 @@ def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
 
     with open(commit_info_path, "w", encoding="utf-8") as f:
         f.write(commit_info_content)
+
+
+def get_local_git_commit(repo_paths):
+    """
+    Get commit hash from local git repository.
+    """
+    for repo_path in repo_paths:
+        git_dir = os.path.join(repo_path, ".git")
+        if os.path.exists(git_dir):
+            try:
+                result = subprocess.run(
+                    ["git", "--git-dir", git_dir, "rev-parse", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                commit_hash = result.stdout.strip()
+                print(
+                    f"Successfully retrieved commit hash from {repo_path}: {commit_hash}"
+                )
+                return commit_hash
+            except subprocess.CalledProcessError as e:
+                print(f"Failed to get commit from {repo_path}: {e}")
+                continue
+
+    print("Could not read commit hash, using 'Custom'")
+    return "Custom"
