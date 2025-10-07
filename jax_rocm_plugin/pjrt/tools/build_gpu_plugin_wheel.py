@@ -77,6 +77,13 @@ parser.add_argument(
     action="store_true",
     help="Use local XLA repository instead of pinned commit hash",
 )
+
+parser.add_argument(
+    "--use_local_jax",
+    action="store_true",
+    help="Use local JAX repository instead of pinned commit hash",
+)
+
 parser.add_argument(
     "--jax-commit",
     default="",
@@ -105,39 +112,23 @@ plat_name={tag}
 
 def get_xla_commit_hash():
     """Determines the XLA commit hash to use - local repository or a pinned."""
+
+    # XLA is mounted at /xla if built using ci_build else at /rocm-jax/xla if built using stack.py
     if args.use_local_xla:
-        try:
-            # XLA is mounted at /xla if built using ci_build else at /rocm/xla if buulf using stack.py
-            xla_paths = ["/xla", "/rocm-jax/xla"]
-            xla_commit_hash = None
-
-            for xla_path in xla_paths:
-                if os.path.exists(os.path.join(xla_path, ".git")):
-                    result = subprocess.run(
-                        ["git", "rev-parse", "HEAD"],
-                        cwd=xla_path,
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-                    xla_commit_hash = result.stdout.strip()
-                    print(f"Using local XLA commit hash: {xla_commit_hash}")
-                    break
-
-            if xla_commit_hash is None:
-                raise FileNotFoundError(
-                    "XLA repository not found in any expected location"
-                )
-
-        except (FileNotFoundError, subprocess.CalledProcessError) as e:
-            xla_commit_hash = "Custom"
-            print(f"Could not read XLA commit hash, using 'Custom': {e}")
-
+        return build_utils.get_local_git_commit(["/xla", "/rocm-jax/xla"])
     else:
-        xla_commit_hash = args.xla_commit
-        print(f"Using pinned XLA commit hash: {xla_commit_hash}")
+        print(f"Using pinned XLA commit hash: {args.xla_commit}")
+        return args.xla_commit
 
-    return xla_commit_hash
+
+def get_jax_commit_hash():
+    """Determines the JAX commit hash to use - local repository or a pinned."""
+    # If built using stack.py local jax at /rocm-jax/jax is used
+    if args.use_local_jax:
+        return build_utils.get_local_git_commit(["/rocm-jax/jax"])
+    else:
+        print(f"Using pinned JAX commit hash: {args.jax_commit}")
+        return args.jax_commit
 
 
 def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
@@ -155,8 +146,9 @@ def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
     build_utils.update_setup_with_rocm_version(sources_path, rocm_version)
     write_setup_cfg(sources_path, cpu)
     xla_commit_hash = get_xla_commit_hash()
+    jax_commit_hash = get_jax_commit_hash()
     build_utils.write_commit_info(
-        plugin_dir, xla_commit_hash, args.jax_commit, args.rocm_jax_git_hash
+        plugin_dir, xla_commit_hash, jax_commit_hash, args.rocm_jax_git_hash
     )
     copy_runfiles(
         dst_dir=plugin_dir,
