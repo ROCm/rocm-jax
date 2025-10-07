@@ -180,5 +180,4 @@ def get_local_git_commit(repo_paths):
                 print(f"Failed to get commit from {repo_path}: {e}")
                 continue
 
-    print("Could not read commit hash, using 'Custom'")
-    return "Custom"
+    raise RuntimeError("Could not retrieve commit info, failing build..")
