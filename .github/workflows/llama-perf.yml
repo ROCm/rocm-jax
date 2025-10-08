@@ -8,17 +8,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-runner:
-    runs-on: linux-mi355-8
-
+  call-build-wheels:
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.12"]
         rocm-version: ["7.0.2"]
-
-    steps:
-      - name: Test runner label
-        run: |
-          echo "python=${{ matrix.python-version }}"
-          echo "rocm=${{ matrix.rocm-version }}"
+        include:
+          - rocm-version: "7.0.2"
+            rocm-build-job: "compute-rocm-rel-7.0"
+            rocm-build-num: "43"
+            runner-label: "linux-mi355-8"
+    uses: ./.github/workflows/build-wheels.yml
+    with:
+      python-versions: "3.12"
+      rocm-version: ${{ matrix.rocm-version }}
+      rocm-build-job: ${{ matrix.rocm-build-job }}
+      rocm-build-num: ${{ matrix.rocm-build-num }}
+      runner-label: ${{ matrix.runner-label }}
+      ref: rocm-jaxlib-v0.6.0
+  call-build-docker:
+    needs: call-build-wheels
+    strategy:
+      fail-fast: false
+      matrix:
+        rocm-version: ["7.0.2"]
+        include:
+          - rocm-version: "7.0.2"
+            rocm-build-job: "compute-rocm-rel-7.0"
+            rocm-build-num: "43"
+            runner-label: "linux-mi355-8"
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      rocm-version: ${{ matrix.rocm-version }}
+      rocm-build-job: ${{ matrix.rocm-build-job }}
+      rocm-build-num: ${{ matrix.rocm-build-num }}
+      runner-label: ${{ matrix.runner-label }}
+      ref: rocm-jaxlib-v0.6.0
+      extra-cr-tag: "llama-perf"
 
