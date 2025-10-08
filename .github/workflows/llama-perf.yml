@@ -1,0 +1,24 @@
+name: Llama Performance Test
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-runner:
+    runs-on: linux-mi355-1
+
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+        rocm-version: ["7.0.2"]
+
+    steps:
+      - name: Test runner label
+        run: |
+        echo "python=${{ matrix.python-version }}"
+        echo "rocm=${{ matrix.rocm-version }}"
+
