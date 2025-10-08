@@ -1,6 +1,9 @@
 name: Llama Performance Test
 
 on:
+  push:
+    branches:
+      - llama-perf-test
   workflow_dispatch:
 
 concurrency:
