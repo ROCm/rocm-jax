@@ -19,6 +19,6 @@ jobs:
     steps:
       - name: Test runner label
         run: |
-        echo "python=${{ matrix.python-version }}"
-        echo "rocm=${{ matrix.rocm-version }}"
+          echo "python=${{ matrix.python-version }}"
+          echo "rocm=${{ matrix.rocm-version }}"
 
