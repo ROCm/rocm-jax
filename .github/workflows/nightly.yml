@@ -51,7 +51,7 @@ jobs:
       extra-cr-tag: "nightly"
   run-python-unit-tests:
     needs: call-build-docker
-    runs-on: mi-250
+    runs-on: Linux-mi355-8
     strategy:
       fail-fast: false
       matrix:
