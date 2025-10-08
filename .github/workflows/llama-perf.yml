@@ -1,9 +1,6 @@
 name: Llama Performance Test
 
 on:
-  push:
-    branches:
-      - llama-perf-test
   workflow_dispatch:
 
 concurrency:
@@ -12,7 +9,7 @@ concurrency:
 
 jobs:
   test-runner:
-    runs-on: linux-mi355-1
+    runs-on: linux-mi355-8
 
     strategy:
       matrix:
