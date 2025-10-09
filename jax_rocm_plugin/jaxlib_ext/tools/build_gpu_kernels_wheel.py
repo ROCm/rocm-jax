@@ -101,10 +101,10 @@ r = runfiles.Create()
 PYEXT = "pyd" if build_utils.is_windows() else "so"
 
 
-def write_setup_cfg(sources_path, cpu):
+def write_setup_cfg(setup_sources_path, cpu):
     """Write setup.cfg file for wheel build."""
     tag = build_utils.platform_tag(cpu)
-    cfg_path = sources_path / "setup.cfg"
+    cfg_path = setup_sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
         f.write(
             f"""[metadata]
@@ -134,23 +134,23 @@ def get_jax_commit_hash():
     return args.jax_commit
 
 
-def prepare_wheel_rocm(sources_path: pathlib.Path, *, cpu, rocm_version):
+def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
     """Assembles a source tree for the rocm kernel wheel in `sources_path`."""
     copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
 
     copy_runfiles(
         "__main__/jax_plugins/rocm/plugin_pyproject.toml",
-        dst_dir=sources_path,
+        dst_dir=wheel_sources_path,
         dst_filename="pyproject.toml",
     )
     copy_runfiles(
         "__main__/jax_plugins/rocm/plugin_setup.py",
-        dst_dir=sources_path,
+        dst_dir=wheel_sources_path,
         dst_filename="setup.py",
     )
-    build_utils.update_setup_with_rocm_version(sources_path, rocm_version)
-    write_setup_cfg(sources_path, cpu)
-    plugin_dir = sources_path / f"jax_rocm{rocm_version}_plugin"
+    build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
+    write_setup_cfg(wheel_sources_path, cpu)
+    plugin_dir = wheel_sources_path / f"jax_rocm{rocm_version}_plugin"
     xla_commit_hash = get_xla_commit_hash()
     jax_commit_hash = get_jax_commit_hash()
     build_utils.write_commit_info(
