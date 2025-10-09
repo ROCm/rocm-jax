@@ -26,7 +26,7 @@ import stat
 import subprocess
 import tempfile
 
-# pylint: disable=import-error
+# pylint: disable=import-error,invalid-name
 from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
 
@@ -179,7 +179,7 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
             "rocm plugin and kernel wheel builds require patchelf. "
             "please install 'patchelf' and run again"
         )
-        raise Exception(mesg) from ex
+        raise RuntimeError(mesg) from ex
 
     shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
     runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib"
@@ -216,7 +216,7 @@ try:
     if args.editable:
         build_utils.build_editable(sources_path, args.output_path, package_name)
     else:
-        git_hash = build_utils.get_githash(args.jaxlib_git_hash)
+        git_hash = build_utils.get_githash(args.rocm_jax_git_hash)
         build_utils.build_wheel(
             sources_path,
             args.output_path,
