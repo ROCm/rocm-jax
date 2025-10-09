@@ -28,11 +28,6 @@ jobs:
           --rocm-build-job=compute-rocm-rel-7.0 \
           build_dockers \
           --filter ubu24
-      - name: Checkout TE repo
-        uses: actions/checkout@v4
-        with:
-          repository: rocm/transformerengine
-          path: transformerengine
       - name: Checkout source repo
         uses: actions/checkout@v4
         with:
@@ -57,6 +52,9 @@ jobs:
       - name: Build TE-wheel
         run: |
           docker exec perf-run bash -lc '
+            git clone https://github.com/rocm/transformerengine
+            cd transformerengine
+            git checkout a6cf0d8c37f267b5de81d8ae996de4da8daf9269
             export PIP_BREAK_SYSTEM_PACKAGES=1
             export NVTE_FRAMEWORK=jax
             export NVTE_ROCM_ARCH=gfx950
@@ -66,15 +64,14 @@ jobs:
             export NVTE_FUSED_ATTN_AOTRITON=0
             pip install setuptools ninja
             pip install cmake==4.1.0
-            cd /workspace/transformerengine
             git submodule update --init --recursive
             python3 setup.py bdist_wheel'
       - name: Install TE-wheel
         run: |
           docker exec perf-run bash -lc '
-            pip install /workspace/transformerengine/dist/*.whl'
+            pip install /transformerengine/dist/*.whl'
       - name: Run model
         run: |
           docker exec perf-run bash -lc '
-          cd /workspace/llama-perf
-          python3 kylix/max/projects/llama/main.py -- --config=kylix.max.projects.llama.config.train_moe.executor_config --config_overrides='[dataloaders[0].operations[5].batch_size=128;dataloaders[0].num_operation_workers=16;model.mha_use_transformer_engine=True;optimizer.total_steps=200]''
+            cd /workspace/llama-perf
+            python3 kylix/max/projects/llama/main.py -- --config=kylix.max.projects.llama.config.train_moe.executor_config --config_overrides='[dataloaders[0].operations[5].batch_size=128;dataloaders[0].num_operation_workers=16;model.mha_use_transformer_engine=True;optimizer.total_steps=200]''
