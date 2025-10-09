@@ -13,6 +13,13 @@ jobs:
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
+        with:
+         ref: rocm-jaxlib-v0.6.0
+      - name: Download wheels
+        run: |
+         mkdir -p wheelhouse && cd wheelhouse/
+         curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl
+         curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl
       - name: Build docker
         run: |
           python build/ci_build \
@@ -21,4 +28,15 @@ jobs:
           --rocm-build-job=compute-rocm-rel-7.0 \
           build_dockers \
           --filter ubu24
+      - name: Run container
+        run: |
+          docker run --name perf-run -it -d --network=host \
+          --device=/dev/kfd --device=/dev/dri --ipc=host --shm-size 32G \
+          --group-add video --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
+          jax-ubu24.rocm702
+      - name: Install deps
+        run: |
+          docker exec perf-run bash -lc '
+            apt-get update
+            apt-get install -y git'
 
