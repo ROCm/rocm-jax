@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Script that builds a jax-cuda12-plugin wheel for cuda kernels, intended to be
-# run via bazel run as part of the jax cuda plugin build process.
+"""Script that builds a jax-rocm-plugin wheel for ROCm kernels.
 
-# Most users should not run this script directly; use build.py instead.
+This script is intended to be run via bazel run as part of the JAX ROCm plugin
+build process. Most users should not run this script directly; use build.py instead.
+"""
 
 import argparse
 import functools
@@ -119,18 +120,18 @@ def get_xla_commit_hash():
     """Determines the XLA commit hash to use - local repository or a pinned."""
     if args.use_local_xla:
         return build_utils.get_local_git_commit(args.use_local_xla)
-    else:
-        print(f"Using pinned XLA commit hash: {args.xla_commit}")
-        return args.xla_commit
+
+    print(f"Using pinned XLA commit hash: {args.xla_commit}")
+    return args.xla_commit
 
 
 def get_jax_commit_hash():
     """Determines the JAX commit hash to use - local repository or a pinned."""
     if args.use_local_jax:
         return build_utils.get_local_git_commit(args.use_local_jax)
-    else:
-        print(f"Using pinned JAX commit hash: {args.jax_commit}")
-        return args.jax_commit
+
+    print(f"Using pinned JAX commit hash: {args.jax_commit}")
+    return args.jax_commit
 
 
 def prepare_wheel_rocm(sources_path: pathlib.Path, *, cpu, rocm_version):

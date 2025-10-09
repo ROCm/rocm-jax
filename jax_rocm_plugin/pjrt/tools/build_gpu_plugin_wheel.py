@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Script that builds a jax cuda/rocm plugin wheel, intended to be run via bazel run
-# as part of the jax cuda/rocm plugin build process.
+"""Script that builds a jax-rocm-plugin wheel for ROCm kernels.
 
-# Most users should not run this script directly; use build.py instead.
+This script is intended to be run via bazel run as part of the JAX ROCm plugin
+build process. Most users should not run this script directly; use build.py instead.
+"""
 
 import argparse
 import functools
@@ -117,18 +118,18 @@ def get_xla_commit_hash():
     """Determines the XLA commit hash to use - local repository or a pinned."""
     if args.use_local_xla:
         return build_utils.get_local_git_commit(args.use_local_xla)
-    else:
-        print(f"Using pinned XLA commit hash: {args.xla_commit}")
-        return args.xla_commit
+
+    print(f"Using pinned XLA commit hash: {args.xla_commit}")
+    return args.xla_commit
 
 
 def get_jax_commit_hash():
     """Determines the JAX commit hash to use - local repository or a pinned."""
     if args.use_local_jax:
         return build_utils.get_local_git_commit(args.use_local_jax)
-    else:
-        print(f"Using pinned JAX commit hash: {args.jax_commit}")
-        return args.jax_commit
+
+    print(f"Using pinned JAX commit hash: {args.jax_commit}")
+    return args.jax_commit
 
 
 def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
@@ -195,23 +196,13 @@ def prepare_rocm_plugin_wheel(sources_path: pathlib.Path, *, cpu, rocm_version):
         os.chmod(shared_obj_path, perms)
 
 
-tmpdir = None
-sources_path = args.sources_path
-if sources_path is None:
-    tmpdir = tempfile.TemporaryDirectory(prefix="jaxgpupjrt")
-    sources_path = tmpdir.name
-
-try:
+with tempfile.TemporaryDirectory(prefix="jax_rocm_plugin") as tmpdir:
+    sources_path = tmpdir
     os.makedirs(args.output_path, exist_ok=True)
-
-    if args.enable_rocm:
-        prepare_rocm_plugin_wheel(
-            pathlib.Path(sources_path), cpu=args.cpu, rocm_version=args.platform_version
-        )
-        package_name = "jax rocm plugin"
-    else:
-        raise ValueError("Unsupported backend. Choose 'rocm'.")
-
+    prepare_rocm_plugin_wheel(
+        pathlib.Path(sources_path), cpu=args.cpu, rocm_version=args.platform_version
+    )
+    package_name = f"jax rocm{args.platform_version} plugin"
     if args.editable:
         build_utils.build_editable(sources_path, args.output_path, package_name)
     else:
@@ -222,6 +213,3 @@ try:
             package_name,
             git_hash=git_hash,
         )
-finally:
-    if tmpdir:
-        tmpdir.cleanup()
