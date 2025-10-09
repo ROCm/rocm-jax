@@ -28,12 +28,22 @@ jobs:
           --rocm-build-job=compute-rocm-rel-7.0 \
           build_dockers \
           --filter ubu24
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          repository: AMD-AGI/scif_repro
+          token: ${{ SECRET_TOKEN }}
+          path: source-code
       - name: Run container
         run: |
           docker run --name perf-run -it -d --network=host \
           --device=/dev/kfd --device=/dev/dri --ipc=host --shm-size 32G \
           --group-add video --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
-          jax-ubu24.rocm702
+          -v "${{ github.workspace }}:/workspace" jax-ubu24.rocm702
+      - name: Print workspace
+        run: |
+          docker exec perf-run bash -lc '
+            ls -la /workspace'
       - name: Install deps
         run: |
           docker exec perf-run bash -lc '
