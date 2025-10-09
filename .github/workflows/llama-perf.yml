@@ -8,41 +8,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-build-wheels:
-    strategy:
-      fail-fast: false
-      matrix:
-        rocm-version: ["7.0.2"]
-        include:
-          - rocm-version: "7.0.2"
-            rocm-build-job: "compute-rocm-rel-7.0"
-            rocm-build-num: "43"
-            runner-label: "linux-mi355-8"
-    uses: ./.github/workflows/build-wheels.yml
-    with:
-      python-versions: "3.12"
-      rocm-version: ${{ matrix.rocm-version }}
-      rocm-build-job: ${{ matrix.rocm-build-job }}
-      rocm-build-num: ${{ matrix.rocm-build-num }}
-      runner-label: ${{ matrix.runner-label }}
-      ref: rocm-jaxlib-v0.6.0
-  call-build-docker:
-    needs: call-build-wheels
-    strategy:
-      fail-fast: false
-      matrix:
-        rocm-version: ["7.0.2"]
-        include:
-          - rocm-version: "7.0.2"
-            rocm-build-job: "compute-rocm-rel-7.0"
-            rocm-build-num: "43"
-            runner-label: "linux-mi355-8"
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      rocm-version: ${{ matrix.rocm-version }}
-      rocm-build-job: ${{ matrix.rocm-build-job }}
-      rocm-build-num: ${{ matrix.rocm-build-num }}
-      runner-label: ${{ matrix.runner-label }}
-      ref: rocm-jaxlib-v0.6.0
-      extra-cr-tag: "llama-perf"
+  build-docker:
+    runs-on: linux-mi355-8
+    steps:
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
+      - name: Build docker
+        run: |
+          python build/ci_build \
+          --rocm-version=7.0.2 \
+          --rocm-build-num=43 \
+          --rocm-build-job=compute-rocm-rel-7.0 \
+          build_dockers \
+          --filter ubu24
 
