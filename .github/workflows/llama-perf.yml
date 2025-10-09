@@ -66,8 +66,9 @@ jobs:
             export NVTE_FUSED_ATTN_AOTRITON=0
             pip install setuptools ninja
             pip install cmake==4.1.0
+            cd /workspace/transformerengine
             git submodule update --init --recursive
-            cd /workspace/transformerengine && python setup.py bdist_wheel'
+            python3 setup.py bdist_wheel'
       - name: Install TE-wheel
         run: |
           docker exec perf-run bash -lc '
