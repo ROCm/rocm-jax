@@ -70,7 +70,7 @@ def platform_tag(cpu: str) -> str:
 def get_githash(jaxlib_git_hash):
     """Get git hash from file or return the hash directly."""
     if jaxlib_git_hash != "" and os.path.isfile(jaxlib_git_hash):
-        with open(jaxlib_git_hash, "r") as f:
+        with open(jaxlib_git_hash, "r", encoding="utf-8") as f:
             return f.readline().strip()
     return jaxlib_git_hash
 
@@ -123,24 +123,24 @@ def build_editable(sources_path: str, output_path: str, package_name: str) -> No
 def update_setup_with_cuda_version(file_dir: pathlib.Path, cuda_version: str):
     """Update setup.py with the specified CUDA version."""
     src_file = file_dir / "setup.py"
-    with open(src_file) as f:
+    with open(src_file, encoding="utf-8") as f:
         content = f.read()
     content = content.replace(
         "cuda_version = 0  # placeholder", f"cuda_version = {cuda_version}"
     )
-    with open(src_file, "w") as f:
+    with open(src_file, "w", encoding="utf-8") as f:
         f.write(content)
 
 
 def update_setup_with_rocm_version(file_dir: pathlib.Path, rocm_version: str):
     """Update setup.py with the specified ROCm version."""
     src_file = file_dir / "setup.py"
-    with open(src_file) as f:
+    with open(src_file, encoding="utf-8") as f:
         content = f.read()
     content = content.replace(
         "rocm_version = 0  # placeholder", f"rocm_version = {rocm_version}"
     )
-    with open(src_file, "w") as f:
+    with open(src_file, "w", encoding="utf-8") as f:
         f.write(content)
 
 

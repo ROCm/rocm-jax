@@ -97,7 +97,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 r = runfiles.Create()
-pyext = "pyd" if build_utils.is_windows() else "so"
+PYEXT = "pyd" if build_utils.is_windows() else "so"
 
 
 def write_setup_cfg(sources_path, cpu):
@@ -158,14 +158,14 @@ def prepare_wheel_rocm(sources_path: pathlib.Path, *, cpu, rocm_version):
     copy_runfiles(
         dst_dir=plugin_dir,
         src_files=[
-            f"jax/jaxlib/rocm/_linalg.{pyext}",
-            f"jax/jaxlib/rocm/_prng.{pyext}",
-            f"jax/jaxlib/rocm/_solver.{pyext}",
-            f"jax/jaxlib/rocm/_sparse.{pyext}",
-            f"jax/jaxlib/rocm/_hybrid.{pyext}",
-            f"jax/jaxlib/rocm/_rnn.{pyext}",
-            f"jax/jaxlib/rocm/_triton.{pyext}",
-            f"jax/jaxlib/rocm/rocm_plugin_extension.{pyext}",
+            f"jax/jaxlib/rocm/_linalg.{PYEXT}",
+            f"jax/jaxlib/rocm/_prng.{PYEXT}",
+            f"jax/jaxlib/rocm/_solver.{PYEXT}",
+            f"jax/jaxlib/rocm/_sparse.{PYEXT}",
+            f"jax/jaxlib/rocm/_hybrid.{PYEXT}",
+            f"jax/jaxlib/rocm/_rnn.{PYEXT}",
+            f"jax/jaxlib/rocm/_triton.{PYEXT}",
+            f"jax/jaxlib/rocm/rocm_plugin_extension.{PYEXT}",
             "jax/jaxlib/version.py",
         ],
     )
@@ -188,14 +188,14 @@ def prepare_wheel_rocm(sources_path: pathlib.Path, *, cpu, rocm_version):
         raise Exception(mesg) from ex
 
     files = [
-        f"_linalg.{pyext}",
-        f"_prng.{pyext}",
-        f"_solver.{pyext}",
-        f"_sparse.{pyext}",
-        f"_hybrid.{pyext}",
-        f"_rnn.{pyext}",
-        f"_triton.{pyext}",
-        f"rocm_plugin_extension.{pyext}",
+        f"_linalg.{PYEXT}",
+        f"_prng.{PYEXT}",
+        f"_solver.{PYEXT}",
+        f"_sparse.{PYEXT}",
+        f"_hybrid.{PYEXT}",
+        f"_rnn.{PYEXT}",
+        f"_triton.{PYEXT}",
+        f"rocm_plugin_extension.{PYEXT}",
     ]
     runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib"
     # patchelf --force-rpath --set-rpath $RUNPATH $so
