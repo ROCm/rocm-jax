@@ -28,6 +28,7 @@ import textwrap
 
 
 def is_windows() -> bool:
+    """Check if running on Windows platform."""
     return sys.platform.startswith("win32")
 
 
@@ -37,6 +38,7 @@ def copy_file(
     dst_filename=None,
     runfiles=None,
 ) -> None:
+    """Copy source files to destination directory using runfiles."""
     dst_dir.mkdir(parents=True, exist_ok=True)
     if isinstance(src_files, str):
         src_files = [src_files]
@@ -53,6 +55,7 @@ def copy_file(
 
 
 def platform_tag(cpu: str) -> str:
+    """Generate platform-specific wheel tag based on CPU architecture."""
     platform_name, cpu_name = {
         ("Linux", "x86_64"): ("manylinux2014", "x86_64"),
         ("Linux", "aarch64"): ("manylinux2014", "aarch64"),
@@ -65,6 +68,7 @@ def platform_tag(cpu: str) -> str:
 
 
 def get_githash(jaxlib_git_hash):
+    """Get git hash from file or return the hash directly."""
     if jaxlib_git_hash != "" and os.path.isfile(jaxlib_git_hash):
         with open(jaxlib_git_hash, "r") as f:
             return f.readline().strip()
@@ -107,6 +111,7 @@ def build_wheel(
 
 
 def build_editable(sources_path: str, output_path: str, package_name: str) -> None:
+    """self-explanatory"""
     sys.stderr.write(
         f"To install the editable {package_name} build, run:\n\n"
         f"  pip install -e {output_path}\n\n"
@@ -116,6 +121,7 @@ def build_editable(sources_path: str, output_path: str, package_name: str) -> No
 
 
 def update_setup_with_cuda_version(file_dir: pathlib.Path, cuda_version: str):
+    """Update setup.py with the specified CUDA version."""
     src_file = file_dir / "setup.py"
     with open(src_file) as f:
         content = f.read()
@@ -127,6 +133,7 @@ def update_setup_with_cuda_version(file_dir: pathlib.Path, cuda_version: str):
 
 
 def update_setup_with_rocm_version(file_dir: pathlib.Path, rocm_version: str):
+    """Update setup.py with the specified ROCm version."""
     src_file = file_dir / "setup.py"
     with open(src_file) as f:
         content = f.read()
@@ -157,27 +164,21 @@ def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
         f.write(commit_info_content)
 
 
-def get_local_git_commit(repo_paths):
-    """
-    Get commit hash from local git repository.
-    """
-    for repo_path in repo_paths:
-        git_dir = os.path.join(repo_path, ".git")
-        if os.path.exists(git_dir):
-            try:
-                result = subprocess.run(
-                    ["git", "--git-dir", git_dir, "rev-parse", "HEAD"],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-                commit_hash = result.stdout.strip()
-                print(
-                    f"Successfully retrieved commit hash from {repo_path}: {commit_hash}"
-                )
-                return commit_hash
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to get commit from {repo_path}: {e}")
-                continue
+def get_local_git_commit(repo_path):
+    """Get commit hash from local git repository."""
+    git_dir = os.path.join(repo_path, ".git")
+    if os.path.exists(git_dir):
+        try:
+            result = subprocess.run(
+                ["git", "--git-dir", git_dir, "rev-parse", "HEAD"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            commit_hash = result.stdout.strip()
+            print(f"Successfully retrieved commit hash from {repo_path}: {commit_hash}")
+            return commit_hash
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to get commit from {repo_path}: {e}")
 
     raise RuntimeError("Could not retrieve commit info, failing build..")

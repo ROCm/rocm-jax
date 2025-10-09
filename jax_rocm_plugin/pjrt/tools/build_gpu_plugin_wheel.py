@@ -74,14 +74,16 @@ parser.add_argument(
 )
 parser.add_argument(
     "--use_local_xla",
-    action="store_true",
-    help="Use local XLA repository instead of pinned commit hash",
+    type=str,
+    default="",
+    help="Path to local XLA repository. If not set, uses pinned commit hash",
 )
 
 parser.add_argument(
     "--use_local_jax",
-    action="store_true",
-    help="Use local JAX repository instead of pinned commit hash",
+    type=str,
+    default="",
+    help="Path to local JAX repository. If not set, uses pinned commit hash",
 )
 
 parser.add_argument(
@@ -97,6 +99,7 @@ r = runfiles.Create()
 
 
 def write_setup_cfg(sources_path, cpu):
+    """Write setup.cfg file for wheel build."""
     tag = build_utils.platform_tag(cpu)
     cfg_path = sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
@@ -112,10 +115,8 @@ plat_name={tag}
 
 def get_xla_commit_hash():
     """Determines the XLA commit hash to use - local repository or a pinned."""
-
-    # XLA is mounted at /xla if built using ci_build else at /rocm-jax/xla if built using stack.py
     if args.use_local_xla:
-        return build_utils.get_local_git_commit(["/xla", "/rocm-jax/xla"])
+        return build_utils.get_local_git_commit(args.use_local_xla)
     else:
         print(f"Using pinned XLA commit hash: {args.xla_commit}")
         return args.xla_commit
@@ -123,9 +124,8 @@ def get_xla_commit_hash():
 
 def get_jax_commit_hash():
     """Determines the JAX commit hash to use - local repository or a pinned."""
-    # If built using stack.py local jax at /rocm-jax/jax is used
     if args.use_local_jax:
-        return build_utils.get_local_git_commit(["/rocm-jax/jax"])
+        return build_utils.get_local_git_commit(args.use_local_jax)
     else:
         print(f"Using pinned JAX commit hash: {args.jax_commit}")
         return args.jax_commit

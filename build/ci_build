@@ -82,7 +82,7 @@ def dist_wheels(
     ]
 
     if xla_source_dir:
-        xla_path = os.path.abspath(xla_source_dir)
+        xla_path = os.path.realpath(os.path.expanduser(xla_source_dir))
         cmd.append("--xla-source-dir=%s" % xla_path)
 
     cmd.append("dist_wheels")
@@ -163,7 +163,6 @@ def build_dockers(
             "--build-arg=JAX_COMMIT=%s" % commit_info["jax_commit"],
             "--build-arg=ROCM_JAX_COMMIT=%s" % commit_info["rocm_jax_commit"],
             "--build-arg=PLUGIN_NAMESPACE=%s" % plugin_namespace,
-
             "--tag=%s" % tag,
         ]
 
