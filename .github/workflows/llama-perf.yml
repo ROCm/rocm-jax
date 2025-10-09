@@ -69,7 +69,7 @@ jobs:
       - name: Install TE-wheel
         run: |
           docker exec perf-run bash -lc '
-            pip install /transformerengine/dist/*.whl'
+            pip install /transformerengine/dist/*.whl --break-system-packages'
       - name: Run model
         run: |
           docker exec perf-run bash -lc '
