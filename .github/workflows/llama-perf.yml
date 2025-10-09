@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-docker:
+  run-perf-model:
     runs-on: linux-mi355-8
     steps:
       - name: Checkout plugin repo
@@ -28,12 +28,17 @@ jobs:
           --rocm-build-job=compute-rocm-rel-7.0 \
           build_dockers \
           --filter ubu24
+      - name: Checkout TE repo
+        uses: actions/checkout@v4
+        with:
+          repository: rocm/transformerengine
+          path: transformerengine
       - name: Checkout source repo
         uses: actions/checkout@v4
         with:
           repository: AMD-AGI/scif_repro
           token: ${{ secrets.SECRET_TOKEN }}
-          path: source-code
+          path: llama-perf
       - name: Run container
         run: |
           docker run --name perf-run -it -d --network=host \
@@ -49,4 +54,26 @@ jobs:
           docker exec perf-run bash -lc '
             apt-get update
             apt-get install -y git'
-
+      - name: Build TE-wheel
+        run: |
+          docker exec perf-run bash -lc '
+            export PIP_BREAK_SYSTEM_PACKAGES=1
+            export NVTE_FRAMEWORK=jax
+            export NVTE_ROCM_ARCH=gfx950
+            export NVTE_USE_ROCM=1
+            export HIP_PLATFORM=amd
+            export CU_NUM=240
+            export NVTE_FUSED_ATTN_AOTRITON=0
+            pip install setuptools ninja
+            pip install cmake==4.1.0
+            git submodule update --init --recursive
+            cd /workspace/transformerengine && python setup.py bdist_wheel'
+      - name: Install TE-wheel
+        run: |
+          docker exec perf-run bash -lc '
+            pip install /workspace/transformerengine/dist/*.whl'
+      - name: Run model
+        run: |
+          docker exec perf-run bash -lc '
+          cd /workspace/llama-perf
+          python3 kylix/max/projects/llama/main.py -- --config=kylix.max.projects.llama.config.train_moe.executor_config --config_overrides='[dataloaders[0].operations[5].batch_size=128;dataloaders[0].num_operation_workers=16;model.mha_use_transformer_engine=True;optimizer.total_steps=200]''
