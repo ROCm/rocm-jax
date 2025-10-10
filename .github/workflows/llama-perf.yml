@@ -20,6 +20,14 @@ jobs:
          mkdir -p wheelhouse && cd wheelhouse/
          curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl
          curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl
+      - name: Build docker
+        run: |
+          python3 build/ci_build \
+          --rocm-version=7.0.2 \
+          --rocm-build-num=43 \
+          --rocm-build-job=compute-rocm-rel-7.0 \
+          build_dockers \
+          --filter ubu24
       - name: Checkout source repo
         uses: actions/checkout@v4
         with:
