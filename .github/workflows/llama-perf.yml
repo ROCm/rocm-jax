@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   run-perf-model:
-    runs-on: linux-mi355-8
+    runs-on: Linux-mi325-8
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
@@ -82,7 +82,7 @@ jobs:
             git checkout a6cf0d8c37f267b5de81d8ae996de4da8daf9269
             export PIP_BREAK_SYSTEM_PACKAGES=1
             export NVTE_FRAMEWORK=jax
-            export NVTE_ROCM_ARCH=gfx950
+            export NVTE_ROCM_ARCH=gfx942
             export NVTE_USE_ROCM=1
             export HIP_PLATFORM=amd
             export CU_NUM=240
