@@ -36,7 +36,8 @@ jobs:
           path: llama-perf
       - name: Disable non-root check
         run: |
-          sed -i '/python.toolchain(/a\    ignore_root_user_error = True,' /workspace/llama-perf/MODULE.bazel
+          sed -i '/python.toolchain(/a\    ignore_root_user_error = True,' \
+          "${{ github.workspace }}/workspace/llama-perf/MODULE.bazel"
       - name: Run container
         run: |
           docker run --name perf-run -it -d --network=host \
