@@ -15,6 +15,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: rocm-jaxlib-v0.6.0
+      - name: Download wheels
+        run: |
+         mkdir -p wheelhouse && cd wheelhouse/
+         curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl
+         curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl
       - name: Build docker
         run: |
           python3 build/ci_build \
@@ -29,12 +34,9 @@ jobs:
           repository: AMD-AGI/scif_repro
           token: ${{ secrets.SECRET_TOKEN }}
           path: llama-perf
-      - name: Download wheels
+      - name: Move wheels
         run: |
-         cd "${{ github.workspace }}/llama-perf"
-         mkdir -p wheelhouse && cd wheelhouse/
-         curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl
-         curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl
+          mv wheelhouse/*.whl ${{ github.workspace }}/llama-perf/wheelhouse
       - name: Disable non-root check
         run: |
           sed -i '/python.toolchain(/a\    ignore_root_user_error = True,' \
@@ -53,7 +55,7 @@ jobs:
           sed -i '/wheel/s/^/#/' kylix/third_party/requirements.lock
           sed -i '/^wheel/s/^/# /; /^# wheel/a wheel==0.45.1' kylix/third_party/requirements.lock
           sed -i '9,29s/^/#/' bazel_run_anynode.sh
-          sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh 
+          sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh
       - name: Run container
         run: |
           docker run --name perf-run -it -d --network=host \
