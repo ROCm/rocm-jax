@@ -53,7 +53,7 @@ jobs:
           sed -i '/wheel/s/^/#/' kylix/third_party/requirements.lock
           sed -i '/^wheel/s/^/# /; /^# wheel/a wheel==0.45.1' kylix/third_party/requirements.lock
           sed -i '9,29s/^/#/' bazel_run_anynode.sh
-          sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh'  
+          sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh 
       - name: Run container
         run: |
           docker run --name perf-run -it -d --network=host \
