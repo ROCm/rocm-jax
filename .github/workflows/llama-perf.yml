@@ -34,6 +34,9 @@ jobs:
           repository: AMD-AGI/scif_repro
           token: ${{ secrets.SECRET_TOKEN }}
           path: llama-perf
+      - name: Disable non-root check
+        run: |
+          sed -i '/python.toolchain(/a\    ignore_root_user_error = True,' /workspace/llama-perf/MODULE.bazel
       - name: Run container
         run: |
           docker run --name perf-run -it -d --network=host \
@@ -65,13 +68,33 @@ jobs:
             pip install setuptools ninja
             pip install cmake==4.1.0
             git submodule update --init --recursive
-            python3 setup.py bdist_wheel'
-      - name: Install TE-wheel
+            python3 setup.py bdist_wheel
+            mv dist/*.whl ../workspace/wheelhouse'
+      - name: Install wheels
         run: |
           docker exec perf-run bash -lc '
-            pip install /transformerengine/dist/*.whl --break-system-packages'
-      - name: Run model
+            pip install workspace/wheelhouse/*.whl --break-system-packages'
+      - name: Apply changes
         run: |
           docker exec perf-run bash -lc '
             cd /workspace/llama-perf
-            python3 kylix/max/projects/llama/main.py -- --config=kylix.max.projects.llama.config.train_moe.executor_config --config_overrides='[dataloaders[0].operations[5].batch_size=128;dataloaders[0].num_operation_workers=16;model.mha_use_transformer_engine=True;optimizer.total_steps=200]''
+            find . -type f -exec sed -i 's/jax_rocm60_plugin/jax_rocm7_plugin/g' {} +
+            find . -type f -exec sed -i 's/jax_rocm60_pjrt/jax_rocm7_pjrt/g' {} +
+            echo 'jax==0.6.0' >> kylix/third_party/requirements.lock
+            echo 'jaxlib==0.6.0' >> kylix/third_party/requirements.lock
+            echo 'jax_rocm7_pjrt @ file:///workspace/wheelhouse/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl' >> kylix/third_party/requirements.lock
+            echo 'jax_rocm7_plugin @ file:///workspace/wheelhouse/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl' >> kylix/third_party/requirements.lock
+            echo 'transformer_engine @ file:///workspace/wheelhouse/transformer_engine-2.4.0.dev0+a6cf0d8c-cp312-cp312-linux_x86_64.whl' >> kylix/third_party/requirements.lock
+            sed -i '/pip/s/^/#/' kylix/third_party/requirements.lock
+            sed -i '/wheel/s/^/#/' kylix/third_party/requirements.lock
+            sed -i '/^wheel/s/^/# /; /^# wheel/a wheel==0.45.1' kylix/third_party/requirements.lock
+            sed -i '9,29s/^/#/' bazel_run_anynode.sh
+            sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh'
+      - name: Run model
+        run: |
+          docker exec perf-run bash -lc '
+            wget -O ~/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.26.0/bazelisk-linux-amd64
+            chmod 755 ~/bazelisk
+            echo 'alias bazel="~/bazelisk"' >> ~/.bashrc && source ~/.bashrc
+            bazel version
+            cd /workspace/llama-perf && bash -i bazel_run_anynode.sh'
