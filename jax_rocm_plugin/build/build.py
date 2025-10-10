@@ -26,6 +26,7 @@ import platform
 import sys
 import copy
 import subprocess
+import re
 
 from tools import command, utils
 
@@ -329,6 +330,22 @@ def get_rocm_version(rocm_path: str = None):
     except subprocess.CalledProcessError as e:
         print(f"Error fetching ROCm version: {e}")
         return None
+
+
+def extract_override_path(bazel_options, repo_name):
+    """Extract path from --override_repository=<repo_name>=<path>"""
+    pattern = rf"--override_repository={repo_name}=([^\s]+)"
+    for opt in bazel_options:
+        match = re.search(pattern, opt)
+        if match:
+            path = match.group(1)
+            if not os.path.isabs(path):
+                path = os.path.realpath(os.path.expanduser(path))
+            assert os.path.isdir(
+                path
+            ), f"Override repository path does not exist: {path}"
+            return path
+    return None
 
 
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements
@@ -688,7 +705,16 @@ async def main():
                 wheel_build_command.append("--enable-rocm=True")
                 wheel_build_command.append(f"--platform_version={args.rocm_version}")
 
-            wheel_build_command.append(f"--jaxlib_git_hash={git_hash}")
+            wheel_build_command.append(f"--rocm_jax_git_hash={git_hash}")
+
+            use_local_xla = extract_override_path(args.bazel_options, "xla")
+            use_local_jax = extract_override_path(args.bazel_options, "jax")
+
+            if use_local_xla:
+                wheel_build_command.append(f"--use_local_xla={use_local_xla}")
+
+            if use_local_jax:
+                wheel_build_command.append(f"--use_local_jax={use_local_jax}")
 
             result = await executor.run(
                 wheel_build_command.get_command_as_string(),
