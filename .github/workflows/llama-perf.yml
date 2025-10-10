@@ -97,4 +97,38 @@ jobs:
             chmod 755 ~/bazelisk
             echo 'alias bazel="~/bazelisk"' >> ~/.bashrc && source ~/.bashrc
             bazel version
-            cd /workspace/llama-perf && bash -i bazel_run_anynode.sh'
+            cd /workspace/llama-perf
+            bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
+            tail -n 10 logs.log > training_summary.txt
+            mv training_summary.txt ../'
+      - name: Upload training summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-summary
+          path: training_summary.txt
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker stop perf-run || true
+          docker rm perf-run || true
+  upload-result-db:
+    needs: run-perf-model
+    runs-on: mysqldb
+    steps:
+      - name: Download training summary
+        uses: actions/download-artifact@v4
+        with:
+          name: training-summary
+          path: training_summary.txt
+      - name: Upload result to DB
+        env:
+          ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
+          ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
+          ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
+          ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install mysql-connector-python
+
