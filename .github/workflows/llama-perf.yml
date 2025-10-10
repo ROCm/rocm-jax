@@ -93,9 +93,8 @@ jobs:
       - name: Run model
         run: |
           docker exec perf-run bash -lc '
-            wget -O ~/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.26.0/bazelisk-linux-amd64
-            chmod 755 ~/bazelisk
-            echo 'alias bazel="~/bazelisk"' >> ~/.bashrc && source ~/.bashrc
+            wget -O /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/download/v1.26.0/bazelisk-linux-amd64
+            chmod +x /usr/local/bin/bazel
             bazel version
             cd /workspace/llama-perf
             bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
@@ -131,4 +130,3 @@ jobs:
           source venv/bin/activate
           pip install --upgrade pip
           pip install mysql-connector-python
-
