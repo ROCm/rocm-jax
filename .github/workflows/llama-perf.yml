@@ -38,6 +38,9 @@ jobs:
         run: |
           mkdir -p ${{ github.workspace }}/llama-perf/wheelhouse
           mv wheelhouse/*.whl ${{ github.workspace }}/llama-perf/wheelhouse
+      - name: Print wheels
+        run: |
+          ls -la ${{ github.workspace }}/llama-perf/wheelhouse
       - name: Disable non-root check
         run: |
           sed -i '/python.toolchain(/a\    ignore_root_user_error = True,' \
@@ -89,7 +92,7 @@ jobs:
             pip install cmake==4.1.0
             git submodule update --init --recursive
             python3 setup.py bdist_wheel
-            mv dist/*.whl ../workspace/llama-perf/wheelhouse'
+            mv dist/*.whl /workspace/llama-perf/wheelhouse'
       - name: Run model
         run: |
           docker exec perf-run bash -lc '
