@@ -36,6 +36,7 @@ jobs:
           path: llama-perf
       - name: Move wheels
         run: |
+          mkdir -p ${{ github.workspace }}/llama-perf/wheelhouse
           mv wheelhouse/*.whl ${{ github.workspace }}/llama-perf/wheelhouse
       - name: Disable non-root check
         run: |
