@@ -127,8 +127,12 @@ jobs:
           ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
           ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
+          GITHUB_RUN: ${{ github.run_id }}
+          GITHUB_TAG: ${{ github.ref_name }}
         run: |
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
           pip install mysql-connector-python
+
+          python3 ci/upload_to_llama_db.py
