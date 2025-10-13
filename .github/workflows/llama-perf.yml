@@ -100,7 +100,7 @@ jobs:
             bazel version
             cd /workspace/llama-perf
             bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
-            tail -n 10 logs.log > training_summary.txt
+            tail -n 25 logs.log > training_summary.txt
             mv training_summary.txt ../'
       - name: Upload training summary
         uses: actions/upload-artifact@v4

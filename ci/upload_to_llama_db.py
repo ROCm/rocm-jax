@@ -1,7 +1,11 @@
+"""Upload Llama training summary results to MySQL database."""
+
 import os
 import ast
 import json
 from datetime import date
+
+# pylint: disable=import-error
 import mysql.connector
 
 
@@ -19,7 +23,7 @@ def upload_llama_results():
     year = date.today().year
 
     try:
-        with open("training_summary.txt", "r", errors="ignore") as f:
+        with open("training_summary.txt", "r", encoding="utf-8", errors="ignore") as f:
             for line in f:
                 if "train step" not in line.lower():
                     continue
