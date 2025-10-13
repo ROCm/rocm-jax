@@ -69,7 +69,7 @@ def upload_llama_results():
                         json.dumps(metrics),  # Use JSON-safe string
                     )
                     rows.append(row)
-                except Exception as e:
+                except (IndexError, ValueError, SyntaxError) as e:
                     print(f"[Parse error] {e}")
     except FileNotFoundError:
         print("train_summary.txt not found.")

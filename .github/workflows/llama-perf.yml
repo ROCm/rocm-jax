@@ -1,6 +1,8 @@
 name: Llama Performance Test
 
 on:
+  schedule:
+    - cron: "0 1 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -116,6 +118,8 @@ jobs:
     needs: run-perf-model
     runs-on: mysqldb
     steps:
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
       - name: Download training summary
         uses: actions/download-artifact@v4
         with:
