@@ -59,6 +59,10 @@ if [ -n "$ROCM_JAX_DIR" ]; then
 fi
 
 # install system deps
+
+# avoid interactive prompts
+export DEBIAN_FRONTEND=noninteractive
+
 apt-get update
 apt-get install -y \
   python3 \
@@ -69,7 +73,7 @@ apt-get install -y \
   build-essential \
   make \
   patchelf \
-  python3.10-venv \
+  python3-venv \
   lsb-release \
   cmake \
   yamllint \
