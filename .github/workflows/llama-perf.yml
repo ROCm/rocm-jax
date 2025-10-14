@@ -1,6 +1,8 @@
 name: Llama Performance Test
 
 on:
+  schedule:
+    - cron: "0 3 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -8,17 +10,135 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-runner:
+  run-perf-model:
     runs-on: linux-mi355-8
-
-    strategy:
-      matrix:
-        python-version: ["3.12"]
-        rocm-version: ["7.0.2"]
-
     steps:
-      - name: Test runner label
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
+        with:
+          ref: rocm-jaxlib-v0.6.0
+      - name: Download wheels
         run: |
-          echo "python=${{ matrix.python-version }}"
-          echo "rocm=${{ matrix.rocm-version }}"
+         mkdir -p wheelhouse && cd wheelhouse/
+         curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl
+         curl -O -L https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl
+      - name: Build docker
+        run: |
+          python3 build/ci_build \
+          --rocm-version=7.0.2 \
+          --rocm-build-num=43 \
+          --rocm-build-job=compute-rocm-rel-7.0 \
+          build_dockers \
+          --filter ubu24
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          repository: AMD-AGI/scif_repro
+          token: ${{ secrets.SECRET_TOKEN }}
+          path: llama-perf
+      - name: Move wheels
+        run: |
+          mkdir -p ${{ github.workspace }}/llama-perf/wheelhouse
+          mv wheelhouse/*.whl ${{ github.workspace }}/llama-perf/wheelhouse
+      - name: Print wheels
+        run: |
+          ls -la ${{ github.workspace }}/llama-perf/wheelhouse
+      - name: Disable non-root check
+        run: |
+          sed -i '/python.toolchain(/a\    ignore_root_user_error = True,' \
+          "${{ github.workspace }}/llama-perf/MODULE.bazel"
+      - name: Patch source files
+        run: |
+          cd "${{ github.workspace }}/llama-perf"
+          find . -type f -exec sed -i 's/jax_rocm60_plugin/jax_rocm7_plugin/g' {} +
+          find . -type f -exec sed -i 's/jax_rocm60_pjrt/jax_rocm7_pjrt/g' {} +
+          echo 'jax==0.6.0' >> kylix/third_party/requirements.lock
+          echo 'jaxlib==0.6.0' >> kylix/third_party/requirements.lock
+          echo 'jax_rocm7_pjrt @ file:///workspace/llama-perf/wheelhouse/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl' >> kylix/third_party/requirements.lock
+          echo 'jax_rocm7_plugin @ file:///workspace/llama-perf/wheelhouse/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl' >> kylix/third_party/requirements.lock
+          echo 'transformer_engine @ file:///workspace/llama-perf/wheelhouse/transformer_engine-2.4.0.dev0+9a2257b6-cp312-cp312-linux_x86_64.whl' >> kylix/third_party/requirements.lock
+          sed -i '/pip/s/^/#/' kylix/third_party/requirements.lock
+          sed -i '/^wheel/s/^/# /; /^# wheel/a wheel==0.45.1' kylix/third_party/requirements.lock
+          sed -i '9,29s/^/#/' bazel_run_anynode.sh
+          sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh
+      - name: Run container
+        run: |
+          docker run --name perf-run -it -d --network=host \
+          --device=/dev/kfd --device=/dev/dri --ipc=host --shm-size 32G \
+          --group-add video --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
+          -v "${{ github.workspace }}:/workspace" jax-ubu24.rocm702
+      - name: Print workspace
+        run: |
+          docker exec perf-run bash -lc '
+            ls -la /workspace'
+      - name: Install deps
+        run: |
+          docker exec perf-run bash -lc '
+            apt-get update
+            apt-get install -y git'
+      - name: Build TE-wheel
+        run: |
+          docker exec perf-run bash -lc '
+            git clone https://github.com/rocm/transformerengine
+            cd transformerengine
+            git checkout 9a2257b6f5d05e6f4fc3e115182894ff21abd566
+            export PIP_BREAK_SYSTEM_PACKAGES=1
+            export NVTE_FRAMEWORK=jax
+            export NVTE_ROCM_ARCH=gfx950
+            export NVTE_USE_ROCM=1
+            export HIP_PLATFORM=amd
+            export CU_NUM=240
+            export NVTE_FUSED_ATTN_AOTRITON=0
+            pip install setuptools ninja
+            pip install cmake==4.1.0
+            git submodule update --init --recursive
+            python3 setup.py bdist_wheel
+            mv dist/*.whl /workspace/llama-perf/wheelhouse'
+      - name: Run model
+        run: |
+          docker exec perf-run bash -lc '
+            wget -O /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/download/v1.26.0/bazelisk-linux-amd64
+            chmod +x /usr/local/bin/bazel
+            bazel version
+            cd /workspace/llama-perf
+            bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
+            tail -n 25 logs.log > training_summary.txt
+            mv training_summary.txt ../'
+      - name: Upload training summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-summary
+          path: training_summary.txt
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker stop perf-run || true
+          docker rm perf-run || true
+  upload-result-db:
+    needs: run-perf-model
+    runs-on: mysqldb
+    steps:
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
+      - name: Download training summary
+        uses: actions/download-artifact@v4
+        with:
+          name: training-summary
+          path: .
+      - name: Upload result to DB
+        env:
+          ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
+          ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
+          ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
+          ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
+          GITHUB_RUN: ${{ github.run_id }}
+          GITHUB_REF: ${{ github.ref_name }}
+          TRIG_EVENT: ${{ github.event_name }}
+          ACTOR_NAME: ${{ github.actor }}
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install mysql-connector-python
 
+          python3 ci/upload_to_llama_db.py
