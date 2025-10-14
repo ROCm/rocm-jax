@@ -6,7 +6,7 @@ GREEN="\033[32;01m"
 RED="\033[31;01m"
 OFF="\033[0m"
 
-ROCM_VERSION="6.4.0"
+ROCM_VERSION="7.0.2"
 
 info() {
   echo -e " ${GREEN}*${OFF} $*" >&2
