@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""JAX ROCm plugin initialization module."""
+
 import functools
 import importlib
 import logging
 import os
 import pathlib
 
-from jax._src.lib import xla_client
-import jax._src.xla_bridge as xb
+from jax._src.lib import xla_client  # pylint: disable=import-error
+import jax._src.xla_bridge as xb  # pylint: disable=import-error
 
 # rocm_plugin_extension locates inside jaxlib. `jaxlib` is for testing without
 # preinstalled jax rocm plugin packages.
@@ -72,10 +74,15 @@ def _get_library_path():
     return None
 
 
-def set_rocm_paths(path):
+def set_rocm_paths(path):  # pylint: disable=too-many-branches
+    """Set ROCm environment paths for bitcode and linker.
+
+    Args:
+        path: Path to the ROCm plugin library.
+    """
     rocm_lib = None
     try:
-        import rocm
+        import rocm  # pylint: disable=import-outside-toplevel
 
         rocm_lib = os.path.join(rocm.__path__[0], "lib")
     except ImportError:
@@ -88,13 +95,13 @@ def set_rocm_paths(path):
     if not rocm_lib:
         logger.info("No ROCm wheel installation found")
         return
-    else:
-        logger.info("ROCm wheel install found at %r" % rocm_lib)
+
+    logger.info("ROCm wheel install found at %r", rocm_lib)
 
     bitcode_path = ""
     lld_path = ""
 
-    for root, dirs, files in os.walk(os.path.join(rocm_lib, "llvm")):
+    for root, _dirs, files in os.walk(os.path.join(rocm_lib, "llvm")):
         # look for ld.lld and ocml.bc
         for f in files:
             if f == "ocml.bc":
@@ -122,6 +129,7 @@ def set_rocm_paths(path):
 
 
 def initialize():
+    """Initialize the JAX ROCm plugin."""
     path = _get_library_path()
     if path is None:
         return
