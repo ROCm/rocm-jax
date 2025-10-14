@@ -91,18 +91,19 @@ def upload_llama_results():
             INSERT INTO perf_runs
             (github_run_id, tag, model_name, te_commit,
             jax_version, rocm_version, python_version,
-            architecture, trig_event, actor_name)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            architecture, github_ref, trig_event, actor_name)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 int(os.environ["GITHUB_RUN"]),
-                os.environ["GITHUB_TAG"],
+                "ci-run",
                 "llama",
                 "9a2257b",
                 "060",
                 "072",
                 "312",
                 "MI355",
+                os.environ["GITHUB_REF"],
                 os.environ["TRIG_EVENT"],
                 os.environ["ACTOR_NAME"],
             ),
