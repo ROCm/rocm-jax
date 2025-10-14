@@ -89,13 +89,16 @@ def upload_llama_results():
         cursor.execute(
             """
             INSERT INTO perf_runs
-            (github_run_id, tag, model_name, jax_version, rocm_version, python_version, architecture, trig_event, actor_name)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (github_run_id, tag, model_name, te_commit,
+            jax_version, rocm_version, python_version,
+            architecture, trig_event, actor_name)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 int(os.environ["GITHUB_RUN"]),
                 os.environ["GITHUB_TAG"],
                 "llama",
+                "9a2257b",
                 "060",
                 "072",
                 "312",
@@ -109,7 +112,8 @@ def upload_llama_results():
 
         insert_sql = """
             INSERT INTO perf_metrics_step
-            (run_id, ts, step, loss_text, loss_token, total_loss, accuracy_top_1, learning_rate, raw_json)
+            (run_id, ts, step, loss_text, loss_token,
+            total_loss, accuracy_top_1, learning_rate, raw_json)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 

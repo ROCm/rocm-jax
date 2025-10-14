@@ -81,7 +81,7 @@ jobs:
           docker exec perf-run bash -lc '
             git clone https://github.com/rocm/transformerengine
             cd transformerengine
-            git checkout a6cf0d8c37f267b5de81d8ae996de4da8daf9269
+            git checkout 9a2257b6f5d05e6f4fc3e115182894ff21abd566
             export PIP_BREAK_SYSTEM_PACKAGES=1
             export NVTE_FRAMEWORK=jax
             export NVTE_ROCM_ARCH=gfx950
