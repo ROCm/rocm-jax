@@ -104,16 +104,6 @@ python -m pip install \
 python -m pip install -r \
   build/requirements.txt
 
-# Apply patch for namespace change if ROCm version >= 7
-major_version=$(echo "$ROCM_VERSION" | cut -d. -f1)
-if [ "$major_version" -ge 7 ]; then
-  echo "Applying patch for ROCm $ROCM_VERSION..."
-  dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
-  patch -p1 -d "$dist_packages" < jax_rocm_plugin/third_party/jax/namespace.patch
-else
-  echo "ROCm version $ROCM_VERSION, skipping patch."
-fi
-
 if [ -n "$_IS_ENTRYPOINT" ]; then
   # run CMD from docker
   if [ -n "$1" ]; then
