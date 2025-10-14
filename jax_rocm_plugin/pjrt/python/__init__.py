@@ -131,6 +131,10 @@ def initialize():
     return
 
   set_rocm_paths(path)
+  
+  device_count = rocm_plugin_extension.get_device_count()
+  if device_count <= 0:
+          raise ValueError('No GPUs found')
 
   options = xla_client.generate_pjrt_gpu_plugin_options()
   options["platform_name"] = "ROCM"
