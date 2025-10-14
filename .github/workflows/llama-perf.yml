@@ -124,7 +124,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: training-summary
-          path: training_summary.txt
+          path: .
       - name: Upload result to DB
         env:
           ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
