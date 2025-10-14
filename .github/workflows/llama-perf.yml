@@ -2,7 +2,7 @@ name: Llama Performance Test
 
 on:
   schedule:
-    - cron: "0 1 * * *"
+    - cron: "0 3 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -133,6 +133,8 @@ jobs:
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
           GITHUB_RUN: ${{ github.run_id }}
           GITHUB_TAG: ${{ github.ref_name }}
+          TRIG_EVENT: ${{ github.event_name }}
+          ACTOR_NAME: ${{ github.actor }}
         run: |
           python3 -m venv venv
           source venv/bin/activate

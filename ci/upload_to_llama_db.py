@@ -69,7 +69,7 @@ def upload_llama_results():
                         json.dumps(metrics),  # Use JSON-safe string
                     )
                     rows.append(row)
-                except (IndexError, ValueError, SyntaxError) as e:
+                except (IndexError, ValueError) as e:
                     print(f"[Parse error] {e}")
     except FileNotFoundError:
         print("train_summary.txt not found.")
@@ -89,8 +89,8 @@ def upload_llama_results():
         cursor.execute(
             """
             INSERT INTO perf_runs
-            (github_run_id, tag, model_name, jax_version, rocm_version, python_version, architecture)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            (github_run_id, tag, model_name, jax_version, rocm_version, python_version, architecture, trig_event, actor_name)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 int(os.environ["GITHUB_RUN"]),
@@ -100,6 +100,8 @@ def upload_llama_results():
                 "072",
                 "312",
                 "MI355",
+                os.environ["TRIG_EVENT"],
+                os.environ["ACTOR_NAME"],
             ),
         )
 
