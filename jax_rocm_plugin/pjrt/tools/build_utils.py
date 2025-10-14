@@ -118,7 +118,8 @@ def update_setup_with_rocm_version(file_dir: pathlib.Path, rocm_version: str):
   with open(src_file) as f:
     content = f.read()
   content = content.replace(
-      "rocm_version = 0  # placeholder", f"rocm_version = {rocm_version}"
+      "rocm_version = 0  # placeholder (runtime substituted)",
+      f"rocm_version = {rocm_version}"
   )
   with open(src_file, "w") as f:
     f.write(content)
