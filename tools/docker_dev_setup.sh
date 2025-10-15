@@ -6,7 +6,7 @@ GREEN="\033[32;01m"
 RED="\033[31;01m"
 OFF="\033[0m"
 
-ROCM_VERSION="6.4.0"
+ROCM_VERSION="7.0.2"
 
 info() {
   echo -e " ${GREEN}*${OFF} $*" >&2
@@ -59,6 +59,10 @@ if [ -n "$ROCM_JAX_DIR" ]; then
 fi
 
 # install system deps
+
+# avoid interactive prompts
+export DEBIAN_FRONTEND=noninteractive
+
 apt-get update
 apt-get install -y \
   python3 \
@@ -69,7 +73,7 @@ apt-get install -y \
   build-essential \
   make \
   patchelf \
-  python3.10-venv \
+  python3-venv \
   lsb-release \
   cmake \
   yamllint \
@@ -99,16 +103,6 @@ python -m pip install \
 # Install deps (jax and jaxlib)
 python -m pip install -r \
   build/requirements.txt
-
-# Apply patch for namespace change if ROCm version >= 7
-major_version=$(echo "$ROCM_VERSION" | cut -d. -f1)
-if [ "$major_version" -ge 7 ]; then
-  echo "Applying patch for ROCm $ROCM_VERSION..."
-  dist_packages=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
-  patch -p1 -d "$dist_packages" < jax_rocm_plugin/third_party/jax/namespace.patch
-else
-  echo "ROCm version $ROCM_VERSION, skipping patch."
-fi
 
 if [ -n "$_IS_ENTRYPOINT" ]; then
   # run CMD from docker
