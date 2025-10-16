@@ -207,9 +207,7 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
         if not perms & stat.S_IWUSR:
             fix_perms = True
             os.chmod(so_path, perms | stat.S_IWUSR)
-        subprocess.check_call(
-            ["patchelf", "--set-rpath", runpath, so_path]
-        )
+        subprocess.check_call(["patchelf", "--set-rpath", runpath, so_path])
         if fix_perms:
             os.chmod(so_path, perms)
 
