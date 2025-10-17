@@ -136,6 +136,10 @@ def initialize():
 
     set_rocm_paths(path)
 
+    if rocm_plugin_extension is None:
+        logger.warning("rocm_plugin_extension not found")
+        return
+
     device_count = rocm_plugin_extension.get_device_count()
     if device_count <= 0:
         raise ValueError("No GPUs found")
