@@ -38,12 +38,20 @@ jobs:
           - jax-version: "0.7.1"
             jaxlib-version: "0.7.1"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm700:407a9b11c4220f443af87894f8f2f004efb78b94" # TODO: tag nightly
+    env:
+      NVTE_FRAMEWORK: jax
+      NVTE_USE_ROCM: 1
+      HIP_PLATFORM: amd
+      NVTE_FUSED_ATTN_AOTRITON: 0
+      CU_NUM: 64
     steps:
       - name: Checkout TE source
         uses: actions/checkout@v4
         with:
           repository: rocm/transformerengine
           ref: dev
+          submodules: recursive
+          fetch-depth: 0
           path: transformerengine
       - name: Print workspace
         run: |
@@ -58,26 +66,32 @@ jobs:
           fi
       - name: Run Container for ${{ matrix.jax-version }}
         run: |
-          docker run --name te-build-${{ matrix.jax-version }} -it -d --network=host \
-          --device=/dev/kfd --device=/dev/dri --ipc=host --shm-size 32G \
-          --group-add video --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
-          -v "${{ github.workspace }}:/workspace" ${{ matrix.docker-image }}
+          docker run \
+            --name te-build-${{ matrix.jax-version }} \
+            --network=host \
+            --device=/dev/kfd \
+            --device=/dev/dri \
+            --ipc=host \
+            --shm-size 32G \
+            --group-add video \
+            --cap-add=SYS_PTRACE \
+            --security-opt seccomp=unconfined \
+            -e NVTE_FRAMEWORK=${{ env.NVTE_FRAMEWORK }} \
+            -e NVTE_USE_ROCM=${{ env.NVTE_USE_ROCM }} \
+            -e HIP_PLATFORM=${{ env.HIP_PLATFORM }} \
+            -e NVTE_ROCM_ARCH=${{ env.ROCM_ARCH }} \
+            -e NVTE_FUSED_ATTN_AOTRITON=${{ env.NVTE_FUSED_ATTN_AOTRITON }} \
+            -e CU_NUM=${{ env.CU_NUM }} \
+            -e PIP_BREAK_SYSTEM_PACKAGES=1 \
+            -v "${{ github.workspace }}:/workspace" \
+            ${{ matrix.docker-image }}
       - name: Build TE-wheel
-        env:
-          NVTE_FRAMEWORK: jax
-          NVTE_USE_ROCM: 1
-          HIP_PLATFORM: amd
-          NVTE_ROCM_ARCH: ${{ env.ROCM_ARCH }}
-          NVTE_FUSED_ATTN_AOTRITON: 0
-          CU_NUM: 64
         run: |
           docker exec te-build-${{ matrix.jax-version }} bash -lc '
-            apt-get update && apt-get install -y git
-            export PIP_BREAK_SYSTEM_PACKAGES=1
             pip install setuptools ninja
             pip install cmake==4.1.0
             cd /workspace/transformerengine
-            git submodule update --init --recursive
+            sed -i 's/jax.extend/jax/g' build_tools/jax.py
             python3 setup.py bdist_wheel'
       - name: Upload TE wheels artifacts
         uses: actions/upload-artifact@v4
@@ -85,7 +99,13 @@ jobs:
           name: te-wheel-${{ matrix.jax-version }}-${{ env.ROCM_ARCH }}
           path: transformerengine/dist/*whl
   run-perf-model:
+    needs: build-te-wheels
     runs-on: linux-mi355-8
+    strategy:
+      fail-fast: false
+      matrix:
+        jax-version: ["0.6.0", "0.7.1"]
+        model-name: ["train-moe", "train_dense_8b"]
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
@@ -150,24 +170,6 @@ jobs:
           docker exec perf-run bash -lc '
             apt-get update
             apt-get install -y git'
-      - name: Build TE-wheel
-        run: |
-          docker exec perf-run bash -lc '
-            git clone https://github.com/rocm/transformerengine
-            cd transformerengine
-            git checkout 9a2257b6f5d05e6f4fc3e115182894ff21abd566
-            export PIP_BREAK_SYSTEM_PACKAGES=1
-            export NVTE_FRAMEWORK=jax
-            export NVTE_ROCM_ARCH=gfx950
-            export NVTE_USE_ROCM=1
-            export HIP_PLATFORM=amd
-            export CU_NUM=240
-            export NVTE_FUSED_ATTN_AOTRITON=0
-            pip install setuptools ninja
-            pip install cmake==4.1.0
-            git submodule update --init --recursive
-            python3 setup.py bdist_wheel
-            mv dist/*.whl /workspace/llama-perf/wheelhouse'
       - name: Run model
         run: |
           docker exec perf-run bash -lc '
