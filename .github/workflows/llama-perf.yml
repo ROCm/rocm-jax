@@ -1,15 +1,89 @@
-name: Llama Performance Test
+name: Llama Performance Benchmarks
+
+# This workflow runs Llama performance benchmarks
+# using two different JAX versions: 0.6.0 & 0.7.1
+# For JAX 0.6.0: uses official released wheels
+# and Docker images.
+# For JAX 0.7.1: uses wheels and Docker images
+# built from the latest nightly results.
 
 on:
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
+    inputs:
+      runner-label:
+        required: false
+        type: choice
+        options:
+          - linux-mi325-8
+          - linux-mi355-8
+        default: "linux-mi355-8"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  build-te-wheels:
+    runs-on: linux-mi355-1
+    strategy:
+      fail-fast: false
+      matrix:
+        jax-version: ["0.6.0", "0.7.1"]
+        include:
+          - jax-version: "0.6.0"
+            jaxlib-version: "0.6.0"
+            docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
+          - jax-version: "0.7.1"
+            jaxlib-version: "0.7.1"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm700:407a9b11c4220f443af87894f8f2f004efb78b94" # TODO: tag nightly
+    steps:
+      - name: Checkout TE source
+        uses: actions/checkout@v4
+        with:
+          repository: rocm/transformerengine
+          ref: dev
+          path: transformerengine
+      - name: Print workspace
+        run: |
+          ls -la ${{ github.workspace }}
+      - name: Define ROCm arch
+        id: arch
+        run: |
+          if [ "${{ inputs.runner-label }}" == "linux-mi325-8" ]; then
+            echo "ROCM_ARCH=gfx942" >> $GITHUB_ENV
+          else
+            echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
+          fi
+      - name: Run Container for ${{ matrix.jax-version }}
+        run: |
+          docker run --name te-build-${{ matrix.jax-version }} -it -d --network=host \
+          --device=/dev/kfd --device=/dev/dri --ipc=host --shm-size 32G \
+          --group-add video --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
+          -v "${{ github.workspace }}:/workspace" ${{ matrix.docker-image }}
+      - name: Build TE-wheel
+        env:
+          NVTE_FRAMEWORK: jax
+          NVTE_USE_ROCM: 1
+          HIP_PLATFORM: amd
+          NVTE_ROCM_ARCH: ${{ env.ROCM_ARCH }}
+          NVTE_FUSED_ATTN_AOTRITON: 0
+          CU_NUM: 64
+        run: |
+          docker exec te-build-${{ matrix.jax-version }} bash -lc '
+            apt-get update && apt-get install -y git
+            export PIP_BREAK_SYSTEM_PACKAGES=1
+            pip install setuptools ninja
+            pip install cmake==4.1.0
+            cd /workspace/transformerengine
+            git submodule update --init --recursive
+            python3 setup.py bdist_wheel'
+      - name: Upload TE wheels artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: te-wheel-${{ matrix.jax-version }}-${{ env.ROCM_ARCH }}
+          path: transformerengine/dist/*whl
   run-perf-model:
     runs-on: linux-mi355-8
     steps:
