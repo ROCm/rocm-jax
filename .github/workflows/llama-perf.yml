@@ -84,14 +84,15 @@ jobs:
             -e CU_NUM=${{ env.CU_NUM }} \
             -e PIP_BREAK_SYSTEM_PACKAGES=1 \
             -v "${{ github.workspace }}:/workspace" \
-            ${{ matrix.docker-image }}
+            ${{ matrix.docker-image }} \
+            tail -f /dev/null
       - name: Build TE-wheel
         run: |
           docker exec te-build-${{ matrix.jax-version }} bash -lc '
             pip install setuptools ninja
             pip install cmake==4.1.0
             cd /workspace/transformerengine
-            sed -i 's/jax\.extend/jax/g' build_tools/jax.py
+            sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
             python3 setup.py bdist_wheel'
       - name: Upload TE wheels artifacts
         uses: actions/upload-artifact@v4
