@@ -106,6 +106,50 @@ def check_system_resources():
         return True  # Continue if check fails
 
 
+
+def get_deselected_tests(test_name):
+
+    tests_dict = {
+
+        "export_harnesses_multi_platform_test" : [
+            "--deselect jax/tests/export_harnesses_multi_platform_test.py::PrimitiveTest::test_prim_tridiagonal_solve_shape_float32_3_",
+            "--deselect jax/tests/export_harnesses_multi_platform_test.py::PrimitiveTest::test_prim_tridiagonal_solve_shape_float64_3_",
+        ],
+
+        "linalg_sharding_test" : [
+            "--deselect jax/tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13",
+            "--deselect jax/tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp11",
+        ],
+
+        "multi_device_test" : [
+            "--deselect jax/tests/multi_device_test.py::MultiDeviceTest::test_lax_full_like_efficient",
+        ],
+
+        "pgle_test" : [
+                "--deselect jax/tests/pgle_test.py::PgleTest::testAutoPgle",
+                "--deselect jax/tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0",
+                "--deselect jax/tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1",
+                "--deselect jax/tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache",
+                "--deselect jax/tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile",
+                "--deselect jax/tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge",
+       ],
+
+       "pjit_test" : [
+                "--deselect jax/tests/pjit_test.py::ShardingInTypesTest::test_sparse_linalg_cg_indexing",
+        ],
+
+        "shard_map_test" : [
+            "--deselect jax/tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_two_gpus",
+            "--deselect jax/tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_with_deadlock_cycle",
+            "--deselect jax/tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_with_duplicate_source_target_pairs",
+            "--deselect jax/tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_with_no_deadlock_cycle",
+            "--deselect jax/tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_with_non_matching_source_target_pairs",
+            "--deselect jax/tests/shard_map_test.py::ShardMapTest::test_psend_precv_reverse_two_gpus",
+        ],
+    }
+
+    return tests_dict[test_name] if test_name in tests_dict.keys() else []
+
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def run_multi_gpu_test(
@@ -174,12 +218,9 @@ def run_multi_gpu_test(
             f"./jax/{test_file}",
         ]
     if not ignore_skipfile:
-        cmd.extend(
-            [
-                "-c",
-                "ci/pytest_skips.ini",
-            ]
-        )
+        de_list = get_deselected_tests(test_name)
+        if len(de_list)>0:
+            cmd.extend(de_list)
 
     print(f"Running: {' '.join(cmd)}")
 
