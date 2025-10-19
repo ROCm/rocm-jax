@@ -19,7 +19,7 @@ jobs:
   call-build-wheels:
     strategy:
       matrix:
-        rocm-version: ["7.0.0"]
+        rocm-version: ["7.0.2"]
     uses: ./.github/workflows/build-wheels.yml
     with:
       # TODO: Add back Python 3.13 when we're ready to move to a more recent version of XLA. 3.13
@@ -30,7 +30,7 @@ jobs:
     needs: call-build-wheels
     strategy:
       matrix:
-        rocm-version: ["7.0.0"]
+        rocm-version: ["7.0.2"]
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
