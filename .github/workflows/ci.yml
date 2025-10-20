@@ -39,7 +39,7 @@ jobs:
     runs-on: mi-250
     strategy:
       matrix:
-        rocm-version: ["7.0.0"]
+        rocm-version: ["7.0.2"]
     steps:
       - name: Change owners for cleanup
         run: |
