@@ -33,7 +33,7 @@ jobs:
     outputs:
       runner_label: ${{ steps.arch.outputs.label }}
       te_commit_sha: ${{ steps.tsha.outputs.hash }}
-      architecture: ${{ steps.arch.outputs.ROCM_ARCH }}
+      architecture: ${{ steps.arch.outputs.arch }}
     strategy:
       fail-fast: false
       matrix:
@@ -71,9 +71,11 @@ jobs:
         run: |
           if [ "${{ inputs.runner-label }}" == "linux-mi325-8" ]; then
             echo "ROCM_ARCH=gfx942" >> $GITHUB_ENV
+            echo "arch=gfx942" >> $GITHUB_OUTPUT
             echo "label=MI325" >> $GITHUB_OUTPUT
           else
             echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
+            echo "arch=gfx950" >> $GITHUB_OUTPUT
             echo "label=MI355" >> $GITHUB_OUTPUT
           fi
       - name: Run Container for ${{ matrix.jax-version }}
@@ -168,7 +170,7 @@ jobs:
       - name: Download TE wheel artifact
         uses: actions/download-artifact@v4
         with:
-          name: te-wheel-jax${{ matrix.jax-version }}-${{ needs.build-te-wheels.outputs.ROCM_ARCH }}
+          name: te-wheel-jax${{ matrix.jax-version }}-${{ needs.build-te-wheels.outputs.architecture }}
           path: wheelhouse
       - name: Print wheels
         run: |
