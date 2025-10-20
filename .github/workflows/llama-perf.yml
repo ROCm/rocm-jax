@@ -248,7 +248,7 @@ jobs:
       max-parallel: 1
       matrix:
         jax-version: ["0.6.0", "0.7.1"]
-        model-name: ["train_moe", "train_dense_8b"]
+        model-name: ["train_dense_8b", "train_moe"]
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
