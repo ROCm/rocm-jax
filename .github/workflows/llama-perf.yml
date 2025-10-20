@@ -44,7 +44,7 @@ jobs:
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
           - jax-version: "0.7.1"
             jaxlib-version: "0.7.1"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm700:407a9b11c4220f443af87894f8f2f004efb78b94" # TODO: tag nightly
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:a2dc0f639643e3e4d03088b77114527b59c377c1" # TODO: tag nightly
     env:
       NVTE_FRAMEWORK: jax
       NVTE_USE_ROCM: 1
@@ -139,11 +139,11 @@ jobs:
           - jax-version: "0.7.1"
             jaxlib-version: "0.7.1"
             model-name: "train_moe"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm700:407a9b11c4220f443af87894f8f2f004efb78b94" # TODO: tag nightly
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:a2dc0f639643e3e4d03088b77114527b59c377c1" # TODO: tag nightly
           - jax-version: "0.7.1"
             jaxlib-version: "0.7.1"
             model-name: "train_dense_8b"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm700:407a9b11c4220f443af87894f8f2f004efb78b94" # TODO: tag nightly
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:a2dc0f639643e3e4d03088b77114527b59c377c1" # TODO: tag nightly
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v4
@@ -163,7 +163,7 @@ jobs:
             curl -L --output-dir wheelhouse -O \
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
           else
-            gh run download 18576729511 -R ROCm/rocm-jax -n plugin_wheels_r7.0.0 -D wheelhouse
+            gh run download 18648819000 -R ROCm/rocm-jax -n plugin_wheels_r7.0.0 -D wheelhouse
             rm -v wheelhouse/*311*
           fi
       - name: Download TE wheel artifact
@@ -196,6 +196,7 @@ jobs:
           echo "transformer_engine @ file:///workspace/wheelhouse/$TE_BASE"
           } >> kylix/third_party/requirements.lock
           sed -i '9,29s/^/#/' bazel_run_anynode.sh
+          sed -i '/^TRAIN_SETTING/s/^/# /' bazel_run_anynode.sh
           sed -i '/pip/s/^/#/' kylix/third_party/requirements.lock
           sed -i '/orbax-checkpoint/ s/^/# /' kylix/third_party/requirements.lock
           echo 'orbax-checkpoint==0.11.25' >> kylix/third_party/requirements.lock
@@ -226,7 +227,7 @@ jobs:
             chmod +x /usr/local/bin/bazel
             bazel version
             apt update && apt install -y libdw1 libglib2.0-0
-            export TRAIN_SETTING=${{ matrix.model-name }}
+            export TRAIN_SETTING="${{ matrix.model-name }}"
             cd /workspace && bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
             tail -n 25 logs.log > training_summary.txt'
       - name: Upload training summary
