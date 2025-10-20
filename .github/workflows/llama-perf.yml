@@ -227,7 +227,7 @@ jobs:
             bazel version
             apt update && apt install -y libdw1 libglib2.0-0
             export TRAIN_SETTING=${{ matrix.model-name }}
-            bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
+            cd /workspace && bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
             tail -n 25 logs.log > training_summary.txt'
       - name: Upload training summary
         uses: actions/upload-artifact@v4
