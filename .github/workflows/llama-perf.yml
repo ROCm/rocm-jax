@@ -150,7 +150,6 @@ jobs:
         with:
           repository: AMD-AGI/scif_repro
           token: ${{ secrets.SECRET_TOKEN }}
-          path: llama-perf
       - name: Download JAX wheels
         # TODO: update for dwn last nightly whl
         env:
@@ -192,9 +191,9 @@ jobs:
           PLUGIN_BASE=$(basename "$PLUGIN_WHL")
           TE_BASE=$(basename "$TE_WHL")
           {
-          echo "jax_rocm7_pjrt @ file:///workspace/llama-perf/wheelhouse/$PJRT_BASE"
-          echo "jax_rocm7_plugin @ file:///workspace/llama-perf/wheelhouse/$PLUGIN_BASE"
-          echo "transformer_engine @ file:///workspace/llama-perf/wheelhouse/$TE_BASE"
+          echo "jax_rocm7_pjrt @ file:///workspace/wheelhouse/$PJRT_BASE"
+          echo "jax_rocm7_plugin @ file:///workspace/wheelhouse/$PLUGIN_BASE"
+          echo "transformer_engine @ file:///workspace/wheelhouse/$TE_BASE"
           } >> kylix/third_party/requirements.lock
           sed -i '9,29s/^/#/' bazel_run_anynode.sh
           sed -i '/pip/s/^/#/' kylix/third_party/requirements.lock
