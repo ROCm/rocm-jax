@@ -182,7 +182,7 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
         raise RuntimeError(mesg) from ex
 
     shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
-    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
+    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib"
     # patchelf --force-rpath --set-rpath $RUNPATH $so
     fix_perms = False
     perms = os.stat(shared_obj_path).st_mode
@@ -190,7 +190,7 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
         fix_perms = True
         os.chmod(shared_obj_path, perms | stat.S_IWUSR)
     subprocess.check_call(
-        ["patchelf", "--set-rpath", runpath, shared_obj_path]
+        ["patchelf", "--force-rpath", "--set-rpath", runpath, shared_obj_path]
     )
     if fix_perms:
         os.chmod(shared_obj_path, perms)
