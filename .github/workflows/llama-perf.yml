@@ -33,7 +33,6 @@ jobs:
     outputs:
       runner_label: ${{ steps.arch.outputs.label }}
       te_commit_sha: ${{ steps.tsha.outputs.hash }}
-      architecture: ${{ steps.arch.outputs.arch }}
     strategy:
       fail-fast: false
       matrix:
@@ -44,7 +43,7 @@ jobs:
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
           - jax-version: "0.7.1"
             jaxlib-version: "0.7.1"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:a2dc0f639643e3e4d03088b77114527b59c377c1" # TODO: tag nightly
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:nightly"
     env:
       NVTE_FRAMEWORK: jax
       NVTE_USE_ROCM: 1
@@ -71,11 +70,9 @@ jobs:
         run: |
           if [ "${{ inputs.runner-label }}" == "linux-mi325-8" ]; then
             echo "ROCM_ARCH=gfx942" >> $GITHUB_ENV
-            echo "arch=gfx942" >> $GITHUB_OUTPUT
             echo "label=MI325" >> $GITHUB_OUTPUT
           else
             echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
-            echo "arch=gfx950" >> $GITHUB_OUTPUT
             echo "label=MI355" >> $GITHUB_OUTPUT
           fi
       - name: Run Container for ${{ matrix.jax-version }}
@@ -111,7 +108,7 @@ jobs:
       - name: Upload TE wheels artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: te-wheel-jax${{ matrix.jax-version }}-${{ env.ROCM_ARCH }}
+          name: te-wheel-jax${{ matrix.jax-version }}
           path: transformerengine/dist/*whl
       - name: Cleanup containers
         if: always()
@@ -139,11 +136,11 @@ jobs:
           - jax-version: "0.7.1"
             jaxlib-version: "0.7.1"
             model-name: "train_moe"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:a2dc0f639643e3e4d03088b77114527b59c377c1" # TODO: tag nightly
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:nightly"
           - jax-version: "0.7.1"
             jaxlib-version: "0.7.1"
             model-name: "train_dense_8b"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:a2dc0f639643e3e4d03088b77114527b59c377c1" # TODO: tag nightly
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:nightly"
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v4
@@ -151,7 +148,6 @@ jobs:
           repository: AMD-AGI/scif_repro
           token: ${{ secrets.SECRET_TOKEN }}
       - name: Download JAX wheels
-        # TODO: update for dwn last nightly whl
         env:
           GH_TOKEN: ${{ secrets.SECRET_TOKEN }}
         run: |
@@ -163,13 +159,14 @@ jobs:
             curl -L --output-dir wheelhouse -O \
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
           else
-            gh run download 18648819000 -R ROCm/rocm-jax -n plugin_wheels_r7.0.2 -D wheelhouse
+            gh run download $(gh run list -R ROCm/rocm-jax -w nightly.yml -L 1 --json databaseId -q '.[0].databaseId') \
+            -R ROCm/rocm-jax -n plugin_wheels_r7.0.2 -D wheelhouse
             rm -v wheelhouse/*311*
           fi
       - name: Download TE wheel artifact
         uses: actions/download-artifact@v4
         with:
-          name: te-wheel-jax${{ matrix.jax-version }}-${{ needs.build-te-wheels.outputs.architecture }}
+          name: te-wheel-jax${{ matrix.jax-version }}
           path: wheelhouse
       - name: Print wheels
         run: |
@@ -241,7 +238,7 @@ jobs:
           docker stop model-run-jax${{ matrix.jax-version }}-${{ matrix.model-name }} || true
           docker rm model-run-jax${{ matrix.jax-version }}-${{ matrix.model-name }} || true
   upload-result-db:
-    needs: run-llama-perf-model
+    needs: ['run-llama-perf-model', 'build-te-wheels']
     runs-on: mysqldb
     strategy:
       fail-fast: false
