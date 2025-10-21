@@ -1,0 +1,24 @@
+# Build configuration for running with Bazel RBE
+
+# When building in a container, these need to be mounted
+build:rocm_rbe --tls_client_certificate="ci-cert.crt"
+build:rocm_rbe --tls_client_key="ci-cert.key"
+
+build:rocm_rbe --bes_backend="grpcs://wardite.cluster.engflow.com"
+build:rocm_rbe --bes_results_url="https://wardite.cluster.engflow.com/invocation/"
+build:rocm_rbe --remote_executor="grpcs://wardite.cluster.engflow.com"
+build:rocm_rbe --remote_cache="grpcs://wardite.cluster.engflow.com"
+build:rocm_rbe --host_platform="//platform/linux:manylinux"
+build:rocm_rbe --extra_execution_platforms="//platform/linux:manylinux"
+build:rocm_rbe --platforms="//platform/linux:manylinux"
+build:rocm_rbe --bes_timeout=600s
+build:rocm_rbe --spawn_strategy=remote,local
+build:rocm_rbe --grpc_keepalive_time=30s
+
+test:rocm_rbe --remote_executor="grpcs://wardite.cluster.engflow.com"
+test:rocm_rbe --remote_cache="grpcs://wardite.cluster.engflow.com"
+test:rocm_rbe --remote_timeout=3600
+test:rocm_rbe --jobs=200
+test:rocm_rbe --strategy=TestRunner=remote,local
+test:rocm_rbe --worker_sandboxing=true
+
