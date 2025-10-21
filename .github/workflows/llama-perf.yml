@@ -163,7 +163,7 @@ jobs:
             curl -L --output-dir wheelhouse -O \
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
           else
-            gh run download 18648819000 -R ROCm/rocm-jax -n plugin_wheels_r7.0.0 -D wheelhouse
+            gh run download 18648819000 -R ROCm/rocm-jax -n plugin_wheels_r7.0.2 -D wheelhouse
             rm -v wheelhouse/*311*
           fi
       - name: Download TE wheel artifact
