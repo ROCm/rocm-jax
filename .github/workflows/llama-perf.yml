@@ -12,7 +12,7 @@ name: Llama Performance Benchmarks
 on:
   schedule:
     # plan to use prev. nightly builds
-    - cron: "0 21 * * *"
+    - cron: "0 22 * * *"
   workflow_dispatch:
     inputs:
       runner-label:
@@ -57,6 +57,8 @@ jobs:
         with:
           repository: rocm/transformerengine
           ref: dev
+          submodules: recursive
+          fetch-depth: 0
           path: transformerengine
       - name: Print workspace
         run: |
@@ -76,6 +78,46 @@ jobs:
             echo "arch=gfx950" >> $GITHUB_OUTPUT
             echo "label=MI355" >> $GITHUB_OUTPUT
           fi
+      - name: Run Container for ${{ matrix.jax-version }}
+        run: |
+          docker run -d \
+            --name te-build-jax${{ matrix.jax-version }} \
+            --network=host \
+            --device=/dev/kfd \
+            --device=/dev/dri \
+            --ipc=host \
+            --shm-size 32G \
+            --group-add video \
+            --cap-add=SYS_PTRACE \
+            --security-opt seccomp=unconfined \
+            -e NVTE_FRAMEWORK=${{ env.NVTE_FRAMEWORK }} \
+            -e NVTE_USE_ROCM=${{ env.NVTE_USE_ROCM }} \
+            -e HIP_PLATFORM=${{ env.HIP_PLATFORM }} \
+            -e NVTE_ROCM_ARCH=${{ env.ROCM_ARCH }} \
+            -e NVTE_FUSED_ATTN_AOTRITON=${{ env.NVTE_FUSED_ATTN_AOTRITON }} \
+            -e CU_NUM=${{ env.CU_NUM }} \
+            -e PIP_BREAK_SYSTEM_PACKAGES=1 \
+            -v "${{ github.workspace }}:/workspace" \
+            ${{ matrix.docker-image }} \
+            tail -f /dev/null
+      - name: Build TE-wheel
+        run: |
+          docker exec te-build-jax${{ matrix.jax-version }} bash -lc '
+            pip install setuptools ninja
+            pip install cmake==4.1.0
+            cd /workspace/transformerengine
+            sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
+            python3 setup.py bdist_wheel'
+      - name: Upload TE wheels artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: te-wheel-jax${{ matrix.jax-version }}-${{ env.ROCM_ARCH }}
+          path: transformerengine/dist/*whl
+      - name: Cleanup containers
+        if: always()
+        run: |
+          docker stop te-build-jax${{ matrix.jax-version }} || true
+          docker rm te-build-jax${{ matrix.jax-version }} || true
   run-llama-perf-model:
     needs: build-te-wheels
     runs-on: ${{ inputs.runner-label || 'linux-mi355-8' }}
@@ -84,12 +126,20 @@ jobs:
       max-parallel: 1
       matrix:
         jax-version: ["0.6.0", "0.7.1"]
-        model-name: ["train_dense_8b"]
+        model-name: ["train_moe", "train_dense_8b"]
         include:
+          - jax-version: "0.6.0"
+            jaxlib-version: "0.6.0"
+            model-name: "train_moe"
+            docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
             model-name: "train_dense_8b"
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
+          - jax-version: "0.7.1"
+            jaxlib-version: "0.7.1"
+            model-name: "train_moe"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:a2dc0f639643e3e4d03088b77114527b59c377c1" # TODO: tag nightly
           - jax-version: "0.7.1"
             jaxlib-version: "0.7.1"
             model-name: "train_dense_8b"
@@ -105,19 +155,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.SECRET_TOKEN }}
         run: |
-          mkdir -p wheelhouse && cd wheelhouse
           if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
+            mkdir -p wheelhouse
             REL_URL="https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0"
-            curl -L -O \
+            curl -L --output-dir wheelhouse -O \
             "$REL_URL/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
-            curl -L -O \
+            curl -L --output-dir wheelhouse -O \
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
-            gh run download 18666638591 -R ROCm/rocm-jax -n te-wheel-jax${{ matrix.jax-version }}-${{ needs.build-te-wheels.outputs.architecture }}
           else
-            gh run download 18648819000 -R ROCm/rocm-jax -n plugin_wheels_r7.0.0
-            gh run download 18666638591 -R ROCm/rocm-jax -n te-wheel-jax${{ matrix.jax-version }}-${{ needs.build-te-wheels.outputs.architecture }}
-            rm -v *311*
+            gh run download 18648819000 -R ROCm/rocm-jax -n plugin_wheels_r7.0.0 -D wheelhouse
+            rm -v wheelhouse/*311*
           fi
+      - name: Download TE wheel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: te-wheel-jax${{ matrix.jax-version }}-${{ needs.build-te-wheels.outputs.architecture }}
+          path: wheelhouse
       - name: Print wheels
         run: |
           ls -la ${{ github.workspace }}/wheelhouse
@@ -195,7 +248,7 @@ jobs:
       max-parallel: 1
       matrix:
         jax-version: ["0.6.0", "0.7.1"]
-        model-name: ["train_dense_8b"]
+        model-name: ["train_moe", "train_dense_8b"]
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
