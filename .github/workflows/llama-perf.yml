@@ -57,8 +57,6 @@ jobs:
         with:
           repository: rocm/transformerengine
           ref: dev
-          submodules: recursive
-          fetch-depth: 0
           path: transformerengine
       - name: Print workspace
         run: |
@@ -110,15 +108,15 @@ jobs:
           mkdir -p wheelhouse && cd wheelhouse
           if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
             REL_URL="https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0"
-            curl -L --output-dir wheelhouse -O \
+            curl -L -O \
             "$REL_URL/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
-            curl -L --output-dir wheelhouse -O \
+            curl -L -O \
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
             gh run download 18666638591 -R ROCm/rocm-jax -n te-wheel-jax${{ matrix.jax-version }}-${{ needs.build-te-wheels.outputs.architecture }}
           else
             gh run download 18648819000 -R ROCm/rocm-jax -n plugin_wheels_r7.0.0
             gh run download 18666638591 -R ROCm/rocm-jax -n te-wheel-jax${{ matrix.jax-version }}-${{ needs.build-te-wheels.outputs.architecture }}
-            rm -v wheelhouse/*311*
+            rm -v *311*
           fi
       - name: Print wheels
         run: |
