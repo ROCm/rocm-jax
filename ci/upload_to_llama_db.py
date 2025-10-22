@@ -19,7 +19,8 @@ def connect_to_db():
     )
 
 
-def upload_llama_results(): # pylint: too-many-locals
+# pylint: disable=too-many-locals
+def upload_llama_results():
     """Load training summary results results to MySQL."""
     rows = []
     year = date.today().year
