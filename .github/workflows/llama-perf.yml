@@ -227,8 +227,8 @@ jobs:
       - name: Run model
         run: |
           docker exec model-run-jax${{ matrix.jax-version }}-${{ matrix.model-name }} bash -lc '
-            wget -O /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/\
-              releases/download/v1.26.0/bazelisk-linux-amd64
+            BIN_URL="https://github.com/bazelbuild/bazelisk/releases/download/"
+            wget -O /usr/local/bin/bazel "$BIN_URL/v1.26.0/bazelisk-linux-amd64"
             chmod +x /usr/local/bin/bazel
             bazel version
             apt update && apt install -y libdw1 libglib2.0-0
