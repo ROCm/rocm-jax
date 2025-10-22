@@ -207,8 +207,10 @@ jobs:
             kylix/max/execution/executors.py
           sed -i '/train_dense",/a\        "//kylix/max/projects/llama/config:train_dense_8b",' \
             kylix/max/projects/llama/BUILD
-          sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a \
-            model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh
+          sed -i '
+            s/operations\[4\]/operations[5]/;
+            /num_operation_workers=16;/a model.mha_use_transformer_engine=True;optimizer.total_steps=200;
+            ' bazel_run_anynode.sh
       - name: Run Container for ${{ matrix.jax-version }} and ${{ matrix.model-name }}
         run: |
           docker run -d \
