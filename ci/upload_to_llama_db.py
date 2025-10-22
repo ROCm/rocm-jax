@@ -10,6 +10,7 @@ import mysql.connector
 
 
 def connect_to_db():
+    """Connect to MySQL database."""
     return mysql.connector.connect(
         host=os.environ["ROCM_JAX_DB_HOSTNAME"],
         user=os.environ["ROCM_JAX_DB_USERNAME"],
@@ -18,7 +19,9 @@ def connect_to_db():
     )
 
 
+# pylint: disable=too-many-locals
 def upload_llama_results():
+    """Load training summary results results to MySQL."""
     rows = []
     year = date.today().year
 
@@ -97,12 +100,12 @@ def upload_llama_results():
             (
                 int(os.environ["GITHUB_RUN"]),
                 "ci-run",
-                "llama",
-                "9a2257b",
-                "060",
-                "072",
+                os.environ["MODEL_NAME"],
+                os.environ["TE_COMMIT_SHA"],
+                os.environ["JAX_VERSION"],
+                "702",
                 "312",
-                "MI355",
+                os.environ["RUNNER_LABEL"],
                 os.environ["GITHUB_REF"],
                 os.environ["TRIG_EVENT"],
                 os.environ["ACTOR_NAME"],
