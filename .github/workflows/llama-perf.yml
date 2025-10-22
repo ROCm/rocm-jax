@@ -159,8 +159,12 @@ jobs:
             curl -L --output-dir wheelhouse -O \
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
           else
-            gh run download $(gh run list -R ROCm/rocm-jax -w nightly.yml -L 1 --json databaseId -q '.[0].databaseId') \
-            -R ROCm/rocm-jax -n plugin_wheels_r7.0.2 -D wheelhouse
+            gh run download \
+              $(gh run list -R ROCm/rocm-jax -w nightly.yml -L 1 \
+              --json databaseId -q '.[0].databaseId') \
+              -R ROCm/rocm-jax \
+              -n plugin_wheels_r7.0.2 \
+              -D wheelhouse
             rm -v wheelhouse/*311*
           fi
       - name: Download TE wheel artifact
@@ -199,9 +203,12 @@ jobs:
           echo 'orbax-checkpoint==0.11.25' >> kylix/third_party/requirements.lock
           echo 'aiofiles==25.1.0' >> kylix/third_party/requirements.lock
           sed -i '/^wheel/s/^/# /; /^# wheel/a wheel==0.45.1' kylix/third_party/requirements.lock
-          sed -i 's/\bfun\s*=\s*self.create_train_step()/self.create_train_step()/g' kylix/max/execution/executors.py
-          sed -i '/train_dense",/a\        "//kylix/max/projects/llama/config:train_dense_8b",' kylix/max/projects/llama/BUILD
-          sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh
+          sed -i 's/\bfun\s*=\s*self.create_train_step()/self.create_train_step()/g' \
+            kylix/max/execution/executors.py
+          sed -i '/train_dense",/a\        "//kylix/max/projects/llama/config:train_dense_8b",' \
+            kylix/max/projects/llama/BUILD
+          sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a \
+            model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh
       - name: Run Container for ${{ matrix.jax-version }} and ${{ matrix.model-name }}
         run: |
           docker run -d \

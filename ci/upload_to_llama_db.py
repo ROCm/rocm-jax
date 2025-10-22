@@ -10,6 +10,7 @@ import mysql.connector
 
 
 def connect_to_db():
+    """Connect to MySQL database."""
     return mysql.connector.connect(
         host=os.environ["ROCM_JAX_DB_HOSTNAME"],
         user=os.environ["ROCM_JAX_DB_USERNAME"],
@@ -18,7 +19,8 @@ def connect_to_db():
     )
 
 
-def upload_llama_results():
+def upload_llama_results(): # pylint: too-many-locals
+    """Load training summary results results to MySQL."""
     rows = []
     year = date.today().year
 
