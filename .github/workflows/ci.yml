@@ -26,6 +26,9 @@ jobs:
       #       fails with a complaint abou the pipes module.
       python-versions: "3.11,3.12"
       rocm-version: ${{ matrix.rocm-version }}
+    secrets:
+      rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
+      rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
   call-build-docker:
     needs: call-build-wheels
     strategy:
