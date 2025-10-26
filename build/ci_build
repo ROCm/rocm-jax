@@ -35,7 +35,7 @@ def _get_labels(image_name):
             ["docker", "inspect", "--format", "{{json .Config.Labels}}", image_name]
         )
     except subprocess.CalledProcessError:
-        subprocess.check_call(["docker", "pull", image])
+        subprocess.check_call(["docker", "pull", image_name])
         out = subprocess.check_output(
             ["docker", "inspect", "--format", "{{json .Config.Labels}}", image_name]
         )
