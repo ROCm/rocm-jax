@@ -29,9 +29,16 @@ import re
 
 
 def _get_labels(image_name):
-    out = subprocess.check_output(
-        ["docker", "inspect", "--format", "{{json .Config.Labels}}", image_name]
-    )
+    """Fetch image labels via docker inspect; pull once if not cached locally."""
+    try:
+        out = subprocess.check_output(
+            ["docker", "inspect", "--format", "{{json .Config.Labels}}", image_name]
+        )
+    except subprocess.CalledProcessError:
+        subprocess.check_call(["docker", "pull", image])
+        out = subprocess.check_output(
+            ["docker", "inspect", "--format", "{{json .Config.Labels}}", image_name]
+        )
     labels = json.loads(out)
     return labels
 
@@ -190,11 +197,11 @@ def test(image_name, test_cmd=None):
 
     print("ROCm JAX Build Information")
     if "com.amdgpu.rocm_jax_commit" in labels:
-        print(f"rocm/rocm-jax commit hash: {labels['com.amdgpu.rocm_jax_commit']}")
+        print(f"rocm/rocm-jax commit hash: {labels['com.amdgpu.rocm_jax_commit']}", flush=True)
     if "com.amdgpu.jax_commit" in labels:
-        print(f"rocm/jax commit hash: {labels['com.amdgpu.jax_commit']}")
+        print(f"rocm/jax commit hash: {labels['com.amdgpu.jax_commit']}", flush=True)
     if "com.amdgpu.xla_commit" in labels:
-        print(f"rocm/xla commit hash: {labels['com.amdgpu.xla_commit']}")
+        print(f"rocm/xla commit hash: {labels['com.amdgpu.xla_commit']}", flush=True)
 
     if not test_cmd:
         test_cmd = "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && python jax_rocm_plugin/build/rocm/run_multi_gpu.py"
