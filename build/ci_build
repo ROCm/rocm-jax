@@ -29,18 +29,15 @@ import re
 
 
 def _get_labels(image_name):
-    """Fetch image labels via docker inspect; pull once if not cached locally."""
+    """Return image labels via docker inspect; print warning if image is missing."""
     try:
         out = subprocess.check_output(
             ["docker", "inspect", "--format", "{{json .Config.Labels}}", image_name]
         )
+        return json.loads(out)
     except subprocess.CalledProcessError:
-        subprocess.check_call(["docker", "pull", image_name])
-        out = subprocess.check_output(
-            ["docker", "inspect", "--format", "{{json .Config.Labels}}", image_name]
-        )
-    labels = json.loads(out)
-    return labels
+        warnings.warn(f"Image '{image_name}' not found locally.")
+        return {}
 
 
 def _get_commit_info_from_wheel():
