@@ -18,6 +18,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
         libbz2-dev liblzma-dev     \
         libncursesw5-dev xz-utils  \
         tk-dev uuid-dev            \
+        python3-pip                \
         python$PY_VERSION       && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -54,8 +55,8 @@ ENV PATH="$OPENCL_ROOT/bin:${PATH}"
 ENV PATH="/root/bin:/root/.local/bin:${PATH}"
 
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
-    pip3 install --upgrade --force-reinstall setuptools pip && \
-    pip3 install \
+    python3.11 -m pip install --upgrade --force-reinstall setuptools pip && \
+    python3.11 -m pip install \
         "numpy<2" \
         build \
         wheel \
@@ -78,7 +79,7 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
 # install jax and jaxlib from requirements file
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=build/requirements.txt,target=requirements.txt \
-    pip3 install -r requirements.txt
+    python3.11 -m pip install -r requirements.txt
 
 ARG JAX_VERSION
 ARG XLA_COMMIT

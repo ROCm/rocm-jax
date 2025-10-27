@@ -2,11 +2,12 @@
     "name": "ROCm JAX Dev Container",
     "build": {
         "dockerfile": "../docker/Dockerfile.jax-ubu22",
+        "context": "..",
         "args": {
             "PY_VERSION": "3.11",
             "ROCM_VERSION": "7.0.1"
         }
     },
-    "remoteUser": "dev",
+    "remoteUser": "root",
     "updateRemoteUserUID": true
 }
