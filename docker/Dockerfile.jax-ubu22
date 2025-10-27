@@ -1,10 +1,13 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG PY_VERSION=3.11.13
+ARG PY_VERSION=3.11
 
 # System packages needed to compile Python and installed bzip2, sqlite3 packages
 RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y --no-install-recommends software-properties-common gnupg && \
+    add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential            \
@@ -15,14 +18,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
         libbz2-dev liblzma-dev     \
         libncursesw5-dev xz-utils  \
         tk-dev uuid-dev            \
-        && apt-get clean && rm -rf /var/lib/apt/lists/*
+        python$PY_VERSION       && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Download and unpack python-v3.11
-RUN mkdir -p /tmp && cd /tmp && wget https://www.python.org/ftp/python/${PY_VERSION}/Python-${PY_VERSION}.tgz \
- && tar -xzf Python-${PY_VERSION}.tgz \
- && rm Python-${PY_VERSION}.tgz \
- && cd /tmp/Python-${PY_VERSION} && ./configure --enable-optimizations --with-lto \
- && make -j"$(nproc)" && make install && ln -s /usr/local/bin/python3 /usr/local/bin/python
 
 
 # Add target file to help determine which device(s) to build for
