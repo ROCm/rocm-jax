@@ -77,6 +77,13 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Pull images
+        env:
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+          UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
+        run: |
+          IMAGE="ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          docker pull "$IMAGE"
       - name: Run tests
         env:
           GPU_COUNT: "8"
