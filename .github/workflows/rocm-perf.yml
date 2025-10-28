@@ -10,8 +10,8 @@ jobs:
     runs-on: mi-250
     strategy:
       matrix:
-        python-version: ["3.11"]
-        rocm-version: ["7.1.0"]
+        python-version: ["3.12"]
+        rocm-version: ["7.0.2"]
 
     env:
       WORKSPACE_DIR: ${{ format(
@@ -60,13 +60,13 @@ jobs:
           python3 build/ci_build \
             --rocm-version $ROCM_VERSION \
             build_dockers \
-            --filter ubu22
+            --filter ubu24
 
       - name: Build Docker image for MaxText
         run: |
           IMAGE=ghcr.io/rocm/maxtext-jax-rocm${ROCM_VERSION//.}
           docker build \
-            --build-arg BASE_IMAGE=jax-ubu22.rocm${ROCM_VERSION//.} \
+            --build-arg BASE_IMAGE=jax-ubu24.rocm${ROCM_VERSION//.} \
             --build-arg MAXTEXT_BRANCH=rv_jax \
             -f ci/Dockerfile.maxtext \
             -t $IMAGE:nightly \
