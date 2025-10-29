@@ -198,8 +198,8 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
         f"_triton.{pyext}",
         f"rocm_plugin_extension.{pyext}",
     ]
-    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib"
-    # patchelf --force-rpath --set-rpath $RUNPATH $so
+    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
+    # patchelf --set-rpath $RUNPATH $so
     for f in files:
         so_path = os.path.join(plugin_dir, f)
         fix_perms = False
@@ -207,9 +207,7 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
         if not perms & stat.S_IWUSR:
             fix_perms = True
             os.chmod(so_path, perms | stat.S_IWUSR)
-        subprocess.check_call(
-            ["patchelf", "--force-rpath", "--set-rpath", runpath, so_path]
-        )
+        subprocess.check_call(["patchelf", "--set-rpath", runpath, so_path])
         if fix_perms:
             os.chmod(so_path, perms)
 
