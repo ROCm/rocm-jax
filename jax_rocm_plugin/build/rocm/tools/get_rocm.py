@@ -367,8 +367,8 @@ def setup_repos_ubuntu(rocm_version_str):
 
     with open("/etc/apt/sources.list.d/amdgpu.list", "w") as fd:
         fd.write(
-            ("deb [arch=amd64] " "https://repo.radeon.com/amdgpu/%s/ubuntu %s main\n")
-            % (rocm_version_str, codename)
+            ("deb [arch=amd64] " "https://repo.radeon.com/amdgpu/latest/ubuntu %s main\n")
+            % codename
         )
 
     with open("/etc/apt/sources.list.d/rocm.list", "w") as fd:
