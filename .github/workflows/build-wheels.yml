@@ -23,6 +23,11 @@ on:
         required: false
         default: 'plugin_wheels'
         type: string
+    secrets:
+      rbe_ci_key:
+        required: true
+      rbe_ci_cert:
+        required: true
 
 jobs:
   build-plugin-wheels:
@@ -51,6 +56,13 @@ jobs:
           rocm-smi -a || true
           rocminfo | grep gfx || true
       - uses: actions/checkout@v4
+      - name: Get RBE cluster keys
+        env:
+          RBE_CI_CERT: ${{ secrets.rbe_ci_cert }}
+          RBE_CI_KEY: ${{ secrets.rbe_ci_key }}
+        run: |
+          echo "$RBE_CI_CERT" >> ./jax_rocm_plugin/ci-cert.crt
+          echo "$RBE_CI_KEY" >> ./jax_rocm_plugin/ci-cert.key
       - name: Build plugin wheels
         run: |
           python3 build/ci_build \
@@ -59,7 +71,8 @@ jobs:
             --rocm-version="${{ inputs.rocm-version }}" \
             --rocm-build-job="${{ inputs.rocm-build-job }}" \
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
-            dist_wheels
+            dist_wheels \
+            --rbe
       - name: Archive plugin wheels
         uses: actions/upload-artifact@v4
         with:
