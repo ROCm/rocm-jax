@@ -80,6 +80,5 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "apt update && apt install -y libdw1 && \
-                        pytest -c ci/pytest_skips.ini jax/tests/core_test.py"
+            --test-cmd "pytest -c ci/pytest_skips.ini jax/tests/core_test.py"
 

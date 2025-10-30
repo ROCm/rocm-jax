@@ -91,8 +91,6 @@ jobs:
 
       - name: Run MaxText training and save logs
         run: |
-          docker exec maxtext_container bash -c \
-            "apt update && apt install -y libdw1"
           for config in \
             MaxText/configs/models/gpu/llama2_7b_rocm.yml \
             MaxText/configs/models/gpu/gemma_2b_rocm.yml \
