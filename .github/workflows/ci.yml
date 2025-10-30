@@ -83,5 +83,5 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest jax/tests/core_test.py"
+            --test-cmd "bash tests/jax_bazel_rbe.sh"
 
