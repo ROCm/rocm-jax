@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Script that builds a jax-rocm-plugin wheel for ROCm kernels.
+# Most users should not run this script directly; use build.py instead.
+# pylint: disable=duplicate-code
 
-This script is intended to be run via bazel run as part of the JAX ROCm plugin
-build process. Most users should not run this script directly; use build.py instead.
+"""
+Script to build a JAX ROCm plugin wheel. Intended for use via Bazel.
 """
 
 import argparse
@@ -26,7 +27,7 @@ import stat
 import subprocess
 import tempfile
 
-# pylint: disable=import-error,invalid-name,consider-using-with
+# pylint: disable=import-error
 from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
 
@@ -99,11 +100,10 @@ args = parser.parse_args()
 r = runfiles.Create()
 
 
-def write_setup_cfg(setup_sources_path, cpu):
+def write_setup_cfg(setup_cfg_path, cpu):
     """Write setup.cfg file for wheel build."""
     tag = build_utils.platform_tag(cpu)
-    cfg_path = setup_sources_path / "setup.cfg"
-    with open(cfg_path, "w", encoding="utf-8") as f:
+    with open(setup_cfg_path / "setup.cfg", "w", encoding="utf-8") as f:
         f.write(
             f"""[metadata]
 license_files = LICENSE.txt
@@ -182,47 +182,49 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
         raise RuntimeError(mesg) from ex
 
     shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
-    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib"
+    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
     # patchelf --force-rpath --set-rpath $RUNPATH $so
     fix_perms = False
     perms = os.stat(shared_obj_path).st_mode
     if not perms & stat.S_IWUSR:
         fix_perms = True
         os.chmod(shared_obj_path, perms | stat.S_IWUSR)
-    subprocess.check_call(
-        ["patchelf", "--force-rpath", "--set-rpath", runpath, shared_obj_path]
-    )
+    subprocess.check_call(["patchelf", "--set-rpath", runpath, shared_obj_path])
     if fix_perms:
         os.chmod(shared_obj_path, perms)
 
 
-tmpdir = None
-sources_path = args.sources_path
-if sources_path is None:
-    tmpdir = tempfile.TemporaryDirectory(prefix="jaxgpupjrt")
-    sources_path = tmpdir.name
+def main():
+    """Main entry point for building the ROCm plugin wheel."""
+    sources_path = args.sources_path
+    with tempfile.TemporaryDirectory(prefix="jaxgpupjrt") as tmpdir:
 
-try:
-    os.makedirs(args.output_path, exist_ok=True)
+        if sources_path is None:
+            sources_path = tmpdir
 
-    if args.enable_rocm:
-        prepare_rocm_plugin_wheel(
-            pathlib.Path(sources_path), cpu=args.cpu, rocm_version=args.platform_version
-        )
-        package_name = "jax rocm plugin"
-    else:
-        raise ValueError("Unsupported backend. Choose 'rocm'.")
+        os.makedirs(args.output_path, exist_ok=True)
 
-    if args.editable:
-        build_utils.build_editable(sources_path, args.output_path, package_name)
-    else:
-        git_hash = build_utils.get_githash(args.rocm_jax_git_hash)
-        build_utils.build_wheel(
-            sources_path,
-            args.output_path,
-            package_name,
-            git_hash=git_hash,
-        )
-finally:
-    if tmpdir:
-        tmpdir.cleanup()
+        if args.enable_rocm:
+            prepare_rocm_plugin_wheel(
+                pathlib.Path(sources_path),
+                cpu=args.cpu,
+                rocm_version=args.platform_version,
+            )
+            package_name = "jax rocm plugin"
+        else:
+            raise ValueError("Unsupported backend. Choose 'rocm'.")
+
+        if args.editable:
+            build_utils.build_editable(sources_path, args.output_path, package_name)
+        else:
+            git_hash = build_utils.get_githash(args.rocm_jax_git_hash)
+            build_utils.build_wheel(
+                sources_path,
+                args.output_path,
+                package_name,
+                git_hash=git_hash,
+            )
+
+
+if __name__ == "__main__":
+    main()
