@@ -16,8 +16,9 @@ build:rocm_rbe --spawn_strategy=remote,local
 build:rocm_rbe --grpc_keepalive_time=30s
 build:rocm_rbe --repo_env=REMOTE_GPU_TESTING=1
 
-test:rocm_rbe --remote_executor="grpcs://wardite.cluster.engflow.com"
-test:rocm_rbe --remote_cache="grpcs://wardite.cluster.engflow.com"
+test:rocm_rbe --host_platform="//platform/linux:ubuntu_gpu"
+test:rocm_rbe --extra_execution_platforms="//platform/linux:ubuntu_gpu"
+test:rocm_rbe --platforms="//platform/linux:ubuntu_gpu"
 test:rocm_rbe --remote_timeout=3600
 test:rocm_rbe --jobs=200
 test:rocm_rbe --strategy=TestRunner=remote,local

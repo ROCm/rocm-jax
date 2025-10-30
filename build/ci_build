@@ -205,7 +205,8 @@ def test(image_name, test_cmd=None):
         print(f"rocm/xla commit hash: {labels['com.amdgpu.xla_commit']}", flush=True)
 
     if not test_cmd:
-        test_cmd = "tests/jax_bazel_rbe.sh"
+        test_cmd = "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && " \
+            "python jax_rocm_plugin/build/rocm/run_multi_gpu.py"
 
     gpu_args = [
         "--device=/dev/kfd",

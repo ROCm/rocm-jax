@@ -10,20 +10,20 @@ platform(
         "@bazel_tools//tools/cpp:clang",
     ],
     exec_properties = {
-        "container-image": "docker://938540721288.dkr.ecr.us-east-1.amazonaws.com/amd/rbe@sha256:48515bbef9780ce32bdadd6e236d344217009fec4ed47a7809f41707ef8b8551",
+        "container-image": "docker://938540721288.dkr.ecr.us-east-1.amazonaws.com/amd/jax-build@sha256:3ea3a72313f56b892160316f489992a7f6e63aa858aac2a729ada80850aa7f46",
         "OSFamily": "Linux",
     },
 )
 
 platform(
-    name = "manylinux_gpu",
+    name = "ubuntu_gpu",
     constraint_values = [
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
         "@bazel_tools//tools/cpp:clang",
     ],
     exec_properties = {
-        "container-image": "docker://938540721288.dkr.ecr.us-east-1.amazonaws.com/amd/rbe@sha256:48515bbef9780ce32bdadd6e236d344217009fec4ed47a7809f41707ef8b8551",
+        "container-image": "docker://938540721288.dkr.ecr.us-east-1.amazonaws.com/amd/jax-test@sha256:5ed826cb1e37e3a044f8b6f437368fe9104a64841c61ca10e28de8920b24a351",
         "OSFamily": "Linux",
         "Pool": "linux_x64_gpu",
     },
