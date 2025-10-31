@@ -54,11 +54,9 @@ LAST_CODE = 0
 BASE_DIR = "./logs"
 
 
-def extract_filename(path):
-    """Extract filename without extension from a path."""
-    base_name = os.path.basename(path)
-    file_name, _ = os.path.splitext(base_name)
-    return file_name
+def extract_test_name(path: str) -> str:
+    """Return the base filename (without .py and without test suffixes)."""
+    return os.path.splitext(os.path.basename(path.split("::")[0]))[0]
 
 
 def combine_json_reports():
@@ -157,14 +155,14 @@ def collect_testmodules(ignore_skipfile=True):
     with open("collected_tests.txt", "w") as f:
         subprocess.run(pytest_cmd, stdout=f)
 
-    # create key value store for logfile_name, test-ids
+    # create key value store for test_name, test-ids
     tests_count=0
     tests_dict = defaultdict(list)
     with open("collected_tests.txt") as f:
         for test_id in f:
              if test_id.startswith(("tests/", "./tests/")):
-                logfile_name  = extract_filename(test_id.strip())
-                tests_dict[logfile_name].append(f"jax/{test_id.strip()}")
+                test_name  = extract_test_name(test_id.strip())
+                tests_dict[test_name].append(f"jax/{test_id.strip()}")
                 tests_count += 1
 
     print(f"test-files={len(tests_dict)}, total number of tests={tests_count}")
