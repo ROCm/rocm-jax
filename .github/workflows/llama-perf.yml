@@ -231,7 +231,7 @@ jobs:
             wget -O /usr/local/bin/bazel "$BIN_URL/v1.26.0/bazelisk-linux-amd64"
             chmod +x /usr/local/bin/bazel
             bazel version
-            apt update && apt install -y libdw1 libglib2.0-0
+            apt update && apt install -y libglib2.0-0
             export TRAIN_SETTING="${{ matrix.model-name }}"
             cd /workspace && bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
             tail -n 25 logs.log > training_summary.txt'
