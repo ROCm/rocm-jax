@@ -15,6 +15,9 @@ RUN --mount=type=cache,target=/var/cache/apt \
         libbz2-dev liblzma-dev     \
         libncursesw5-dev xz-utils  \
         tk-dev uuid-dev            \
+        # workaround for ROCm 7.0.x missing dep
+        # Remove once ROCm/ROCm-docker#158 landed
+        libdw1                     \
         && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Download and unpack python-v3.11

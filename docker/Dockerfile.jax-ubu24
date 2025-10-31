@@ -9,6 +9,9 @@ RUN --mount=type=cache,target=/var/cache/apt \
 RUN apt-get update && apt-get install -y \
     sqlite3 libsqlite3-dev \
     libbz2-dev \
+    # workaround for ROCm 7.0.x missing dep
+    # Remove once ROCm/ROCm-docker#158 landed
+    libdw1t64 \
     && rm -rf /var/lib/apt/lists/*
 
 # Add target file to help determine which device(s) to build for
