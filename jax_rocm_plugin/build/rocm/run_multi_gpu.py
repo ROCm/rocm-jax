@@ -146,6 +146,7 @@ def get_deselected_tests(test_name):
 
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
+# pylint: disable=too-many-branches
 def run_multi_gpu_test(
     test_file, gpu_count, continue_on_fail, max_gpus=None, ignore_skipfile=False
 ):
