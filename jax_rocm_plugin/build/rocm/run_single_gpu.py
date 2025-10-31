@@ -37,28 +37,14 @@ from collections import defaultdict
 # Add the configuration directory to Python path
 sys.path.insert(0, "jax_rocm_plugin/build/rocm")
 
-# Import multi-GPU tests configuration
-try:
-    from multi_gpu_tests_config import MULTI_GPU_TESTS
-except ImportError as e:
-    print(
-        f"Error: Could not import multi_gpu_tests_config from jax_rocm_plugin/build/rocm/: {e}"
-    )
-    print(
-        "Please ensure multi_gpu_tests_config.py exists in jax_rocm_plugin/build/rocm/ directory"
-    )
-    sys.exit(1)
-
 GPU_LOCK = threading.Lock()
 LAST_CODE = 0
 BASE_DIR = "./logs"
 
 
-def extract_filename(path):
-    """Extract filename without extension from a path."""
-    base_name = os.path.basename(path)
-    file_name, _ = os.path.splitext(base_name)
-    return file_name
+def extract_test_name(path: str) -> str:
+    """Return the base filename (without .py and without test suffixes)."""
+    return os.path.splitext(os.path.basename(path.split("::")[0]))[0]
 
 
 def combine_json_reports():
@@ -130,13 +116,15 @@ def parse_test_log(log_file):
 def collect_testmodules(ignore_skipfile=True):
     """Collect all test modules, excluding multi-GPU tests."""
 
-    #copy to jax as it's node ids for pytest.
+    # copy to jax as it's node ids for pytest.
     shutil.copy("ci/pytest_drop_test_list.ini", "jax/")
 
     # jax/pytest_drop_test_list has ingore list for multi-gpu
-    # append skip list as -deselect 
+    # append skip list as -deselect
     if not ignore_skipfile:
-        with open("./jax/pytest_drop_test_list.ini", "a") as outfile, open("ci/pytest_skips.ini") as infile:
+        with open(
+            "./jax/pytest_drop_test_list.ini", "a", encoding="utf-8"
+        ) as outfile, open("ci/pytest_skips.ini", encoding="utf-8") as infile:
             outfile.write(infile.read())
 
     pytest_cmd = [
@@ -154,21 +142,25 @@ def collect_testmodules(ignore_skipfile=True):
     print(f"collect_testmodules: cmd={pytest_cmd}")
 
     # run pytest collection and save in file collected_tests.txt
-    with open("collected_tests.txt", "w") as f:
-        subprocess.run(pytest_cmd, stdout=f)
+    with open("collected_tests.txt", "w", encoding="utf-8") as f:
+        try:
+            subprocess.run(pytest_cmd, stdout=f, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"command failed: {e}")
 
-    # create key value store for logfile_name, test-ids
-    tests_count=0
+    # create key value store for test_name, test-ids
+    tests_count = 0
     tests_dict = defaultdict(list)
-    with open("collected_tests.txt") as f:
+    with open("collected_tests.txt", "r", encoding="utf-8") as f:
         for test_id in f:
-             if test_id.startswith(("tests/", "./tests/")):
-                logfile_name  = extract_filename(test_id.strip())
-                tests_dict[logfile_name].append(f"jax/{test_id.strip()}")
+            if test_id.startswith(("tests/", "./tests/")):
+                test_name = extract_test_name(test_id.strip())
+                tests_dict[test_name].append(f"jax/{test_id.strip()}")
                 tests_count += 1
 
     print(f"test-files={len(tests_dict)}, total number of tests={tests_count}")
     return tests_dict
+
 
 def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
     """Run a single test module on an available GPU."""
@@ -232,6 +224,7 @@ def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
                 LAST_CODE = return_code
 
 
+# pylint: disable=too-many-branches
 def append_abort_to_json(json_file, testfile, abort_info):
     # pylint: disable=too-many-locals
     """Append abort info to JSON report in pytest format."""
@@ -536,15 +529,16 @@ def _update_html_json_data(
             html_content,
         )
 
-    except (  # pylint: disable=broad-exception-caught
+    except (  # pylint: disable=broad-except
         json.JSONDecodeError,
         Exception,
-    ) as ex:  # pylint: disable=broad-exception-caught
+    ) as ex:  # pylint: disable=broad-except
         print(f"Warning: Could not update JSON data in HTML file: {ex}")
 
     return html_content
 
 
+# pylint: disable=too-many-branches
 def append_abort_to_html(html_file, testfile, abort_info):
     """Generate or append abort info to pytest-html format HTML report."""
     try:
@@ -712,7 +706,7 @@ def _create_new_html_file(
 
     except (OSError, IOError) as io_err:
         print(f"Failed to write new HTML report for {testfile}: {io_err}")
-    except Exception as ex:  # pylint: disable=broad-exception-caught
+    except Exception as ex:  # pylint: disable=broad-except
         print(f"Unexpected error creating new HTML report for {testfile}: {ex}")
         traceback.print_exc()
 
@@ -862,7 +856,7 @@ def handle_abort(json_file, html_file, last_running_file, testfile):
         # Remove the last running file after successful processing
         # os.remove(last_running_file)
         return True
-    except Exception as ex:  # pylint: disable=broad-exception-caught
+    except Exception as ex:  # pylint: disable=broad-except
         print(f"Error logging abort for {testfile}: {ex}")
         # Don't remove the file if there was an error processing it
         return False
