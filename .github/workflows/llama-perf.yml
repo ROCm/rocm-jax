@@ -164,11 +164,10 @@ jobs:
                 -R ROCm/rocm-jax \
                 -w nightly.yml \
                 -L 200 \
-                --json databaseId,event,conclusion,createdAt \
+                --json databaseId,event,createdAt \
                 -q '
                   map(select(
-                    .event == "schedule" and
-                    .conclusion == "success"))
+                    .event == "schedule"))
                   | max_by(.createdAt)
                   | .databaseId') \
               -R ROCm/rocm-jax \
