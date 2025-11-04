@@ -1,0 +1,89 @@
+config = {
+    // max_map_keys = 800;
+    perf_rb_pages = 4096
+}
+
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel
+{
+    //printf("%s %u,%llx,%llx,%llx\n", probe, tid(init), arg0,arg1,arg2);
+
+    // arg0 is void* kernelFn and is the same for all invocations
+    // arg1 is bool is_ext and  is the same for all invocations
+
+    $n_tasks_m_1 = (arg2 & 3);
+    $ptr = (uint64*) (arg2 & 0xFFFFFFFFFFFFFFFC);
+
+    if (0==$n_tasks_m_1){
+        printf("%s %u,%llx, %llx, %llx,%llx\n", probe,tid(init),arg2,*$ptr,
+            *($ptr+1),*($ptr+2) );
+    }else if (1==$n_tasks_m_1){
+        printf("%s %u,%llx, %llx, %llx,%llx, %llx,%llx\n", probe,tid(init),arg2,*$ptr,
+            *($ptr+1),*($ptr+2),
+            *($ptr+3),*($ptr+4)
+        );
+    }else if (2==$n_tasks_m_1){
+        printf("%s %u,%llx, %llx, %llx,%llx, %llx,%llx, %llx,%llx\n", probe,tid(init),arg2,*$ptr,
+            *($ptr+1),*($ptr+2),
+            *($ptr+3),*($ptr+4),
+            *($ptr+5),*($ptr+6)
+        );
+    }else if (3==$n_tasks_m_1){
+        printf("%s %u,%llx, %llx, %llx,%llx, %llx,%llx, %llx,%llx, %llx,%llx\n", probe,tid(init),arg2,*$ptr,
+            *($ptr+1),*($ptr+2),
+            *($ptr+3),*($ptr+4),
+            *($ptr+5),*($ptr+6),
+            *($ptr+7),*($ptr+8)
+        );
+    }else{
+        printf("UNSUPPORTED TASK COUNT = %u!\n", $n_tasks_m_1);
+        exit();
+    }
+
+}
+
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback
+{
+    printf("%s %u,%llx\n", probe, tid(init), arg0);
+}
+
+/*
+uprobe:/opt/rocm/lib/librccl.so.1:nccl*
+//, uprobe:/opt/rocm/lib/libamdhip64.so:hipCtxSetCurrent
+{
+    $thrd = tid(init);
+
+    // $ip = reg("ip");
+
+    $dpt = @depth[$thrd];
+    @depth[$thrd]++;
+
+    // $ts_start = nsecs;
+    if ($dpt <= 0){
+        // @start[$thrd] = $ts_start;
+        // @funcs[$thrd] = $ip;
+        printf("%s %u\n", probe, $thrd);
+    }
+}
+
+uretprobe:/opt/rocm/lib/librccl.so.1:nccl*
+// , uretprobe:/opt/rocm/lib/libamdhip64.so:hipCtxSetCurrent
+{
+    // $ts_end = nsecs;
+    $thrd = tid(init);
+
+    @depth[$thrd]--;
+    $dpt = @depth[$thrd];
+    // $ts_start = @start[$thrd];
+    // $callee_addr = @funcs[$thrd];
+
+    if ($dpt <= 0){
+        // delete(@start, $thrd);
+        //delete(@start[$thrd]);
+
+        // delete(@funcs, $thrd);
+        //delete(@funcs[$thrd]);
+        
+        printf("%s %u\n", probe, $thrd);
+    }
+}
+*/

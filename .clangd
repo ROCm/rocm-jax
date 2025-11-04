@@ -1,0 +1,10 @@
+InlayHints:
+  DefaultArguments: true
+  TypeNameLimit: 0
+
+Hover:
+  ShowAKA: true
+
+Documentation:
+  CommentFormat: Doxygen
+  

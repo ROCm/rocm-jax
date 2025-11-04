@@ -1,0 +1,74 @@
+config = {
+    max_map_keys = 800;
+    perf_rb_pages = 4096
+}
+
+
+//uprobe:/opt/rocm/lib/libamdhip64.so:hipLaunchByPtr
+//uprobe:/opt/rocm/lib/libamdhip64.so:hipLaunchKernel
+//uprobe:/opt/rocm/lib/libamdhip64.so:hipExtLaunchKernel,
+
+uprobe:/opt/rocm/lib/librccl.so.1:nccl*,
+uprobe:/opt/rocm/lib/libamdhip64.so:hipCtxSetCurrent
+{
+    $thrd = tid;
+    $thrd2 = tid(init);
+
+    @t1[$thrd]++;
+    @t2[$thrd2]++;
+
+    // $ip = reg("ip");
+
+    $dpt = @depth[$thrd];
+    @depth[$thrd]++;
+
+    // $ts_start = nsecs;
+    if ($dpt <= 0){
+        if ($dpt < 0){
+            printf("NEGATIVE DEPTH");
+            // signal("KILL");
+            exit();
+        }
+
+        /* @start[$thrd] = $ts_start;
+        @funcs[$thrd] = $ip; */
+    }
+    // printf("%s, %d, 0x%llx, %u, %lld, %llx,%llx,%llx,%llx,%llx,%llx\n", probe, $dpt, $ip, $thrd, $ts_start, arg0,arg1,arg2,arg3,arg4,arg5);
+    // printf("%s: %d, %d, %s\n", probe, $pdiff, $diff, $pdiff == 0 || $pdiff==$diff ? "" : "BAD");
+    // printf("%s: %u, %d, %u\n", probe, $thrd, $dpt, $thrd2);
+    printf("%s: %u, %u, %u\n", probe, $thrd, @t1[$thrd], @t2[$thrd2]);
+}
+
+uretprobe:/opt/rocm/lib/librccl.so.1:nccl*,
+uretprobe:/opt/rocm/lib/libamdhip64.so:hipCtxSetCurrent
+{
+    // $ts_end = nsecs;
+    $thrd = tid;
+    $thrd2 = tid(init);
+
+    @t1[$thrd]++;
+    @t2[$thrd2]++;
+
+    @depth[$thrd]--;
+    $dpt = @depth[$thrd];
+    /* $ts_start = @start[$thrd];
+    $callee_addr = @funcs[$thrd]; */
+
+    if ($dpt <= 0){
+        if ($dpt < 0){
+            printf("NEGATIVE DEPTH");
+            // signal("KILL");
+            exit();
+        }
+
+        // delete(@start, $thrd);
+        //delete(@start[$thrd]);
+
+        // delete(@funcs, $thrd);
+        //delete(@funcs[$thrd]);
+    }
+    //printf("%s, %d, 0x%llx, 0x%llx, %u, %lld, %lld\n", probe, $dpt, reg("ip"), $callee_addr, $thrd, $ts_end, ($ts_end - $ts_start));
+    //printf("%s: %d, %d, %s\n", probe, $pdiff, $diff, $pdiff == 0 || $pdiff==$diff ? "" : "BAD");
+    // printf("%s: %u, %d, %u\n", probe, $thrd, $dpt, $thrd2);
+    printf("%s: %u, %u, %u\n", probe, $thrd, @t1[$thrd], @t2[$thrd2]);
+}

@@ -1,0 +1,50 @@
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390712,4ea26d0, 100020904, 7f3effe4d100,7f3effe4d100
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390703,4ea26e8, 100020904, 7fb1a0b54c00,7fb1a0b54c00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390709,4ea2700, 100020904, 7f641f24d100,7f641f24d100
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390706,4ea2718, 100020904, 7f893e64d100,7f893e64d100
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390712,4ea2733, 8000000002, 7f3effe49b00,7f3effe4cc00, 7f3effe48b00,7f3effe4cb00, 7f3effe48b00,7f3effe4bb00, 7f3effe49b00,7f3effe4ab00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390703,4ea277b, 8000000002, 7fb1a0b51700,7fb1a0b54700, 7fb1a0b50700,7fb1a0b0e500, 7fb1a0b50700,7fb1a0b53700, 7fb1a0b51700,7fb1a0b52700
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390709,4ea27c3, 8000000002, 7f641f249b00,7f641f24cc00, 7f641f248b00,7f641f24cb00, 7f641f248b00,7f641f24bb00, 7f641f249b00,7f641f24ab00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390706,4ea280b, 8000000002, 7f893e649b00,7f893e64cc00, 7f893e648b00,7f893e64cb00, 7f893e648b00,7f893e64bb00, 7f893e649b00,7f893e64ab00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390709,4ea2850, 1000000000002, 7f641f24dd00,7f641f226b00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390703,4ea2868, 1000000000002, 7fb1a0b55800,7fb1a0b2e700
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390712,4ea2880, 1000000000002, 7f3effe4dd00,7f3effe26b00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390706,4ea2898, 1000000000002, 7f893e64dd00,7f893e626b00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390712,4ea28b0, 2000000000904, 7f3effe4dd00,7f3effe4dd00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390709,4ea28c8, 2000000000904, 7f641f24dd00,7f641f24dd00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390703,4ea28e0, 2000000000904, 7fb1a0b55800,7fb1a0b55800
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390706,4ea28f8, 2000000000904, 7f893e64dd00,7f893e64dd00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390712,4ea2910, 100000704, 7f3f04ac0980,7f3f04ac0980
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390709,4ea2928, 100000704, 7f6423ec0980,7f6423ec0980
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390703,4ea2940, 100000704, 7fb1a57c8480,7fb1a57c8480
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390706,4ea2958, 100000704, 7f89432c0980,7f89432c0980
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390709,4ea2988, 500020704, 7f641f24cf00,7f641f24cf00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390703,4ea2970, 500020704, 7fb1a0b54a00,7fb1a0b54a00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390712,4ea29b8, 500020704, 7f3effe4cf00,7f3effe4cf00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390706,4ea29a0, 500020704, 7f893e64cf00,7f893e64cf00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390709,4ea29d1, 8000000903, 7f6423e8dd00,7f6423ebff00, 7f6423ebfd00,7f641f24cc00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390703,4ea29f9, 8000000903, 7fb1a5795800,7fb1a57c7a00, 7fb1a57c7800,7fb1a0b54700
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390712,4ea2a21, 8000000903, 7f3f04a8dd00,7f3f04abff00, 7f3f04abfd00,7f3effe4cc00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390706,4ea2a49, 8000000903, 7f894328dd00,7f89432bff00, 7f89432bfd00,7f893e64cc00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390709,4ea2a70, 1000000000903, 7f641f24dd00,7f641f226b00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390712,4ea2a88, 1000000000903, 7f3effe4dd00,7f3effe26b00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390703,4ea2aa0, 1000000000903, 7fb1a0b55800,7fb1a0b2e700
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390706,4ea2ab8, 1000000000903, 7f893e64dd00,7f893e626b00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390703,4ea2ad0, 4800000904, 7fb1a0b55800,7fb1a0b55800
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea280b
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea27c3
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea277b
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea2733
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea26d0
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea26e8
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea2700
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea2718
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea2850
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea2880
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea28b0
+uprobe:/opt/rocm/lib/librccl.so.1:arechCallback 2390683,4ea28c8
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390712,4ea2ae8, 4800000904, 7f3effe4dd00,7f3effe4dd00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390709,4ea2b00, 4800000904, 7f641f24dd00,7f641f24dd00
+uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel 2390706,4ea2b18, 4800000904, 7f893e64dd00,7f893e64dd00
+
+
