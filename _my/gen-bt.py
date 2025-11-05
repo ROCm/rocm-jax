@@ -7,7 +7,8 @@ g_outfile = "rccl2.2.bt"
 g_work_dir = os.path.dirname(__file__)
 g_outfilepath = g_work_dir + "/" + g_outfile
 
-g_lib = "/opt/rocm/lib/librccl.so.1"
+g_lib_rccl = "/opt/rocm/lib/librccl.so.1"
+g_lib_hip = "/opt/rocm/lib/libamdhip64.so"
 
 g_config = """config = {
     max_map_keys = 8;            // default max number of keys in a map
@@ -144,8 +145,8 @@ g_tpl_kernelCallback = r"""{
 # TODO: streams for AR & RS + HIP devices&crosslinking by device
 
 def materialize_template() -> str:
-    def make_header(probe, func):
-        return f"{probe}:{g_lib}:{func}"
+    def make_header(probe, func, lib=g_lib_rccl):
+        return f"{probe}:{lib}:{func}"
 
     func_AllRedScat = ["ncclAllReduce", "ncclReduceScatter"]
     uretprobe_funcs_simple = g_functions_simple + func_AllRedScat + ["ncclAllGather"]
@@ -220,6 +221,13 @@ def materialize_template() -> str:
         g_tpl_LaunchKernel,
         make_header("uprobe", "arechCallback"),
         g_tpl_kernelCallback,
+        
+        ##### HIP
+        ## hipDeviceSynchronize is NOT used in between
+        #make_header("uprobe", "hipDeviceSynchronize", g_lib_hip), # no retprobe
+        #r"""{
+        #printf("HS %llx,%llx\n", tid(init),nsecs);
+        #}"""
     ]
 
     return "\n".join(ret)
