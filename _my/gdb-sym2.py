@@ -39,7 +39,7 @@ PROBE_ID_2_NAME = {
     "AG": "ncclAllGather",
     "AR": "ncclAllReduce",
     "CS": "ncclCommSplit",
-    "IC": "ncclCommInitRankConfig",    
+    "IC": "ncclCommInitRankConfig",
     "GE": "ncclGroupEnd",
     "GS": "ncclGroupStart",
     "RS": "ncclReduceScatter",
@@ -154,21 +154,23 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
     )
 
     r_entry2_AllRedScat = re.compile(
-        r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*,\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<red_op>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)$"
+        r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*"
+        r",\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<red_op>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*$"
     )
 
     r_entry2_AllGath = re.compile(
-        r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*,\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)$"
+        r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*"
+        r",\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<stream>[0-9a-fA-F]+)\s*$"
     )
     r_entry2_InitRankCfg = re.compile(
         r",\s*(?P<nranks>[0-9a-fA-F]+)\s*,\s*(?P<rank>[0-9a-fA-F]+)$"
     )
     r_entry2_split = re.compile(
-        r",\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<color>[0-9a-fA-F]+)\s*,\s*(?P<key>[0-9a-fA-F]+)$"
+        r",\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<color>[0-9a-fA-F]+)\s*,\s*(?P<key>[0-9a-fA-F]+)\s*$"
     )
     # func_tag is used to match to a corresponding completion callback
     r_entry2_LaunchKernel = re.compile(
-        r",\s*(?P<func_tag>[0-9a-fA-F]+)\s*,\s*(?P<countRedopDtypeCollt>[0-9a-fA-F]+)\s*,\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
+        r",\s*(?P<func_tag>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<stream>[0-9a-fA-F]+)\s*,\s*(?P<countRedopDtypeCollt>[0-9a-fA-F]+)\s*,\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
     )
 
     r_LaunchKernel_other_bufs = re.compile(
@@ -248,6 +250,10 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
                     assert m_launch_kernel
                     func_tag = int(m_launch_kernel["func_tag"], 16)
                     assert func_tag != 0
+                    comm = int(m_launch_kernel["comm"], 16)
+                    assert comm != 0
+                    stream = int(m_launch_kernel["stream"], 16)
+                    assert stream != 0
                     countRedopDtypeCollt = int(
                         m_launch_kernel["countRedopDtypeCollt"], 16
                     )
@@ -282,6 +288,8 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
                         "count": count,
                         "dtype": dtype,
                         "coll_type": coll_type,
+                        "comm": comm,
+                        "stream": stream,
                     }
                     if collectiveHasReduction(coll_type):
                         suppl["red_op"] = red_op
@@ -538,23 +546,44 @@ class MyTraceBuilder:
             return sym + args
 
         # Define a unique ID for this sequence of packets (generate once per trace producer)
-        PACKET_SEQUENCE_ID = 0  # Choose any unique integer
+        PACKET_SEQUENCE_ID = 1  # Choose any unique integer
+
+        use_tid_pid = False
+
+        # 1. Define the Process Track (Optional, but good for naming the process)
+        if use_tid_pid:
+            print(
+                "\nWARNING: Using tid and pid is likely buggy and might result in incorrect trace!\n"
+                "Pay particular attention to the length of events and cross check with the log!\n\n"
+            )
+            # there's probably a bug somewhere, but I don't know perfetto that well
+            packet = builder.add_packet()
+            packet.timestamp = 1
+            packet.track_descriptor.uuid = 999
+            packet.track_descriptor.process.pid = 1
+            packet.track_descriptor.process.process_name = "Python"
 
         unique_track_ids = set[int]()  # for sanity check
 
         for tid, call_list in calls.items():
             # Define a unique UUID for your custom track (generate a 64-bit random number)
-            CUSTOM_TRACK_UUID = tid
-            assert CUSTOM_TRACK_UUID not in unique_track_ids
-            unique_track_ids.add(CUSTOM_TRACK_UUID)
+            MAIN_TRACK_UUID = tid
+            assert MAIN_TRACK_UUID not in unique_track_ids
+            unique_track_ids.add(MAIN_TRACK_UUID)
 
             # 1. Define the Custom Track
             # This packet describes the track on which your events will be displayed.
             # Emit this once at the beginning of your trace.
             packet = builder.add_packet()
-            packet.track_descriptor.uuid = CUSTOM_TRACK_UUID
+            packet.track_descriptor.uuid = MAIN_TRACK_UUID
             main_track_name = f"Thread {tid}"
-            packet.track_descriptor.name = main_track_name
+            if use_tid_pid:
+                packet.timestamp = 2
+                packet.track_descriptor.thread.pid = 1
+                packet.track_descriptor.thread.tid = tid
+                packet.track_descriptor.thread.thread_name = main_track_name
+            else:
+                packet.track_descriptor.name = main_track_name
 
             for call_idx, vals in enumerate(call_list):
                 idx, addr, ts_start, ts_end, caller_addr, suppl = vals
@@ -569,6 +598,10 @@ class MyTraceBuilder:
                     # creating a track for potentially overlapping (with anything) launch
                     packet = builder.add_packet()
                     packet.track_descriptor.uuid = this_event_track_id
+                    if use_tid_pid:
+                        packet.timestamp = ts_start - 1
+                        packet.track_descriptor.thread.pid = 1
+                        packet.track_descriptor.thread.tid = tid
                     # leaving the same track name
                     packet.track_descriptor.name = main_track_name
 
@@ -638,7 +671,7 @@ class MyTraceBuilder:
                             addr
                         )  # using just some stray ID
                 else:
-                    this_event_track_id = CUSTOM_TRACK_UUID
+                    this_event_track_id = MAIN_TRACK_UUID
                     this_correlation_id = self._makeCorrelationId(addr)
                     if "buffs" in suppl:  # matching to its kernel launch
                         bufs = suppl["buffs"]
@@ -696,7 +729,6 @@ class MyTraceBuilder:
                 packet.track_event.type = TrackEvent.TYPE_SLICE_BEGIN
                 # Associate with the track
                 packet.track_event.track_uuid = this_event_track_id
-                # packet.track_event.name = f"#{idx} {symbol(addr)}"
                 packet.track_event.name = _makeEventName(addr, suppl)
                 packet.track_event.correlation_id = this_correlation_id
                 packet.trusted_packet_sequence_id = PACKET_SEQUENCE_ID
@@ -706,6 +738,9 @@ class MyTraceBuilder:
                 if v:
                     flow_ids.append(v)
                 v = suppl.get("comm")
+                if v:
+                    flow_ids.append(v)
+                v = suppl.get("stream")
                 if v:
                     flow_ids.append(v)
                 # saving flow_ids
@@ -728,7 +763,7 @@ class MyTraceBuilder:
 
 
 def supplElement2text(key: str, value):
-    if key in ("comm", "newcomm"):
+    if key in ("comm", "newcomm", "stream"):
         return "0x%x" % value
     if key == "buffs":
         bufs = [f"(0x{b[0]:x}, 0x{b[1]:x})" for b in value]
@@ -747,7 +782,11 @@ def supplElement2text(key: str, value):
 
 def print_per_thread(symbols: dict[str, tuple[str, str]], calls: dict[int, list[list]]):
     # finding the earliest timestamp
-    min_ts = min(min(vals[2], vals[3]) for clist in calls.values() for vals in clist)
+    min_ts = min(
+        min(vals[2], vals[3] if vals[3] > 0 else vals[2])
+        for clist in calls.values()
+        for vals in clist
+    )
 
     symbol = lambda x: symbols[x][0]  # noqa: E731
 

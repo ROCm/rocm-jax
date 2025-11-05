@@ -2,7 +2,7 @@ import os
 
 # every weird and inconsistent thing here is b/c the need to reduce amount of info dumped
 
-g_outfile = "rccl2.1.bt"
+g_outfile = "rccl2.2.bt"
 
 g_work_dir = os.path.dirname(__file__)
 g_outfilepath = g_work_dir + "/" + g_outfile
@@ -105,25 +105,25 @@ g_tpl_LaunchKernel = r"""{
     // arg1 is bool is_ext and  is the same for all invocations
     $ts_start = nsecs;
 
-    $n_tasks_m_1 = (arg2 & 3);
-    $ptr = (uint64*) (arg2 & 0xFFFFFFFFFFFFFFFC);
-
+    $n_tasks_m_1 = (arg0 & 3);
+    $ptr = (uint64*) (arg0 & 0xFFFFFFFFFFFFFFFC);
+    // also saving func_tag (0), comm (1), and stream (2)
     if (0==$n_tasks_m_1){
-        printf("L %llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg2,*$ptr,
+        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*$ptr,
             *($ptr+1),*($ptr+2) );
     }else if (1==$n_tasks_m_1){
-        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg2,*$ptr,
+        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*$ptr,
             *($ptr+1),*($ptr+2),
             *($ptr+3),*($ptr+4)
         );
     }else if (2==$n_tasks_m_1){
-        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg2,*$ptr,
+        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*$ptr,
             *($ptr+1),*($ptr+2),
             *($ptr+3),*($ptr+4),
             *($ptr+5),*($ptr+6)
         );
     }else if (3==$n_tasks_m_1){
-        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg2,*$ptr,
+        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*$ptr,
             *($ptr+1),*($ptr+2),
             *($ptr+3),*($ptr+4),
             *($ptr+5),*($ptr+6),
@@ -141,6 +141,7 @@ g_tpl_kernelCallback = r"""{
 }
 """
 
+# TODO: streams for AR & RS + HIP devices&crosslinking by device
 
 def materialize_template() -> str:
     def make_header(probe, func):
@@ -197,7 +198,7 @@ def materialize_template() -> str:
         EntryWArgs("RS", 6),  # retprobe is "simple" above
         ###
         make_header("uprobe", "ncclAllGather"),
-        EntryWArgs("AG", 5),  # retprobe is "simple" above
+        EntryWArgs("AG", 6),  # retprobe is "simple" above
         ###
         make_header("uprobe", "ncclCommInitRankConfig"),
         # looks like a compiler is smart enough to not pass 128bytes of freaking by value ncclUniqueId in regs
