@@ -35,6 +35,16 @@ g_trace_filepath = g_outdir + "/" + g_trace_file
 # stream right after the kernel.
 g_kernel_launch = "hip:LaunchKernel->HostFunc"
 
+PROBE_ID_2_NAME = {
+    "AG": "ncclAllGather",
+    "AR": "ncclAllReduce",
+    "CS": "ncclCommSplit",
+    "IC": "ncclCommInitRankConfig",    
+    "GE": "ncclGroupEnd",
+    "GS": "ncclGroupStart",
+    "RS": "ncclReduceScatter",
+    "L": g_kernel_launch,
+}
 
 RED_OP_NAMES = {  # ncclRedOp_t
     0: "Sum",
@@ -71,6 +81,12 @@ COLL_TYPES = {  # ncclFunc_t
     6: "Send",
     7: "Recv",
     8: "AllToAllPivot",
+}
+
+FUNCNAME_2_COLL_TYPE = {
+    "ncclAllReduce": 4,
+    "ncclReduceScatter": 3,
+    "ncclAllGather": 2,
 }
 
 
@@ -133,25 +149,9 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
         raise RuntimeError(f"logfile {logfile} not found")
 
     # spaces are added to let slighlty modified logs remain parsable
-    r_entry_nccl = re.compile(
-        r"^\s*uprobe:[^:]+:\s*(?P<probe>\w+),\s*(?P<addr>[0-9a-fA-F]+)\s*,\s*(?P<tid>\d+)\s*,\s*(?P<ts_start>[0-9a-fA-F]+)\s*"
+    r_entry_common = re.compile(
+        r"^\s*(?P<probe_id>[A-Z]+)\s+(?P<tid>[0-9a-fA-F]+)\s*,\s*(?P<ts_start>[0-9a-fA-F]+)\s*"
     )
-
-    # reduced header for AllReduce, ReduceScatter and AllGather
-    r_entry_AllRedScatGath = re.compile(
-        r"^\s*(?P<probe_id>AR|RS|AG)\s+(?P<tid>\d+)\s*,\s*(?P<ts_start>[0-9a-fA-F]+)\s*"
-    )
-
-    def _AllRedScatGath_id2props(id: str) -> tuple[str, str]:
-        # [1] must match to COLL_TYPES
-        if id == "AR":
-            return ("ncclAllReduce", 4)
-        elif id == "RS":
-            return ("ncclReduceScatter", 3)
-        elif id == "AG":
-            return ("ncclAllGather", 2)
-        else:
-            assert False
 
     r_entry2_AllRedScat = re.compile(
         r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*,\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<red_op>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)$"
@@ -166,6 +166,14 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
     r_entry2_split = re.compile(
         r",\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<color>[0-9a-fA-F]+)\s*,\s*(?P<key>[0-9a-fA-F]+)$"
     )
+    # func_tag is used to match to a corresponding completion callback
+    r_entry2_LaunchKernel = re.compile(
+        r",\s*(?P<func_tag>[0-9a-fA-F]+)\s*,\s*(?P<countRedopDtypeCollt>[0-9a-fA-F]+)\s*,\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
+    )
+
+    r_LaunchKernel_other_bufs = re.compile(
+        r",\s*(?P<send>[0->[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
+    )
 
     entry_special = frozenset(
         [
@@ -174,6 +182,7 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
             "ncclAllGather",
             "ncclCommInitRankConfig",
             "ncclCommSplit",
+            # "arechLaunchKernel"
         ]
     )
 
@@ -187,29 +196,20 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
                 return r_entry2_InitRankCfg
             elif probe == "ncclCommSplit":
                 return r_entry2_split
+            # elif probe == "arechLaunchKernel":
+            # return r_entry2_LaunchKernel
             else:
                 assert False
         return None
 
-    r_exit_nccl = re.compile(
-        r"^\s*uretprobe:[^:]+:\s*(?P<probe>\w+),\s*(?P<caller_addr>[0-9a-fA-F]+)\s*,\s*(?P<callee_addr>[0-9a-fA-F]+)\s*,\s*(?P<tid>\d+)\s*,\s*(?P<ts_end>[0-9a-fA-F]+)\s*"
+    # will use the same regex for the callback
+    r_exit_common = re.compile(
+        r"^\s*(?P<probe_id>[a-z]+)\s+(?P<tid>[0-9a-fA-F]+)\s*,\s*(?P<ts_end>[0-9a-fA-F]+)\s*"
     )
     r_exit_InitRankCfgSplit = re.compile(r",\s*(?P<newcomm>[0-9a-fA-F]+)$")
 
-    # func_tag is used to match to a corresponding completion callback
-    r_entry_LaunchKernel = re.compile(
-        r"^\s*L\s+(?P<tid>\d+)\s*,\s*(?P<ts_start>[0-9a-fA-F]+)\s*,\s*(?P<func_tag>[0-9a-fA-F]+)\s*,\s*"
-        r"(?P<countRedopDtypeCollt>[0-9a-fA-F]+)\s*,\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
-    )
-    r_LaunchKernel_other_bufs = re.compile(
-        r",\s*(?P<send>[0->[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
-    )
-
-    r_KernelEndCallback = re.compile(
-        r"^\s*E\s+(?P<ts_end>[0-9a-fA-F]+)\s*,\s*(?P<func_tag>[0-9a-fA-F]+)\s*$"
-    )
-
-    # mapping from an address to a symbol to use if GDB isn't available
+    # mapping from an address to a symbol to use if GDB isn't available. Previously I also dumped
+    # return addresses, so this was mainly useful back then. Won't delete it, as it might become useful later
     addresses: dict[str, tuple[str, str]] = {"n/a": ("n/a", "n/a")}
 
     def _updateAddresses(addr: str, val: str):
@@ -229,149 +229,133 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
             if not line.strip():
                 continue
             idx += 1  # zero idx adjust
-            m_entry_nccl = r_entry_nccl.match(line)
-            m_entry_AllRedScatGath = r_entry_AllRedScatGath.match(line)
+            m_entry_cmn = r_entry_common.match(line)
 
-            if m_entry_nccl or m_entry_AllRedScatGath:
-                if m_entry_nccl:
-                    probe = m_entry_nccl["probe"]
-                    addr = m_entry_nccl["addr"]  # should be left as a string
-                    assert addr != "0"
-                    tid = int(m_entry_nccl["tid"])
-                    ts_start = int(m_entry_nccl["ts_start"], 16)
-                    total_match_len = len(m_entry_nccl.group(0))
-                    suppl = {"_probe": probe}
-                elif m_entry_AllRedScatGath:
-                    probe, coll_type = _AllRedScatGath_id2props(
-                        m_entry_AllRedScatGath["probe_id"]
-                    )
-                    tid = int(m_entry_AllRedScatGath["tid"])
-                    ts_start = int(m_entry_AllRedScatGath["ts_start"], 16)
-                    addr = probe
-                    total_match_len = len(m_entry_AllRedScatGath.group(0))
-                    suppl = {"_probe": probe, "coll_type": coll_type}
-                else:
-                    assert False
+            if m_entry_cmn:
+                probe_id = m_entry_cmn["probe_id"]
+                probe = PROBE_ID_2_NAME[probe_id]
+                tid = int(m_entry_cmn["tid"], 16)
                 assert tid > 0
+                ts_start = int(m_entry_cmn["ts_start"], 16)
                 assert ts_start > 0
-
-                _updateAddresses(addr, probe)
-
-                if tid in calls:
-                    _, p_addr, p_ts_start, p_ts_end, p_caller, _ = calls[tid][-1]
-                    assert p_ts_start < ts_start
-
-                assert tid not in calls or (0 < p_ts_end and p_caller is not None)
-
-                call = [idx, addr, ts_start, 0, None, suppl]
-                calls.setdefault(tid, []).append(call)
-
-                rest_line = line[total_match_len:].rstrip()
-                reg = _getEntryRegExp(probe)
-                if reg is None:
-                    assert not rest_line, (
-                        f"Parser isn't coherent with the log, rest_line='{rest_line}', so can't parse #{idx} {line}"
-                    )
-                else:
-                    m = reg.match(rest_line)
-                    assert m
-                    call[-1].update(
-                        translateOpSuppl(
-                            {k: int(v, 16) for k, v in m.groupdict().items()}
-                        )
-                    )
-
-            elif m_exit_nccl := r_exit_nccl.match(line):
-                probe = m_exit_nccl["probe"]
-                caller_addr = m_exit_nccl["caller_addr"]  # should be left as a string
-                assert caller_addr != "0"
-                callee_addr = m_exit_nccl["callee_addr"]  # should be left as a string
-                assert callee_addr != "0", "The log is broken, callee address isn't set"
-                tid = int(m_exit_nccl["tid"])
-                assert tid > 0
-                ts_end = int(m_exit_nccl["ts_end"], 16)
-                assert ts_end > 0
-
-                _updateAddresses(caller_addr, f"0x{caller_addr}")
-                _updateAddresses(callee_addr, probe)
-
-                _, addr, ts_start, old_ts_end, old_caller, suppl = calls[tid][-1]
-                assert probe == suppl["_probe"]
-                assert callee_addr == addr or addr == probe
-                assert old_ts_end == 0 and old_caller is None
-                assert ts_start < ts_end, (
-                    f"Line#{idx}, ts_end={ts_end} >= ts_start={ts_start}"
-                )
-
-                calls[tid][-1][3] = ts_end  # marking as not running
-                calls[tid][-1][4] = caller_addr
-
-                rest_line = line[len(m_exit_nccl.group(0)) :].rstrip()
-                if probe in ["ncclCommInitRankConfig", "ncclCommSplit"]:
-                    m = r_exit_InitRankCfgSplit.match(rest_line)
-                    assert m
-                    suppl.update({k: int(v, 16) for k, v in m.groupdict().items()})
-                else:
-                    assert not rest_line, (
-                        f"Parser isn't coherent with the log, rest_line='{rest_line}', so can't parse #{idx} {line}"
-                    )
-
-            elif m_launch_kernel := r_entry_LaunchKernel.match(line):
-                probe = g_kernel_launch
-                tid = int(m_launch_kernel["tid"])
-                assert tid > 0
-                ts_start = int(m_launch_kernel["ts_start"], 16)
-                assert ts_start > 0
-                func_tag = int(m_launch_kernel["func_tag"], 16)
-                assert func_tag != 0
-                countRedopDtypeCollt = int(m_launch_kernel["countRedopDtypeCollt"], 16)
-                assert countRedopDtypeCollt != 0
-                send = int(m_launch_kernel["send"], 16)
-                assert send != 0
-                recv = int(m_launch_kernel["recv"], 16)
-                assert recv != 0
+                total_match_len = len(m_entry_cmn.group(0))
 
                 _updateAddresses(probe, probe)
+                rest_line = line[total_match_len:].rstrip()
 
-                bufs = [(send, recv)]
-                ntasks = func_tag & 0x3
-                rest_line = line[len(m_launch_kernel.group(0)) :].rstrip()
+                if probe == g_kernel_launch:
+                    m_launch_kernel = r_entry2_LaunchKernel.match(rest_line)
+                    assert m_launch_kernel
+                    func_tag = int(m_launch_kernel["func_tag"], 16)
+                    assert func_tag != 0
+                    countRedopDtypeCollt = int(
+                        m_launch_kernel["countRedopDtypeCollt"], 16
+                    )
+                    assert countRedopDtypeCollt != 0
+                    send = int(m_launch_kernel["send"], 16)
+                    assert send != 0
+                    recv = int(m_launch_kernel["recv"], 16)
+                    assert recv != 0
 
-                for _ in range(ntasks):
-                    m = r_LaunchKernel_other_bufs.match(rest_line)
-                    assert m
-                    bufs.append((int(m.group("send"), 16), int(m.group("recv"), 16)))
-                    rest_line = rest_line[len(m.group(0)) :].rstrip()
-                assert not rest_line
+                    bufs = [(send, recv)]
+                    ntasks = func_tag & 0x3
+                    rest_line = rest_line[len(m_launch_kernel.group(0)) :].rstrip()
 
-                count = countRedopDtypeCollt >> 32
-                red_op = (countRedopDtypeCollt >> 16) & 0xFF
-                dtype = (countRedopDtypeCollt >> 8) & 0xFF
-                coll_type = countRedopDtypeCollt & 0xFF
+                    for _ in range(ntasks):
+                        m = r_LaunchKernel_other_bufs.match(rest_line)
+                        assert m
+                        bufs.append(
+                            (int(m.group("send"), 16), int(m.group("recv"), 16))
+                        )
+                        rest_line = rest_line[len(m.group(0)) :].rstrip()
+                    assert not rest_line
 
-                suppl = {
-                    "_probe": probe,
-                    "_func_tag": func_tag,
-                    "buffs": bufs,
-                    "count": count,
-                    "dtype": dtype,
-                    "coll_type": coll_type,
-                }
-                if collectiveHasReduction(coll_type):
-                    suppl["red_op"] = red_op
+                    count = countRedopDtypeCollt >> 32
+                    red_op = (countRedopDtypeCollt >> 16) & 0xFF
+                    dtype = (countRedopDtypeCollt >> 8) & 0xFF
+                    coll_type = countRedopDtypeCollt & 0xFF
 
-                assert func_tag not in kernels
-                kernels[func_tag] = [idx, tid, ts_start, 0, "n/a", suppl]
+                    suppl = {
+                        "_probe": probe,
+                        "_func_tag": func_tag,
+                        "buffs": bufs,
+                        "count": count,
+                        "dtype": dtype,
+                        "coll_type": coll_type,
+                    }
+                    if collectiveHasReduction(coll_type):
+                        suppl["red_op"] = red_op
 
-            elif m_KernelEndCallback := r_KernelEndCallback.match(line):
-                ts_end = int(m_KernelEndCallback["ts_end"], 16)
+                    assert func_tag not in kernels
+                    kernels[func_tag] = [idx, tid, ts_start, 0, "n/a", suppl]
+
+                else:  # i.e. probe != g_kernel_launch
+                    suppl = {"_probe": probe}
+                    if probe in FUNCNAME_2_COLL_TYPE:
+                        suppl["coll_type"] = FUNCNAME_2_COLL_TYPE[probe]
+
+                    if tid in calls:
+                        _, _, p_ts_start, p_ts_end, p_caller, _ = calls[tid][-1]
+                        assert p_ts_start < ts_start
+
+                    assert tid not in calls or (0 < p_ts_end and p_caller is not None)
+
+                    call = [idx, probe, ts_start, 0, None, suppl]
+                    calls.setdefault(tid, []).append(call)
+
+                    reg = _getEntryRegExp(probe)
+                    if reg is None:
+                        assert not rest_line, (
+                            f"Parser isn't coherent with the log, rest_line='{rest_line}', so can't parse #{idx} {line}"
+                        )
+                    else:
+                        m = reg.match(rest_line)
+                        assert m
+                        call[-1].update(
+                            translateOpSuppl(
+                                {k: int(v, 16) for k, v in m.groupdict().items()}
+                            )
+                        )
+
+            elif m_exit_cmn := r_exit_common.match(line):
+                probe_id = m_exit_cmn["probe_id"]
+                probe = PROBE_ID_2_NAME[probe_id.upper()]
+                tid = int(m_exit_cmn["tid"], 16)
+                assert tid > 0
+                ts_end = int(m_exit_cmn["ts_end"], 16)
                 assert ts_end > 0
-                func_tag = int(m_KernelEndCallback["func_tag"], 16)
-                assert func_tag != 0
-                ker = kernels[func_tag]
-                assert ker[2] < ts_end
-                ker[3] = ts_end
 
+                if probe == g_kernel_launch:
+                    func_tag = ts_end  # reusing existing parser
+                    ts_end = tid
+                    ker = kernels[func_tag]
+                    assert ker[2] < ts_end
+                    ker[3] = ts_end
+                else:  # i.e. probe != g_kernel_launch
+                    caller_addr = "n/a"
+                    # _updateAddresses(caller_addr, caller_addr)
+                    _updateAddresses(probe, probe)
+
+                    _, _, ts_start, old_ts_end, old_caller, suppl = calls[tid][-1]
+                    assert probe == suppl["_probe"]
+                    # assert callee_addr == addr or addr == probe
+                    assert old_ts_end == 0 and old_caller is None
+                    assert ts_start < ts_end, (
+                        f"Line#{idx}, ts_end={ts_end} >= ts_start={ts_start}"
+                    )
+
+                    calls[tid][-1][3] = ts_end  # marking as not running
+                    calls[tid][-1][4] = caller_addr
+
+                    rest_line = line[len(m_exit_cmn.group(0)) :].rstrip()
+                    if probe in ["ncclCommInitRankConfig", "ncclCommSplit"]:
+                        m = r_exit_InitRankCfgSplit.match(rest_line)
+                        assert m
+                        suppl.update({k: int(v, 16) for k, v in m.groupdict().items()})
+                    else:
+                        assert not rest_line, (
+                            f"Parser isn't coherent with the log, rest_line='{rest_line}', so can't parse #{idx} {line}"
+                        )
             elif line:
                 raise RuntimeError(f"Unparsable line#{idx} {line}")
 
@@ -545,7 +529,9 @@ class MyTraceBuilder:
                         else ("dtype", "count")
                     )
                 args = (
-                    "(" + ", ".join(str(supplElement2text(k, suppl[k])) for k in keys) + ")"
+                    "("
+                    + ", ".join(str(supplElement2text(k, suppl[k])) for k in keys)
+                    + ")"
                 )
             else:
                 args = ""
