@@ -174,7 +174,7 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
     )
 
     r_LaunchKernel_other_bufs = re.compile(
-        r",\s*(?P<send>[0->[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
+        r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
     )
 
     entry_special = frozenset(
