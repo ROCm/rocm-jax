@@ -7,6 +7,8 @@ g_outfilepath = g_work_dir + "/" + g_outfile
 
 g_lib = "/opt/rocm/lib/librccl.so.1"
 
+# every weird and inconsistent thing is b/c the need to reduce amount of info dumped
+
 # function names that doesn't need special handling.
 # To fund which function might be needed in principle, make a test run with a wildcard probe
 g_functions_simple = [
@@ -24,9 +26,10 @@ g_functions_simple = [
 # ncclCommSplit
 
 g_config = """config = {
-    // max_map_keys = 20;
+    max_map_keys = 8;
     perf_rb_pages = 4096
-}"""
+}
+"""
 
 g_tpl_uprobe = """{
     $thrd = tid(init);  // tid(init) is important for v0.23+
@@ -78,6 +81,48 @@ g_tpl_uretprobe = """{
 }
 """
 
+g_tpl_LaunchKernel = r"""{
+    // arg0 is void* kernelFn and is the same for all invocations
+    // arg1 is bool is_ext and  is the same for all invocations
+    $ts_start = nsecs;
+
+    $n_tasks_m_1 = (arg2 & 3);
+    $ptr = (uint64*) (arg2 & 0xFFFFFFFFFFFFFFFC);
+
+    if (0==$n_tasks_m_1){
+        printf("L %u,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg2,*$ptr,
+            *($ptr+1),*($ptr+2) );
+    }else if (1==$n_tasks_m_1){
+        printf("L %u,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg2,*$ptr,
+            *($ptr+1),*($ptr+2),
+            *($ptr+3),*($ptr+4)
+        );
+    }else if (2==$n_tasks_m_1){
+        printf("L %u,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg2,*$ptr,
+            *($ptr+1),*($ptr+2),
+            *($ptr+3),*($ptr+4),
+            *($ptr+5),*($ptr+6)
+        );
+    }else if (3==$n_tasks_m_1){
+        printf("L %u,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg2,*$ptr,
+            *($ptr+1),*($ptr+2),
+            *($ptr+3),*($ptr+4),
+            *($ptr+5),*($ptr+6),
+            *($ptr+7),*($ptr+8)
+        );
+    }else{
+        printf("UNSUPPORTED TASK COUNT = %u!\n", $n_tasks_m_1);
+        exit();
+    }
+}
+"""
+
+g_tpl_kernelCallback = r"""{
+    printf("E %llx,%llx\n", nsecs, arg0); // tid makes no sense here, it's HIP internal thread
+}
+"""
+
+
 def materialize_template() -> str:
     def make_header(probe, func):
         return f"{probe}:{g_lib}:{func}"
@@ -93,6 +138,12 @@ def materialize_template() -> str:
 
     # note, parser assumes all values except for a thread id, to be in hex
 
+    tpl_AllRedScat_body1, tpl_AllRedScat_body2 = (g_tpl_uprobe % {
+        "custom": r'printf("FUNCID %u,%llx'
+        + r",%llx,%llx,%llx,%x,%x,%llx"
+        + r'\n", $thrd,$ts_start, arg0,arg1,arg2,arg3,arg4,arg5);'
+    }).split("FUNCID")
+
     ret = [
         g_config,
         "\n////////////// SIMPLE FUNCTIONS /////////\n",
@@ -102,16 +153,25 @@ def materialize_template() -> str:
         g_tpl_uretprobe % {"custom": exit_pfx + exit_vars + ");"},
         ###
         "////////////// SPECIAL FUNCTIONS /////////\n",
-        ",\n".join([make_header("uprobe", f) for f in func_AllRedScat]),
-        g_tpl_uprobe  # retprobe is "simple" above
-        % {
-            "custom": entry_pfx
-            + (r",%llx,%x,%x,%llx" + entry_vars + ", arg2,arg3,arg4,arg5);")
-        },
+        # ",\n".join([make_header("uprobe", f) for f in func_AllRedScat]),
+        # g_tpl_uprobe  # retprobe is "simple" above
+        # % {
+        #    "custom": entry_pfx
+        #    + (r",%llx,%llx,%llx,%x,%x,%llx" + entry_vars + ", arg0,arg1,arg2,arg3,arg4,arg5);")
+        # },
+        make_header("uprobe", "ncclAllReduce"),
+        tpl_AllRedScat_body1 + "AR" + tpl_AllRedScat_body2,
+        make_header("uprobe", "ncclReduceScatter"),
+        tpl_AllRedScat_body1 + "RS" + tpl_AllRedScat_body2,
         ###
         make_header("uprobe", "ncclAllGather"),
         g_tpl_uprobe  # retprobe is "simple" above
-        % {"custom": entry_pfx + r",%llx,%x,%llx" + entry_vars + ", arg2,arg3,arg4);"},
+        % {
+            "custom": r'printf("AG %u,%llx'
+            + r",%llx,%llx,%llx,%x,%llx"
+            + r'\n", $thrd, $ts_start'
+            + ", arg0,arg1,arg2,arg3,arg4);"
+        },
         ###
         make_header("uprobe", "ncclCommInitRankConfig"),
         g_tpl_uprobe
@@ -135,6 +195,11 @@ def materialize_template() -> str:
             "custom": "@comm[$thrd] = arg3;\n        "
             + (entry_pfx + r",%llx,%x,%x" + entry_vars + ", arg0,arg1,arg2);")
         },
+        ############## TOTALLY CUSTOMIZED PROBES
+        make_header("uprobe", "arechLaunchKernel"),
+        g_tpl_LaunchKernel,
+        make_header("uprobe", "arechCallback"),
+        g_tpl_kernelCallback,
     ]
 
     return "\n".join(ret)

@@ -20,7 +20,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     ThreadDescriptor,
 )
 
-g_sym_file = "sym.log"
+g_sym_file = "log.log"
 g_trace_file = "trace.pftrace"
 
 g_work_dir = os.path.dirname(__file__)
@@ -30,58 +30,140 @@ g_outdir = g_work_dir
 g_trace_filepath = g_outdir + "/" + g_trace_file
 
 
-def get_symbols(addresses: dict[str, tuple[str, str]]) -> dict[str, tuple[str, str]]:
-    """Obtain symbols for given set of addresses"""
+# duration of kernel completion we measure is between scheduling launch with
+# hipLaunchKernel variation and between executing a host callback placed onto the
+# stream right after the kernel.
+g_kernel_launch = "hip:LaunchKernel->HostFunc"
+
+
+RED_OP_NAMES = {  # ncclRedOp_t
+    0: "Sum",
+    1: "Prod",
+    2: "Max",
+    3: "Min",
+    4: "Avg",
+}
+
+
+DTYPE_NAMES = {  # ncclDataType_t
+    0: "Int8",
+    1: "Uint8",
+    2: "Int32",
+    3: "Uint32",
+    4: "Int64",
+    5: "Uint64",
+    6: "Float16",
+    7: "Float32",
+    8: "Float64",
+    9: "Bfloat16",
+    10: "Float8e4m3",
+    11: "Float8e5m2",
+}
+
+
+COLL_TYPES = {  # ncclFunc_t
+    0: "Broadcast",
+    1: "Reduce",
+    2: "AllGather",
+    3: "ReduceScatter",
+    4: "AllReduce",
+    5: "SendRecv",
+    6: "Send",
+    7: "Recv",
+    8: "AllToAllPivot",
+}
+
+
+def collectiveHasReduction(coll_type: int) -> bool:
+    assert isinstance(coll_type, int)
+    return coll_type in [1, 3, 4]
+
+
+def isHex(val: str) -> bool:
+    # if val.startswith("0x"):
+    try:
+        v = int(val, 16)  # noqa
+        return True
+    except:  # noqa
+        pass
+    return False
+
+
+def translateOpSuppl(suppl: dict) -> dict:
+    if "send" in suppl or "recv" in suppl:
+        assert "send" in suppl and "recv" in suppl
+        assert isinstance(suppl["send"], int) and isinstance(suppl["recv"], int)
+        suppl["buffs"] = [(suppl["send"], suppl["recv"])]
+        del suppl["send"]
+        del suppl["recv"]
+
+    return suppl
+
+
+def getSymbols(addresses: dict[str, tuple[str, str]]) -> dict[str, tuple[str, str]]:
+    """Obtain symbols for a given set of addresses"""
     if not g_gdb_available:
         return addresses
-
-    def _isHex(val: str):
-        if val.startswith("0x"):
-            try:
-                v = int(val, 16)  # noqa
-                return True
-            except:  # noqa
-                pass
-        return False
 
     r_sym = re.compile(r"^(.+)\s+in section (.*)$")
     ret: dict[str, tuple[str, str]] = {}
     for addr in addresses.keys():
-        resp = gdb.execute(f"info symbol 0x{addr}", to_string=True)
-        if not isinstance(resp, str):
-            raise RuntimeError(f"For '{addr}' GDB returned '{resp}'")
-        if m := r_sym.match(resp):
-            assert addr not in ret
-            sym = m.group(1)
-            oldsym = addresses[addr][0]
-            assert _isHex(oldsym) or oldsym == sym, (
-                "GDB symbol doesn't match the probe!"
-            )
-            ret[addr] = (sym, m.group(2))
+        if isHex(addr):
+            resp = gdb.execute(f"info symbol 0x{addr}", to_string=True)
+            if not isinstance(resp, str):
+                raise RuntimeError(f"For '{addr}' GDB returned '{resp}'")
+            if m := r_sym.match(resp):
+                assert addr not in ret
+                sym = m.group(1)
+                oldsym = addresses[addr][0]
+                assert isHex(oldsym) or oldsym == sym, (
+                    "GDB symbol doesn't match the probe!"
+                )
+                ret[addr] = (sym, m.group(2))
+            else:
+                raise RuntimeError(f"For '{addr}' can't match GDB responce '{resp}'")
         else:
-            raise RuntimeError(f"For '{addr}' can't match GDB responce '{resp}'")
+            ret[addr] = addresses[addr]
     return ret
 
 
-def parse_log(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]]:
+def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]]:
     """parses log into a dict of per-thread calls and symbols description"""
     if not os.path.exists(logfile):
         raise RuntimeError(f"logfile {logfile} not found")
 
     # spaces are added to let slighlty modified logs remain parsable
-    r_entry_all = re.compile(
+    r_entry_nccl = re.compile(
         r"^\s*uprobe:[^:]+:\s*(?P<probe>\w+),\s*(?P<addr>[0-9a-fA-F]+)\s*,\s*(?P<tid>\d+)\s*,\s*(?P<ts_start>[0-9a-fA-F]+)\s*"
     )
-    r_entry_AllRedScat = re.compile(
-        r",\s*(?P<size>[0-9a-fA-F]+)\s*,\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<red_op>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)$"
+
+    # reduced header for AllReduce, ReduceScatter and AllGather
+    r_entry_AllRedScatGath = re.compile(
+        r"^\s*(?P<probe_id>AR|RS|AG)\s+(?P<tid>\d+)\s*,\s*(?P<ts_start>[0-9a-fA-F]+)\s*"
     )
-    r_entry_AllGath = re.compile(
-        r",\s*(?P<sendcount>[0-9a-fA-F]+)\s*,\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)$"
+
+    def _AllRedScatGath_id2props(id: str) -> tuple[str, str]:
+        # [1] must match to COLL_TYPES
+        if id == "AR":
+            return ("ncclAllReduce", 4)
+        elif id == "RS":
+            return ("ncclReduceScatter", 3)
+        elif id == "AG":
+            return ("ncclAllGather", 2)
+        else:
+            assert False
+
+    r_entry2_AllRedScat = re.compile(
+        r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*,\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<red_op>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)$"
     )
-    r_entry_InitRankCfg = re.compile(
+
+    r_entry2_AllGath = re.compile(
+        r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*,\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)$"
+    )
+    r_entry2_InitRankCfg = re.compile(
         r",\s*(?P<nranks>[0-9a-fA-F]+)\s*,\s*(?P<rank>[0-9a-fA-F]+)$"
     )
-    r_entry_split = re.compile(
+    r_entry2_split = re.compile(
         r",\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<color>[0-9a-fA-F]+)\s*,\s*(?P<key>[0-9a-fA-F]+)$"
     )
 
@@ -98,45 +180,79 @@ def parse_log(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]
     def _getEntryRegExp(probe: str):
         if probe in entry_special:
             if probe in ["ncclAllReduce", "ncclReduceScatter"]:
-                return r_entry_AllRedScat
+                return r_entry2_AllRedScat
             elif probe == "ncclAllGather":
-                return r_entry_AllGath
+                return r_entry2_AllGath
             elif probe == "ncclCommInitRankConfig":
-                return r_entry_InitRankCfg
+                return r_entry2_InitRankCfg
             elif probe == "ncclCommSplit":
-                return r_entry_split
+                return r_entry2_split
             else:
                 assert False
         return None
 
-    r_exit_all = re.compile(
+    r_exit_nccl = re.compile(
         r"^\s*uretprobe:[^:]+:\s*(?P<probe>\w+),\s*(?P<caller_addr>[0-9a-fA-F]+)\s*,\s*(?P<callee_addr>[0-9a-fA-F]+)\s*,\s*(?P<tid>\d+)\s*,\s*(?P<ts_end>[0-9a-fA-F]+)\s*"
     )
     r_exit_InitRankCfgSplit = re.compile(r",\s*(?P<newcomm>[0-9a-fA-F]+)$")
 
+    # func_tag is used to match to a corresponding completion callback
+    r_entry_LaunchKernel = re.compile(
+        r"^\s*L\s+(?P<tid>\d+)\s*,\s*(?P<ts_start>[0-9a-fA-F]+)\s*,\s*(?P<func_tag>[0-9a-fA-F]+)\s*,\s*"
+        r"(?P<countRedopDtypeCollt>[0-9a-fA-F]+)\s*,\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
+    )
+    r_LaunchKernel_other_bufs = re.compile(
+        r",\s*(?P<send>[0->[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
+    )
+
+    r_KernelEndCallback = re.compile(
+        r"^\s*E\s+(?P<ts_end>[0-9a-fA-F]+)\s*,\s*(?P<func_tag>[0-9a-fA-F]+)\s*$"
+    )
+
     # mapping from an address to a symbol to use if GDB isn't available
-    addresses: dict[str, tuple[str, str]] = {}
+    addresses: dict[str, tuple[str, str]] = {"n/a": ("n/a", "n/a")}
 
     def _updateAddresses(addr: str, val: str):
         assert isinstance(val, str)
         if addr in addresses:
             assert val == addresses[addr][0]
         else:
-            addresses[addr] = (val, "<n/a>")
+            addresses[addr] = (val, "n/a")
 
-    # maps tid -> [ [start_idx, addr, ts_start, ts_end, caller_addr, suppl] ]
+    # maps tid -> [ [start_idx, addr, ts_start, ts_end, caller_addr, suppl] ] for regular calls with synchronous exits
     calls: dict[int, list[list]] = {}
+    # maps func_tag -> [start_idx, tid, ts_start, ts_end, "n/a", suppl]. At the end of log processing it's merged into calls
+    kernels: dict[int, list] = {}
 
     with open(logfile, "r") as file:
         for idx, line in enumerate(file):
+            if not line.strip():
+                continue
             idx += 1  # zero idx adjust
-            if m_entry := r_entry_all.match(line):
-                probe = m_entry["probe"]
-                addr = m_entry["addr"]  # should be left as a string
-                assert addr != "0"
-                tid = int(m_entry["tid"])
+            m_entry_nccl = r_entry_nccl.match(line)
+            m_entry_AllRedScatGath = r_entry_AllRedScatGath.match(line)
+
+            if m_entry_nccl or m_entry_AllRedScatGath:
+                if m_entry_nccl:
+                    probe = m_entry_nccl["probe"]
+                    addr = m_entry_nccl["addr"]  # should be left as a string
+                    assert addr != "0"
+                    tid = int(m_entry_nccl["tid"])
+                    ts_start = int(m_entry_nccl["ts_start"], 16)
+                    total_match_len = len(m_entry_nccl.group(0))
+                    suppl = {"_probe": probe}
+                elif m_entry_AllRedScatGath:
+                    probe, coll_type = _AllRedScatGath_id2props(
+                        m_entry_AllRedScatGath["probe_id"]
+                    )
+                    tid = int(m_entry_AllRedScatGath["tid"])
+                    ts_start = int(m_entry_AllRedScatGath["ts_start"], 16)
+                    addr = probe
+                    total_match_len = len(m_entry_AllRedScatGath.group(0))
+                    suppl = {"_probe": probe, "coll_type": coll_type}
+                else:
+                    assert False
                 assert tid > 0
-                ts_start = int(m_entry["ts_start"], 16)
                 assert ts_start > 0
 
                 _updateAddresses(addr, probe)
@@ -147,10 +263,10 @@ def parse_log(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]
 
                 assert tid not in calls or (0 < p_ts_end and p_caller is not None)
 
-                call = [idx, addr, ts_start, 0, None, {"_probe": probe}]
+                call = [idx, addr, ts_start, 0, None, suppl]
                 calls.setdefault(tid, []).append(call)
 
-                rest_line = line[len(m_entry.group(0)) :].rstrip()
+                rest_line = line[total_match_len:].rstrip()
                 reg = _getEntryRegExp(probe)
                 if reg is None:
                     assert not rest_line, (
@@ -159,17 +275,21 @@ def parse_log(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]
                 else:
                     m = reg.match(rest_line)
                     assert m
-                    call[-1].update({k: int(v, 16) for k, v in m.groupdict().items()})
+                    call[-1].update(
+                        translateOpSuppl(
+                            {k: int(v, 16) for k, v in m.groupdict().items()}
+                        )
+                    )
 
-            elif m_exit := r_exit_all.match(line):
-                probe = m_exit["probe"]
-                caller_addr = m_exit["caller_addr"]  # should be left as a string
+            elif m_exit_nccl := r_exit_nccl.match(line):
+                probe = m_exit_nccl["probe"]
+                caller_addr = m_exit_nccl["caller_addr"]  # should be left as a string
                 assert caller_addr != "0"
-                callee_addr = m_exit["callee_addr"]  # should be left as a string
+                callee_addr = m_exit_nccl["callee_addr"]  # should be left as a string
                 assert callee_addr != "0", "The log is broken, callee address isn't set"
-                tid = int(m_exit["tid"])
+                tid = int(m_exit_nccl["tid"])
                 assert tid > 0
-                ts_end = int(m_exit["ts_end"], 16)
+                ts_end = int(m_exit_nccl["ts_end"], 16)
                 assert ts_end > 0
 
                 _updateAddresses(caller_addr, f"0x{caller_addr}")
@@ -177,7 +297,7 @@ def parse_log(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]
 
                 _, addr, ts_start, old_ts_end, old_caller, suppl = calls[tid][-1]
                 assert probe == suppl["_probe"]
-                assert callee_addr == addr
+                assert callee_addr == addr or addr == probe
                 assert old_ts_end == 0 and old_caller is None
                 assert ts_start < ts_end, (
                     f"Line#{idx}, ts_end={ts_end} >= ts_start={ts_start}"
@@ -186,7 +306,7 @@ def parse_log(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]
                 calls[tid][-1][3] = ts_end  # marking as not running
                 calls[tid][-1][4] = caller_addr
 
-                rest_line = line[len(m_exit.group(0)) :].rstrip()
+                rest_line = line[len(m_exit_nccl.group(0)) :].rstrip()
                 if probe in ["ncclCommInitRankConfig", "ncclCommSplit"]:
                     m = r_exit_InitRankCfgSplit.match(rest_line)
                     assert m
@@ -196,10 +316,86 @@ def parse_log(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]
                         f"Parser isn't coherent with the log, rest_line='{rest_line}', so can't parse #{idx} {line}"
                     )
 
+            elif m_launch_kernel := r_entry_LaunchKernel.match(line):
+                probe = g_kernel_launch
+                tid = int(m_launch_kernel["tid"])
+                assert tid > 0
+                ts_start = int(m_launch_kernel["ts_start"], 16)
+                assert ts_start > 0
+                func_tag = int(m_launch_kernel["func_tag"], 16)
+                assert func_tag != 0
+                countRedopDtypeCollt = int(m_launch_kernel["countRedopDtypeCollt"], 16)
+                assert countRedopDtypeCollt != 0
+                send = int(m_launch_kernel["send"], 16)
+                assert send != 0
+                recv = int(m_launch_kernel["recv"], 16)
+                assert recv != 0
+
+                _updateAddresses(probe, probe)
+
+                bufs = [(send, recv)]
+                ntasks = func_tag & 0x3
+                rest_line = line[len(m_launch_kernel.group(0)) :].rstrip()
+
+                for _ in range(ntasks):
+                    m = r_LaunchKernel_other_bufs.match(rest_line)
+                    assert m
+                    bufs.append((int(m.group("send"), 16), int(m.group("recv"), 16)))
+                    rest_line = rest_line[len(m.group(0)) :].rstrip()
+                assert not rest_line
+
+                count = countRedopDtypeCollt >> 32
+                red_op = (countRedopDtypeCollt >> 16) & 0xFF
+                dtype = (countRedopDtypeCollt >> 8) & 0xFF
+                coll_type = countRedopDtypeCollt & 0xFF
+
+                suppl = {
+                    "_probe": probe,
+                    "_func_tag": func_tag,
+                    "buffs": bufs,
+                    "count": count,
+                    "dtype": dtype,
+                    "coll_type": coll_type,
+                }
+                if collectiveHasReduction(coll_type):
+                    suppl["red_op"] = red_op
+
+                assert func_tag not in kernels
+                kernels[func_tag] = [idx, tid, ts_start, 0, "n/a", suppl]
+
+            elif m_KernelEndCallback := r_KernelEndCallback.match(line):
+                ts_end = int(m_KernelEndCallback["ts_end"], 16)
+                assert ts_end > 0
+                func_tag = int(m_KernelEndCallback["func_tag"], 16)
+                assert func_tag != 0
+                ker = kernels[func_tag]
+                assert ker[2] < ts_end
+                ker[3] = ts_end
+
             elif line:
                 raise RuntimeError(f"Unparsable line#{idx} {line}")
 
-    return calls, get_symbols(addresses)
+    # putting kernel launches into the calls
+    for ker in kernels.values():
+        tid = ker[1]
+        ker[1] = ker[5]["_probe"]
+        ts_start = ker[2]  # ts_end COULD BE ZERO!
+        if tid in calls:
+            # finding where to put the call by ts_start ordering
+            clist = calls[tid]
+            for i, cvals in enumerate(clist):
+                if ts_start < cvals[2]:
+                    clist.insert(i, ker)
+                    break
+            else:
+                clist.append(ker)
+        else:
+            print(
+                f"INFO: Thread {tid} for #{ker[0]} {ker[5]['_probe']} is not found in calls, adding a new thread"
+            )
+            calls[tid] = [ker]
+
+    return calls, getSymbols(addresses)
 
 
 """   NOT UPDATED v1->v2, calls format has changed
@@ -277,6 +473,43 @@ class MyTraceBuilder:
         print(f"Trace written to {tracepath}")
         print("Open with https://magic-trace.org/ or https://ui.perfetto.dev")
 
+    @staticmethod
+    def _makeCorrelationId(addr) -> int:
+        v = hash(addr)
+        if v < 0:
+            v += 0x8000000000000000
+        return v
+
+    @staticmethod
+    def _add_annotation(packet, dict_or_name, value=None):
+        if isinstance(dict_or_name, str):
+            assert value is not None
+            dict_or_name = {dict_or_name: value}
+        assert isinstance(dict_or_name, dict)
+
+        for name, value in dict_or_name.items():
+            assert isinstance(name, str)
+            if name.startswith("_"):
+                continue
+
+            # this will output coll_type for individual ops, which is duplication, but that's ok
+            value = supplElement2text(name, value)
+
+            annotation = packet.track_event.debug_annotations.add()
+            annotation.name = name
+
+            # Set the appropriate value field based on type
+            if isinstance(value, bool):
+                annotation.bool_value = value
+            elif isinstance(value, int):
+                annotation.int_value = value
+            elif isinstance(value, float):
+                annotation.double_value = value
+            elif isinstance(value, str):
+                annotation.string_value = value
+            else:
+                raise RuntimeError("Unsupported annotation type " + str(type(value)))
+
     def _make_trace_packets(
         self,
         symbols: dict[str, tuple[str, str]],
@@ -284,100 +517,245 @@ class MyTraceBuilder:
     ):
         builder: TraceProtoBuilder = self.builder
 
+        # we need to mark unfinished kernels with the latest timestamp; otherwise
+        # we'd have to use a time point representation instead of a time slice
+        # finding the latest timestamp
+        unfinished_ker_ts = 1 + max(
+            max(vals[2], vals[3]) for clist in calls.values() for vals in clist
+        )
+
         symbol = lambda x: symbols[x][0]  # noqa: E731
 
-        def _makeEventName(addr: str) -> str:
+        _cmn_coll_prms = ["dtype", "count"]
+
+        def _makeEventName(addr: str, suppl: dict) -> str:
             sym = symbol(addr)
-            if sym.startswith("nccl"):
-                return sym[4:]
-            return sym
-
-        def _add_annotation(packet, dict_or_name, value=None):
-            if isinstance(dict_or_name, str):
-                assert value is not None
-                dict_or_name = {dict_or_name: value}
-            assert isinstance(dict_or_name, dict)
-
-            for name, value in dict_or_name.items():
-                assert isinstance(name, str)
-                if name.startswith("_"):
-                    continue
-
-                value = convSuppl(name, value)
-
-                annotation = packet.track_event.debug_annotations.add()
-                annotation.name = name
-
-                # Set the appropriate value field based on type
-                if isinstance(value, bool):
-                    annotation.bool_value = value
-                elif isinstance(value, int):
-                    annotation.int_value = value
-                elif isinstance(value, float):
-                    annotation.double_value = value
-                elif isinstance(value, str):
-                    annotation.string_value = value
-                else:
-                    raise RuntimeError(
-                        "Unsupported annotation type " + str(type(value))
+            if "coll_type" in suppl:
+                has_reduce = collectiveHasReduction(suppl["coll_type"])
+                if addr == g_kernel_launch:
+                    keys = (
+                        ("dtype", "count", "coll_type", "red_op")
+                        if has_reduce
+                        else ("dtype", "count", "coll_type")
                     )
+                else:
+                    keys = (
+                        ("dtype", "count", "red_op")
+                        if has_reduce
+                        else ("dtype", "count")
+                    )
+                args = (
+                    "(" + ", ".join(str(supplElement2text(k, suppl[k])) for k in keys) + ")"
+                )
+            else:
+                args = ""
+            return sym + args
 
         # Define a unique ID for this sequence of packets (generate once per trace producer)
         PACKET_SEQUENCE_ID = 0  # Choose any unique integer
 
+        unique_track_ids = set[int]()  # for sanity check
+
         for tid, call_list in calls.items():
             # Define a unique UUID for your custom track (generate a 64-bit random number)
             CUSTOM_TRACK_UUID = tid
+            assert CUSTOM_TRACK_UUID not in unique_track_ids
+            unique_track_ids.add(CUSTOM_TRACK_UUID)
 
             # 1. Define the Custom Track
             # This packet describes the track on which your events will be displayed.
             # Emit this once at the beginning of your trace.
             packet = builder.add_packet()
             packet.track_descriptor.uuid = CUSTOM_TRACK_UUID
-            packet.track_descriptor.name = f"Thread {tid}"
+            main_track_name = f"Thread {tid}"
+            packet.track_descriptor.name = main_track_name
 
-            for vals in call_list:
+            for call_idx, vals in enumerate(call_list):
                 idx, addr, ts_start, ts_end, caller_addr, suppl = vals
 
-                # 2. Emit events for this custom track
+                flow_ids = []
+                if addr == g_kernel_launch:
+                    this_event_track_id = suppl["_func_tag"]  # guaranteed to be
+                    # unique across tags and should be unique across threads, but lets check this
+                    assert this_event_track_id != 0
+                    assert this_event_track_id not in unique_track_ids
+                    unique_track_ids.add(this_event_track_id)
+                    # creating a track for potentially overlapping (with anything) launch
+                    packet = builder.add_packet()
+                    packet.track_descriptor.uuid = this_event_track_id
+                    # leaving the same track name
+                    packet.track_descriptor.name = main_track_name
+
+                    if ts_end <= 0:
+                        ts_end = unfinished_ker_ts
+
+                    # finding operations that spawned the call to add them to flow_ids
+                    # and also to use the same correlation id
+                    this_correlation_id = None
+                    coll_has_reduce = collectiveHasReduction(suppl["coll_type"])
+                    key_comp = (
+                        (
+                            suppl["dtype"],
+                            suppl["coll_type"],
+                            suppl["count"],
+                            suppl["red_op"],
+                        )
+                        if coll_has_reduce
+                        else (suppl["dtype"], suppl["coll_type"], suppl["count"])
+                    )
+                    for bufs in suppl["buffs"]:
+                        match_found = False  # each buffer must be matched
+                        for o_vals in call_list[call_idx - 1 :: -1]:  # seeing prev ops
+                            o_idx, o_addr, _, _, _, o_suppl = o_vals
+                            o_bufs = o_suppl.get("buffs")
+                            if o_bufs:
+                                assert (
+                                    len(o_bufs) == 1
+                                )  # individual ops use 1 buff only
+                                o_bufs = o_bufs[0]
+                                assert isinstance(o_bufs, tuple)
+                                if bufs == o_bufs:
+                                    # testing if other call parameters match
+                                    if coll_has_reduce:
+                                        match_found = (
+                                            o_suppl["dtype"],
+                                            o_suppl["coll_type"],
+                                            o_suppl["count"],
+                                            o_suppl["red_op"],
+                                        ) == key_comp
+                                    else:
+                                        match_found = (
+                                            o_suppl["dtype"],
+                                            o_suppl["coll_type"],
+                                            o_suppl["count"],
+                                        ) == key_comp
+                                    if match_found:
+                                        # idx shouldn't collide with comm ids
+                                        flow_ids.append(idx)
+                                        corr_id = self._makeCorrelationId(o_addr)
+                                        if (
+                                            this_correlation_id is not None
+                                            and this_correlation_id != corr_id
+                                        ):
+                                            # likely a bug for this problem instance, but could happen in others
+                                            print(
+                                                f"WARNING: #{idx} {symbol(addr)} tracks to different correlation ids: "
+                                                f"already set to {this_correlation_id}, but now resolved to {corr_id} for #{o_idx} {symbol(o_addr)}. Using the latest one"
+                                            )
+                                        this_correlation_id = corr_id
+                                        break
+                    if this_correlation_id is None:
+                        print(
+                            f"WARNING: #{idx} {symbol(addr)} don't have prior operations!"
+                        )
+                        this_correlation_id = self._makeCorrelationId(
+                            addr
+                        )  # using just some stray ID
+                else:
+                    this_event_track_id = CUSTOM_TRACK_UUID
+                    this_correlation_id = self._makeCorrelationId(addr)
+                    if "buffs" in suppl:  # matching to its kernel launch
+                        bufs = suppl["buffs"]
+                        assert len(bufs) == 1  # individual ops use 1 buff only
+                        bufs = bufs[0]
+                        assert isinstance(bufs, tuple)
+
+                        coll_has_reduce = collectiveHasReduction(suppl["coll_type"])
+                        key_comp = (
+                            (
+                                suppl["dtype"],
+                                suppl["coll_type"],
+                                suppl["count"],
+                                suppl["red_op"],
+                            )
+                            if coll_has_reduce
+                            else (suppl["dtype"], suppl["coll_type"], suppl["count"])
+                        )
+
+                        match_found = False
+                        for o_vals in call_list[call_idx + 1 :]:
+                            o_idx, o_addr, _, _, _, o_suppl = o_vals
+                            if o_addr == g_kernel_launch:
+                                o_bufs = o_suppl["buffs"]
+                                for b in o_bufs:
+                                    if b == bufs:
+                                        # testing if other call parameters match
+                                        if coll_has_reduce:
+                                            match_found = (
+                                                o_suppl["dtype"],
+                                                o_suppl["coll_type"],
+                                                o_suppl["count"],
+                                                o_suppl["red_op"],
+                                            ) == key_comp
+                                        else:
+                                            match_found = (
+                                                o_suppl["dtype"],
+                                                o_suppl["coll_type"],
+                                                o_suppl["count"],
+                                            ) == key_comp
+                                        if match_found:
+                                            # o_idx shouldn't collide with comm ids
+                                            flow_ids.append(o_idx)
+                                            break
+                                if match_found:
+                                    break
+                        if not match_found:
+                            print(
+                                f"WARNING: #{idx} {symbol(addr)} is not matched to any kernel launch"
+                            )
+
+                # 2. Emit events
                 packet = builder.add_packet()
                 packet.timestamp = ts_start  # Start time in nanoseconds
                 packet.track_event.type = TrackEvent.TYPE_SLICE_BEGIN
                 # Associate with the track
-                packet.track_event.track_uuid = CUSTOM_TRACK_UUID
+                packet.track_event.track_uuid = this_event_track_id
                 # packet.track_event.name = f"#{idx} {symbol(addr)}"
-                packet.track_event.name = _makeEventName(addr)
-                packet.track_event.correlation_id = int(addr, 16)
+                packet.track_event.name = _makeEventName(addr, suppl)
+                packet.track_event.correlation_id = this_correlation_id
                 packet.trusted_packet_sequence_id = PACKET_SEQUENCE_ID
 
-                flow_ids = []
+                # matching communicators for flow_ids
                 v = suppl.get("newcomm")
                 if v:
                     flow_ids.append(v)
                 v = suppl.get("comm")
                 if v:
                     flow_ids.append(v)
+                # saving flow_ids
                 for f in flow_ids:
                     packet.track_event.flow_ids.append(f)
 
-                _add_annotation(packet, "Log line number", idx)
-                _add_annotation(
+                self._add_annotation(packet, "Log line number", idx)
+                self._add_annotation(
                     packet,
                     "Called from",
                     f"{symbol(caller_addr)} @ {symbols[caller_addr][1]}",
                 )
-                _add_annotation(packet, suppl)
+                self._add_annotation(packet, suppl)
 
                 packet = builder.add_packet()
                 packet.timestamp = ts_end  # End time in nanoseconds
                 packet.track_event.type = TrackEvent.TYPE_SLICE_END
-                packet.track_event.track_uuid = CUSTOM_TRACK_UUID
+                packet.track_event.track_uuid = this_event_track_id
                 packet.trusted_packet_sequence_id = PACKET_SEQUENCE_ID
 
 
-def convSuppl(key: str, value):
+def supplElement2text(key: str, value):
     if key in ("comm", "newcomm"):
         return "0x%x" % value
+    if key == "buffs":
+        bufs = [f"(0x{b[0]:x}, 0x{b[1]:x})" for b in value]
+        if len(bufs) > 1:
+            return "[" + ", ".join(bufs) + "]"
+        return bufs[0]
+    if key == "dtype" and isinstance(value, int):
+        return DTYPE_NAMES[value]
+    if key == "red_op" and isinstance(value, int):
+        return RED_OP_NAMES[value]
+    if key == "coll_type" and isinstance(value, int):
+        return COLL_TYPES[value]
+
     return value
 
 
@@ -394,11 +772,19 @@ def print_per_thread(symbols: dict[str, tuple[str, str]], calls: dict[int, list[
         prev_ts_end = 0
         for vals in call_list:
             idx, addr, ts_start, ts_end, caller_addr, suppl = vals
-            assert 0 < ts_end
-            assert prev_ts_end < ts_start
-            assert ts_start < ts_end
-            prev_ts_end = ts_end
-            s = {k: convSuppl(k, v) for k, v in suppl.items() if not k.startswith("_")}
+            kernel_launch = addr == g_kernel_launch
+            if not kernel_launch or ts_end > 0:  # kernel launches might
+                # not have completions when a kernel hangs
+                assert 0 < ts_end
+                assert kernel_launch or prev_ts_end < ts_start
+                assert ts_start < ts_end
+                if not kernel_launch:
+                    prev_ts_end = ts_end
+            s = {
+                k: supplElement2text(k, v)
+                for k, v in suppl.items()
+                if not k.startswith("_") and (kernel_launch or k != "coll_type")
+            }
             print(
                 f" #{idx}, {symbol(addr)}, {ts_start - min_ts}, {ts_end - min_ts}, {ts_end - ts_start}, {s}, {symbol(caller_addr)}"
             )
@@ -482,7 +868,7 @@ def print_per_thread(symbols: dict[str, tuple[str, str]], calls: dict[int, list[
 def process_log(logfile, tracepath):
     print(f"Using log file {logfile}")
 
-    calls, symbols = parse_log(logfile)
+    calls, symbols = parseLog(logfile)
 
     # report_single_overlaps(symbols, calls)
     print_per_thread(symbols, calls)
@@ -502,7 +888,7 @@ def getFiles() -> tuple[str, str]:
         if not os.path.isabs(logfile):
             logfile = g_work_dir + "/" + logfile
 
-        root,_ = os.path.splitext(os.path.basename(logfile))
+        root, _ = os.path.splitext(os.path.basename(logfile))
         trace = os.path.dirname(logfile) + f"/{root}.pftrace"
 
     return logfile, trace

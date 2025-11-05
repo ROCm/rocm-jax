@@ -1,17 +1,28 @@
 config = {
     // max_map_keys = 800;
+    // unstable_map_decl=enable;
     perf_rb_pages = 4096
 }
 
+/*
+// works, but seems to be slow. Almost blocks the hang
+let @prb = hash(2);
+
+begin{
+    @prb["uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel"] = "Launch";
+    @prb["uprobe:/opt/rocm/lib/librccl.so.1:arechCallback"] = "Cb";
+}
+*/
+
 uprobe:/opt/rocm/lib/librccl.so.1:arechLaunchKernel
 {
-    //printf("%s %u,%llx,%llx,%llx\n", probe, tid(init), arg0,arg1,arg2);
-
     // arg0 is void* kernelFn and is the same for all invocations
     // arg1 is bool is_ext and  is the same for all invocations
 
     $n_tasks_m_1 = (arg2 & 3);
     $ptr = (uint64*) (arg2 & 0xFFFFFFFFFFFFFFFC);
+
+    //$p = @prb[probe];
 
     if (0==$n_tasks_m_1){
         printf("%s %u,%llx, %llx, %llx,%llx\n", probe,tid(init),arg2,*$ptr,

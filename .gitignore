@@ -3,9 +3,10 @@
 /jax
 
 # temporary working files
-/_my/*.log
-/_my/*.txt
-/_my/*.pftrace
+/_my/**/*.log
+/_my/**/*.txt
+/_my/**/*.pftrace
+/_my/mylog
 
 # bazel external dependencies directory mapping for individual bazel workspaces that might be used
 /jax_rocm_plugin/external
