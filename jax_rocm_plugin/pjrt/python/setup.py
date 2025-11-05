@@ -49,14 +49,14 @@ setup(
     description=f"JAX XLA PJRT Plugin for AMD GPUs (ROCm:{rocm_detected_version})",
     long_description="",
     long_description_content_type="text/markdown",
-    author="Ruturaj4",
-    author_email="Ruturaj.Vaidya@amd.com",
+    author="ROCm JAX Devs",
+    author_email="dl.dl-JAX@amd.com",
     packages=packages,
     install_requires=[],
-    url="https://github.com/jax-ml/jax",
+    url="https://github.com/ROCm/rocm-jax",
     license="Apache-2.0",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3",
     ],
     package_data={
