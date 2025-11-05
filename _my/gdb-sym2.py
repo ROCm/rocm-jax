@@ -650,7 +650,7 @@ class MyTraceBuilder:
                                         ) == key_comp
                                     if match_found:
                                         # idx shouldn't collide with comm ids
-                                        flow_ids.append(idx)
+                                        # flow_ids.append(idx) # essentially duplicates flow from conn & stream
                                         corr_id = self._makeCorrelationId(o_addr)
                                         if (
                                             this_correlation_id is not None
@@ -673,6 +673,8 @@ class MyTraceBuilder:
                 else:
                     this_event_track_id = MAIN_TRACK_UUID
                     this_correlation_id = self._makeCorrelationId(addr)
+
+                    # below can be removed, as it only checks the match
                     if "buffs" in suppl:  # matching to its kernel launch
                         bufs = suppl["buffs"]
                         assert len(bufs) == 1  # individual ops use 1 buff only
@@ -714,7 +716,7 @@ class MyTraceBuilder:
                                             ) == key_comp
                                         if match_found:
                                             # o_idx shouldn't collide with comm ids
-                                            flow_ids.append(o_idx)
+                                            # flow_ids.append(o_idx) # duplicates conn & stream flows
                                             break
                                 if match_found:
                                     break
