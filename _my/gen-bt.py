@@ -202,7 +202,7 @@ def materialize_template() -> str:
         EntryWArgs("RS", 6, fmt_sfx=",%llx,%x", vars_sfx=',*(uint64*)(reg("sp")+8*1), *(uint32*)((uint8*)arg5 + 872184)'),  # retprobe is "simple" above
         ###
         make_header("uprobe", "ncclAllGather"),
-        EntryWArgs("AG", 6, fmt_sfx=",%x", vars_sfx=',*(uint32*)((*(uint8**)arg4) + 872184)'),  # retprobe is "simple" above
+        EntryWArgs("AG", 6, fmt_sfx=",%x", vars_sfx=',*(uint32*)((uint8*)arg5 + 872184)'),  # retprobe is "simple" above
         ###
         make_header("uprobe", "ncclCommInitRankConfig"),
         # looks like a compiler is smart enough to not pass 128bytes of freaking by value ncclUniqueId in regs
