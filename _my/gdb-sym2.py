@@ -455,15 +455,16 @@ class MyTraceBuilder:
         tracepath: str,
         symbols: dict[str, tuple[str, str]],
         calls: dict[int, list[list]],
-    ):
+        **kwargs,
+    ) -> None:
         print(f"\nCreating trace {tracepath} ...")
-        self._make_trace_packets(symbols, calls)
+        self._make_trace_packets(symbols, calls, **kwargs)
 
         with open(tracepath, "wb") as f:
             f.write(self.builder.serialize())
 
         print(f"Trace written to {tracepath}")
-        print("Open with https://magic-trace.org/ or https://ui.perfetto.dev")
+        print("Open with https://magic-trace.org/ only! https://ui.perfetto.dev is buggy and might render some slices length incorrectly!")
 
     @staticmethod
     def _makeCorrelationId(addr) -> int:
@@ -502,10 +503,18 @@ class MyTraceBuilder:
             else:
                 raise RuntimeError("Unsupported annotation type " + str(type(value)))
 
+    # bit values
+    LINK_BY_COMM: int = 1 << 0
+    LINK_BY_STREAM: int = 1 << 1
+
     def _make_trace_packets(
         self,
         symbols: dict[str, tuple[str, str]],
         calls: dict[int, list[list]],
+        *,
+        use_tid_pid: bool = False, # b/c people not aware of ui.perfetto.dev bugs
+        link_by: int = LINK_BY_COMM,
+        assume_magic_trace: bool = True,  # when True, disable correlation_id that magic-trace doesn't support
     ):
         builder: TraceProtoBuilder = self.builder
 
@@ -548,13 +557,10 @@ class MyTraceBuilder:
         # Define a unique ID for this sequence of packets (generate once per trace producer)
         PACKET_SEQUENCE_ID = 1  # Choose any unique integer
 
-        use_tid_pid = False
-
         # 1. Define the Process Track (Optional, but good for naming the process)
         if use_tid_pid:
             print(
-                "\nWARNING: Using tid and pid is likely buggy and might result in incorrect trace!\n"
-                "Pay particular attention to the length of events and cross check with the log!\n\n"
+                "\n\nWARNING: Use only https://magic-trace.org to view traces! https://ui.perfetto.dev/ is buggy and renders some slices length incorrectly!\n\n"
             )
             # there's probably a bug somewhere, but I don't know perfetto that well
             packet = builder.add_packet()
@@ -610,69 +616,71 @@ class MyTraceBuilder:
 
                     # finding operations that spawned the call to add them to flow_ids
                     # and also to use the same correlation id
-                    this_correlation_id = None
-                    coll_has_reduce = collectiveHasReduction(suppl["coll_type"])
-                    key_comp = (
-                        (
-                            suppl["dtype"],
-                            suppl["coll_type"],
-                            suppl["count"],
-                            suppl["red_op"],
+                    if not assume_magic_trace:
+                        this_correlation_id = None
+                        coll_has_reduce = collectiveHasReduction(suppl["coll_type"])
+                        key_comp = (
+                            (
+                                suppl["dtype"],
+                                suppl["coll_type"],
+                                suppl["count"],
+                                suppl["red_op"],
+                            )
+                            if coll_has_reduce
+                            else (suppl["dtype"], suppl["coll_type"], suppl["count"])
                         )
-                        if coll_has_reduce
-                        else (suppl["dtype"], suppl["coll_type"], suppl["count"])
-                    )
-                    for bufs in suppl["buffs"]:
-                        match_found = False  # each buffer must be matched
-                        for o_vals in call_list[call_idx - 1 :: -1]:  # seeing prev ops
-                            o_idx, o_addr, _, _, _, o_suppl = o_vals
-                            o_bufs = o_suppl.get("buffs")
-                            if o_bufs:
-                                assert (
-                                    len(o_bufs) == 1
-                                )  # individual ops use 1 buff only
-                                o_bufs = o_bufs[0]
-                                assert isinstance(o_bufs, tuple)
-                                if bufs == o_bufs:
-                                    # testing if other call parameters match
-                                    if coll_has_reduce:
-                                        match_found = (
-                                            o_suppl["dtype"],
-                                            o_suppl["coll_type"],
-                                            o_suppl["count"],
-                                            o_suppl["red_op"],
-                                        ) == key_comp
-                                    else:
-                                        match_found = (
-                                            o_suppl["dtype"],
-                                            o_suppl["coll_type"],
-                                            o_suppl["count"],
-                                        ) == key_comp
-                                    if match_found:
-                                        # idx shouldn't collide with comm ids
-                                        # flow_ids.append(idx) # essentially duplicates flow from conn & stream
-                                        corr_id = self._makeCorrelationId(o_addr)
-                                        if (
-                                            this_correlation_id is not None
-                                            and this_correlation_id != corr_id
-                                        ):
-                                            # likely a bug for this problem instance, but could happen in others
-                                            print(
-                                                f"WARNING: #{idx} {symbol(addr)} tracks to different correlation ids: "
-                                                f"already set to {this_correlation_id}, but now resolved to {corr_id} for #{o_idx} {symbol(o_addr)}. Using the latest one"
-                                            )
-                                        this_correlation_id = corr_id
-                                        break
-                    if this_correlation_id is None:
-                        print(
-                            f"WARNING: #{idx} {symbol(addr)} don't have prior operations!"
-                        )
-                        this_correlation_id = self._makeCorrelationId(
-                            addr
-                        )  # using just some stray ID
+                        for bufs in suppl["buffs"]:
+                            match_found = False  # each buffer must be matched
+                            for o_vals in call_list[call_idx - 1 :: -1]:  # seeing prev ops
+                                o_idx, o_addr, _, _, _, o_suppl = o_vals
+                                o_bufs = o_suppl.get("buffs")
+                                if o_bufs:
+                                    assert (
+                                        len(o_bufs) == 1
+                                    )  # individual ops use 1 buff only
+                                    o_bufs = o_bufs[0]
+                                    assert isinstance(o_bufs, tuple)
+                                    if bufs == o_bufs:
+                                        # testing if other call parameters match
+                                        if coll_has_reduce:
+                                            match_found = (
+                                                o_suppl["dtype"],
+                                                o_suppl["coll_type"],
+                                                o_suppl["count"],
+                                                o_suppl["red_op"],
+                                            ) == key_comp
+                                        else:
+                                            match_found = (
+                                                o_suppl["dtype"],
+                                                o_suppl["coll_type"],
+                                                o_suppl["count"],
+                                            ) == key_comp
+                                        if match_found:
+                                            # idx shouldn't collide with comm ids
+                                            # flow_ids.append(idx) # essentially duplicates flow from conn & stream
+                                            corr_id = self._makeCorrelationId(o_addr)
+                                            if (
+                                                this_correlation_id is not None
+                                                and this_correlation_id != corr_id
+                                            ):
+                                                # likely a bug for this problem instance, but could happen in others
+                                                print(
+                                                    f"WARNING: #{idx} {symbol(addr)} tracks to different correlation ids: "
+                                                    f"already set to {this_correlation_id}, but now resolved to {corr_id} for #{o_idx} {symbol(o_addr)}. Using the latest one"
+                                                )
+                                            this_correlation_id = corr_id
+                                            break
+                        if this_correlation_id is None:
+                            print(
+                                f"WARNING: #{idx} {symbol(addr)} don't have prior operations!"
+                            )
+                            this_correlation_id = self._makeCorrelationId(
+                                addr
+                            )  # using just some stray ID
                 else:
                     this_event_track_id = MAIN_TRACK_UUID
-                    this_correlation_id = self._makeCorrelationId(addr)
+                    if not assume_magic_trace:
+                        this_correlation_id = self._makeCorrelationId(addr)
 
                     # below can be removed, as it only checks the match
                     if "buffs" in suppl:  # matching to its kernel launch
@@ -732,19 +740,23 @@ class MyTraceBuilder:
                 # Associate with the track
                 packet.track_event.track_uuid = this_event_track_id
                 packet.track_event.name = _makeEventName(addr, suppl)
-                packet.track_event.correlation_id = this_correlation_id
+                if not assume_magic_trace:
+                    packet.track_event.correlation_id = this_correlation_id
                 packet.trusted_packet_sequence_id = PACKET_SEQUENCE_ID
 
                 # matching communicators for flow_ids
-                v = suppl.get("newcomm")
-                if v:
-                    flow_ids.append(v)
-                v = suppl.get("comm")
-                if v:
-                    flow_ids.append(v)
-                v = suppl.get("stream")
-                if v:
-                    flow_ids.append(v)
+                if (link_by & self.LINK_BY_COMM) > 0:
+                    v = suppl.get("newcomm")
+                    if v:
+                        flow_ids.append(v)
+                    v = suppl.get("comm")
+                    if v:
+                        flow_ids.append(v)
+                if (link_by & self.LINK_BY_STREAM) > 0:
+                    v = suppl.get("stream")
+                    if v:
+                        flow_ids.append(v)
+                
                 # saving flow_ids
                 for f in flow_ids:
                     packet.track_event.flow_ids.append(f)
@@ -904,7 +916,11 @@ def process_log(logfile, tracepath):
     for addr, descr in symbols.items():
         print(f"{addr} := {descr[0]} @ {descr[1]}")
 
-    MyTraceBuilder().make_trace(tracepath, symbols, calls)
+    MyTraceBuilder().make_trace(tracepath + "_comm_magic-trace.pftrace", symbols, calls, use_tid_pid=True, link_by=MyTraceBuilder.LINK_BY_COMM)
+    MyTraceBuilder().make_trace(tracepath + "_stream_magic-trace.pftrace", symbols, calls, use_tid_pid=True, link_by=MyTraceBuilder.LINK_BY_STREAM)
+
+    MyTraceBuilder().make_trace(tracepath + "_comm.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_COMM)
+    MyTraceBuilder().make_trace(tracepath + "_stream.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_STREAM)
 
 
 def getFiles() -> tuple[str, str]:
@@ -916,7 +932,7 @@ def getFiles() -> tuple[str, str]:
             logfile = g_work_dir + "/" + logfile
 
         root, _ = os.path.splitext(os.path.basename(logfile))
-        trace = os.path.dirname(logfile) + f"/{root}.pftrace"
+        trace = os.path.dirname(logfile) + f"/{root}"  # no extension here!
 
     return logfile, trace
 
