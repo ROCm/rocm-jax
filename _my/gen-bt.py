@@ -194,12 +194,15 @@ def materialize_template() -> str:
         ###
         "////////////// SPECIAL FUNCTIONS /////////\n",
         make_header("uprobe", "ncclAllReduce"),
-        EntryWArgs("AR", 6, fmt_sfx=",%llx", vars_sfx=',*(uint64*)(reg("sp")+8*1)'),  # retprobe is "simple" above
+        # WARNING!!! 872184 offset depends on compilation parameters. Compile RCCL with -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+        # and feed resulting compile_commands.json to VSCode/clangd to get the offset, or instrument RCCL with
+        # std::fprintf(stderr, "cudaDev offset %d bytes\n",reinterpret_cast<const char*>(&comm->cudaDev) - reinterpret_cast<const char*>(comm));
+        EntryWArgs("AR", 6, fmt_sfx=",%llx,%x", vars_sfx=',*(uint64*)(reg("sp")+8*1), *(uint32*)((uint8*)arg5 + 872184)'),  # retprobe is "simple" above
         make_header("uprobe", "ncclReduceScatter"),
-        EntryWArgs("RS", 6, fmt_sfx=",%llx", vars_sfx=',*(uint64*)(reg("sp")+8*1)'),  # retprobe is "simple" above
+        EntryWArgs("RS", 6, fmt_sfx=",%llx,%x", vars_sfx=',*(uint64*)(reg("sp")+8*1), *(uint32*)((uint8*)arg5 + 872184)'),  # retprobe is "simple" above
         ###
         make_header("uprobe", "ncclAllGather"),
-        EntryWArgs("AG", 6),  # retprobe is "simple" above
+        EntryWArgs("AG", 6, fmt_sfx=",%x", vars_sfx=',*(uint32*)((*(uint8**)arg4) + 872184)'),  # retprobe is "simple" above
         ###
         make_header("uprobe", "ncclCommInitRankConfig"),
         # looks like a compiler is smart enough to not pass 128bytes of freaking by value ncclUniqueId in regs

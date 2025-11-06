@@ -155,12 +155,12 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
 
     r_entry2_AllRedScat = re.compile(
         r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*"
-        r",\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<red_op>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<stream>[0-9a-fA-F]+)\s*$"
+        r",\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<red_op>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<stream>[0-9a-fA-F]+)\s*,\s*(?P<comm_cudaDev>[0-9a-fA-F]+)\s*$"
     )
 
     r_entry2_AllGath = re.compile(
         r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*"
-        r",\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<stream>[0-9a-fA-F]+)\s*$"
+        r",\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<stream>[0-9a-fA-F]+)\s*,\s*(?P<comm_cudaDev>[0-9a-fA-F]+)\s*$"
     )
     r_entry2_InitRankCfg = re.compile(
         r",\s*(?P<nranks>[0-9a-fA-F]+)\s*,\s*(?P<rank>[0-9a-fA-F]+)$"
@@ -506,6 +506,7 @@ class MyTraceBuilder:
     # bit values
     LINK_BY_COMM: int = 1 << 0
     LINK_BY_STREAM: int = 1 << 1
+    LINK_BY_DEVICE: int = 1 << 2
 
     def _make_trace_packets(
         self,
@@ -747,16 +748,19 @@ class MyTraceBuilder:
                 # matching communicators for flow_ids
                 if (link_by & self.LINK_BY_COMM) > 0:
                     v = suppl.get("newcomm")
-                    if v:
+                    if v is not None:
                         flow_ids.append(v)
                     v = suppl.get("comm")
-                    if v:
+                    if v is not None:
                         flow_ids.append(v)
                 if (link_by & self.LINK_BY_STREAM) > 0:
                     v = suppl.get("stream")
-                    if v:
+                    if v is not None:
                         flow_ids.append(v)
-                
+                if (link_by & self.LINK_BY_DEVICE) > 0:
+                    v = suppl.get("comm_cudaDev")
+                    if v is not None:
+                        flow_ids.append(v)
                 # saving flow_ids
                 for f in flow_ids:
                     packet.track_event.flow_ids.append(f)
@@ -777,7 +781,7 @@ class MyTraceBuilder:
 
 
 def supplElement2text(key: str, value):
-    if key in ("comm", "newcomm", "stream"):
+    if key in ("comm", "newcomm", "stream"): # use default decimals for comm_cudaDev
         return "0x%x" % value
     if key == "buffs":
         bufs = [f"(0x{b[0]:x}, 0x{b[1]:x})" for b in value]
@@ -918,9 +922,11 @@ def process_log(logfile, tracepath):
 
     MyTraceBuilder().make_trace(tracepath + "_comm_magic-trace.pftrace", symbols, calls, use_tid_pid=True, link_by=MyTraceBuilder.LINK_BY_COMM)
     MyTraceBuilder().make_trace(tracepath + "_stream_magic-trace.pftrace", symbols, calls, use_tid_pid=True, link_by=MyTraceBuilder.LINK_BY_STREAM)
+    MyTraceBuilder().make_trace(tracepath + "_device_magic-trace.pftrace", symbols, calls, use_tid_pid=True, link_by=MyTraceBuilder.LINK_BY_DEVICE)
 
     MyTraceBuilder().make_trace(tracepath + "_comm.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_COMM)
     MyTraceBuilder().make_trace(tracepath + "_stream.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_STREAM)
+    MyTraceBuilder().make_trace(tracepath + "_device.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_DEVICE)
 
 
 def getFiles() -> tuple[str, str]:
