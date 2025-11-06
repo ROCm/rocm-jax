@@ -155,7 +155,7 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
 
     r_entry2_AllRedScat = re.compile(
         r",\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*,\s*(?P<count>[0-9a-fA-F]+)\s*"
-        r",\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<red_op>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*$"
+        r",\s*(?P<dtype>[0-9a-fA-F]+)\s*,\s*(?P<red_op>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<stream>[0-9a-fA-F]+)\s*$"
     )
 
     r_entry2_AllGath = re.compile(

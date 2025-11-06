@@ -1,0 +1,42 @@
+config = {
+    // max_map_keys = 800;
+    // unstable_map_decl=enable;
+    perf_rb_pages = 4096
+}
+
+// this is to match stream argument location for AR & RS.
+// it's in *(rsp+8*1)
+
+uprobe:/opt/rocm/lib/librccl.so.1:ncclAllReduce
+{
+    $rsp = reg("sp");
+    printf("AR 0x%llx ip=%p rsp=%p, *rsp=0x%llx *(rsp+8*1)=0x%llx *(rsp+8*7)=0x%llx *(rsp+8*8)=0x%llx\n", tid(init), reg("ip"), $rsp,
+        *(uint64*)$rsp, *(uint64*)($rsp + 8*1), *(uint64*)($rsp + 8*7),*(uint64*)($rsp + 8*8)
+        );
+}
+
+uretprobe:/opt/rocm/lib/librccl.so.1:ncclAllReduce
+{
+    $rsp = reg("sp");
+    printf("ar 0x%llx ip=%p rsp=%p, *rsp=0x%llx\n", tid(init), reg("ip"), $rsp, *(uint64*)$rsp);
+}
+
+
+uprobe:/opt/rocm/lib/librccl.so.1:ncclReduceScatter
+{
+    $rsp = reg("sp");
+    printf("RS 0x%llx ip=%p rsp=%p, *rsp=0x%llx *(rsp+8*1)=0x%llx *(rsp+8*7)=0x%llx *(rsp+8*8)=0x%llx\n", tid(init), reg("ip"), $rsp,
+        *(uint64*)$rsp,*(uint64*)($rsp + 8*1),*(uint64*)($rsp + 8*7),*(uint64*)($rsp + 8*8)
+        );
+}
+
+uretprobe:/opt/rocm/lib/librccl.so.1:ncclReduceScatter
+{
+    $rsp = reg("sp");
+    printf("rs 0x%llx ip=%p rsp=%p, *rsp=0x%llx\n", tid(init), reg("ip"), $rsp, *(uint64*)$rsp);
+}
+
+uprobe:/opt/rocm/lib/librccl.so.1:ncclAllGather
+{
+    printf("AG 0x%llx stream=0x%llx\n", tid(init), arg5);
+}

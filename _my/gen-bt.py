@@ -14,8 +14,8 @@ g_config = """config = {
     max_map_keys = 8;            // default max number of keys in a map
     unstable_map_decl=enable;    // for toplevel let @probes
     print_maps_on_exit = false;  // no useful info there
-    perf_rb_pages = 4096      // size of output buffer in pages
-    // perf_rb_pages = 1       // playing with this helps to cause or avoid the hang
+    //perf_rb_pages = 4096      // size of output buffer in pages
+    perf_rb_pages = 1       // playing with this helps to cause or avoid the hang
 }
 
 // probes that don't have a dedicated body will use this map to translate a probe name to id.
@@ -173,13 +173,13 @@ def materialize_template() -> str:
     c_exit_vars = exit_vars.replace("@probes[probe],", "")
 
     def EntryWArgs(
-        id: str, argnums: int | list | tuple | range, *, pfx: str = "", sfx: str = ""
+        id: str, argnums: int | list | tuple | range, *, pfx: str = "", sfx: str = "", fmt_sfx: str = "",vars_sfx: str = ""
     ) -> str:
         if isinstance(argnums, int):
             argnums = range(argnums)
         assert isinstance(argnums, (list, tuple, range))
-        fmt = "".join(",%llx" for _ in argnums)
-        vars = "".join(f",arg{i}" for i in argnums)
+        fmt = "".join(",%llx" for _ in argnums) + fmt_sfx
+        vars = "".join(f",arg{i}" for i in argnums) + vars_sfx
         return g_tpl_uprobe % {
             "custom": pfx + c_entry_pfx(id) + fmt + c_entry_vars + vars + ");" + sfx
         }
@@ -194,9 +194,9 @@ def materialize_template() -> str:
         ###
         "////////////// SPECIAL FUNCTIONS /////////\n",
         make_header("uprobe", "ncclAllReduce"),
-        EntryWArgs("AR", 6),  # retprobe is "simple" above
+        EntryWArgs("AR", 6, fmt_sfx=",%llx", vars_sfx=',*(uint64*)(reg("sp")+8*1)'),  # retprobe is "simple" above
         make_header("uprobe", "ncclReduceScatter"),
-        EntryWArgs("RS", 6),  # retprobe is "simple" above
+        EntryWArgs("RS", 6, fmt_sfx=",%llx", vars_sfx=',*(uint64*)(reg("sp")+8*1)'),  # retprobe is "simple" above
         ###
         make_header("uprobe", "ncclAllGather"),
         EntryWArgs("AG", 6),  # retprobe is "simple" above
@@ -223,7 +223,7 @@ def materialize_template() -> str:
         g_tpl_kernelCallback,
         
         ##### HIP
-        ## hipDeviceSynchronize is NOT used in between
+        ## hipDeviceSynchronize is NOT used in between nccl* calls
         #make_header("uprobe", "hipDeviceSynchronize", g_lib_hip), # no retprobe
         #r"""{
         #printf("HS %llx,%llx\n", tid(init),nsecs);

@@ -8,6 +8,7 @@
 /_my/**/*.pftrace
 /_my/mylog
 /_my/*/*
+/_my/t.tar.gz
 
 # bazel external dependencies directory mapping for individual bazel workspaces that might be used
 /jax_rocm_plugin/external
