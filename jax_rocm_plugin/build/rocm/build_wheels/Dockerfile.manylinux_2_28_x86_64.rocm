@@ -20,7 +20,8 @@ RUN --mount=type=cache,target=/var/cache/dnf \
 ENV PATH="$PATH:/opt/rocm/bin:/opt/rocm/llvm/bin"
 
 ARG GPU_DEVICE_TARGETS="gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
-RUN printf '%s\n' > /opt/rocm/bin/target.lst ${GPU_DEVICE_TARGETS}
+RUN mkdir -p /opt/rocm/bin && \
+    printf '%s\n' > /opt/rocm/bin/target.lst ${GPU_DEVICE_TARGETS}
 
 # Install LLVM 18 and dependencies.
 RUN --mount=type=cache,target=/var/cache/dnf \
