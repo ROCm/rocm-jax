@@ -793,10 +793,10 @@ class MyTraceBuilder:
                 # matching communicators for flow_ids
                 if (link_by & self.LINK_BY_COMM) > 0:
                     v = suppl.get("newcomm")
-                    if v is not None:
+                    if v is not None and v!=0:
                         flow_ids.append(v)
                     v = suppl.get("comm")
-                    if v is not None:
+                    if v is not None and v!=0:
                         flow_ids.append(v)
                 if (link_by & self.LINK_BY_STREAM) > 0:
                     v = suppl.get("stream")
