@@ -11,10 +11,10 @@ g_lib_rccl = "/opt/rocm/lib/librccl.so.1"
 g_lib_hip = "/opt/rocm/lib/libamdhip64.so"
 
 g_config = """config = {
-    max_map_keys = 8;            // default max number of keys in a map
+    max_map_keys = 4;            // default max number of keys in a map
     unstable_map_decl=enable;    // for toplevel let @probes
     print_maps_on_exit = false;  // no useful info there
-    //perf_rb_pages = 4096      // size of output buffer in pages
+    // perf_rb_pages = 4096      // size of output buffer in pages
     perf_rb_pages = 1       // playing with this helps to cause or avoid the hang
 }
 
@@ -110,21 +110,21 @@ g_tpl_LaunchKernel = r"""{
     $ptr = (uint64*) (arg0 & 0xFFFFFFFFFFFFFFFC);
     // also saving func_tag (0), comm (1), and stream (2)
     if (0==$n_tasks_m_1){
-        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*$ptr,
+        printf("L %llx,%llx,%llx,%llx,%llx,%x,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*(uint32*)((uint8*)arg1 + 872184), *$ptr,
             *($ptr+1),*($ptr+2) );
     }else if (1==$n_tasks_m_1){
-        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*$ptr,
+        printf("L %llx,%llx,%llx,%llx,%llx,%x,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*(uint32*)((uint8*)arg1 + 872184), *$ptr,
             *($ptr+1),*($ptr+2),
             *($ptr+3),*($ptr+4)
         );
     }else if (2==$n_tasks_m_1){
-        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*$ptr,
+        printf("L %llx,%llx,%llx,%llx,%llx,%x,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*(uint32*)((uint8*)arg1 + 872184), *$ptr,
             *($ptr+1),*($ptr+2),
             *($ptr+3),*($ptr+4),
             *($ptr+5),*($ptr+6)
         );
     }else if (3==$n_tasks_m_1){
-        printf("L %llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*$ptr,
+        printf("L %llx,%llx,%llx,%llx,%llx,%x,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx,%llx\n", tid(init),$ts_start,arg0,arg1,arg2,*(uint32*)((uint8*)arg1 + 872184), *$ptr,
             *($ptr+1),*($ptr+2),
             *($ptr+3),*($ptr+4),
             *($ptr+5),*($ptr+6),
@@ -202,7 +202,7 @@ def materialize_template() -> str:
         EntryWArgs("RS", 6, fmt_sfx=",%llx,%x", vars_sfx=',*(uint64*)(reg("sp")+8*1), *(uint32*)((uint8*)arg5 + 872184)'),  # retprobe is "simple" above
         ###
         make_header("uprobe", "ncclAllGather"),
-        EntryWArgs("AG", 6, fmt_sfx=",%x", vars_sfx=',*(uint32*)((uint8*)arg5 + 872184)'),  # retprobe is "simple" above
+        EntryWArgs("AG", 6, fmt_sfx=",%x", vars_sfx=',*(uint32*)((uint8*)arg4 + 872184)'),  # retprobe is "simple" above
         ###
         make_header("uprobe", "ncclCommInitRankConfig"),
         # looks like a compiler is smart enough to not pass 128bytes of freaking by value ncclUniqueId in regs
@@ -230,6 +230,11 @@ def materialize_template() -> str:
         #make_header("uprobe", "hipDeviceSynchronize", g_lib_hip), # no retprobe
         #r"""{
         #printf("HS %llx,%llx\n", tid(init),nsecs);
+        #}"""
+        # hipStreamSynchronize is NOT used with any of streams passed to RCCL in between nccl* calls
+        #make_header("uprobe", "hipStreamSynchronize", g_lib_hip), # no retprobe
+        #r"""{
+        #printf("HS %llx,%llx,%llx\n", tid(init),nsecs, arg0);
         #}"""
     ]
 

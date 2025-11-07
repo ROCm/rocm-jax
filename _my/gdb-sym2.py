@@ -40,11 +40,15 @@ PROBE_ID_2_NAME = {
     "AR": "ncclAllReduce",
     "CS": "ncclCommSplit",
     "IC": "ncclCommInitRankConfig",
+    "HS": "hipStreamSynchronize",
     "GE": "ncclGroupEnd",
     "GS": "ncclGroupStart",
     "RS": "ncclReduceScatter",
     "L": g_kernel_launch,
 }
+
+def isNoExit(probe: str) -> bool:
+    return probe == "hipStreamSynchronize"
 
 RED_OP_NAMES = {  # ncclRedOp_t
     0: "Sum",
@@ -170,7 +174,10 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
     )
     # func_tag is used to match to a corresponding completion callback
     r_entry2_LaunchKernel = re.compile(
-        r",\s*(?P<func_tag>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<stream>[0-9a-fA-F]+)\s*,\s*(?P<countRedopDtypeCollt>[0-9a-fA-F]+)\s*,\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
+        r",\s*(?P<func_tag>[0-9a-fA-F]+)\s*,\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<stream>[0-9a-fA-F]+)\s*,\s*(?P<comm_cudaDev>[0-9a-fA-F]+)\s*,\s*(?P<countRedopDtypeCollt>[0-9a-fA-F]+)\s*,\s*(?P<send>[0-9a-fA-F]+)\s*,\s*(?P<recv>[0-9a-fA-F]+)\s*"
+    )
+    r_entry2_hipStreamSynchronize = re.compile(
+        r",\s*(?P<stream>[0-9a-fA-F]+)$"
     )
 
     r_LaunchKernel_other_bufs = re.compile(
@@ -184,6 +191,7 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
             "ncclAllGather",
             "ncclCommInitRankConfig",
             "ncclCommSplit",
+            "hipStreamSynchronize",
             # "arechLaunchKernel"
         ]
     )
@@ -198,6 +206,8 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
                 return r_entry2_InitRankCfg
             elif probe == "ncclCommSplit":
                 return r_entry2_split
+            elif probe == "hipStreamSynchronize":
+                return r_entry2_hipStreamSynchronize
             # elif probe == "arechLaunchKernel":
             # return r_entry2_LaunchKernel
             else:
@@ -225,6 +235,7 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
     calls: dict[int, list[list]] = {}
     # maps func_tag -> [start_idx, tid, ts_start, ts_end, "n/a", suppl]. At the end of log processing it's merged into calls
     kernels: dict[int, list] = {}
+    no_exit_calls: dict[int, list[list]] = {}
 
     with open(logfile, "r") as file:
         for idx, line in enumerate(file):
@@ -254,6 +265,8 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
                     assert comm != 0
                     stream = int(m_launch_kernel["stream"], 16)
                     assert stream != 0
+                    comm_cudaDev = int(m_launch_kernel["comm_cudaDev"], 16)
+                    assert comm_cudaDev >= 0
                     countRedopDtypeCollt = int(
                         m_launch_kernel["countRedopDtypeCollt"], 16
                     )
@@ -290,6 +303,7 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
                         "coll_type": coll_type,
                         "comm": comm,
                         "stream": stream,
+                        "comm_cudaDev": comm_cudaDev,
                     }
                     if collectiveHasReduction(coll_type):
                         suppl["red_op"] = red_op
@@ -309,7 +323,12 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
                     assert tid not in calls or (0 < p_ts_end and p_caller is not None)
 
                     call = [idx, probe, ts_start, 0, None, suppl]
-                    calls.setdefault(tid, []).append(call)
+
+                    if isNoExit(probe):
+                        call[4] = "n/a"
+                        no_exit_calls.setdefault(tid, []).append(call)
+                    else:
+                        calls.setdefault(tid, []).append(call)
 
                     reg = _getEntryRegExp(probe)
                     if reg is None:
@@ -386,6 +405,22 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
                 f"INFO: Thread {tid} for #{ker[0]} {ker[5]['_probe']} is not found in calls, adding a new thread"
             )
             calls[tid] = [ker]
+
+    # merging no exit calls in a correct ordering by ts_start
+    for tid, no_exit_call_list in no_exit_calls.items():
+        if tid in calls:
+            for call in no_exit_call_list:
+                clist = calls[tid]
+                ts_start = call[2]
+                # leaving ending time zero to draw as a marker on the trace
+                for i, cvals in enumerate(clist):
+                    if ts_start < cvals[2]:
+                        clist.insert(i, call)
+                        break
+                else:
+                    clist.append(call)
+        else:
+            calls[tid] = no_exit_call_list
 
     return calls, getSymbols(addresses)
 
@@ -737,13 +772,13 @@ class MyTraceBuilder:
                 # 2. Emit events
                 packet = builder.add_packet()
                 packet.timestamp = ts_start  # Start time in nanoseconds
-                packet.track_event.type = TrackEvent.TYPE_SLICE_BEGIN
+                packet.trusted_packet_sequence_id = PACKET_SEQUENCE_ID
+                packet.track_event.type = TrackEvent.TYPE_SLICE_BEGIN if ts_end > 0 else TrackEvent.TYPE_INSTANT
                 # Associate with the track
                 packet.track_event.track_uuid = this_event_track_id
                 packet.track_event.name = _makeEventName(addr, suppl)
                 if not assume_magic_trace:
                     packet.track_event.correlation_id = this_correlation_id
-                packet.trusted_packet_sequence_id = PACKET_SEQUENCE_ID
 
                 # matching communicators for flow_ids
                 if (link_by & self.LINK_BY_COMM) > 0:
@@ -766,18 +801,20 @@ class MyTraceBuilder:
                     packet.track_event.flow_ids.append(f)
 
                 self._add_annotation(packet, "Log line number", idx)
-                self._add_annotation(
-                    packet,
-                    "Called from",
-                    f"{symbol(caller_addr)} @ {symbols[caller_addr][1]}",
-                )
                 self._add_annotation(packet, suppl)
+                if caller_addr is not None and caller_addr != "n/a":
+                    self._add_annotation(
+                        packet,
+                        "Called from",
+                        f"{symbol(caller_addr)} @ {symbols[caller_addr][1]}",
+                    )
 
-                packet = builder.add_packet()
-                packet.timestamp = ts_end  # End time in nanoseconds
-                packet.track_event.type = TrackEvent.TYPE_SLICE_END
-                packet.track_event.track_uuid = this_event_track_id
-                packet.trusted_packet_sequence_id = PACKET_SEQUENCE_ID
+                if ts_end > 0:
+                    packet = builder.add_packet()
+                    packet.timestamp = ts_end  # End time in nanoseconds
+                    packet.track_event.type = TrackEvent.TYPE_SLICE_END
+                    packet.track_event.track_uuid = this_event_track_id
+                    packet.trusted_packet_sequence_id = PACKET_SEQUENCE_ID
 
 
 def supplElement2text(key: str, value):
@@ -818,18 +855,17 @@ def print_per_thread(symbols: dict[str, tuple[str, str]], calls: dict[int, list[
             kernel_launch = addr == g_kernel_launch
             if not kernel_launch or ts_end > 0:  # kernel launches might
                 # not have completions when a kernel hangs
-                assert 0 < ts_end
-                assert kernel_launch or prev_ts_end < ts_start
-                assert ts_start < ts_end
-                if not kernel_launch:
-                    prev_ts_end = ts_end
+                assert isNoExit(addr) or (0 < ts_end and ts_start < ts_end)
+                assert kernel_launch or prev_ts_end < ts_start, f"prev_ts_end={prev_ts_end:x} < ts_start={ts_start:x} for #{idx} {symbol(addr)}"
+                if not kernel_launch: # it's async, so it's end time doesn't count
+                    prev_ts_end = max(ts_end, ts_start) # to cope with ts_end==0
             s = {
                 k: supplElement2text(k, v)
                 for k, v in suppl.items()
                 if not k.startswith("_") and (kernel_launch or k != "coll_type")
             }
             print(
-                f" #{idx}, {symbol(addr)}, {ts_start - min_ts}, {ts_end - min_ts}, {ts_end - ts_start}, {s}, {symbol(caller_addr)}"
+                f" #{idx}, {symbol(addr)}, {ts_start - min_ts}, {ts_end - min_ts if ts_end > 0 else 0}, {ts_end - ts_start if ts_end > 0 else 0}, {s}, {symbol(caller_addr)}"
             )
     print("-----> end of per thread calls")
 
@@ -924,9 +960,9 @@ def process_log(logfile, tracepath):
     MyTraceBuilder().make_trace(tracepath + "_stream_magic-trace.pftrace", symbols, calls, use_tid_pid=True, link_by=MyTraceBuilder.LINK_BY_STREAM)
     MyTraceBuilder().make_trace(tracepath + "_device_magic-trace.pftrace", symbols, calls, use_tid_pid=True, link_by=MyTraceBuilder.LINK_BY_DEVICE)
 
-    MyTraceBuilder().make_trace(tracepath + "_comm.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_COMM)
-    MyTraceBuilder().make_trace(tracepath + "_stream.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_STREAM)
-    MyTraceBuilder().make_trace(tracepath + "_device.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_DEVICE)
+    #MyTraceBuilder().make_trace(tracepath + "_comm.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_COMM)
+    #MyTraceBuilder().make_trace(tracepath + "_stream.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_STREAM)
+    #MyTraceBuilder().make_trace(tracepath + "_device.pftrace", symbols, calls, use_tid_pid=False, link_by=MyTraceBuilder.LINK_BY_DEVICE)
 
 
 def getFiles() -> tuple[str, str]:
