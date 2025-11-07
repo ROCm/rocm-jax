@@ -91,10 +91,7 @@ g_tpl_uretprobe = """{
         }
 
         // delete(@start, $thrd);
-        // delete(@start[$thrd]);
-
         // delete(@funcs, $thrd);
-        // delete(@funcs[$thrd]);
 
         %(custom)s
     }
@@ -206,19 +203,42 @@ def materialize_template() -> str:
         ###
         make_header("uprobe", "ncclCommInitRankConfig"),
         # looks like a compiler is smart enough to not pass 128bytes of freaking by value ncclUniqueId in regs
-        EntryWArgs("IC", (1, 2), pfx="@comm[$thrd] = arg0;\n        "),
+        EntryWArgs("IC", (1, 2), pfx="@comm[$thrd] = arg0;\n        @hip_dev2[$thrd] = -1;\n        "),
+
+        make_header("uprobe", "hipGetDevice", g_lib_hip), # no retprobe
+        r"""{
+            $thrd = tid(init);
+            if (@comm[$thrd] != 0 && @hip_dev2[$thrd] == -1){     // means called from ncclCommInitRankConfig or split
+                @hip_dev[$thrd] = arg0;
+            }
+        }""",
+        make_header("uretprobe", "hipGetDevice", g_lib_hip), # no retprobe
+        r"""{
+            $thrd = tid(init);
+            if (@comm[$thrd] != 0 && @hip_dev2[$thrd] == -1){ // means called from ncclCommInitRankConfig or split
+                $dev = *(int32*)@hip_dev[$thrd];
+                assert($dev >= 0, "Oups3!");
+                @hip_dev2[$thrd] = $dev
+                // delete(@hip_dev, $thrd); //not necessary
+            }
+        }""",
+
         make_header("uretprobe", "ncclCommInitRankConfig"),
-        ",",
+        g_tpl_uretprobe
+        % {
+            "custom": (exit_pfx + r",%llx,%x" + exit_vars + ", *(uint64*)@comm[$thrd], @hip_dev2[$thrd]);")
+            # + "\n        delete(@hip_dev2, $thrd);" # not necessary
+            + "\n        delete(@comm, $thrd);"
+        },
+        ###
+        make_header("uprobe", "ncclCommSplit"),
+        EntryWArgs("CS", 3, pfx="@comm[$thrd] = arg3;\n        ",fmt_sfx=",%x", vars_sfx=',*(uint32*)((uint8*)arg0 + 872184)'),
         make_header("uretprobe", "ncclCommSplit"),
         g_tpl_uretprobe
         % {
             "custom": (exit_pfx + r",%llx" + exit_vars + ", *(uint64*)@comm[$thrd]);")
-            + "\n        delete(@comm[$thrd]);"
+            + "\n        delete(@comm,$thrd);"
         },
-        ###
-        make_header("uprobe", "ncclCommSplit"),
-        # retprobe is the same as for ncclCommInitRankConfig
-        EntryWArgs("CS", 3, pfx="@comm[$thrd] = arg3;\n        ",fmt_sfx=",%x", vars_sfx=',*(uint32*)((uint8*)arg0 + 872184)'),
         ############## TOTALLY CUSTOMIZED PROBES
         make_header("uprobe", "arechLaunchKernel"),
         g_tpl_LaunchKernel,

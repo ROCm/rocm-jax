@@ -218,7 +218,15 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
     r_exit_common = re.compile(
         r"^\s*(?P<probe_id>[a-z]+)\s+(?P<tid>[0-9a-fA-F]+)\s*,\s*(?P<ts_end>[0-9a-fA-F]+)\s*"
     )
-    r_exit_InitRankCfgSplit = re.compile(r",\s*(?P<newcomm>[0-9a-fA-F]+)$")
+    r_exit_Split = re.compile(r",\s*(?P<newcomm>[0-9a-fA-F]+)\s*$")
+    r_exit_InitRankCfg = re.compile(r",\s*(?P<newcomm>[0-9a-fA-F]+),\s*(?P<comm_cudaDev>[0-9a-fA-F]+)\s*$")
+
+    def _getExitRegExp(probe: str):
+        if probe == "ncclCommSplit":
+            return r_exit_Split
+        elif probe == "ncclCommInitRankConfig":
+            return r_exit_InitRankCfg
+        return None
 
     # mapping from an address to a symbol to use if GDB isn't available. Previously I also dumped
     # return addresses, so this was mainly useful back then. Won't delete it, as it might become useful later
@@ -375,14 +383,16 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
                     calls[tid][-1][4] = caller_addr
 
                     rest_line = line[len(m_exit_cmn.group(0)) :].rstrip()
-                    if probe in ["ncclCommInitRankConfig", "ncclCommSplit"]:
-                        m = r_exit_InitRankCfgSplit.match(rest_line)
-                        assert m
-                        suppl.update({k: int(v, 16) for k, v in m.groupdict().items()})
-                    else:
+                    reg = _getExitRegExp(probe)
+                    if reg is None:
                         assert not rest_line, (
                             f"Parser isn't coherent with the log, rest_line='{rest_line}', so can't parse #{idx} {line}"
                         )
+                    else:
+                        m = reg.match(rest_line)
+                        assert m
+                        suppl.update({k: int(v, 16) for k, v in m.groupdict().items()})
+                    
             elif line:
                 raise RuntimeError(f"Unparsable line#{idx} {line}")
 
