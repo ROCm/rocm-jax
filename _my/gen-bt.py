@@ -218,7 +218,7 @@ def materialize_template() -> str:
         ###
         make_header("uprobe", "ncclCommSplit"),
         # retprobe is the same as for ncclCommInitRankConfig
-        EntryWArgs("CS", 3, pfx="@comm[$thrd] = arg3;\n        "),
+        EntryWArgs("CS", 3, pfx="@comm[$thrd] = arg3;\n        ",fmt_sfx=",%x", vars_sfx=',*(uint32*)((uint8*)arg0 + 872184)'),
         ############## TOTALLY CUSTOMIZED PROBES
         make_header("uprobe", "arechLaunchKernel"),
         g_tpl_LaunchKernel,

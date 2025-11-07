@@ -170,7 +170,7 @@ def parseLog(logfile) -> tuple[dict[int, list[list]], dict[str, tuple[str, str]]
         r",\s*(?P<nranks>[0-9a-fA-F]+)\s*,\s*(?P<rank>[0-9a-fA-F]+)$"
     )
     r_entry2_split = re.compile(
-        r",\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<color>[0-9a-fA-F]+)\s*,\s*(?P<key>[0-9a-fA-F]+)\s*$"
+        r",\s*(?P<comm>[0-9a-fA-F]+)\s*,\s*(?P<color>[0-9a-fA-F]+)\s*,\s*(?P<key>[0-9a-fA-F]+)\s*,\s*(?P<comm_cudaDev>[0-9a-fA-F]+)\s*$"
     )
     # func_tag is used to match to a corresponding completion callback
     r_entry2_LaunchKernel = re.compile(
