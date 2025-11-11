@@ -36,7 +36,7 @@ def load_version_module(pkg_path):
     spec.loader.exec_module(module)
     return module
 
-
+print("\n\n ENV VARS :", os.environ)
 _version_module = load_version_module(package_name)
 __version__ = _version_module._get_version_for_build() + "+rocm" + rocm_detected_version
 _cmdclass = _version_module._get_cmdclass(package_name)
