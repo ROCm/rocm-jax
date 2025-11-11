@@ -34,7 +34,7 @@ def load_version_module(pkg_path):
   return module
 
 _version_module = load_version_module(f"jax_plugins/xla_rocm{rocm_version}")
-__version__ = _version_module._get_version_for_build()+"rocm"+rocm_detected_version
+__version__ = _version_module._get_version_for_build() + "rocm" + rocm_detected_version
 
 packages = find_namespace_packages(
     include=[
