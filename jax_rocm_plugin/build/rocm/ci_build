@@ -132,7 +132,7 @@ def dist_wheels(
             "-e",
             "GIT_WORK_TREE=/repo",
             "-e",
-            "ROCM_VERSION_EXTRA=".join(rocm_version),
+            "ROCM_VERSION_EXTRA=" + rocm_version,
             image,
             "bash",
             "-c",
