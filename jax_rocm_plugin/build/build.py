@@ -487,7 +487,6 @@ async def main():
     if args.rbe:
         logging.debug("Using RBE")
         wheel_build_command_base.append("--config=rocm_rbe")
-        wheel_build_command_base.append("--noremote_accept_cached")
 
     if args.local_xla_path:
         logging.debug("Local XLA path: %s", args.local_xla_path)

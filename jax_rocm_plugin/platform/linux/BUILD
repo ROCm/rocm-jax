@@ -10,7 +10,7 @@ platform(
         "@bazel_tools//tools/cpp:clang",
     ],
     exec_properties = {
-        "container-image": "docker://938540721288.dkr.ecr.us-east-1.amazonaws.com/amd/jax-build@sha256:3ea3a72313f56b892160316f489992a7f6e63aa858aac2a729ada80850aa7f46",
+        "container-image": "docker://ghcr.io/rocm/jax-manylinux_2_28_x86_64_rocm702@sha256:3b7c7d786b72aa2524fbede28df822609106576d10deed6de7325164ebb724b7",
         "OSFamily": "Linux",
     },
 )
