@@ -131,6 +131,8 @@ def dist_wheels(
             "GIT_DIR=/repo/.git",
             "-e",
             "GIT_WORK_TREE=/repo",
+            "-e"
+            "ROCM_VERSION_EXTRA=".join(rocm_version)
             image,
             "bash",
             "-c",
