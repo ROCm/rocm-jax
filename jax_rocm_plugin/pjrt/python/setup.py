@@ -25,7 +25,7 @@ package_name = f"jax_plugins.xla_rocm{rocm_version}"
 default_rocm_path = "/opt/rocm"
 rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
 rocm_detected_version = rocm_path.split("-")[-1] if "-" in rocm_path else "unknown"
-rocm_tag = os.getenv("ROCM_VERSION_EXTRA", "dev")
+rocm_tag = os.getenv("ROCM_VERSION_EXTRA", rocm_detected_version)
 
 
 def load_version_module(pkg_path):
