@@ -28,7 +28,7 @@ import shutil
 
 def build_jaxlib_wheel(rocm_version, pyver_string):
 
-    JAX_BRANCH = "rocm-jaxlib-v0.7.1"
+    JAX_BRANCH = "subodube/jaxlib-rocm-version-extra" #"rocm-jaxlib-v0.8.0"
     JAX_URL = f"https://github.com/ROCm/jax/archive/refs/heads/{JAX_BRANCH}.tar.gz"
     TARGET_DIR = os.path.abspath("./wheelhouse/jax_repo")
 
@@ -55,6 +55,7 @@ def build_jaxlib_wheel(rocm_version, pyver_string):
             f"--python_version=\"{py_ver}\"",
             f"--rocm_path=/opt/rocm-{rocm_version}",
             f"--clang_path=/opt/rocm-{rocm_version}/llvm/bin/clang",
+            "--bazel_options=--repo_env=ML_WHEEL_TYPE=release", "&&",
             "auditwheel", "repair", "dist/jaxlib*.whl", "-w", "../", "&&",
             ]
 
