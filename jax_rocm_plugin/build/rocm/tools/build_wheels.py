@@ -159,6 +159,7 @@ def build_jaxlib_wheel(
         "python",
         "build/build.py",
         "build",
+        "--bazel_options=--strip=never --copt=-g3 --cxxopt=-g3",
         "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
         "--rocm_path=%s" % rocm_path,
         "--rocm_version=%s" % version_string,
