@@ -245,6 +245,12 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
         default="",
         help="Path to the ROCm toolkit.",
     )
+    rocm_group.add_argument(
+        "--preserve_debug_symbols",
+        type=bool,
+        default=True,
+        help="Preserve debug symbols in the generated SO files",
+    )
 
     # Compile Options
     compile_group = parser.add_argument_group("Compile Options")
@@ -598,6 +604,8 @@ async def main():
             )
 
     if "rocm" in args.wheels:
+        if args.preserve_debug_symbols:
+            wheel_build_command_base.append("--config=debug_symbols")
         wheel_build_command_base.append("--config=rocm_base")
         if args.use_clang:
             wheel_build_command_base.append("--config=rocm")
