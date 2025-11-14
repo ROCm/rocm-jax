@@ -77,6 +77,11 @@ jobs:
           repository: rocm/jax
           ref: rocm-jaxlib-v0.7.1
           path: jax
+      - name: Apply patches to rocm/jax test repo
+        run: |
+          pushd jax
+          git apply ../ci/patches/*
+          popd
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
@@ -95,6 +100,7 @@ jobs:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
         run: |
+          # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
             --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && \
