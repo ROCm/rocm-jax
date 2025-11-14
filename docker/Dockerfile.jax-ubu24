@@ -6,7 +6,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 # Install bzip2 and sqlite3 packages
 RUN apt-get update && apt-get install -y \
     sqlite3 libsqlite3-dev \
-    libbz2-dev \
+    libbz2-dev libdw1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Add target file to help determine which device(s) to build for
@@ -43,6 +43,7 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
         pytest \
         pytest-html \
         pytest_html_merger \
+        pytest-csv \
         pytest-reportlog \
         pytest-rerunfailures \
         pytest-json-report \

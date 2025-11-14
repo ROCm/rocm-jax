@@ -1,6 +1,6 @@
-jaxlib @ https://github.com/ROCm/jax/releases/download/rocm-jax-v0.6.0/jaxlib-0.6.0-cp310-cp310-manylinux2014_x86_64.whl; python_version >= '3.10' and python_version < '3.11'
-jaxlib @ https://github.com/ROCm/jax/releases/download/rocm-jax-v0.6.0/jaxlib-0.6.0-cp311-cp311-manylinux2014_x86_64.whl; python_version >= '3.11' and python_version < '3.12'
-jaxlib @ https://github.com/ROCm/jax/releases/download/rocm-jax-v0.6.0/jaxlib-0.6.0-cp312-cp312-manylinux2014_x86_64.whl; python_version >= '3.12' and python_version < '3.13'
-jaxlib @ https://github.com/ROCm/jax/releases/download/rocm-jax-v0.6.0/jaxlib-0.6.0-cp313-cp313-manylinux2014_x86_64.whl; python_version >= '3.13' and python_version < '3.14'
+jaxlib @ https://github.com/ROCm/jax/releases/download/rocm-jax-v0.6.0/jaxlib-0.6.2-cp310-cp310-manylinux2014_x86_64.whl; python_version >= '3.10' and python_version < '3.11'
+jaxlib @ https://github.com/ROCm/jax/releases/download/rocm-jax-v0.6.0/jaxlib-0.6.2-cp311-cp311-manylinux2014_x86_64.whl; python_version >= '3.11' and python_version < '3.12'
+jaxlib @ https://github.com/ROCm/jax/releases/download/rocm-jax-v0.6.0/jaxlib-0.6.2-cp312-cp312-manylinux2014_x86_64.whl; python_version >= '3.12' and python_version < '3.13'
+jaxlib @ https://github.com/ROCm/jax/releases/download/rocm-jax-v0.6.0/jaxlib-0.6.2-cp313-cp313-manylinux2014_x86_64.whl; python_version >= '3.13' and python_version < '3.14'
 
-jax==0.6.0
+jax==0.6.2
