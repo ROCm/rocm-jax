@@ -1,12 +1,13 @@
-From a8f993955b72a4db9d98f3ee36aee9ea3a326a89 Mon Sep 17 00:00:00 2001
+From c3cf4eafa73c2c5d5c3a475abd98c0be7510f031 Mon Sep 17 00:00:00 2001
 From: Charles Hofer <Charles.Hofer@amd.com>
 Date: Wed, 12 Nov 2025 22:12:01 +0000
-Subject: [PATCH 3/3] hipblas typedef fix
+Subject: [PATCH 3/5] hipblas typedef fix
 
 ---
  jaxlib/gpu/solver_interface.cc | 12 ++++++------
  jaxlib/gpu/vendor.h            |  8 +++++---
- 2 files changed, 11 insertions(+), 9 deletions(-)
+ jaxlib/rocm/BUILD              |  4 ++++
+ 3 files changed, 15 insertions(+), 9 deletions(-)
 
 diff --git a/jaxlib/gpu/solver_interface.cc b/jaxlib/gpu/solver_interface.cc
 index 6ef8652ad..f6fc5bba1 100644
@@ -73,6 +74,21 @@ index 62268a7d8..801050571 100644
  typedef struct hipsolverHandle_* gpusolverDnHandle_t;
  typedef hipblasFillMode_t gpublasFillMode_t;
  typedef hipsolverFillMode_t gpusolverFillMode_t;
+diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
+index f59ac817a..5c5802949 100644
+--- a/jaxlib/rocm/BUILD
++++ b/jaxlib/rocm/BUILD
+@@ -404,6 +404,10 @@ nanobind_extension(
+         "@nanobind",
+         "@xla//xla/ffi/api:ffi",
+     ],
++    linkopts = [
++        "-L/opt/rocm/lib",
++        "-lamdhip64",
++    ],
+ )
+ 
+ cc_library(
 -- 
 2.34.1
 
