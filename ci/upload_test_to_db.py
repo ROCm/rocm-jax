@@ -33,6 +33,8 @@ SKIP_FILES = {
     "collect_module_log.jsonl",
 }
 DEFAULT_LABEL = "Skipped Upstream"
+DESELECT_LABEL = "Deselected on ROCm"
+IGNORE_LABEL = "Ignored on ROCm"
 
 
 # -----------------------------
@@ -142,17 +144,42 @@ def extract_result_fields(
     return nodeid, outcome, duration, longrepr, message
 
 
+def parse_selection_files(paths: List[Path]) -> Tuple[List[str], List[str]]:
+    """Parses files containing lines:
+       --deselect=<nodeid>
+       --ignore=<path>
+    Returns (deselect_nodeids, ignored_paths).
+    """
+    deselect: List[str] = []
+    ignore: List[str] = []
+    for p in paths or []:
+        if not p or not p.exists():
+            continue
+        for raw in p.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("--deselect="):
+                val = line[len("--deselect=") :].strip()
+                if val:
+                    deselect.append(val)
+                continue
+            if line.startswith("--ignore="):
+                val = line[len("--ignore=") :].strip()
+                if val:
+                    ignore.append(val)
+                continue
+    deselect = list(dict.fromkeys(deselect))
+    ignore = list(dict.fromkeys(ignore))
+    return deselect, ignore
+
+
 # -----------------------------
 # Skip reason categorizer
 # -----------------------------
 # Precompile skip categorization rules (regex etc.) once.
 # categorize_reason() reuses them; lru_cache avoids recompute.
 _RULES_RAW = [
-    # ROCm
-    {
-        "any": ["skip on rocm", "skip for rocm"],
-        "label": "Skipped on ROCm",
-    },
     # Mosaic
     {"contains": "mosaic", "label": "Mosaic"},
     # Memory
@@ -374,6 +401,7 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
     build_num: Optional[int],
     github_run_id: int,
     run_tag: str,
+    selection_files: Optional[List[Path]] = None,
 ) -> None:
     """Load per-test JSON reports and upload results to MySQL.
 
@@ -392,6 +420,26 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
     if not tests:
         print("No tests found in JSONs")
         raise SystemExit(2)  # input error
+
+    # include synthetic deselected / ignored results
+    deselect_nodes, ignored_paths = parse_selection_files(selection_files or [])
+    for nodeid in deselect_nodes:
+        tests.append(
+            {
+                "nodeid": nodeid,
+                "outcome": "deselected",
+                "call": {"duration": 0.0, "longrepr": DESELECT_LABEL},
+            }
+        )
+    for fpath in ignored_paths:
+        filename = Path(fpath).name  # e.g. "matmul_test.py"
+        tests.append(
+            {
+                "nodeid": f"{filename}:: ::",  # filename, empty class, empty test
+                "outcome": "ignored",
+                "call": {"duration": 0.0, "longrepr": IGNORE_LABEL},
+            }
+        )
 
     conn = connect()
     cur = conn.cursor()
@@ -421,7 +469,15 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
             nodeid, outcome, duration, longrepr, message = extract_result_fields(t)
             f, c, n = nodeid_parts(nodeid)
             test_id = test_id_map[(f, c, n)]
-            skip_label = categorize_reason(longrepr) if outcome == "skipped" else None
+            # skip_label = categorize_reason(longrepr) if outcome == "skipped" else None
+            if outcome == "skipped":
+                skip_label = categorize_reason(longrepr)
+            elif outcome == "deselected":
+                skip_label = DESELECT_LABEL
+            elif outcome == "ignored":
+                skip_label = IGNORE_LABEL
+            else:
+                skip_label = None
             append(
                 (
                     run_id,
@@ -468,6 +524,13 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--github-run-id", required=True, type=int, help="Actions run id (int)"
     )
+    p.add_argument(
+        "--selection-file",
+        dest="selection_files",
+        action="append",
+        default=[],
+        help="Path to a selection file (expects --deselect=/--ignore= lines)",
+    )
 
     return p.parse_args()
 
@@ -483,4 +546,5 @@ if __name__ == "__main__":
         commit_sha=args.commit_sha,
         build_num=args.build_num,
         github_run_id=args.github_run_id,
+        selection_files=[Path(x) for x in (args.selection_files or [])],
     )
