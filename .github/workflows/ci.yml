@@ -85,6 +85,11 @@ jobs:
           docker run --rm --device=/dev/kfd --device=/dev/dri --group-add video \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
             rocm-smi -a || true
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin_wheels_r${{ matrix.rocm-version }}
+          path: ./wheelhouse
       - name: Run tests
         env:
           GPU_COUNT: "8"
