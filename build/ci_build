@@ -265,7 +265,6 @@ def parse_args():
 
     p.add_argument(
         "--rocm-version",
-        default="7.1.0",
         help="ROCm version used for building wheels, testing, and installing into Docker image",
     )
 

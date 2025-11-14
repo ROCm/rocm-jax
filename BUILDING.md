@@ -27,7 +27,7 @@ setting `--rocm-build-job` and `--rocm-build-num` and with your own local
 copy of XLA. For example,
 ```shell
 PYTHON_VERSION="3.11,3.12"
-ROCM_VERSION=7.1.0
+ROCM_VERSION=7.2.0
 ROCM_BUILD_JOB=compute-rocm-dkms-no-npi-hipclang
 ROCM_BUILD_NUM=16623
 XLA_SOURCE=~/path/to/xla
@@ -95,7 +95,7 @@ which require Python 3.11 and Python 3.12 respectively. The kernels wheel
 
 Run the build script 
 ```shell
-ROCM_VERSION=6.4.1
+ROCM_VERSION=7.2.0
 
 python3 build/ci_build \
     --rocm-version=$ROCM_VERSION \
@@ -106,7 +106,7 @@ Like the wheel build, you can also install versions of ROCm that were built
 internally at AMD. You can also filter on the Dockerfile names in `docker/`,
 and only build images from select Dockerfiles with the `--filter` option.
 ```shell
-ROCM_VERSION=7.1.0
+ROCM_VERSION=7.2.0
 ROCM_BUILD_JOB=compute-rocm-dkms-no-npi-hipclang
 ROCM_BUILD_NUM=16623
 
@@ -136,7 +136,7 @@ python3 build/ci_build test $TEST_IMAGE --test-cmd "pytest jax_rocm_plugin/tests
 We keep unit tests in the `rocm/jax` repository, and you'll need to clone it
 to run the regular JAX unit tests with ROCm,
 ```shell
-git clone --depth 1 --branch rocm-jaxlib-v0.7.1 git@github.com:ROCm/jax.git
+git clone --depth 1 --branch rocm-jaxlib-v0.8.0 git@github.com:ROCm/jax.git
 # Each release of the ROCm plugin has a corresponding branch. You can find
 # more at https://github.com/ROCm/rocm-jax/branches/all?query=rocm-jaxlib
 

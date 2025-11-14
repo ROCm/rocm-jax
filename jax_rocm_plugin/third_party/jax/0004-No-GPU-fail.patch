@@ -1,17 +1,27 @@
+From 5c29011923e5845caa7bf68a7ce0f520c2eea7e8 Mon Sep 17 00:00:00 2001
+From: Charles Hofer <Charles.Hofer@amd.com>
+Date: Thu, 13 Nov 2025 21:50:02 +0000
+Subject: [PATCH] No GPU fail
+
+---
+ jaxlib/rocm/BUILD                    | 1 +
+ jaxlib/rocm/rocm_plugin_extension.cc | 9 +++++++++
+ 2 files changed, 10 insertions(+)
+
 diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
-index 0c2c2422a..4f0f323ec 100644
+index f59ac817a..806d47efc 100644
 --- a/jaxlib/rocm/BUILD
 +++ b/jaxlib/rocm/BUILD
-@@ -537,6 +537,7 @@ nanobind_extension(
+@@ -528,6 +528,7 @@ nanobind_extension(
      srcs = ["rocm_plugin_extension.cc"],
      module_name = "rocm_plugin_extension",
      deps = [
-+        ":hip_gpu_kernel_helpers",
++	":hip_gpu_kernel_helpers",
          ":py_client_gpu",
          "//jaxlib:kernel_nanobind_helpers",
          "//jaxlib/gpu:gpu_plugin_extension",
 diff --git a/jaxlib/rocm/rocm_plugin_extension.cc b/jaxlib/rocm/rocm_plugin_extension.cc
-index 508aa0b51..ab3208756 100644
+index 508aa0b51..082533883 100644
 --- a/jaxlib/rocm/rocm_plugin_extension.cc
 +++ b/jaxlib/rocm/rocm_plugin_extension.cc
 @@ -23,6 +23,7 @@ limitations under the License.
@@ -26,7 +36,7 @@ index 508aa0b51..ab3208756 100644
    return dict;
  }
  
-+int ROCmDeviceCount(){
++int ROCmDeviceCount() {
 +  int device_count = -1;
 +  JAX_THROW_IF_ERROR(JAX_AS_STATUS(hipInit(0)));
 +  JAX_THROW_IF_ERROR(JAX_AS_STATUS(hipGetDeviceCount(&device_count)));
@@ -43,3 +53,6 @@ index 508aa0b51..ab3208756 100644
 +  m.def("get_device_count", &ROCmDeviceCount);
  }
  }  // namespace jax
+-- 
+2.34.1
+

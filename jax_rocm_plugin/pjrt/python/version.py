@@ -1,4 +1,4 @@
-# Copyright 2018 The JAX Authors.
+# Copyright 2025 The JAX Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file is included as part of both jax and jaxlib. It is also
-# eval()-ed by setup.py, so it should not have any dependencies.
+"""
+Handle version information for the jax_rocmX_pjrt wheel
+
+This module is eval-ed by setup.py at build-time to get version information for the wheel, and
+it gets bundled into the wheel itself for users to get version information from the wheel. It
+should not have any dependencies.
+"""
+
 from __future__ import annotations
 
 import datetime
@@ -21,7 +27,8 @@ import os
 import pathlib
 import subprocess
 
-_version = "0.7.1"
+# pylint: disable=invalid-name
+_version = "0.8.0"
 # The following line is overwritten by build scripts in distributions &
 # releases. Do not modify this manually, or jax/jaxlib build will fail.
 _release_version: str | None = None
@@ -61,14 +68,14 @@ def _version_from_git_tree(base_version: str) -> str | None:
         datestring = datetime.date.fromtimestamp(int(timestamp)).strftime("%Y%m%d")
         assert datestring.isnumeric()
         assert commit_hash.isalnum()
-    except:
+    except Exception:
         return None
-    else:
-        version = f"{base_version}.dev{datestring}+{commit_hash}"
-        suffix = os.environ.get("JAX_CUSTOM_VERSION_SUFFIX", None)
-        if suffix:
-            return version + "." + suffix
-        return version
+
+    version = f"{base_version}.dev{datestring}+{commit_hash}"
+    suffix = os.environ.get("JAX_CUSTOM_VERSION_SUFFIX", None)
+    if suffix:
+        return version + "." + suffix
+    return version
 
 
 def _get_version_for_build() -> str:
@@ -113,6 +120,7 @@ def _write_version(fname: str) -> None:
 
 
 def _get_cmdclass(pkg_source_path):
+    # pylint: disable=import-outside-toplevel
     from setuptools.command.build_py import (
         build_py as build_py_orig,
     )  # pytype: disable=import-error
@@ -149,7 +157,7 @@ def _get_cmdclass(pkg_source_path):
 
 
 __version__ = _get_version_string()
-_minimum_jaxlib_version = "0.7.1"
+_minimum_jaxlib_version = "0.8.0"
 
 
 def _version_as_tuple(version_str):

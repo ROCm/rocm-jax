@@ -57,6 +57,7 @@ jobs:
           path: ./wheelhouse
       - name: Build JAX docker image
         run: |
+          ls -lah ./wheelhouse
           python3 build/ci_build \
             --rocm-version="${{ inputs.rocm-version }}" \
             --rocm-build-job="${{ inputs.rocm-build-job }}" \
