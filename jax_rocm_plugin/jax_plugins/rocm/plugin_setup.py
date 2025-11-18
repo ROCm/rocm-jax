@@ -39,7 +39,9 @@ def load_version_module(pkg_path):
 
 
 _version_module = load_version_module(package_name)
-__version__ = _version_module._get_version_for_build() + "+rocm" + rocm_tag
+__version__ = _version_module._get_version_for_build() 
+if rocm_tag:
+    __version__ = __version__ + "+rocm" + rocm_tag
 _cmdclass = _version_module._get_cmdclass(package_name)
 
 
