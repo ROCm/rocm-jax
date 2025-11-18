@@ -12,24 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Setup script for JAX ROCm plugin package."""
+
 import importlib
 import os
 from setuptools import setup
 from setuptools.dist import Distribution
 
 __version__ = None
-rocm_version = 0  # placeholder
-project_name = f"jax-rocm{rocm_version}-plugin"
-package_name = f"jax_rocm{rocm_version}_plugin"
+rocm_version = 0  # placeholder  # pylint: disable=invalid-name
+project_name = f"jax-rocm{rocm_version}-plugin"  # pylint: disable=invalid-name
+package_name = f"jax_rocm{rocm_version}_plugin"  # pylint: disable=invalid-name
 
 # Extract ROCm version from the `ROCM_PATH` environment variable.
-default_rocm_path = "/opt/rocm"
+default_rocm_path = "/opt/rocm"  # pylint: disable=invalid-name
 rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
 rocm_detected_version = rocm_path.split("-")[-1] if "-" in rocm_path else "unknown"
 rocm_tag = os.getenv("ROCM_VERSION_EXTRA")
 
 
 def load_version_module(pkg_path):
+    """Load version module from the given package path.
+
+    Args:
+        pkg_path: Path to the package containing version.py
+
+    Returns:
+        The loaded version module
+    """
     spec = importlib.util.spec_from_file_location(
         "version", os.path.join(pkg_path, "version.py")
     )
@@ -39,16 +49,25 @@ def load_version_module(pkg_path):
 
 
 _version_module = load_version_module(package_name)
-__version__ = _version_module._get_version_for_build()
+__version__ = (
+    _version_module._get_version_for_build()  # pylint: disable=protected-access
+)
 if rocm_tag:
     __version__ = __version__ + "+rocm" + rocm_tag
-_cmdclass = _version_module._get_cmdclass(package_name)
+_cmdclass = _version_module._get_cmdclass(  # pylint: disable=protected-access
+    package_name
+)
 
 
 class BinaryDistribution(Distribution):
     """This class makes 'bdist_wheel' include an ABI tag on the wheel."""
 
     def has_ext_modules(self):
+        """Indicate that this distribution has extension modules.
+
+        Returns:
+            bool: Always True to include ABI tag
+        """
         return True
 
 
