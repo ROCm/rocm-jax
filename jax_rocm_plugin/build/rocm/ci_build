@@ -44,18 +44,19 @@ def build_jaxlib_wheel(rocm_version, pyver_string):
         print(f"[ERROR] Directory not found: {TARGET_DIR}")
         sys.exit(1)
 
-    py_versions = [float(x) for x in pyver_string.split(",")]
-    cmd=["&&", "pushd", "/wheelhouse/jax_repo", "&&"]
+    py_versions = [x.strip() for x in pyver_string.split(",") if x.strip()]
+    cmd = ["&&", "pushd", "/wheelhouse/jax_repo", "&&"]
 
     for py_ver in py_versions:
         cmd += [
             "python3.11", "./build/build.py", "build",
             "--wheels=\"jaxlib\"",
-            "--rocm_version=7",
-            f"--python_version=\"{py_ver}\"",
+            f"--rocm_version={rocm_version}",
+            f"--python_version={py_ver}",
             f"--rocm_path=/opt/rocm-{rocm_version}",
             f"--clang_path=/opt/rocm-{rocm_version}/llvm/bin/clang",
-            "--bazel_options=--repo_env=ML_WHEEL_TYPE=release", "&&",
+            #"--bazel_options=--repo_env=ML_WHEEL_TYPE=release", 
+            "&&",
             "auditwheel", "repair", "dist/jaxlib*.whl", "-w", "../", "&&",
             ]
 
