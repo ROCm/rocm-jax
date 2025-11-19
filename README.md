@@ -46,7 +46,7 @@ More complete build instructions can be [found here](BUILDING.md).
 
 ```shell
 PYTHON_VERSION=3.12
-ROCM_VERSION=7.1.0
+ROCM_VERSION=7.2.0
 
 # Clear out old builds
 rm -f jax_rocm_plugin/wheelhouse/*

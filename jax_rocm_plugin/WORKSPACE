@@ -11,6 +11,15 @@ load("@xla//:workspace3.bzl", "xla_workspace3")
 
 xla_workspace3()
 
+load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
+tf_http_archive(
+    name = "rules_ml_toolchain",
+    sha256 = "fc1292463a0ae26bd4b3dc8ffda6e12dc5fc68b432005fb97d2c4cbfe2fa6cea",
+    strip_prefix = "rules_ml_toolchain-96700b0ef73efb569ecb2509d15ea3d341bd53fd",
+    urls = tf_mirror_urls("https://github.com/google-ml-infra/rules_ml_toolchain/archive/96700b0ef73efb569ecb2509d15ea3d341bd53fd.tar.gz"),
+)
+
+
 # Initialize hermetic Python
 load("@xla//third_party/py:python_init_rules.bzl", "python_init_rules")
 

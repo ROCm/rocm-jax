@@ -367,7 +367,7 @@ def setup_repos_ubuntu(rocm_version_str):
 
     with open("/etc/apt/sources.list.d/amdgpu.list", "w") as fd:
         fd.write(
-            ("deb [arch=amd64] " "https://repo.radeon.com/amdgpu/%s/ubuntu %s main\n")
+            ("deb [arch=amd64] " "https://repo.radeon.com/graphics/%s/ubuntu %s main\n")
             % (rocm_version_str, codename)
         )
 
@@ -404,6 +404,8 @@ baseurl=http://repo.radeon.com/rocm/rhel8/%s/main
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
+timeout=1000
+minrate=1
 """
             % rocm_version_str
         )
@@ -423,6 +425,8 @@ baseurl=https://repo.radeon.com/%s/%s/rhel/8.%d/main/x86_64/
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
+timeout=1000
+minrate=1
 """
             % (repodir, rocm_version_str, rhel_minor)
         )
