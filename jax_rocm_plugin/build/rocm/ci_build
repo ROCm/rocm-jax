@@ -50,11 +50,14 @@ def build_jaxlib_wheel(rocm_version, pyver_string):
     for py_ver in py_versions:
         cmd += [
             "python3.11", "./build/build.py", "build",
-            "--wheels=\"jaxlib\"",
+            "--wheels=jaxlib",
             "--rocm_version=7",
-            f"--python_version=\"{py_ver}\"",
+            f"--python_version={py_ver}",
             f"--rocm_path=/opt/rocm-{rocm_version}",
-            f"--clang_path=/opt/rocm-{rocm_version}/llvm/bin/clang", "&&",
+            f"--clang_path=/opt/rocm-{rocm_version}/llvm/bin/clang", 
+            "--bazel_options=--define=ML_WHEEL_TYPE=release",
+            f"--bazel_options=--define=ML_WHEEL_VERSION_SUFFIX=+rocm{rocm_version}",
+            "&&",
             "auditwheel", "repair", "dist/jaxlib*.whl", "-w", "../", "&&",
             ]
 
@@ -232,7 +235,7 @@ def parse_args():
     p.add_argument(
         "--python-versions",
         type=lambda x: x.split(","),
-        default="3.12",
+        default=["3.12"],
         help="Comma separated list of CPython versions to build wheels for",
     )
 
