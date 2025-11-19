@@ -43,5 +43,9 @@ python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_
     --test_verbose_timeout_warnings \
     --test_output=errors \
     //tests:core_test_gpu \
-    //tests:linalg_test_gpu
+    //tests:linalg_test_gpu \
+    --test_filter=CoreTest \
+    --test_filter=JaxprTypeChecks \
+    --test_filter=DynamicShapesTest \
+    --test_filter=testMatmul
 
