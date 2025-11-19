@@ -24,7 +24,44 @@ import argparse
 import os
 import subprocess
 import sys
+import shutil
 
+def build_jaxlib_wheel(rocm_version, pyver_string):
+
+    JAX_BRANCH = "rocm-jaxlib-v0.8.0"
+    JAX_URL = f"https://github.com/ROCm/jax/archive/refs/heads/{JAX_BRANCH}.tar.gz"
+    TARGET_DIR = os.path.abspath("./wheelhouse/jax_repo")
+
+    try:
+        os.makedirs(TARGET_DIR, exist_ok=True)
+        subprocess.check_call(["bash", "-c", f"curl -L {JAX_URL} | tar -xz -C {TARGET_DIR} --strip-components=1"])
+    
+    except subprocess.CalledProcessError as e:
+        print(f"[ERROR] Command failed with exit code {e.returncode}")
+        sys.exit(e.returncode)
+
+    except FileNotFoundError:
+        print(f"[ERROR] Directory not found: {TARGET_DIR}")
+        sys.exit(1)
+
+    py_versions = [float(x) for x in pyver_string.split(",")]
+    cmd=["&&", "pushd", "/wheelhouse/jax_repo", "&&"]
+
+    for py_ver in py_versions:
+        cmd += [
+            "python3.11", "./build/build.py", "build",
+            "--wheels=\"jaxlib\"",
+            "--rocm_version=7",
+            f"--python_version=\"{py_ver}\"",
+            f"--rocm_path=/opt/rocm-{rocm_version}",
+            f"--clang_path=/opt/rocm-{rocm_version}/llvm/bin/clang",
+            "--bazel_options=--repo_env=ML_WHEEL_TYPE=release", "&&",
+            "auditwheel", "repair", "dist/jaxlib*.whl", "-w", "../", "&&",
+            ]
+
+    cmd += ["popd", "&&",  "rm -rf /wheelhouse/jax_repo",]
+    print(f"jaxlib-wheel-cmd={cmd}")
+    return cmd
 
 def image_by_name(name):
     cmd = ["docker", "images", "-q", "-f", "reference=%s" % name]
@@ -102,6 +139,7 @@ def dist_wheels(
         bw_cmd.extend(["--xla-path", container_xla_path])
 
     bw_cmd.append("/jax")
+    bw_cmd = bw_cmd + build_jaxlib_wheel(rocm_version, pyver_string)
 
     cmd = ["docker", "run"]
 
@@ -138,6 +176,7 @@ def dist_wheels(
         ]
     )
 
+    print(f"final-build-wheel-cmd={cmd}")
     _ = subprocess.run(cmd, check=True)
 
 
