@@ -55,6 +55,7 @@ def build_jaxlib_wheel(rocm_version, pyver_string):
             f"--python_version=\"{py_ver}\"",
             f"--rocm_path=/opt/rocm-{rocm_version}",
             f"--clang_path=/opt/rocm-{rocm_version}/llvm/bin/clang",
+            f"--bazel_options=--repo_env=ML_WHEEL_VERSION_SUFFIX=+rocm{rocm_version}",
             "--bazel_options=--repo_env=ML_WHEEL_TYPE=custom", "&&",
             "auditwheel", "repair", "dist/jaxlib*.whl", "-w", "../", "&&",
             ]
