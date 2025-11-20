@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title id="head-title">multi_gpu_pgle_test_log.html</title>
+      <link href="assets/style.css" rel="stylesheet" type="text/css"/>
+  </head>
+  <body>
+    <h1 id="title">multi_gpu_pgle_test_log.html</h1>
+    <p>Report generated on 20-Nov-2025 at 00:56:55 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a>
+        v4.1.1</p>
+    <div id="environment-header">
+      <h2>Environment</h2>
+    </div>
+    <table id="environment"></table>
+    <!-- TEMPLATES -->
+      <template id="template_environment_row">
+      <tr>
+        <td></td>
+        <td></td>
+      </tr>
+    </template>
+    <template id="template_results-table__body--empty">
+      <tbody class="results-table-row">
+        <tr id="not-found-message">
+          <td colspan="4">No results found. Check the filters.</th>
+        </tr>
+    </template>
+    <template id="template_results-table__tbody">
+      <tbody class="results-table-row">
+        <tr class="collapsible">
+        </tr>
+        <tr class="extras-row">
+          <td class="extra" colspan="4">
+            <div class="extraHTML"></div>
+            <div class="media">
+              <div class="media-container">
+                  <div class="media-container__nav--left"><</div>
+                  <div class="media-container__viewport">
+                    <img src="" />
+                    <video controls>
+                      <source src="" type="video/mp4">
+                    </video>
+                  </div>
+                  <div class="media-container__nav--right">></div>
+                </div>
+                <div class="media__name"></div>
+                <div class="media__counter"></div>
+            </div>
+            <div class="logwrapper">
+              <div class="logexpander"></div>
+              <div class="log"></div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </template>
+    <!-- END TEMPLATES -->
+    <div class="summary">
+      <div class="summary__data">
+        <h2>Summary</h2>
+        <div class="additional-summary prefix">
+        </div>
+        <p class="run-count">8 tests took 00:01:04.</p>
+        <p class="filter">(Un)check the boxes to filter the results.</p>
+        <div class="summary__reload">
+          <div class="summary__reload__button hidden" onclick="location.reload()">
+            <div>There are still tests running. <br />Reload this page to get the latest results!</div>
+          </div>
+        </div>
+        <div class="summary__spacer"></div>
+        <div class="controls">
+          <div class="filters">
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="failed" />
+            <span class="failed">6 Failed,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="passed" />
+            <span class="passed">2 Passed,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="skipped" />
+            <span class="skipped">1 Skipped,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xfailed" disabled/>
+            <span class="xfailed">0 Expected failures,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xpassed" disabled/>
+            <span class="xpassed">0 Unexpected passes,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="error" disabled/>
+            <span class="error">0 Errors,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="rerun" />
+            <span class="rerun">18 Reruns</span>
+          </div>
+          <div class="collapse">
+            <button id="show_all_details">Show all details</button>&nbsp;/&nbsp;<button id="hide_all_details">Hide all details</button>
+          </div>
+        </div>
+      </div>
+      <div class="additional-summary summary">
+      </div>
+      <div class="additional-summary postfix">
+      </div>
+    </div>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable" data-column-type="result">Result</th>
+          <th class="sortable" data-column-type="testId">Test</th>
+          <th class="sortable" data-column-type="duration">Duration</th>
+          <th>Links</th>
+        </tr>
+      </thead>
+    </table>
+  </body>
+  <footer>
+    <div id="data-container" data-jsonblob="{&#34;environment&#34;: {&#34;Python&#34;: &#34;3.12.3&#34;, &#34;Platform&#34;: &#34;Linux-6.2.0-25-generic-x86_64-with-glibc2.39&#34;, &#34;Packages&#34;: {&#34;pytest&#34;: &#34;9.0.1&#34;, &#34;pluggy&#34;: &#34;1.6.0&#34;}, &#34;Plugins&#34;: {&#34;hypothesis&#34;: &#34;6.148.2&#34;, &#34;rerunfailures&#34;: &#34;16.1&#34;, &#34;reportlog&#34;: &#34;1.0.0&#34;, &#34;metadata&#34;: &#34;3.1.1&#34;, &#34;json-report&#34;: &#34;1.5.0&#34;, &#34;html&#34;: &#34;4.1.1&#34;}}, &#34;tests&#34;: {&#34;tests/pgle_test.py::PgleTest::testAutoPgle&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgle&#34;, &#34;duration&#34;: &#34;442 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgle&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;442 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgle&amp;gt;\n\n    def testAutoPgle(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      with tempfile.TemporaryDirectory() as dump_dir:\n        compile_options = {\n            &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n            &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n            &amp;#x27;xla_gpu_experimental_dump_fdo_profiles&amp;#x27;: &amp;#x27;True&amp;#x27;,\n        }\n        # TODO(b/376647494): Remove this flag once the bug is fixed.\n        @partial(\n            jax.jit,\n            in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            compiler_options=compile_options,\n        )\n        def f(x):\n          return x * 2\n    \n        shape = (16, 16)\n        x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n        expected = x * 2\n    \n        with config.pgle_profiling_runs(2), config.enable_pgle(True):\n          # Run 1: Module should be compiled without FDO. Two modules are expected\n          # One is the function f, the other one is multi slice module\n          with jtu.count_pjit_cpp_cache_miss() as cache_miss_count:\n&amp;gt;           self.assertArraysEqual(f(x), expected)\n                                   ^^^^\n\njax/tests/pgle_test.py:162: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1366: in __call__\n    input_bufs = self.in_handler(args)\n                 ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1249: in __call__\n    return self.handler(input_buffers)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:125: in shard_args\n    return shard_arg_handlers[type(arg)]([arg], shardings, layouts,\n/usr/local/lib/python3.12/dist-packages/jax/_src/array.py:1264: in _array_shard_arg\n    results.append(shard_device_array(x, devices, indices, sharding))\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/array.py:1180: in shard_device_array\n    shards = x._multi_slice(start_indices, limit_indices, removed_dims)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f1ddc2c0650&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgle&#34;, &#34;duration&#34;: &#34;442 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgle&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;442 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgle&amp;gt;\n\n    def testAutoPgle(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      with tempfile.TemporaryDirectory() as dump_dir:\n        compile_options = {\n            &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n            &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n            &amp;#x27;xla_gpu_experimental_dump_fdo_profiles&amp;#x27;: &amp;#x27;True&amp;#x27;,\n        }\n        # TODO(b/376647494): Remove this flag once the bug is fixed.\n        @partial(\n            jax.jit,\n            in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            compiler_options=compile_options,\n        )\n        def f(x):\n          return x * 2\n    \n        shape = (16, 16)\n        x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n        expected = x * 2\n    \n        with config.pgle_profiling_runs(2), config.enable_pgle(True):\n          # Run 1: Module should be compiled without FDO. Two modules are expected\n          # One is the function f, the other one is multi slice module\n          with jtu.count_pjit_cpp_cache_miss() as cache_miss_count:\n&amp;gt;           self.assertArraysEqual(f(x), expected)\n                                   ^^^^\n\njax/tests/pgle_test.py:162: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1366: in __call__\n    input_bufs = self.in_handler(args)\n                 ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1249: in __call__\n    return self.handler(input_buffers)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:125: in shard_args\n    return shard_arg_handlers[type(arg)]([arg], shardings, layouts,\n/usr/local/lib/python3.12/dist-packages/jax/_src/array.py:1264: in _array_shard_arg\n    results.append(shard_device_array(x, devices, indices, sharding))\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/array.py:1180: in shard_device_array\n    shards = x._multi_slice(start_indices, limit_indices, removed_dims)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f1ddc2c0650&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgle&#34;, &#34;duration&#34;: &#34;442 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgle&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;442 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgle&amp;gt;\n\n    def testAutoPgle(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      with tempfile.TemporaryDirectory() as dump_dir:\n        compile_options = {\n            &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n            &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n            &amp;#x27;xla_gpu_experimental_dump_fdo_profiles&amp;#x27;: &amp;#x27;True&amp;#x27;,\n        }\n        # TODO(b/376647494): Remove this flag once the bug is fixed.\n        @partial(\n            jax.jit,\n            in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            compiler_options=compile_options,\n        )\n        def f(x):\n          return x * 2\n    \n        shape = (16, 16)\n        x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n        expected = x * 2\n    \n        with config.pgle_profiling_runs(2), config.enable_pgle(True):\n          # Run 1: Module should be compiled without FDO. Two modules are expected\n          # One is the function f, the other one is multi slice module\n          with jtu.count_pjit_cpp_cache_miss() as cache_miss_count:\n&amp;gt;           self.assertArraysEqual(f(x), expected)\n                                   ^^^^\n\njax/tests/pgle_test.py:162: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f1ddc0d2330&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Failed&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgle&#34;, &#34;duration&#34;: &#34;442 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Failed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgle&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;442 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgle&amp;gt;\n\n    def testAutoPgle(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      with tempfile.TemporaryDirectory() as dump_dir:\n        compile_options = {\n            &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n            &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n            &amp;#x27;xla_gpu_experimental_dump_fdo_profiles&amp;#x27;: &amp;#x27;True&amp;#x27;,\n        }\n        # TODO(b/376647494): Remove this flag once the bug is fixed.\n        @partial(\n            jax.jit,\n            in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            compiler_options=compile_options,\n        )\n        def f(x):\n          return x * 2\n    \n        shape = (16, 16)\n        x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n        expected = x * 2\n    \n        with config.pgle_profiling_runs(2), config.enable_pgle(True):\n          # Run 1: Module should be compiled without FDO. Two modules are expected\n          # One is the function f, the other one is multi slice module\n          with jtu.count_pjit_cpp_cache_miss() as cache_miss_count:\n&amp;gt;           self.assertArraysEqual(f(x), expected)\n                                   ^^^^\n\njax/tests/pgle_test.py:162: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f1ddc0d3a70&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}], &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithAot&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithAot&#34;, &#34;duration&#34;: &#34;482 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithAot&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;482 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0&#34;, &#34;duration&#34;: &#34;234 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;234 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithCommandBuffers0&amp;gt;\nenable_compilation_cache = True\n\n    @parameterized.parameters([True, False])\n    @jtu.thread_unsafe_test()\n    def testAutoPgleWithCommandBuffers(self, enable_compilation_cache):\n      with (config.pgle_profiling_runs(1),\n            config.enable_compilation_cache(enable_compilation_cache),\n            config.enable_pgle(True),\n            tempfile.TemporaryDirectory() as dump_dir,\n            tempfile.TemporaryDirectory() as cache_dir):\n        if enable_compilation_cache:\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n        compiler_options = {\n          &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n          # FUSION, see https://github.com/openxla/xla/issues/22459\n          &amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;: 1,\n          &amp;#x27;xla_gpu_graph_min_graph_size&amp;#x27;: 1,\n        }\n        @partial(\n            jax.jit,\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          return x * 2\n    \n&amp;gt;       x = jnp.arange(1)\n            ^^^^^^^^^^^^^\n\njax/tests/pgle_test.py:508: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/numpy/lax_numpy.py:5946: in arange\n    return _arange(start, stop=stop, step=step, dtype=dtype,\n/usr/local/lib/python3.12/dist-packages/jax/_src/numpy/lax_numpy.py:5989: in _arange\n    return lax.broadcasted_iota(dtype, (start,), 0, out_sharding=out_sharding)  # type: ignore[arg-type]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/lax/lax.py:3455: in broadcasted_iota\n    return iota_p.bind(*dynamic_shape, dtype=dtype, shape=tuple(static_shape),\n/usr/local/lib/python3.12/dist-packages/jax/_src/core.py:632: in bind\n    return self._true_bind(*args, **params)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/core.py:648: in _true_bind\n    return self.bind_with_trace(prev_trace, args, params)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/core.py:660: in bind_with_trace\n    return trace.process_primitive(self, args, params)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/core.py:1189: in process_primitive\n    return primitive.impl(*args, **params)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/dispatch.py:94: in apply_primitive\n    outs = fun(*args)\n           ^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f1ddc0d1be0&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0&#34;, &#34;duration&#34;: &#34;234 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;234 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithCommandBuffers0&amp;gt;\nenable_compilation_cache = True\n\n    @parameterized.parameters([True, False])\n    @jtu.thread_unsafe_test()\n    def testAutoPgleWithCommandBuffers(self, enable_compilation_cache):\n      with (config.pgle_profiling_runs(1),\n            config.enable_compilation_cache(enable_compilation_cache),\n            config.enable_pgle(True),\n            tempfile.TemporaryDirectory() as dump_dir,\n            tempfile.TemporaryDirectory() as cache_dir):\n        if enable_compilation_cache:\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n        compiler_options = {\n          &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n          # FUSION, see https://github.com/openxla/xla/issues/22459\n          &amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;: 1,\n          &amp;#x27;xla_gpu_graph_min_graph_size&amp;#x27;: 1,\n        }\n        @partial(\n            jax.jit,\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          return x * 2\n    \n        x = jnp.arange(1)\n&amp;gt;       expected = x * 2\n                   ^^^^^\n\njax/tests/pgle_test.py:509: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/numpy/array_methods.py:604: in deferring_binary_op\n    return binary_op(*args)\n           ^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/numpy/ufunc_api.py:183: in __call__\n    return call(*args)\n           ^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f1dd7fcfcb0&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0&#34;, &#34;duration&#34;: &#34;234 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;234 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithCommandBuffers0&amp;gt;\nenable_compilation_cache = True\n\n    @parameterized.parameters([True, False])\n    @jtu.thread_unsafe_test()\n    def testAutoPgleWithCommandBuffers(self, enable_compilation_cache):\n      with (config.pgle_profiling_runs(1),\n            config.enable_compilation_cache(enable_compilation_cache),\n            config.enable_pgle(True),\n            tempfile.TemporaryDirectory() as dump_dir,\n            tempfile.TemporaryDirectory() as cache_dir):\n        if enable_compilation_cache:\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n        compiler_options = {\n          &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n          # FUSION, see https://github.com/openxla/xla/issues/22459\n          &amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;: 1,\n          &amp;#x27;xla_gpu_graph_min_graph_size&amp;#x27;: 1,\n        }\n        @partial(\n            jax.jit,\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          return x * 2\n    \n        x = jnp.arange(1)\n        expected = x * 2\n    \n        # This is ugly, but it does not seem possible to get the AutoPGLE-recompiled\n        # executable text (.lower(x).compile().as_text() or similar).\n        def get_new_files():\n          additions = set(os.listdir(dump_dir)) - get_new_files.seen_files\n          get_new_files.seen_files |= additions\n          new_files = list(filter(lambda f: f.endswith(&amp;#x27;debug_options&amp;#x27;), additions))\n          assert len(new_files) == 1\n          with open(os.path.join(dump_dir, new_files[0])) as ifile:\n            return ifile.read()\n    \n        get_new_files.seen_files = set()\n    \n        # Run 1\n&amp;gt;       self.assertArraysEqual(f(x), expected)\n                               ^^^^\n\njax/tests/pgle_test.py:524: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7d49880&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Failed&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0&#34;, &#34;duration&#34;: &#34;234 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Failed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;234 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithCommandBuffers0&amp;gt;\nenable_compilation_cache = True\n\n    @parameterized.parameters([True, False])\n    @jtu.thread_unsafe_test()\n    def testAutoPgleWithCommandBuffers(self, enable_compilation_cache):\n      with (config.pgle_profiling_runs(1),\n            config.enable_compilation_cache(enable_compilation_cache),\n            config.enable_pgle(True),\n            tempfile.TemporaryDirectory() as dump_dir,\n            tempfile.TemporaryDirectory() as cache_dir):\n        if enable_compilation_cache:\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n        compiler_options = {\n          &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n          # FUSION, see https://github.com/openxla/xla/issues/22459\n          &amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;: 1,\n          &amp;#x27;xla_gpu_graph_min_graph_size&amp;#x27;: 1,\n        }\n        @partial(\n            jax.jit,\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          return x * 2\n    \n        x = jnp.arange(1)\n        expected = x * 2\n    \n        # This is ugly, but it does not seem possible to get the AutoPGLE-recompiled\n        # executable text (.lower(x).compile().as_text() or similar).\n        def get_new_files():\n          additions = set(os.listdir(dump_dir)) - get_new_files.seen_files\n          get_new_files.seen_files |= additions\n          new_files = list(filter(lambda f: f.endswith(&amp;#x27;debug_options&amp;#x27;), additions))\n          assert len(new_files) == 1\n          with open(os.path.join(dump_dir, new_files[0])) as ifile:\n            return ifile.read()\n    \n        get_new_files.seen_files = set()\n    \n        # Run 1\n&amp;gt;       self.assertArraysEqual(f(x), expected)\n                               ^^^^\n\njax/tests/pgle_test.py:524: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7d4b5c0&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}], &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1&#34;, &#34;duration&#34;: &#34;235 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;235 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithCommandBuffers1&amp;gt;\nenable_compilation_cache = False\n\n    @parameterized.parameters([True, False])\n    @jtu.thread_unsafe_test()\n    def testAutoPgleWithCommandBuffers(self, enable_compilation_cache):\n      with (config.pgle_profiling_runs(1),\n            config.enable_compilation_cache(enable_compilation_cache),\n            config.enable_pgle(True),\n            tempfile.TemporaryDirectory() as dump_dir,\n            tempfile.TemporaryDirectory() as cache_dir):\n        if enable_compilation_cache:\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n        compiler_options = {\n          &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n          # FUSION, see https://github.com/openxla/xla/issues/22459\n          &amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;: 1,\n          &amp;#x27;xla_gpu_graph_min_graph_size&amp;#x27;: 1,\n        }\n        @partial(\n            jax.jit,\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          return x * 2\n    \n        x = jnp.arange(1)\n        expected = x * 2\n    \n        # This is ugly, but it does not seem possible to get the AutoPGLE-recompiled\n        # executable text (.lower(x).compile().as_text() or similar).\n        def get_new_files():\n          additions = set(os.listdir(dump_dir)) - get_new_files.seen_files\n          get_new_files.seen_files |= additions\n          new_files = list(filter(lambda f: f.endswith(&amp;#x27;debug_options&amp;#x27;), additions))\n          assert len(new_files) == 1\n          with open(os.path.join(dump_dir, new_files[0])) as ifile:\n            return ifile.read()\n    \n        get_new_files.seen_files = set()\n    \n        # Run 1\n&amp;gt;       self.assertArraysEqual(f(x), expected)\n                               ^^^^\n\njax/tests/pgle_test.py:524: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7dd97c0&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1&#34;, &#34;duration&#34;: &#34;235 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;235 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithCommandBuffers1&amp;gt;\nenable_compilation_cache = False\n\n    @parameterized.parameters([True, False])\n    @jtu.thread_unsafe_test()\n    def testAutoPgleWithCommandBuffers(self, enable_compilation_cache):\n      with (config.pgle_profiling_runs(1),\n            config.enable_compilation_cache(enable_compilation_cache),\n            config.enable_pgle(True),\n            tempfile.TemporaryDirectory() as dump_dir,\n            tempfile.TemporaryDirectory() as cache_dir):\n        if enable_compilation_cache:\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n        compiler_options = {\n          &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n          # FUSION, see https://github.com/openxla/xla/issues/22459\n          &amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;: 1,\n          &amp;#x27;xla_gpu_graph_min_graph_size&amp;#x27;: 1,\n        }\n        @partial(\n            jax.jit,\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          return x * 2\n    \n        x = jnp.arange(1)\n        expected = x * 2\n    \n        # This is ugly, but it does not seem possible to get the AutoPGLE-recompiled\n        # executable text (.lower(x).compile().as_text() or similar).\n        def get_new_files():\n          additions = set(os.listdir(dump_dir)) - get_new_files.seen_files\n          get_new_files.seen_files |= additions\n          new_files = list(filter(lambda f: f.endswith(&amp;#x27;debug_options&amp;#x27;), additions))\n          assert len(new_files) == 1\n          with open(os.path.join(dump_dir, new_files[0])) as ifile:\n            return ifile.read()\n    \n        get_new_files.seen_files = set()\n    \n        # Run 1\n&amp;gt;       self.assertArraysEqual(f(x), expected)\n                               ^^^^\n\njax/tests/pgle_test.py:524: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7ddb8f0&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1&#34;, &#34;duration&#34;: &#34;235 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;235 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithCommandBuffers1&amp;gt;\nenable_compilation_cache = False\n\n    @parameterized.parameters([True, False])\n    @jtu.thread_unsafe_test()\n    def testAutoPgleWithCommandBuffers(self, enable_compilation_cache):\n      with (config.pgle_profiling_runs(1),\n            config.enable_compilation_cache(enable_compilation_cache),\n            config.enable_pgle(True),\n            tempfile.TemporaryDirectory() as dump_dir,\n            tempfile.TemporaryDirectory() as cache_dir):\n        if enable_compilation_cache:\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n        compiler_options = {\n          &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n          # FUSION, see https://github.com/openxla/xla/issues/22459\n          &amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;: 1,\n          &amp;#x27;xla_gpu_graph_min_graph_size&amp;#x27;: 1,\n        }\n        @partial(\n            jax.jit,\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          return x * 2\n    \n        x = jnp.arange(1)\n        expected = x * 2\n    \n        # This is ugly, but it does not seem possible to get the AutoPGLE-recompiled\n        # executable text (.lower(x).compile().as_text() or similar).\n        def get_new_files():\n          additions = set(os.listdir(dump_dir)) - get_new_files.seen_files\n          get_new_files.seen_files |= additions\n          new_files = list(filter(lambda f: f.endswith(&amp;#x27;debug_options&amp;#x27;), additions))\n          assert len(new_files) == 1\n          with open(os.path.join(dump_dir, new_files[0])) as ifile:\n            return ifile.read()\n    \n        get_new_files.seen_files = set()\n    \n        # Run 1\n&amp;gt;       self.assertArraysEqual(f(x), expected)\n                               ^^^^\n\njax/tests/pgle_test.py:524: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7dda630&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Failed&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1&#34;, &#34;duration&#34;: &#34;235 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Failed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;235 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithCommandBuffers1&amp;gt;\nenable_compilation_cache = False\n\n    @parameterized.parameters([True, False])\n    @jtu.thread_unsafe_test()\n    def testAutoPgleWithCommandBuffers(self, enable_compilation_cache):\n      with (config.pgle_profiling_runs(1),\n            config.enable_compilation_cache(enable_compilation_cache),\n            config.enable_pgle(True),\n            tempfile.TemporaryDirectory() as dump_dir,\n            tempfile.TemporaryDirectory() as cache_dir):\n        if enable_compilation_cache:\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n        compiler_options = {\n          &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n          # FUSION, see https://github.com/openxla/xla/issues/22459\n          &amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;: 1,\n          &amp;#x27;xla_gpu_graph_min_graph_size&amp;#x27;: 1,\n        }\n        @partial(\n            jax.jit,\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          return x * 2\n    \n        x = jnp.arange(1)\n        expected = x * 2\n    \n        # This is ugly, but it does not seem possible to get the AutoPGLE-recompiled\n        # executable text (.lower(x).compile().as_text() or similar).\n        def get_new_files():\n          additions = set(os.listdir(dump_dir)) - get_new_files.seen_files\n          get_new_files.seen_files |= additions\n          new_files = list(filter(lambda f: f.endswith(&amp;#x27;debug_options&amp;#x27;), additions))\n          assert len(new_files) == 1\n          with open(os.path.join(dump_dir, new_files[0])) as ifile:\n            return ifile.read()\n    \n        get_new_files.seen_files = set()\n    \n        # Run 1\n&amp;gt;       self.assertArraysEqual(f(x), expected)\n                               ^^^^\n\njax/tests/pgle_test.py:524: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7d48290&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}], &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache&#34;, &#34;duration&#34;: &#34;00:00:07&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:07&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithPersistentCache&amp;gt;\n\n    def testAutoPgleWithPersistentCache(self):\n      its = 50\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      with tempfile.TemporaryDirectory() as dump_dir:\n        compiler_options = {\n            &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n            &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n            &amp;#x27;xla_gpu_experimental_dump_fdo_profiles&amp;#x27;: &amp;#x27;True&amp;#x27;,\n        }\n        # TODO(b/376647494): Remove this flag once the bug is fixed.\n        @partial(\n            jax.jit,\n            in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          agg = x\n          for _ in range(its):\n            agg = agg @ x\n          return agg\n    \n        shape = (16, 16)\n        x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n    \n        with (config.enable_compilation_cache(True),\n              config.enable_pgle(True),\n              config.raise_persistent_cache_errors(True),\n              config.raise_persistent_cache_errors(True),\n              config.persistent_cache_min_entry_size_bytes(0),\n              config.persistent_cache_min_compile_time_secs(0),\n              config.pgle_profiling_runs(2),\n              tempfile.TemporaryDirectory() as cache_dir):\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n          # Run 1: Module should be compiled without FDO\n          with jtu.count_jit_compilation_cache_miss() as cache_miss_count:\n&amp;gt;           f(x)\n\njax/tests/pgle_test.py:259: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7d4b500&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache&#34;, &#34;duration&#34;: &#34;00:00:07&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:07&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithPersistentCache&amp;gt;\n\n    def testAutoPgleWithPersistentCache(self):\n      its = 50\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      with tempfile.TemporaryDirectory() as dump_dir:\n        compiler_options = {\n            &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n            &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n            &amp;#x27;xla_gpu_experimental_dump_fdo_profiles&amp;#x27;: &amp;#x27;True&amp;#x27;,\n        }\n        # TODO(b/376647494): Remove this flag once the bug is fixed.\n        @partial(\n            jax.jit,\n            in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          agg = x\n          for _ in range(its):\n            agg = agg @ x\n          return agg\n    \n        shape = (16, 16)\n        x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n    \n        with (config.enable_compilation_cache(True),\n              config.enable_pgle(True),\n              config.raise_persistent_cache_errors(True),\n              config.raise_persistent_cache_errors(True),\n              config.persistent_cache_min_entry_size_bytes(0),\n              config.persistent_cache_min_compile_time_secs(0),\n              config.pgle_profiling_runs(2),\n              tempfile.TemporaryDirectory() as cache_dir):\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n          # Run 1: Module should be compiled without FDO\n          with jtu.count_jit_compilation_cache_miss() as cache_miss_count:\n&amp;gt;           f(x)\n\njax/tests/pgle_test.py:259: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7d5a720&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache&#34;, &#34;duration&#34;: &#34;00:00:07&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:07&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithPersistentCache&amp;gt;\n\n    def testAutoPgleWithPersistentCache(self):\n      its = 50\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      with tempfile.TemporaryDirectory() as dump_dir:\n        compiler_options = {\n            &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n            &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n            &amp;#x27;xla_gpu_experimental_dump_fdo_profiles&amp;#x27;: &amp;#x27;True&amp;#x27;,\n        }\n        # TODO(b/376647494): Remove this flag once the bug is fixed.\n        @partial(\n            jax.jit,\n            in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          agg = x\n          for _ in range(its):\n            agg = agg @ x\n          return agg\n    \n        shape = (16, 16)\n        x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n    \n        with (config.enable_compilation_cache(True),\n              config.enable_pgle(True),\n              config.raise_persistent_cache_errors(True),\n              config.raise_persistent_cache_errors(True),\n              config.persistent_cache_min_entry_size_bytes(0),\n              config.persistent_cache_min_compile_time_secs(0),\n              config.pgle_profiling_runs(2),\n              tempfile.TemporaryDirectory() as cache_dir):\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n          # Run 1: Module should be compiled without FDO\n          with jtu.count_jit_compilation_cache_miss() as cache_miss_count:\n&amp;gt;           f(x)\n\njax/tests/pgle_test.py:259: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f1ddc2c1a30&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Failed&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache&#34;, &#34;duration&#34;: &#34;00:00:07&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Failed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:07&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testAutoPgleWithPersistentCache&amp;gt;\n\n    def testAutoPgleWithPersistentCache(self):\n      its = 50\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      with tempfile.TemporaryDirectory() as dump_dir:\n        compiler_options = {\n            &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n            &amp;#x27;xla_dump_to&amp;#x27;: dump_dir,\n            &amp;#x27;xla_gpu_experimental_dump_fdo_profiles&amp;#x27;: &amp;#x27;True&amp;#x27;,\n        }\n        # TODO(b/376647494): Remove this flag once the bug is fixed.\n        @partial(\n            jax.jit,\n            in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n            compiler_options=compiler_options,\n        )\n        def f(x):\n          agg = x\n          for _ in range(its):\n            agg = agg @ x\n          return agg\n    \n        shape = (16, 16)\n        x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n    \n        with (config.enable_compilation_cache(True),\n              config.enable_pgle(True),\n              config.raise_persistent_cache_errors(True),\n              config.raise_persistent_cache_errors(True),\n              config.persistent_cache_min_entry_size_bytes(0),\n              config.persistent_cache_min_compile_time_secs(0),\n              config.pgle_profiling_runs(2),\n              tempfile.TemporaryDirectory() as cache_dir):\n          cc.reset_cache()\n          cc.set_cache_dir(cache_dir)\n          # Run 1: Module should be compiled without FDO\n          with jtu.count_jit_compilation_cache_miss() as cache_miss_count:\n&amp;gt;           f(x)\n\njax/tests/pgle_test.py:259: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1367: in __call__\n    with profiler.PGLEProfiler.trace(self.pgle_profiler):\n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7c6c0e0&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}], &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testPGLEProfilerGetFDOProfile&amp;gt;\n\n    def testPGLEProfilerGetFDOProfile(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      @partial(\n          jax.jit,\n          in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          compiler_options={\n              &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n              # Make sure that matmul is not emitted as Triton GEMM.\n              &amp;#x27;xla_gpu_enable_triton_gemm&amp;#x27;: &amp;#x27;False&amp;#x27;,\n          },\n      )\n      def f(x, y):\n        return x @ y\n    \n      shape = (16, 16)\n      x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n      y = x + 1\n    \n      with config.pgle_profiling_runs(0):\n        f_lowered = f.lower(x, y)\n        compiled = f_lowered.compile()\n    \n      pgle_profiler = profiler.PGLEProfiler(1, 90)\n      with config.enable_pgle(False):\n&amp;gt;       with profiler.PGLEProfiler.trace(pgle_profiler):\n\njax/tests/pgle_test.py:87: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7dc6c00&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testPGLEProfilerGetFDOProfile&amp;gt;\n\n    def testPGLEProfilerGetFDOProfile(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      @partial(\n          jax.jit,\n          in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          compiler_options={\n              &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n              # Make sure that matmul is not emitted as Triton GEMM.\n              &amp;#x27;xla_gpu_enable_triton_gemm&amp;#x27;: &amp;#x27;False&amp;#x27;,\n          },\n      )\n      def f(x, y):\n        return x @ y\n    \n      shape = (16, 16)\n      x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n      y = x + 1\n    \n      with config.pgle_profiling_runs(0):\n        f_lowered = f.lower(x, y)\n        compiled = f_lowered.compile()\n    \n      pgle_profiler = profiler.PGLEProfiler(1, 90)\n      with config.enable_pgle(False):\n&amp;gt;       with profiler.PGLEProfiler.trace(pgle_profiler):\n\njax/tests/pgle_test.py:87: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7d5a240&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testPGLEProfilerGetFDOProfile&amp;gt;\n\n    def testPGLEProfilerGetFDOProfile(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      @partial(\n          jax.jit,\n          in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          compiler_options={\n              &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n              # Make sure that matmul is not emitted as Triton GEMM.\n              &amp;#x27;xla_gpu_enable_triton_gemm&amp;#x27;: &amp;#x27;False&amp;#x27;,\n          },\n      )\n      def f(x, y):\n        return x @ y\n    \n      shape = (16, 16)\n      x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n      y = x + 1\n    \n      with config.pgle_profiling_runs(0):\n        f_lowered = f.lower(x, y)\n        compiled = f_lowered.compile()\n    \n      pgle_profiler = profiler.PGLEProfiler(1, 90)\n      with config.enable_pgle(False):\n&amp;gt;       with profiler.PGLEProfiler.trace(pgle_profiler):\n\njax/tests/pgle_test.py:87: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7d9e6f0&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Failed&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Failed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testPGLEProfilerGetFDOProfile&amp;gt;\n\n    def testPGLEProfilerGetFDOProfile(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n    \n      @partial(\n          jax.jit,\n          in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          compiler_options={\n              &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n              # Make sure that matmul is not emitted as Triton GEMM.\n              &amp;#x27;xla_gpu_enable_triton_gemm&amp;#x27;: &amp;#x27;False&amp;#x27;,\n          },\n      )\n      def f(x, y):\n        return x @ y\n    \n      shape = (16, 16)\n      x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n      y = x + 1\n    \n      with config.pgle_profiling_runs(0):\n        f_lowered = f.lower(x, y)\n        compiled = f_lowered.compile()\n    \n      pgle_profiler = profiler.PGLEProfiler(1, 90)\n      with config.enable_pgle(False):\n&amp;gt;       with profiler.PGLEProfiler.trace(pgle_profiler):\n\njax/tests/pgle_test.py:87: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/lib/python3.12/contextlib.py:144: in __exit__\n    next(self.gen)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncls = &amp;lt;class &amp;#x27;jax._src.profiler.PGLEProfiler&amp;#x27;&amp;gt;\nrunner = &amp;lt;jax._src.profiler.PGLEProfiler object at 0x7f15d7ce19d0&amp;gt;\n\n    @classmethod\n    @contextmanager\n    def trace(cls, runner: PGLEProfiler | None):\n      if (runner is None or runner.is_running()\n          or not runner.is_enabled() or runner.is_fdo_consumed()):\n        yield\n      else:\n        options = _profiler.ProfileOptions()\n        options.enable_hlo_proto = True\n        options.raise_error_on_start_failure = True\n        runner.current_session = _profiler.ProfilerSession(options)\n    \n        try:\n          yield\n        finally:\n          xspace = runner.current_session.stop()\n          runner.fdo_profiles.append(\n              _profiler.get_fdo_profile(xspace)\n          )\n          runner.current_session = None\n    \n          runner.called_times += 1\n          if runner.fdo_profiles[-1] == b&amp;#x27;&amp;#x27;:\n&amp;gt;           warnings.warn(\n                &amp;quot;PGLE collected an empty trace, may be due to contention with &amp;quot;\n                &amp;quot;another tool that subscribes to CUPTI, such as Nsight Systems - check &amp;quot;\n                &amp;quot;for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. &amp;quot;\n                &amp;quot;Consider populating a persistent compilation cache with PGLE enabled, &amp;quot;\n                &amp;quot;and then profiling a second run that has the &amp;quot;\n                &amp;quot;JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.&amp;quot;,\n                RuntimeWarning)\nE           RuntimeWarning: PGLE collected an empty trace, may be due to contention with another tool that subscribes to CUPTI, such as Nsight Systems - check for CUPTI_ERROR_MULTIPLE_SUBSCRIBERS_NOT_SUPPORTED from XLA. Consider populating a persistent compilation cache with PGLE enabled, and then profiling a second run that has the JAX_COMPILATION_CACHE_EXPECT_PGLE option enabled.\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:468: RuntimeWarning\n&#34;}], &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testPGLEProfilerGetFDOProfileLarge&amp;gt;\n\n    def testPGLEProfilerGetFDOProfileLarge(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n      its = 500\n    \n      compiler_options = {\n          &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n          # Make sure that matmul is not emitted as Triton GEMM.\n          &amp;#x27;xla_gpu_enable_triton_gemm&amp;#x27;: &amp;#x27;False&amp;#x27;,\n      }\n      # TODO(b/37664749): Remove this flag once the bug is fixed.\n      compiler_options[&amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;] = &amp;#x27;&amp;#x27;\n      @partial(\n          jax.jit,\n          in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          compiler_options=compiler_options,\n      )\n      def f(x):\n        agg = x\n        for _ in range(its):\n          agg = agg @ x\n        return agg\n    \n      shape = (16, 16)\n      x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n    \n      pgle_profiler = profiler.PGLEProfiler(1, 90)\n      with config.enable_pgle(False):\n        with profiler.PGLEProfiler.trace(pgle_profiler):\n          f(x)\n      fdo_profile = pgle_profiler.consume_fdo_profile()\n&amp;gt;     self.assertEqual(fdo_profile.count(b&amp;#x27;custom&amp;#x27;), its)\nE     AssertionError: 499 != 500\n\njax/tests/pgle_test.py:125: AssertionError\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testPGLEProfilerGetFDOProfileLarge&amp;gt;\n\n    def testPGLEProfilerGetFDOProfileLarge(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n      its = 500\n    \n      compiler_options = {\n          &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n          # Make sure that matmul is not emitted as Triton GEMM.\n          &amp;#x27;xla_gpu_enable_triton_gemm&amp;#x27;: &amp;#x27;False&amp;#x27;,\n      }\n      # TODO(b/37664749): Remove this flag once the bug is fixed.\n      compiler_options[&amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;] = &amp;#x27;&amp;#x27;\n      @partial(\n          jax.jit,\n          in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          compiler_options=compiler_options,\n      )\n      def f(x):\n        agg = x\n        for _ in range(its):\n          agg = agg @ x\n        return agg\n    \n      shape = (16, 16)\n      x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n    \n      pgle_profiler = profiler.PGLEProfiler(1, 90)\n      with config.enable_pgle(False):\n        with profiler.PGLEProfiler.trace(pgle_profiler):\n          f(x)\n      fdo_profile = pgle_profiler.consume_fdo_profile()\n&amp;gt;     self.assertEqual(fdo_profile.count(b&amp;#x27;custom&amp;#x27;), its)\nE     AssertionError: 499 != 500\n\njax/tests/pgle_test.py:125: AssertionError\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testPGLEProfilerGetFDOProfileLarge&amp;gt;\n\n    def testPGLEProfilerGetFDOProfileLarge(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n      its = 500\n    \n      compiler_options = {\n          &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n          # Make sure that matmul is not emitted as Triton GEMM.\n          &amp;#x27;xla_gpu_enable_triton_gemm&amp;#x27;: &amp;#x27;False&amp;#x27;,\n      }\n      # TODO(b/37664749): Remove this flag once the bug is fixed.\n      compiler_options[&amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;] = &amp;#x27;&amp;#x27;\n      @partial(\n          jax.jit,\n          in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          compiler_options=compiler_options,\n      )\n      def f(x):\n        agg = x\n        for _ in range(its):\n          agg = agg @ x\n        return agg\n    \n      shape = (16, 16)\n      x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n    \n      pgle_profiler = profiler.PGLEProfiler(1, 90)\n      with config.enable_pgle(False):\n        with profiler.PGLEProfiler.trace(pgle_profiler):\n          f(x)\n      fdo_profile = pgle_profiler.consume_fdo_profile()\n&amp;gt;     self.assertEqual(fdo_profile.count(b&amp;#x27;custom&amp;#x27;), its)\nE     AssertionError: 499 != 500\n\njax/tests/pgle_test.py:125: AssertionError\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Failed&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Failed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.pgle_test.PgleTest testMethod=testPGLEProfilerGetFDOProfileLarge&amp;gt;\n\n    def testPGLEProfilerGetFDOProfileLarge(self):\n      mesh = jtu.create_mesh((2,), (&amp;#x27;x&amp;#x27;,))\n      its = 500\n    \n      compiler_options = {\n          &amp;#x27;xla_gpu_enable_latency_hiding_scheduler&amp;#x27;: &amp;#x27;True&amp;#x27;,\n          # Make sure that matmul is not emitted as Triton GEMM.\n          &amp;#x27;xla_gpu_enable_triton_gemm&amp;#x27;: &amp;#x27;False&amp;#x27;,\n      }\n      # TODO(b/37664749): Remove this flag once the bug is fixed.\n      compiler_options[&amp;#x27;xla_gpu_enable_command_buffer&amp;#x27;] = &amp;#x27;&amp;#x27;\n      @partial(\n          jax.jit,\n          in_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          out_shardings=NamedSharding(mesh, PartitionSpec(&amp;#x27;x&amp;#x27;)),\n          compiler_options=compiler_options,\n      )\n      def f(x):\n        agg = x\n        for _ in range(its):\n          agg = agg @ x\n        return agg\n    \n      shape = (16, 16)\n      x = jnp.arange(math.prod(shape)).reshape(shape).astype(np.float32)\n    \n      pgle_profiler = profiler.PGLEProfiler(1, 90)\n      with config.enable_pgle(False):\n        with profiler.PGLEProfiler.trace(pgle_profiler):\n          f(x)\n      fdo_profile = pgle_profiler.consume_fdo_profile()\n&amp;gt;     self.assertEqual(fdo_profile.count(b&amp;#x27;custom&amp;#x27;), its)\nE     AssertionError: 499 != 500\n\njax/tests/pgle_test.py:125: AssertionError\n&#34;}], &#34;tests/pgle_test.py::PgleTest::testPassingFDOProfile&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPassingFDOProfile&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPassingFDOProfile&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/pgle_test.py::PgleTest::testPersistentCachePopulatedWithAutoPgle&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/pgle_test.py::PgleTest::testPersistentCachePopulatedWithAutoPgle&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/pgle_test.py::PgleTest::testPersistentCachePopulatedWithAutoPgle&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/pgle_test.py&amp;#x27;, 367, &amp;#x27;Skipped: Test does not cleanly reset the compilation cache&amp;#x27;)\n&#34;}]}, &#34;renderCollapsed&#34;: [&#34;passed&#34;], &#34;initialSort&#34;: &#34;result&#34;, &#34;title&#34;: &#34;multi_gpu_pgle_test_log.html&#34;}"></div>
+    <script>
+      (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+const { getCollapsedCategory, setCollapsedIds } = require('./storage.js')
+
+class DataManager {
+    setManager(data) {
+        const collapsedCategories = [...getCollapsedCategory(data.renderCollapsed)]
+        const collapsedIds = []
+        const tests = Object.values(data.tests).flat().map((test, index) => {
+            const collapsed = collapsedCategories.includes(test.result.toLowerCase())
+            const id = `test_${index}`
+            if (collapsed) {
+                collapsedIds.push(id)
+            }
+            return {
+                ...test,
+                id,
+                collapsed,
+            }
+        })
+        const dataBlob = { ...data, tests }
+        this.data = { ...dataBlob }
+        this.renderData = { ...dataBlob }
+        setCollapsedIds(collapsedIds)
+    }
+
+    get allData() {
+        return { ...this.data }
+    }
+
+    resetRender() {
+        this.renderData = { ...this.data }
+    }
+
+    setRender(data) {
+        this.renderData.tests = [...data]
+    }
+
+    toggleCollapsedItem(id) {
+        this.renderData.tests = this.renderData.tests.map((test) =>
+            test.id === id ? { ...test, collapsed: !test.collapsed } : test,
+        )
+    }
+
+    set allCollapsed(collapsed) {
+        this.renderData = { ...this.renderData, tests: [...this.renderData.tests.map((test) => (
+            { ...test, collapsed }
+        ))] }
+    }
+
+    get testSubset() {
+        return [...this.renderData.tests]
+    }
+
+    get environment() {
+        return this.renderData.environment
+    }
+
+    get initialSort() {
+        return this.data.initialSort
+    }
+}
+
+module.exports = {
+    manager: new DataManager(),
+}
+
+},{"./storage.js":8}],2:[function(require,module,exports){
+const mediaViewer = require('./mediaviewer.js')
+const templateEnvRow = document.getElementById('template_environment_row')
+const templateResult = document.getElementById('template_results-table__tbody')
+
+function htmlToElements(html) {
+    const temp = document.createElement('template')
+    temp.innerHTML = html
+    return temp.content.childNodes
+}
+
+const find = (selector, elem) => {
+    if (!elem) {
+        elem = document
+    }
+    return elem.querySelector(selector)
+}
+
+const findAll = (selector, elem) => {
+    if (!elem) {
+        elem = document
+    }
+    return [...elem.querySelectorAll(selector)]
+}
+
+const dom = {
+    getStaticRow: (key, value) => {
+        const envRow = templateEnvRow.content.cloneNode(true)
+        const isObj = typeof value === 'object' && value !== null
+        const values = isObj ? Object.keys(value).map((k) => `${k}: ${value[k]}`) : null
+
+        const valuesElement = htmlToElements(
+            values ? `<ul>${values.map((val) => `<li>${val}</li>`).join('')}<ul>` : `<div>${value}</div>`)[0]
+        const td = findAll('td', envRow)
+        td[0].textContent = key
+        td[1].appendChild(valuesElement)
+
+        return envRow
+    },
+    getResultTBody: ({ testId, id, log, extras, resultsTableRow, tableHtml, result, collapsed }) => {
+        const resultBody = templateResult.content.cloneNode(true)
+        resultBody.querySelector('tbody').classList.add(result.toLowerCase())
+        resultBody.querySelector('tbody').id = testId
+        resultBody.querySelector('.collapsible').dataset.id = id
+
+        resultsTableRow.forEach((html) => {
+            const t = document.createElement('template')
+            t.innerHTML = html
+            resultBody.querySelector('.collapsible').appendChild(t.content)
+        })
+
+        if (log) {
+            // Wrap lines starting with "E" with span.error to color those lines red
+            const wrappedLog = log.replace(/^E.*$/gm, (match) => `<span class="error">${match}</span>`)
+            resultBody.querySelector('.log').innerHTML = wrappedLog
+        } else {
+            resultBody.querySelector('.log').remove()
+        }
+
+        if (collapsed) {
+            resultBody.querySelector('.collapsible > td')?.classList.add('collapsed')
+            resultBody.querySelector('.extras-row').classList.add('hidden')
+        } else {
+            resultBody.querySelector('.collapsible > td')?.classList.remove('collapsed')
+        }
+
+        const media = []
+        extras?.forEach(({ name, format_type, content }) => {
+            if (['image', 'video'].includes(format_type)) {
+                media.push({ path: content, name, format_type })
+            }
+
+            if (format_type === 'html') {
+                resultBody.querySelector('.extraHTML').insertAdjacentHTML('beforeend', `<div>${content}</div>`)
+            }
+        })
+        mediaViewer.setup(resultBody, media)
+
+        // Add custom html from the pytest_html_results_table_html hook
+        tableHtml?.forEach((item) => {
+            resultBody.querySelector('td[class="extra"]').insertAdjacentHTML('beforeend', item)
+        })
+
+        return resultBody
+    },
+}
+
+module.exports = {
+    dom,
+    htmlToElements,
+    find,
+    findAll,
+}
+
+},{"./mediaviewer.js":6}],3:[function(require,module,exports){
+const { manager } = require('./datamanager.js')
+const { doSort } = require('./sort.js')
+const storageModule = require('./storage.js')
+
+const getFilteredSubSet = (filter) =>
+    manager.allData.tests.filter(({ result }) => filter.includes(result.toLowerCase()))
+
+const doInitFilter = () => {
+    const currentFilter = storageModule.getVisible()
+    const filteredSubset = getFilteredSubSet(currentFilter)
+    manager.setRender(filteredSubset)
+}
+
+const doFilter = (type, show) => {
+    if (show) {
+        storageModule.showCategory(type)
+    } else {
+        storageModule.hideCategory(type)
+    }
+
+    const currentFilter = storageModule.getVisible()
+    const filteredSubset = getFilteredSubSet(currentFilter)
+    manager.setRender(filteredSubset)
+
+    const sortColumn = storageModule.getSort()
+    doSort(sortColumn, true)
+}
+
+module.exports = {
+    doFilter,
+    doInitFilter,
+}
+
+},{"./datamanager.js":1,"./sort.js":7,"./storage.js":8}],4:[function(require,module,exports){
+const { redraw, bindEvents, renderStatic } = require('./main.js')
+const { doInitFilter } = require('./filter.js')
+const { doInitSort } = require('./sort.js')
+const { manager } = require('./datamanager.js')
+const data = JSON.parse(document.getElementById('data-container').dataset.jsonblob)
+
+function init() {
+    manager.setManager(data)
+    doInitFilter()
+    doInitSort()
+    renderStatic()
+    redraw()
+    bindEvents()
+}
+
+init()
+
+},{"./datamanager.js":1,"./filter.js":3,"./main.js":5,"./sort.js":7}],5:[function(require,module,exports){
+const { dom, find, findAll } = require('./dom.js')
+const { manager } = require('./datamanager.js')
+const { doSort } = require('./sort.js')
+const { doFilter } = require('./filter.js')
+const {
+    getVisible,
+    getCollapsedIds,
+    setCollapsedIds,
+    getSort,
+    getSortDirection,
+    possibleFilters,
+} = require('./storage.js')
+
+const removeChildren = (node) => {
+    while (node.firstChild) {
+        node.removeChild(node.firstChild)
+    }
+}
+
+const renderStatic = () => {
+    const renderEnvironmentTable = () => {
+        const environment = manager.environment
+        const rows = Object.keys(environment).map((key) => dom.getStaticRow(key, environment[key]))
+        const table = document.getElementById('environment')
+        removeChildren(table)
+        rows.forEach((row) => table.appendChild(row))
+    }
+    renderEnvironmentTable()
+}
+
+const addItemToggleListener = (elem) => {
+    elem.addEventListener('click', ({ target }) => {
+        const id = target.parentElement.dataset.id
+        manager.toggleCollapsedItem(id)
+
+        const collapsedIds = getCollapsedIds()
+        if (collapsedIds.includes(id)) {
+            const updated = collapsedIds.filter((item) => item !== id)
+            setCollapsedIds(updated)
+        } else {
+            collapsedIds.push(id)
+            setCollapsedIds(collapsedIds)
+        }
+        redraw()
+    })
+}
+
+const renderContent = (tests) => {
+    const sortAttr = getSort(manager.initialSort)
+    const sortAsc = JSON.parse(getSortDirection())
+    const rows = tests.map(dom.getResultTBody)
+    const table = document.getElementById('results-table')
+    const tableHeader = document.getElementById('results-table-head')
+
+    const newTable = document.createElement('table')
+    newTable.id = 'results-table'
+
+    // remove all sorting classes and set the relevant
+    findAll('.sortable', tableHeader).forEach((elem) => elem.classList.remove('asc', 'desc'))
+    tableHeader.querySelector(`.sortable[data-column-type="${sortAttr}"]`)?.classList.add(sortAsc ? 'desc' : 'asc')
+    newTable.appendChild(tableHeader)
+
+    if (!rows.length) {
+        const emptyTable = document.getElementById('template_results-table__body--empty').content.cloneNode(true)
+        newTable.appendChild(emptyTable)
+    } else {
+        rows.forEach((row) => {
+            if (!!row) {
+                findAll('.collapsible td:not(.col-links', row).forEach(addItemToggleListener)
+                find('.logexpander', row).addEventListener('click',
+                    (evt) => evt.target.parentNode.classList.toggle('expanded'),
+                )
+                newTable.appendChild(row)
+            }
+        })
+    }
+
+    table.replaceWith(newTable)
+}
+
+const renderDerived = () => {
+    const currentFilter = getVisible()
+    possibleFilters.forEach((result) => {
+        const input = document.querySelector(`input[data-test-result="${result}"]`)
+        input.checked = currentFilter.includes(result)
+    })
+}
+
+const bindEvents = () => {
+    const filterColumn = (evt) => {
+        const { target: element } = evt
+        const { testResult } = element.dataset
+
+        doFilter(testResult, element.checked)
+        const collapsedIds = getCollapsedIds()
+        const updated = manager.renderData.tests.map((test) => {
+            return {
+                ...test,
+                collapsed: collapsedIds.includes(test.id),
+            }
+        })
+        manager.setRender(updated)
+        redraw()
+    }
+
+    const header = document.getElementById('environment-header')
+    header.addEventListener('click', () => {
+        const table = document.getElementById('environment')
+        table.classList.toggle('hidden')
+        header.classList.toggle('collapsed')
+    })
+
+    findAll('input[name="filter_checkbox"]').forEach((elem) => {
+        elem.addEventListener('click', filterColumn)
+    })
+
+    findAll('.sortable').forEach((elem) => {
+        elem.addEventListener('click', (evt) => {
+            const { target: element } = evt
+            const { columnType } = element.dataset
+            doSort(columnType)
+            redraw()
+        })
+    })
+
+    document.getElementById('show_all_details').addEventListener('click', () => {
+        manager.allCollapsed = false
+        setCollapsedIds([])
+        redraw()
+    })
+    document.getElementById('hide_all_details').addEventListener('click', () => {
+        manager.allCollapsed = true
+        const allIds = manager.renderData.tests.map((test) => test.id)
+        setCollapsedIds(allIds)
+        redraw()
+    })
+}
+
+const redraw = () => {
+    const { testSubset } = manager
+
+    renderContent(testSubset)
+    renderDerived()
+}
+
+module.exports = {
+    redraw,
+    bindEvents,
+    renderStatic,
+}
+
+},{"./datamanager.js":1,"./dom.js":2,"./filter.js":3,"./sort.js":7,"./storage.js":8}],6:[function(require,module,exports){
+class MediaViewer {
+    constructor(assets) {
+        this.assets = assets
+        this.index = 0
+    }
+
+    nextActive() {
+        this.index = this.index === this.assets.length - 1 ? 0 : this.index + 1
+        return [this.activeFile, this.index]
+    }
+
+    prevActive() {
+        this.index = this.index === 0 ? this.assets.length - 1 : this.index -1
+        return [this.activeFile, this.index]
+    }
+
+    get currentIndex() {
+        return this.index
+    }
+
+    get activeFile() {
+        return this.assets[this.index]
+    }
+}
+
+
+const setup = (resultBody, assets) => {
+    if (!assets.length) {
+        resultBody.querySelector('.media').classList.add('hidden')
+        return
+    }
+
+    const mediaViewer = new MediaViewer(assets)
+    const container = resultBody.querySelector('.media-container')
+    const leftArrow = resultBody.querySelector('.media-container__nav--left')
+    const rightArrow = resultBody.querySelector('.media-container__nav--right')
+    const mediaName = resultBody.querySelector('.media__name')
+    const counter = resultBody.querySelector('.media__counter')
+    const imageEl = resultBody.querySelector('img')
+    const sourceEl = resultBody.querySelector('source')
+    const videoEl = resultBody.querySelector('video')
+
+    const setImg = (media, index) => {
+        if (media?.format_type === 'image') {
+            imageEl.src = media.path
+
+            imageEl.classList.remove('hidden')
+            videoEl.classList.add('hidden')
+        } else if (media?.format_type === 'video') {
+            sourceEl.src = media.path
+
+            videoEl.classList.remove('hidden')
+            imageEl.classList.add('hidden')
+        }
+
+        mediaName.innerText = media?.name
+        counter.innerText = `${index + 1} / ${assets.length}`
+    }
+    setImg(mediaViewer.activeFile, mediaViewer.currentIndex)
+
+    const moveLeft = () => {
+        const [media, index] = mediaViewer.prevActive()
+        setImg(media, index)
+    }
+    const doRight = () => {
+        const [media, index] = mediaViewer.nextActive()
+        setImg(media, index)
+    }
+    const openImg = () => {
+        window.open(mediaViewer.activeFile.path, '_blank')
+    }
+    if (assets.length === 1) {
+        container.classList.add('media-container--fullscreen')
+    } else {
+        leftArrow.addEventListener('click', moveLeft)
+        rightArrow.addEventListener('click', doRight)
+    }
+    imageEl.addEventListener('click', openImg)
+}
+
+module.exports = {
+    setup,
+}
+
+},{}],7:[function(require,module,exports){
+const { manager } = require('./datamanager.js')
+const storageModule = require('./storage.js')
+
+const genericSort = (list, key, ascending, customOrder) => {
+    let sorted
+    if (customOrder) {
+        sorted = list.sort((a, b) => {
+            const aValue = a.result.toLowerCase()
+            const bValue = b.result.toLowerCase()
+
+            const aIndex = customOrder.findIndex((item) => item.toLowerCase() === aValue)
+            const bIndex = customOrder.findIndex((item) => item.toLowerCase() === bValue)
+
+            // Compare the indices to determine the sort order
+            return aIndex - bIndex
+        })
+    } else {
+        sorted = list.sort((a, b) => a[key] === b[key] ? 0 : a[key] > b[key] ? 1 : -1)
+    }
+
+    if (ascending) {
+        sorted.reverse()
+    }
+    return sorted
+}
+
+const durationSort = (list, ascending) => {
+    const parseDuration = (duration) => {
+        if (duration.includes(':')) {
+            // If it's in the format "HH:mm:ss"
+            const [hours, minutes, seconds] = duration.split(':').map(Number)
+            return (hours * 3600 + minutes * 60 + seconds) * 1000
+        } else {
+            // If it's in the format "nnn ms"
+            return parseInt(duration)
+        }
+    }
+    const sorted = list.sort((a, b) => parseDuration(a['duration']) - parseDuration(b['duration']))
+    if (ascending) {
+        sorted.reverse()
+    }
+    return sorted
+}
+
+const doInitSort = () => {
+    const type = storageModule.getSort(manager.initialSort)
+    const ascending = storageModule.getSortDirection()
+    const list = manager.testSubset
+    const initialOrder = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed', 'Skipped', 'Passed']
+
+    storageModule.setSort(type)
+    storageModule.setSortDirection(ascending)
+
+    if (type?.toLowerCase() === 'original') {
+        manager.setRender(list)
+    } else {
+        let sortedList
+        switch (type) {
+        case 'duration':
+            sortedList = durationSort(list, ascending)
+            break
+        case 'result':
+            sortedList = genericSort(list, type, ascending, initialOrder)
+            break
+        default:
+            sortedList = genericSort(list, type, ascending)
+            break
+        }
+        manager.setRender(sortedList)
+    }
+}
+
+const doSort = (type, skipDirection) => {
+    const newSortType = storageModule.getSort(manager.initialSort) !== type
+    const currentAsc = storageModule.getSortDirection()
+    let ascending
+    if (skipDirection) {
+        ascending = currentAsc
+    } else {
+        ascending = newSortType ? false : !currentAsc
+    }
+    storageModule.setSort(type)
+    storageModule.setSortDirection(ascending)
+
+    const list = manager.testSubset
+    const sortedList = type === 'duration' ? durationSort(list, ascending) : genericSort(list, type, ascending)
+    manager.setRender(sortedList)
+}
+
+module.exports = {
+    doInitSort,
+    doSort,
+}
+
+},{"./datamanager.js":1,"./storage.js":8}],8:[function(require,module,exports){
+const possibleFilters = [
+    'passed',
+    'skipped',
+    'failed',
+    'error',
+    'xfailed',
+    'xpassed',
+    'rerun',
+]
+
+const getVisible = () => {
+    const url = new URL(window.location.href)
+    const settings = new URLSearchParams(url.search).get('visible')
+    const lower = (item) => {
+        const lowerItem = item.toLowerCase()
+        if (possibleFilters.includes(lowerItem)) {
+            return lowerItem
+        }
+        return null
+    }
+    return settings === null ?
+        possibleFilters :
+        [...new Set(settings?.split(',').map(lower).filter((item) => item))]
+}
+
+const hideCategory = (categoryToHide) => {
+    const url = new URL(window.location.href)
+    const visibleParams = new URLSearchParams(url.search).get('visible')
+    const currentVisible = visibleParams ? visibleParams.split(',') : [...possibleFilters]
+    const settings = [...new Set(currentVisible)].filter((f) => f !== categoryToHide).join(',')
+
+    url.searchParams.set('visible', settings)
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const showCategory = (categoryToShow) => {
+    if (typeof window === 'undefined') {
+        return
+    }
+    const url = new URL(window.location.href)
+    const currentVisible = new URLSearchParams(url.search).get('visible')?.split(',').filter(Boolean) ||
+        [...possibleFilters]
+    const settings = [...new Set([categoryToShow, ...currentVisible])]
+    const noFilter = possibleFilters.length === settings.length || !settings.length
+
+    noFilter ? url.searchParams.delete('visible') : url.searchParams.set('visible', settings.join(','))
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const getSort = (initialSort) => {
+    const url = new URL(window.location.href)
+    let sort = new URLSearchParams(url.search).get('sort')
+    if (!sort) {
+        sort = initialSort || 'result'
+    }
+    return sort
+}
+
+const setSort = (type) => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('sort', type)
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const getCollapsedCategory = (renderCollapsed) => {
+    let categories
+    if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        const collapsedItems = new URLSearchParams(url.search).get('collapsed')
+        switch (true) {
+        case !renderCollapsed && collapsedItems === null:
+            categories = ['passed']
+            break
+        case collapsedItems?.length === 0 || /^["']{2}$/.test(collapsedItems):
+            categories = []
+            break
+        case /^all$/.test(collapsedItems) || collapsedItems === null && /^all$/.test(renderCollapsed):
+            categories = [...possibleFilters]
+            break
+        default:
+            categories = collapsedItems?.split(',').map((item) => item.toLowerCase()) || renderCollapsed
+            break
+        }
+    } else {
+        categories = []
+    }
+    return categories
+}
+
+const getSortDirection = () => JSON.parse(sessionStorage.getItem('sortAsc')) || false
+const setSortDirection = (ascending) => sessionStorage.setItem('sortAsc', ascending)
+
+const getCollapsedIds = () => JSON.parse(sessionStorage.getItem('collapsedIds')) || []
+const setCollapsedIds = (list) => sessionStorage.setItem('collapsedIds', JSON.stringify(list))
+
+module.exports = {
+    getVisible,
+    hideCategory,
+    showCategory,
+    getCollapsedIds,
+    setCollapsedIds,
+    getSort,
+    setSort,
+    getSortDirection,
+    setSortDirection,
+    getCollapsedCategory,
+    possibleFilters,
+}
+
+},{}]},{},[4]);
+    </script>
+  </footer>
+</html>

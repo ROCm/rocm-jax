@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title id="head-title">multi_gpu_compilation_cache_test_log.html</title>
+      <link href="assets/style.css" rel="stylesheet" type="text/css"/>
+  </head>
+  <body>
+    <h1 id="title">multi_gpu_compilation_cache_test_log.html</h1>
+    <p>Report generated on 20-Nov-2025 at 00:08:44 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a>
+        v4.1.1</p>
+    <div id="environment-header">
+      <h2>Environment</h2>
+    </div>
+    <table id="environment"></table>
+    <!-- TEMPLATES -->
+      <template id="template_environment_row">
+      <tr>
+        <td></td>
+        <td></td>
+      </tr>
+    </template>
+    <template id="template_results-table__body--empty">
+      <tbody class="results-table-row">
+        <tr id="not-found-message">
+          <td colspan="4">No results found. Check the filters.</th>
+        </tr>
+    </template>
+    <template id="template_results-table__tbody">
+      <tbody class="results-table-row">
+        <tr class="collapsible">
+        </tr>
+        <tr class="extras-row">
+          <td class="extra" colspan="4">
+            <div class="extraHTML"></div>
+            <div class="media">
+              <div class="media-container">
+                  <div class="media-container__nav--left"><</div>
+                  <div class="media-container__viewport">
+                    <img src="" />
+                    <video controls>
+                      <source src="" type="video/mp4">
+                    </video>
+                  </div>
+                  <div class="media-container__nav--right">></div>
+                </div>
+                <div class="media__name"></div>
+                <div class="media__counter"></div>
+            </div>
+            <div class="logwrapper">
+              <div class="logexpander"></div>
+              <div class="log"></div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </template>
+    <!-- END TEMPLATES -->
+    <div class="summary">
+      <div class="summary__data">
+        <h2>Summary</h2>
+        <div class="additional-summary prefix">
+        </div>
+        <p class="run-count">32 tests took 00:01:37.</p>
+        <p class="filter">(Un)check the boxes to filter the results.</p>
+        <div class="summary__reload">
+          <div class="summary__reload__button hidden" onclick="location.reload()">
+            <div>There are still tests running. <br />Reload this page to get the latest results!</div>
+          </div>
+        </div>
+        <div class="summary__spacer"></div>
+        <div class="controls">
+          <div class="filters">
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="failed" disabled/>
+            <span class="failed">0 Failed,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="passed" />
+            <span class="passed">32 Passed,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="skipped" disabled/>
+            <span class="skipped">0 Skipped,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xfailed" disabled/>
+            <span class="xfailed">0 Expected failures,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xpassed" disabled/>
+            <span class="xpassed">0 Unexpected passes,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="error" disabled/>
+            <span class="error">0 Errors,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="rerun" disabled/>
+            <span class="rerun">0 Reruns</span>
+          </div>
+          <div class="collapse">
+            <button id="show_all_details">Show all details</button>&nbsp;/&nbsp;<button id="hide_all_details">Hide all details</button>
+          </div>
+        </div>
+      </div>
+      <div class="additional-summary summary">
+      </div>
+      <div class="additional-summary postfix">
+      </div>
+    </div>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable" data-column-type="result">Result</th>
+          <th class="sortable" data-column-type="testId">Test</th>
+          <th class="sortable" data-column-type="duration">Duration</th>
+          <th>Links</th>
+        </tr>
+      </thead>
+    </table>
+  </body>
+  <footer>
+    <div id="data-container" data-jsonblob="{&#34;environment&#34;: {&#34;Python&#34;: &#34;3.12.3&#34;, &#34;Platform&#34;: &#34;Linux-6.2.0-25-generic-x86_64-with-glibc2.39&#34;, &#34;Packages&#34;: {&#34;pytest&#34;: &#34;9.0.1&#34;, &#34;pluggy&#34;: &#34;1.6.0&#34;}, &#34;Plugins&#34;: {&#34;hypothesis&#34;: &#34;6.148.2&#34;, &#34;rerunfailures&#34;: &#34;16.1&#34;, &#34;reportlog&#34;: &#34;1.0.0&#34;, &#34;metadata&#34;: &#34;3.1.1&#34;, &#34;json-report&#34;: &#34;1.5.0&#34;, &#34;html&#34;: &#34;4.1.1&#34;}}, &#34;tests&#34;: {&#34;tests/compilation_cache_test.py::CompilationCacheTest::test_backend_serialization_deserialization&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_backend_serialization_deserialization&#34;, &#34;duration&#34;: &#34;00:00:12&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_backend_serialization_deserialization&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:12&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_hits_metric&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_hits_metric&#34;, &#34;duration&#34;: &#34;00:00:01&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_hits_metric&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:01&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_misses_metric0&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_misses_metric0&#34;, &#34;duration&#34;: &#34;149 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_misses_metric0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;149 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_misses_metric1&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_misses_metric1&#34;, &#34;duration&#34;: &#34;37 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_misses_metric1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;37 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_read_warning&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_read_warning&#34;, &#34;duration&#34;: &#34;223 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_read_warning&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;223 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_saving_metric&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_saving_metric&#34;, &#34;duration&#34;: &#34;75 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_saving_metric&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;75 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_write_warning&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_write_warning&#34;, &#34;duration&#34;: &#34;17 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_write_warning&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;17 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_write_with_process_restriction0&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_write_with_process_restriction0&#34;, &#34;duration&#34;: &#34;20 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_write_with_process_restriction0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;20 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_write_with_process_restriction1&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_write_with_process_restriction1&#34;, &#34;duration&#34;: &#34;18 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_cache_write_with_process_restriction1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;18 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_compile_requests_use_cache_metric&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_compile_requests_use_cache_metric&#34;, &#34;duration&#34;: &#34;43 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_compile_requests_use_cache_metric&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;43 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_diff_executables&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_diff_executables&#34;, &#34;duration&#34;: &#34;67 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_diff_executables&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;67 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_enable_compilation_cache&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_enable_compilation_cache&#34;, &#34;duration&#34;: &#34;200 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_enable_compilation_cache&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;200 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_get_no_executable&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_get_no_executable&#34;, &#34;duration&#34;: &#34;5 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_get_no_executable&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;5 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_jit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_jit&#34;, &#34;duration&#34;: &#34;155 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_jit&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;155 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_jit_sharded&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_jit_sharded&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_jit_sharded&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_jit_with_constants&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_jit_with_constants&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_jit_with_constants&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_min_compile_time&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_min_compile_time&#34;, &#34;duration&#34;: &#34;80 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_min_compile_time&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;80 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_min_entry_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_min_entry_size&#34;, &#34;duration&#34;: &#34;33 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_min_entry_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;33 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_enable_xla_caches&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_enable_xla_caches&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_enable_xla_caches&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_hit_logging&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_hit_logging&#34;, &#34;duration&#34;: &#34;42 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_hit_logging&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;42 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;----------------------------- Captured stderr call -----------------------------\nWARNING:2025-11-20 00:07:24,120:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.000468493 sec\nWARNING:2025-11-20 00:07:24,121:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nWARNING:2025-11-20 00:07:24,125:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.003892422 sec\nWARNING:2025-11-20 00:07:24,126:jax._src.compiler:103: Persistent compilation cache hit for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-a8b56c3a8be05b22c140a43b9558bcdb91146a1f37d84c08ca99c8e5037916d7&amp;#x27;\nWARNING:2025-11-20 00:07:24,126:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.001247406 sec\n&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_hit_no_logging&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_hit_no_logging&#34;, &#34;duration&#34;: &#34;41 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_hit_no_logging&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;41 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;----------------------------- Captured stderr call -----------------------------\nDEBUG:2025-11-20 00:07:24,162:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.000434160 sec\nDEBUG:2025-11-20 00:07:24,163:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:24,167:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.003769398 sec\nDEBUG:2025-11-20 00:07:24,167:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[RocmDevice(id=0)]]\nDEBUG:2025-11-20 00:07:24,167:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:157: get_cache_key hash of serialized computation: 75ef826034e89859d179d9c0854c334a06d4397bf4632586af8be12287d21f98\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:163: get_cache_key hash after serializing computation: 75ef826034e89859d179d9c0854c334a06d4397bf4632586af8be12287d21f98\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 4b3ddab8ded42eefb82def94ff3ee891000514f05aca31ca570a340b1ab7d7be\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:157: get_cache_key hash of serialized backend version: a1121c48009bba0eff9c8e4f51d2ad8b35a88040433426271bb7601dd0f0b679\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 0b0c5a9afe2b06e608eeda34ae9cd3cffaa3e6dd23cf19f2eb2194b2678bd647\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 0b0c5a9afe2b06e608eeda34ae9cd3cffaa3e6dd23cf19f2eb2194b2678bd647\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: de3e52d76386d21f76db4b00caea5dd8160e6bf240dd9df12d5c5586f6d41e09\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: 5c95f4c22c9d05cc321b1ebbc42515673bee009c3f13ebb5567f18fd59e38845\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: c91fb7409ae1cfb8e7eab5baa0168900b1c6810d5104e29b47a4cc82659c22e3\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: 5db8ce5f45877deeba1e19c9b8fd426e779a3e6ad15b2be8ddd7ede8d30234fc\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:163: get_cache_key hash after serializing compression: a8b56c3a8be05b22c140a43b9558bcdb91146a1f37d84c08ca99c8e5037916d7\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,168:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: a8b56c3a8be05b22c140a43b9558bcdb91146a1f37d84c08ca99c8e5037916d7\nDEBUG:2025-11-20 00:07:24,169:jax._src.compiler:103: Persistent compilation cache hit for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-a8b56c3a8be05b22c140a43b9558bcdb91146a1f37d84c08ca99c8e5037916d7&amp;#x27;\nDEBUG:2025-11-20 00:07:24,169:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.001793146 sec\n&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_miss_logging_with_explain&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_miss_logging_with_explain&#34;, &#34;duration&#34;: &#34;00:00:01&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_miss_logging_with_explain&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:01&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;----------------------------- Captured stderr call -----------------------------\nDEBUG:2025-11-20 00:07:24,177:jax._src.dispatch:222: Finished tracing + transforming add for pjit in 0.000477791 sec\nDEBUG:2025-11-20 00:07:24,177:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.001248360 sec\nWARNING:2025-11-20 00:07:24,177:jax._src.pjit:1107: TRACING CACHE MISS at /dockerx/rocm/rocm-jax/jax/tests/compilation_cache_test.py:511:10 (CompilationCacheTest.test_persistent_cache_miss_logging_with_explain) costing 1.316 ms because:\n  never seen function:\n    &amp;lt;lambda&amp;gt; id=139645561098688 defined at /dockerx/rocm/rocm-jax/jax/tests/compilation_cache_test.py:511\nDEBUG:2025-11-20 00:07:24,178:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:24,182:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.003821135 sec\nDEBUG:2025-11-20 00:07:24,182:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[RocmDevice(id=0)]]\nDEBUG:2025-11-20 00:07:24,183:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:24,183:jax._src.compiler:275: Enabling XLA autotuning cache at &amp;#x27;jax-cache/xla_gpu_per_fusion_autotune_cache_dir&amp;#x27;\nDEBUG:2025-11-20 00:07:24,183:jax._src.cache_key:157: get_cache_key hash of serialized computation: b14599fab9568f574315d9cbadcf4e36387fda47c822ee1537b124bf36fa1617\nDEBUG:2025-11-20 00:07:24,183:jax._src.cache_key:163: get_cache_key hash after serializing computation: b14599fab9568f574315d9cbadcf4e36387fda47c822ee1537b124bf36fa1617\nDEBUG:2025-11-20 00:07:24,183:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:24,183:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 1c6711998c1453344e8541dd2880ea7d83ba891f7da0c784063f8c151b1310ba\nDEBUG:2025-11-20 00:07:24,183:jax._src.cache_key:157: get_cache_key hash of serialized backend version: a1121c48009bba0eff9c8e4f51d2ad8b35a88040433426271bb7601dd0f0b679\nDEBUG:2025-11-20 00:07:24,183:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 2f313180cffc1951b15b726d31afeca5dceeaad95d0bf08799cc9f91fad3bc5a\nDEBUG:2025-11-20 00:07:24,183:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,183:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 2f313180cffc1951b15b726d31afeca5dceeaad95d0bf08799cc9f91fad3bc5a\nDEBUG:2025-11-20 00:07:24,183:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: 1991650eee94e81e22507c95e2abfd2501995a7c87c2927db5d91532f529becc\nDEBUG:2025-11-20 00:07:24,184:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: 2d5569d4f512fe069286d20727f39f1df08929f78280efb78984401ccb690bc8\nDEBUG:2025-11-20 00:07:24,184:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: c91fb7409ae1cfb8e7eab5baa0168900b1c6810d5104e29b47a4cc82659c22e3\nDEBUG:2025-11-20 00:07:24,184:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: f2e914140b42797084916cbe13131f460d3f95bc2d3e0dde0b457164f6995d0a\nDEBUG:2025-11-20 00:07:24,184:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:24,184:jax._src.cache_key:163: get_cache_key hash after serializing compression: ec22f6a0794ebc7e49011e23014c587c2e6b663268bbd37573755a2e44557f93\nDEBUG:2025-11-20 00:07:24,184:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,184:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: ec22f6a0794ebc7e49011e23014c587c2e6b663268bbd37573755a2e44557f93\nWARNING:2025-11-20 00:07:24,184:jax._src.compiler:113: PERSISTENT COMPILATION CACHE MISS for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-ec22f6a0794ebc7e49011e23014c587c2e6b663268bbd37573755a2e44557f93&amp;#x27;\nWARNING:2025-11-20 00:07:24,223:jax._src.compiler:822: Not writing persistent cache entry for &amp;#x27;jit__lambda&amp;#x27; because it uses host callbacks (e.g. from jax.debug.print or breakpoint)\nDEBUG:2025-11-20 00:07:24,223:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.040352106 sec\nDEBUG:2025-11-20 00:07:24,594:jax._src.dispatch:222: Finished tracing + transforming convert_element_type for pjit in 0.000337839 sec\nDEBUG:2025-11-20 00:07:24,595:jax._src.interpreters.pxla:1960: Compiling jit(convert_element_type) with global shapes and types (ShapedArray(int32[]),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:24,599:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(convert_element_type) in 0.003898859 sec\nDEBUG:2025-11-20 00:07:24,600:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[CpuDevice(id=0)]]\nDEBUG:2025-11-20 00:07:24,600:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:24,600:jax._src.compiler:275: Enabling XLA autotuning cache at &amp;#x27;jax-cache/xla_gpu_per_fusion_autotune_cache_dir&amp;#x27;\nDEBUG:2025-11-20 00:07:24,600:jax._src.cache_key:157: get_cache_key hash of serialized computation: b93e80316c9be0112d3f463743d6928a7c83db16b95f436d36f8ce34fef46a12\nDEBUG:2025-11-20 00:07:24,600:jax._src.cache_key:163: get_cache_key hash after serializing computation: b93e80316c9be0112d3f463743d6928a7c83db16b95f436d36f8ce34fef46a12\nDEBUG:2025-11-20 00:07:24,600:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:24,600:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 15b3db1d1c00e68181564a5805542dea44bbd63b786b854dc3ab8889a94a0ca4\nDEBUG:2025-11-20 00:07:24,600:jax._src.cache_key:157: get_cache_key hash of serialized backend version: d01711a267aea6695c681e4e75ed43f0e973d36f19b2f3c261d517b8c32285b2\nDEBUG:2025-11-20 00:07:24,600:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 3bb198b63adbc844c343796930b93178305eac3aff22e51b181ee941cbaf232c\nDEBUG:2025-11-20 00:07:24,600:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,601:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 3bb198b63adbc844c343796930b93178305eac3aff22e51b181ee941cbaf232c\nDEBUG:2025-11-20 00:07:24,601:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: 1991650eee94e81e22507c95e2abfd2501995a7c87c2927db5d91532f529becc\nDEBUG:2025-11-20 00:07:24,601:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: e6ea2c23d09540f80ed92dfea582f900766c11a56827e41fcd5af72db822b82b\nDEBUG:2025-11-20 00:07:24,601:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: 6f673c412941c2fd2db04778c9e9ad14d24f77d220052a8286a2de9cb96993d5\nDEBUG:2025-11-20 00:07:24,601:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: 1549fed8404c630888499c86d1563f2c682fbfa0c16bb8ee48dcc682dcd3c979\nDEBUG:2025-11-20 00:07:24,601:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:24,601:jax._src.cache_key:163: get_cache_key hash after serializing compression: a4050cb3b73a549560ccadc1d639b1515a83eea7e29f0c99a77a4f4f6dd75d8b\nDEBUG:2025-11-20 00:07:24,601:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,601:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: a4050cb3b73a549560ccadc1d639b1515a83eea7e29f0c99a77a4f4f6dd75d8b\nWARNING:2025-11-20 00:07:24,601:jax._src.compiler:113: PERSISTENT COMPILATION CACHE MISS for &amp;#x27;jit_convert_element_type&amp;#x27; with key &amp;#x27;jit_convert_element_type-a4050cb3b73a549560ccadc1d639b1515a83eea7e29f0c99a77a4f4f6dd75d8b&amp;#x27;\nWARNING:2025-11-20 00:07:24,614:jax._src.compiler:830: Not writing persistent cache entry for &amp;#x27;jit_convert_element_type&amp;#x27; because it took &amp;lt; 100000.00 seconds to compile (0.01s)\nDEBUG:2025-11-20 00:07:24,614:jax._src.dispatch:222: Finished XLA compilation of jit(convert_element_type) in 0.013682365 sec\nDEBUG:2025-11-20 00:07:24,711:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.000729561 sec\nWARNING:2025-11-20 00:07:24,712:jax._src.pjit:1107: TRACING CACHE MISS at /dockerx/rocm/rocm-jax/jax/tests/compilation_cache_test.py:522:8 (CompilationCacheTest.test_persistent_cache_miss_logging_with_explain) costing 0.955 ms because:\n  never seen function:\n    &amp;lt;lambda&amp;gt; id=139645561363712 defined at /dockerx/rocm/rocm-jax/jax/tests/compilation_cache_test.py:522\nDEBUG:2025-11-20 00:07:24,713:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:24,718:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.004949570 sec\nDEBUG:2025-11-20 00:07:24,718:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[RocmDevice(id=0)]]\nDEBUG:2025-11-20 00:07:24,718:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:24,718:jax._src.compiler:275: Enabling XLA autotuning cache at &amp;#x27;jax-cache/xla_gpu_per_fusion_autotune_cache_dir&amp;#x27;\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:157: get_cache_key hash of serialized computation: b14599fab9568f574315d9cbadcf4e36387fda47c822ee1537b124bf36fa1617\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:163: get_cache_key hash after serializing computation: b14599fab9568f574315d9cbadcf4e36387fda47c822ee1537b124bf36fa1617\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 1c6711998c1453344e8541dd2880ea7d83ba891f7da0c784063f8c151b1310ba\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:157: get_cache_key hash of serialized backend version: a1121c48009bba0eff9c8e4f51d2ad8b35a88040433426271bb7601dd0f0b679\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 2f313180cffc1951b15b726d31afeca5dceeaad95d0bf08799cc9f91fad3bc5a\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 2f313180cffc1951b15b726d31afeca5dceeaad95d0bf08799cc9f91fad3bc5a\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: 1991650eee94e81e22507c95e2abfd2501995a7c87c2927db5d91532f529becc\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: 2d5569d4f512fe069286d20727f39f1df08929f78280efb78984401ccb690bc8\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: c91fb7409ae1cfb8e7eab5baa0168900b1c6810d5104e29b47a4cc82659c22e3\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: f2e914140b42797084916cbe13131f460d3f95bc2d3e0dde0b457164f6995d0a\nDEBUG:2025-11-20 00:07:24,719:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:24,720:jax._src.cache_key:163: get_cache_key hash after serializing compression: ec22f6a0794ebc7e49011e23014c587c2e6b663268bbd37573755a2e44557f93\nDEBUG:2025-11-20 00:07:24,720:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,720:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: ec22f6a0794ebc7e49011e23014c587c2e6b663268bbd37573755a2e44557f93\nWARNING:2025-11-20 00:07:24,720:jax._src.compiler:113: PERSISTENT COMPILATION CACHE MISS for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-ec22f6a0794ebc7e49011e23014c587c2e6b663268bbd37573755a2e44557f93&amp;#x27;\nWARNING:2025-11-20 00:07:24,738:jax._src.compiler:822: Not writing persistent cache entry for &amp;#x27;jit__lambda&amp;#x27; because it uses host callbacks (e.g. from jax.debug.print or breakpoint)\nDEBUG:2025-11-20 00:07:24,738:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.019858837 sec\nDEBUG:2025-11-20 00:07:24,826:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.000559330 sec\nWARNING:2025-11-20 00:07:24,827:jax._src.pjit:1107: TRACING CACHE MISS at /dockerx/rocm/rocm-jax/jax/tests/compilation_cache_test.py:533:10 (CompilationCacheTest.test_persistent_cache_miss_logging_with_explain) costing 0.769 ms because:\n  never seen function:\n    &amp;lt;lambda&amp;gt; id=139645561365472 defined at /dockerx/rocm/rocm-jax/jax/tests/compilation_cache_test.py:533\nDEBUG:2025-11-20 00:07:24,827:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:24,832:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.004344225 sec\nDEBUG:2025-11-20 00:07:24,832:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[RocmDevice(id=0)]]\nDEBUG:2025-11-20 00:07:24,832:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:24,833:jax._src.compiler:275: Enabling XLA autotuning cache at &amp;#x27;jax-cache/xla_gpu_per_fusion_autotune_cache_dir&amp;#x27;\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:157: get_cache_key hash of serialized computation: 76ed0b862c7c6a9bce317138954e0e5f25330b84127255b177ef5cf0ec0a55ef\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:163: get_cache_key hash after serializing computation: 76ed0b862c7c6a9bce317138954e0e5f25330b84127255b177ef5cf0ec0a55ef\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 9767999fd57daa43701f2e8a6b81e6f0032ffaf40197b25f3e3604e3a8b6583b\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:157: get_cache_key hash of serialized backend version: a1121c48009bba0eff9c8e4f51d2ad8b35a88040433426271bb7601dd0f0b679\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 3ea8510bd6ca1917618f6f16b40a942c63c43709a983a362c059ae7f6326d293\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 3ea8510bd6ca1917618f6f16b40a942c63c43709a983a362c059ae7f6326d293\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: 1991650eee94e81e22507c95e2abfd2501995a7c87c2927db5d91532f529becc\nDEBUG:2025-11-20 00:07:24,833:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: dc8de87661c8306a6b4635f04461996cf182402baf113d682c835b14dd871b38\nDEBUG:2025-11-20 00:07:24,834:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: c91fb7409ae1cfb8e7eab5baa0168900b1c6810d5104e29b47a4cc82659c22e3\nDEBUG:2025-11-20 00:07:24,834:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: 3e35b2c21bca28eb54e71ef5206bbdc1a00859f2efe0bc359617349d0a32b397\nDEBUG:2025-11-20 00:07:24,834:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:24,834:jax._src.cache_key:163: get_cache_key hash after serializing compression: 0fd187910c700d2af464153241160f869d3ac27bffd6414037feabac073c3d22\nDEBUG:2025-11-20 00:07:24,834:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:24,834:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: 0fd187910c700d2af464153241160f869d3ac27bffd6414037feabac073c3d22\nWARNING:2025-11-20 00:07:24,834:jax._src.compiler:113: PERSISTENT COMPILATION CACHE MISS for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-0fd187910c700d2af464153241160f869d3ac27bffd6414037feabac073c3d22&amp;#x27;\nDEBUG:2025-11-20 00:07:24,872:jax._src.compiler:837: &amp;#x27;jit__lambda&amp;#x27; took at least 0.00 seconds to compile (0.04s)\nWARNING:2025-11-20 00:07:24,873:jax._src.compilation_cache:272: Not writing persistent cache entry with key &amp;#x27;jit__lambda-0fd187910c700d2af464153241160f869d3ac27bffd6414037feabac073c3d22&amp;#x27; since its size (2883 bytes) is less than threshold (1000000000 bytes)\nDEBUG:2025-11-20 00:07:24,873:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.040190220 sec\nDEBUG:2025-11-20 00:07:25,117:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.000545979 sec\nWARNING:2025-11-20 00:07:25,117:jax._src.pjit:1107: TRACING CACHE MISS at /dockerx/rocm/rocm-jax/jax/tests/compilation_cache_test.py:542:10 (CompilationCacheTest.test_persistent_cache_miss_logging_with_explain) costing 0.802 ms because:\n  never seen function:\n    &amp;lt;lambda&amp;gt; id=139645561363712 defined at /dockerx/rocm/rocm-jax/jax/tests/compilation_cache_test.py:542\nDEBUG:2025-11-20 00:07:25,117:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:25,122:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.004282475 sec\nDEBUG:2025-11-20 00:07:25,122:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[RocmDevice(id=0)]]\nDEBUG:2025-11-20 00:07:25,123:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:25,123:jax._src.compiler:275: Enabling XLA autotuning cache at &amp;#x27;jax-cache/xla_gpu_per_fusion_autotune_cache_dir&amp;#x27;\nDEBUG:2025-11-20 00:07:25,123:jax._src.cache_key:157: get_cache_key hash of serialized computation: 780041ddae1c2de9ef1e85475c202464389f42e06cdc95f80913aaa266c2dc0f\nDEBUG:2025-11-20 00:07:25,123:jax._src.cache_key:163: get_cache_key hash after serializing computation: 780041ddae1c2de9ef1e85475c202464389f42e06cdc95f80913aaa266c2dc0f\nDEBUG:2025-11-20 00:07:25,123:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:25,123:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 3ab9a5633eb5a03e76b5a29d0a10b57b058dc40d84d4cca2f6ad40913d3aa385\nDEBUG:2025-11-20 00:07:25,123:jax._src.cache_key:157: get_cache_key hash of serialized backend version: a1121c48009bba0eff9c8e4f51d2ad8b35a88040433426271bb7601dd0f0b679\nDEBUG:2025-11-20 00:07:25,123:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 771196b5db82fa10265f1e9108d0b6d3550fae5a88c4e13deedf080eb35ca788\nDEBUG:2025-11-20 00:07:25,123:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,123:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 771196b5db82fa10265f1e9108d0b6d3550fae5a88c4e13deedf080eb35ca788\nDEBUG:2025-11-20 00:07:25,123:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: 1991650eee94e81e22507c95e2abfd2501995a7c87c2927db5d91532f529becc\nDEBUG:2025-11-20 00:07:25,124:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: 60d2118f2b02cff9c328e2ce08a78506d00852a8271956572d065c5a811f0b04\nDEBUG:2025-11-20 00:07:25,124:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: c91fb7409ae1cfb8e7eab5baa0168900b1c6810d5104e29b47a4cc82659c22e3\nDEBUG:2025-11-20 00:07:25,124:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: 7591ea7513e7751d74505d2a0101e4b575de50c2e81f94866591f003f396e263\nDEBUG:2025-11-20 00:07:25,124:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:25,124:jax._src.cache_key:163: get_cache_key hash after serializing compression: 07c3f10294de54b1b5555ebb06e790fc4171374f64e817a01d6f6c6a65f34086\nDEBUG:2025-11-20 00:07:25,124:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,124:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: 07c3f10294de54b1b5555ebb06e790fc4171374f64e817a01d6f6c6a65f34086\nWARNING:2025-11-20 00:07:25,124:jax._src.compiler:113: PERSISTENT COMPILATION CACHE MISS for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-07c3f10294de54b1b5555ebb06e790fc4171374f64e817a01d6f6c6a65f34086&amp;#x27;\nDEBUG:2025-11-20 00:07:25,161:jax._src.compiler:837: &amp;#x27;jit__lambda&amp;#x27; took at least 0.00 seconds to compile (0.04s)\nWARNING:2025-11-20 00:07:25,162:jax._src.compilation_cache:277: Writing jit__lambda to persistent compilation cache with key &amp;#x27;jit__lambda-07c3f10294de54b1b5555ebb06e790fc4171374f64e817a01d6f6c6a65f34086&amp;#x27;\nDEBUG:2025-11-20 00:07:25,162:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.039366245 sec\n&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_miss_logging_with_no_explain&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_miss_logging_with_no_explain&#34;, &#34;duration&#34;: &#34;247 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_persistent_cache_miss_logging_with_no_explain&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;247 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;----------------------------- Captured stderr call -----------------------------\nDEBUG:2025-11-20 00:07:25,263:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.000535250 sec\nDEBUG:2025-11-20 00:07:25,263:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:25,268:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.004393339 sec\nDEBUG:2025-11-20 00:07:25,268:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[RocmDevice(id=0)]]\nDEBUG:2025-11-20 00:07:25,268:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:25,269:jax._src.compiler:275: Enabling XLA autotuning cache at &amp;#x27;jax-cache/xla_gpu_per_fusion_autotune_cache_dir&amp;#x27;\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:157: get_cache_key hash of serialized computation: 75ef826034e89859d179d9c0854c334a06d4397bf4632586af8be12287d21f98\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:163: get_cache_key hash after serializing computation: 75ef826034e89859d179d9c0854c334a06d4397bf4632586af8be12287d21f98\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 4b3ddab8ded42eefb82def94ff3ee891000514f05aca31ca570a340b1ab7d7be\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:157: get_cache_key hash of serialized backend version: a1121c48009bba0eff9c8e4f51d2ad8b35a88040433426271bb7601dd0f0b679\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 0b0c5a9afe2b06e608eeda34ae9cd3cffaa3e6dd23cf19f2eb2194b2678bd647\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 0b0c5a9afe2b06e608eeda34ae9cd3cffaa3e6dd23cf19f2eb2194b2678bd647\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: 1991650eee94e81e22507c95e2abfd2501995a7c87c2927db5d91532f529becc\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: 81e2045d0ce21604ea55e67b17c2e0ab6966b8544699f6c3afe515ac5b6a7684\nDEBUG:2025-11-20 00:07:25,269:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: c91fb7409ae1cfb8e7eab5baa0168900b1c6810d5104e29b47a4cc82659c22e3\nDEBUG:2025-11-20 00:07:25,270:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: 37cb986e7edd37299a45b3067d6181d9d114c5e85c33775e6acd3837e307a015\nDEBUG:2025-11-20 00:07:25,270:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:25,270:jax._src.cache_key:163: get_cache_key hash after serializing compression: ea16ae9fc324adc1c010c1ed6f13702467fe02e7bf221fc3d141e273c2bd46e2\nDEBUG:2025-11-20 00:07:25,270:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,270:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: ea16ae9fc324adc1c010c1ed6f13702467fe02e7bf221fc3d141e273c2bd46e2\nDEBUG:2025-11-20 00:07:25,270:jax._src.compiler:113: PERSISTENT COMPILATION CACHE MISS for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-ea16ae9fc324adc1c010c1ed6f13702467fe02e7bf221fc3d141e273c2bd46e2&amp;#x27;\nDEBUG:2025-11-20 00:07:25,312:jax._src.compiler:830: Not writing persistent cache entry for &amp;#x27;jit__lambda&amp;#x27; because it took &amp;lt; 1000.00 seconds to compile (0.04s)\nDEBUG:2025-11-20 00:07:25,312:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.043343306 sec\nDEBUG:2025-11-20 00:07:25,409:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.000943899 sec\nDEBUG:2025-11-20 00:07:25,410:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:25,416:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.005230188 sec\nDEBUG:2025-11-20 00:07:25,416:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[RocmDevice(id=0)]]\nDEBUG:2025-11-20 00:07:25,417:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:25,417:jax._src.compiler:275: Enabling XLA autotuning cache at &amp;#x27;jax-cache/xla_gpu_per_fusion_autotune_cache_dir&amp;#x27;\nDEBUG:2025-11-20 00:07:25,417:jax._src.cache_key:157: get_cache_key hash of serialized computation: b14599fab9568f574315d9cbadcf4e36387fda47c822ee1537b124bf36fa1617\nDEBUG:2025-11-20 00:07:25,417:jax._src.cache_key:163: get_cache_key hash after serializing computation: b14599fab9568f574315d9cbadcf4e36387fda47c822ee1537b124bf36fa1617\nDEBUG:2025-11-20 00:07:25,417:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:25,417:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 1c6711998c1453344e8541dd2880ea7d83ba891f7da0c784063f8c151b1310ba\nDEBUG:2025-11-20 00:07:25,417:jax._src.cache_key:157: get_cache_key hash of serialized backend version: a1121c48009bba0eff9c8e4f51d2ad8b35a88040433426271bb7601dd0f0b679\nDEBUG:2025-11-20 00:07:25,417:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 2f313180cffc1951b15b726d31afeca5dceeaad95d0bf08799cc9f91fad3bc5a\nDEBUG:2025-11-20 00:07:25,417:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,417:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 2f313180cffc1951b15b726d31afeca5dceeaad95d0bf08799cc9f91fad3bc5a\nDEBUG:2025-11-20 00:07:25,418:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: 1991650eee94e81e22507c95e2abfd2501995a7c87c2927db5d91532f529becc\nDEBUG:2025-11-20 00:07:25,418:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: 2d5569d4f512fe069286d20727f39f1df08929f78280efb78984401ccb690bc8\nDEBUG:2025-11-20 00:07:25,418:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: c91fb7409ae1cfb8e7eab5baa0168900b1c6810d5104e29b47a4cc82659c22e3\nDEBUG:2025-11-20 00:07:25,418:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: f2e914140b42797084916cbe13131f460d3f95bc2d3e0dde0b457164f6995d0a\nDEBUG:2025-11-20 00:07:25,418:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:25,418:jax._src.cache_key:163: get_cache_key hash after serializing compression: ec22f6a0794ebc7e49011e23014c587c2e6b663268bbd37573755a2e44557f93\nDEBUG:2025-11-20 00:07:25,418:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,418:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: ec22f6a0794ebc7e49011e23014c587c2e6b663268bbd37573755a2e44557f93\nDEBUG:2025-11-20 00:07:25,418:jax._src.compiler:113: PERSISTENT COMPILATION CACHE MISS for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-ec22f6a0794ebc7e49011e23014c587c2e6b663268bbd37573755a2e44557f93&amp;#x27;\nDEBUG:2025-11-20 00:07:25,437:jax._src.compiler:822: Not writing persistent cache entry for &amp;#x27;jit__lambda&amp;#x27; because it uses host callbacks (e.g. from jax.debug.print or breakpoint)\nDEBUG:2025-11-20 00:07:25,437:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.020603418 sec\nDEBUG:2025-11-20 00:07:25,447:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.000589609 sec\nDEBUG:2025-11-20 00:07:25,448:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:25,452:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.004020929 sec\nDEBUG:2025-11-20 00:07:25,452:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[RocmDevice(id=0)]]\nDEBUG:2025-11-20 00:07:25,453:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:25,453:jax._src.compiler:275: Enabling XLA autotuning cache at &amp;#x27;jax-cache/xla_gpu_per_fusion_autotune_cache_dir&amp;#x27;\nDEBUG:2025-11-20 00:07:25,453:jax._src.cache_key:157: get_cache_key hash of serialized computation: 76ed0b862c7c6a9bce317138954e0e5f25330b84127255b177ef5cf0ec0a55ef\nDEBUG:2025-11-20 00:07:25,453:jax._src.cache_key:163: get_cache_key hash after serializing computation: 76ed0b862c7c6a9bce317138954e0e5f25330b84127255b177ef5cf0ec0a55ef\nDEBUG:2025-11-20 00:07:25,453:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:25,453:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 9767999fd57daa43701f2e8a6b81e6f0032ffaf40197b25f3e3604e3a8b6583b\nDEBUG:2025-11-20 00:07:25,453:jax._src.cache_key:157: get_cache_key hash of serialized backend version: a1121c48009bba0eff9c8e4f51d2ad8b35a88040433426271bb7601dd0f0b679\nDEBUG:2025-11-20 00:07:25,453:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 3ea8510bd6ca1917618f6f16b40a942c63c43709a983a362c059ae7f6326d293\nDEBUG:2025-11-20 00:07:25,453:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,453:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 3ea8510bd6ca1917618f6f16b40a942c63c43709a983a362c059ae7f6326d293\nDEBUG:2025-11-20 00:07:25,453:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: 1991650eee94e81e22507c95e2abfd2501995a7c87c2927db5d91532f529becc\nDEBUG:2025-11-20 00:07:25,454:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: dc8de87661c8306a6b4635f04461996cf182402baf113d682c835b14dd871b38\nDEBUG:2025-11-20 00:07:25,454:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: c91fb7409ae1cfb8e7eab5baa0168900b1c6810d5104e29b47a4cc82659c22e3\nDEBUG:2025-11-20 00:07:25,454:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: 3e35b2c21bca28eb54e71ef5206bbdc1a00859f2efe0bc359617349d0a32b397\nDEBUG:2025-11-20 00:07:25,454:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:25,454:jax._src.cache_key:163: get_cache_key hash after serializing compression: 0fd187910c700d2af464153241160f869d3ac27bffd6414037feabac073c3d22\nDEBUG:2025-11-20 00:07:25,454:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,454:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: 0fd187910c700d2af464153241160f869d3ac27bffd6414037feabac073c3d22\nDEBUG:2025-11-20 00:07:25,454:jax._src.compiler:113: PERSISTENT COMPILATION CACHE MISS for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-0fd187910c700d2af464153241160f869d3ac27bffd6414037feabac073c3d22&amp;#x27;\nDEBUG:2025-11-20 00:07:25,472:jax._src.compiler:837: &amp;#x27;jit__lambda&amp;#x27; took at least 0.00 seconds to compile (0.02s)\nDEBUG:2025-11-20 00:07:25,472:jax._src.compilation_cache:272: Not writing persistent cache entry with key &amp;#x27;jit__lambda-0fd187910c700d2af464153241160f869d3ac27bffd6414037feabac073c3d22&amp;#x27; since its size (2881 bytes) is less than threshold (1000000000 bytes)\nDEBUG:2025-11-20 00:07:25,472:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.019537926 sec\nDEBUG:2025-11-20 00:07:25,479:jax._src.dispatch:222: Finished tracing + transforming &amp;lt;lambda&amp;gt; for pjit in 0.000526190 sec\nDEBUG:2025-11-20 00:07:25,479:jax._src.interpreters.pxla:1960: Compiling jit(&amp;lt;lambda&amp;gt;) with global shapes and types (ShapedArray(int32[], weak_type=True),). Argument mapping: (UnspecifiedValue,).\nDEBUG:2025-11-20 00:07:25,483:jax._src.dispatch:222: Finished jaxpr to MLIR module conversion jit(&amp;lt;lambda&amp;gt;) in 0.003810644 sec\nDEBUG:2025-11-20 00:07:25,484:jax._src.compiler:167: get_compile_options: num_replicas=1 num_partitions=1 device_assignment=[[RocmDevice(id=0)]]\nDEBUG:2025-11-20 00:07:25,484:jax._src.compiler:249: get_compile_options XLA-AutoFDO profile: using XLA-AutoFDO profile version -1\nDEBUG:2025-11-20 00:07:25,484:jax._src.compiler:275: Enabling XLA autotuning cache at &amp;#x27;jax-cache/xla_gpu_per_fusion_autotune_cache_dir&amp;#x27;\nDEBUG:2025-11-20 00:07:25,484:jax._src.cache_key:157: get_cache_key hash of serialized computation: 780041ddae1c2de9ef1e85475c202464389f42e06cdc95f80913aaa266c2dc0f\nDEBUG:2025-11-20 00:07:25,484:jax._src.cache_key:163: get_cache_key hash after serializing computation: 780041ddae1c2de9ef1e85475c202464389f42e06cdc95f80913aaa266c2dc0f\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:157: get_cache_key hash of serialized jax_lib version: dd95472b8c0a81c48adabbe42d451bc1343dade7d15ad83263df0f77a66b20ff\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:163: get_cache_key hash after serializing jax_lib version: 3ab9a5633eb5a03e76b5a29d0a10b57b058dc40d84d4cca2f6ad40913d3aa385\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:157: get_cache_key hash of serialized backend version: a1121c48009bba0eff9c8e4f51d2ad8b35a88040433426271bb7601dd0f0b679\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:163: get_cache_key hash after serializing backend version: 771196b5db82fa10265f1e9108d0b6d3550fae5a88c4e13deedf080eb35ca788\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:157: get_cache_key hash of serialized XLA flags: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:163: get_cache_key hash after serializing XLA flags: 771196b5db82fa10265f1e9108d0b6d3550fae5a88c4e13deedf080eb35ca788\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:157: get_cache_key hash of serialized compile_options: 1991650eee94e81e22507c95e2abfd2501995a7c87c2927db5d91532f529becc\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:163: get_cache_key hash after serializing compile_options: 60d2118f2b02cff9c328e2ce08a78506d00852a8271956572d065c5a811f0b04\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:157: get_cache_key hash of serialized accelerator_config: c91fb7409ae1cfb8e7eab5baa0168900b1c6810d5104e29b47a4cc82659c22e3\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:163: get_cache_key hash after serializing accelerator_config: 7591ea7513e7751d74505d2a0101e4b575de50c2e81f94866591f003f396e263\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:157: get_cache_key hash of serialized compression: 0ea55c28f8014d8886b6248fe3da5d588f55c0823847a6b4579f1131b051b5e2\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:163: get_cache_key hash after serializing compression: 07c3f10294de54b1b5555ebb06e790fc4171374f64e817a01d6f6c6a65f34086\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:157: get_cache_key hash of serialized custom_hook: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nDEBUG:2025-11-20 00:07:25,485:jax._src.cache_key:163: get_cache_key hash after serializing custom_hook: 07c3f10294de54b1b5555ebb06e790fc4171374f64e817a01d6f6c6a65f34086\nDEBUG:2025-11-20 00:07:25,485:jax._src.compiler:113: PERSISTENT COMPILATION CACHE MISS for &amp;#x27;jit__lambda&amp;#x27; with key &amp;#x27;jit__lambda-07c3f10294de54b1b5555ebb06e790fc4171374f64e817a01d6f6c6a65f34086&amp;#x27;\nDEBUG:2025-11-20 00:07:25,501:jax._src.compiler:837: &amp;#x27;jit__lambda&amp;#x27; took at least 0.00 seconds to compile (0.02s)\nDEBUG:2025-11-20 00:07:25,502:jax._src.compilation_cache:277: Writing jit__lambda to persistent compilation cache with key &amp;#x27;jit__lambda-07c3f10294de54b1b5555ebb06e790fc4171374f64e817a01d6f6c6a65f34086&amp;#x27;\nDEBUG:2025-11-20 00:07:25,502:jax._src.dispatch:222: Finished XLA compilation of jit(&amp;lt;lambda&amp;gt;) in 0.018022060 sec\n&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_pmap&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_pmap&#34;, &#34;duration&#34;: &#34;00:01:17&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_pmap&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:01:17&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;----------------------------- Captured stderr call -----------------------------\nE1120 00:07:45.288309 2431018 rendezvous.cc:92] [id=0] This thread has been waiting for `initialize clique for rank 0; clique=devices=[0,1,2,3,4,5,6,7]; is_p2p=0; groups=[[0,1,2,3,4,5,6,7]]; root_device=-1; num_local_participants=8; incarnations=[]; run_id=1227632668` for 10 seconds and may be stuck. All 8 threads joined the rendezvous, however the leader has not marked the rendezvous as completed. Leader can be deadlocked inside the rendezvous callback.\nE1120 00:07:45.288295 2431024 rendezvous.cc:92] [id=5] This thread has been waiting for `initialize clique for rank 2; clique=devices=[0,1,2,3,4,5,6,7]; is_p2p=0; groups=[[0,1,2,3,4,5,6,7]]; root_device=-1; num_local_participants=8; incarnations=[]; run_id=1227632668` for 10 seconds and may be stuck. All 8 threads joined the rendezvous, however the leader has not marked the rendezvous as completed. Leader can be deadlocked inside the rendezvous callback.\nE1120 00:07:45.288292 2431021 rendezvous.cc:92] [id=2] This thread has been waiting for `initialize clique for rank 1; clique=devices=[0,1,2,3,4,5,6,7]; is_p2p=0; groups=[[0,1,2,3,4,5,6,7]]; root_device=-1; num_local_participants=8; incarnations=[]; run_id=1227632668` for 10 seconds and may be stuck. All 8 threads joined the rendezvous, however the leader has not marked the rendezvous as completed. Leader can be deadlocked inside the rendezvous callback.\nE1120 00:07:45.288295 2431039 rendezvous.cc:92] [id=4] This thread has been waiting for `initialize clique for rank 7; clique=devices=[0,1,2,3,4,5,6,7]; is_p2p=0; groups=[[0,1,2,3,4,5,6,7]]; root_device=-1; num_local_participants=8; incarnations=[]; run_id=1227632668` for 10 seconds and may be stuck. All 8 threads joined the rendezvous, however the leader has not marked the rendezvous as completed. Leader can be deadlocked inside the rendezvous callback.\nE1120 00:07:45.288292 2431030 rendezvous.cc:92] [id=1] This thread has been waiting for `initialize clique for rank 4; clique=devices=[0,1,2,3,4,5,6,7]; is_p2p=0; groups=[[0,1,2,3,4,5,6,7]]; root_device=-1; num_local_participants=8; incarnations=[]; run_id=1227632668` for 10 seconds and may be stuck. All 8 threads joined the rendezvous, however the leader has not marked the rendezvous as completed. Leader can be deadlocked inside the rendezvous callback.\nE1120 00:07:45.288282 2431027 rendezvous.cc:92] [id=6] This thread has been waiting for `initialize clique for rank 3; clique=devices=[0,1,2,3,4,5,6,7]; is_p2p=0; groups=[[0,1,2,3,4,5,6,7]]; root_device=-1; num_local_participants=8; incarnations=[]; run_id=1227632668` for 10 seconds and may be stuck. All 8 threads joined the rendezvous, however the leader has not marked the rendezvous as completed. Leader can be deadlocked inside the rendezvous callback.\nE1120 00:07:45.288315 2431036 rendezvous.cc:92] [id=3] This thread has been waiting for `initialize clique for rank 6; clique=devices=[0,1,2,3,4,5,6,7]; is_p2p=0; groups=[[0,1,2,3,4,5,6,7]]; root_device=-1; num_local_participants=8; incarnations=[]; run_id=1227632668` for 10 seconds and may be stuck. All 8 threads joined the rendezvous, however the leader has not marked the rendezvous as completed. Leader can be deadlocked inside the rendezvous callback.\nE1120 00:08:38.605590 2431027 rendezvous.cc:110] Thread is unstuck! Warning above was a false-positive. Perhaps the timeout is too short.\nE1120 00:08:38.605598 2431024 rendezvous.cc:110] Thread is unstuck! Warning above was a false-positive. Perhaps the timeout is too short.\nE1120 00:08:38.605599 2431039 rendezvous.cc:110] Thread is unstuck! Warning above was a false-positive. Perhaps the timeout is too short.\nE1120 00:08:38.605620 2431018 rendezvous.cc:110] Thread is unstuck! Warning above was a false-positive. Perhaps the timeout is too short.\nE1120 00:08:38.605610 2431036 rendezvous.cc:110] Thread is unstuck! Warning above was a false-positive. Perhaps the timeout is too short.\nE1120 00:08:38.605613 2431030 rendezvous.cc:110] Thread is unstuck! Warning above was a false-positive. Perhaps the timeout is too short.\nE1120 00:08:38.605613 2431021 rendezvous.cc:110] Thread is unstuck! Warning above was a false-positive. Perhaps the timeout is too short.\n&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_pmap_with_consts&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_pmap_with_consts&#34;, &#34;duration&#34;: &#34;838 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_pmap_with_consts&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;838 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_put_executable&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_put_executable&#34;, &#34;duration&#34;: &#34;350 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_put_executable&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;350 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_set_cache_dir_after_backends_init&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_set_cache_dir_after_backends_init&#34;, &#34;duration&#34;: &#34;462 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_set_cache_dir_after_backends_init&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;462 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_task_using_cache_metric&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_task_using_cache_metric&#34;, &#34;duration&#34;: &#34;189 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_task_using_cache_metric&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;189 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_xla_autofdo_profile_version&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheTest::test_xla_autofdo_profile_version&#34;, &#34;duration&#34;: &#34;35 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheTest::test_xla_autofdo_profile_version&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;35 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheDisabledTest::test_jit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheDisabledTest::test_jit&#34;, &#34;duration&#34;: &#34;16 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheDisabledTest::test_jit&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;16 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheDisabledTest::test_persistent_cache_enable_xla_caches_disabled&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheDisabledTest::test_persistent_cache_enable_xla_caches_disabled&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheDisabledTest::test_persistent_cache_enable_xla_caches_disabled&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/compilation_cache_test.py::CompilationCacheDisabledTest::test_tasks_disable_cache_metric&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/compilation_cache_test.py::CompilationCacheDisabledTest::test_tasks_disable_cache_metric&#34;, &#34;duration&#34;: &#34;32 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/compilation_cache_test.py::CompilationCacheDisabledTest::test_tasks_disable_cache_metric&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;32 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}]}, &#34;renderCollapsed&#34;: [&#34;passed&#34;], &#34;initialSort&#34;: &#34;result&#34;, &#34;title&#34;: &#34;multi_gpu_compilation_cache_test_log.html&#34;}"></div>
+    <script>
+      (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+const { getCollapsedCategory, setCollapsedIds } = require('./storage.js')
+
+class DataManager {
+    setManager(data) {
+        const collapsedCategories = [...getCollapsedCategory(data.renderCollapsed)]
+        const collapsedIds = []
+        const tests = Object.values(data.tests).flat().map((test, index) => {
+            const collapsed = collapsedCategories.includes(test.result.toLowerCase())
+            const id = `test_${index}`
+            if (collapsed) {
+                collapsedIds.push(id)
+            }
+            return {
+                ...test,
+                id,
+                collapsed,
+            }
+        })
+        const dataBlob = { ...data, tests }
+        this.data = { ...dataBlob }
+        this.renderData = { ...dataBlob }
+        setCollapsedIds(collapsedIds)
+    }
+
+    get allData() {
+        return { ...this.data }
+    }
+
+    resetRender() {
+        this.renderData = { ...this.data }
+    }
+
+    setRender(data) {
+        this.renderData.tests = [...data]
+    }
+
+    toggleCollapsedItem(id) {
+        this.renderData.tests = this.renderData.tests.map((test) =>
+            test.id === id ? { ...test, collapsed: !test.collapsed } : test,
+        )
+    }
+
+    set allCollapsed(collapsed) {
+        this.renderData = { ...this.renderData, tests: [...this.renderData.tests.map((test) => (
+            { ...test, collapsed }
+        ))] }
+    }
+
+    get testSubset() {
+        return [...this.renderData.tests]
+    }
+
+    get environment() {
+        return this.renderData.environment
+    }
+
+    get initialSort() {
+        return this.data.initialSort
+    }
+}
+
+module.exports = {
+    manager: new DataManager(),
+}
+
+},{"./storage.js":8}],2:[function(require,module,exports){
+const mediaViewer = require('./mediaviewer.js')
+const templateEnvRow = document.getElementById('template_environment_row')
+const templateResult = document.getElementById('template_results-table__tbody')
+
+function htmlToElements(html) {
+    const temp = document.createElement('template')
+    temp.innerHTML = html
+    return temp.content.childNodes
+}
+
+const find = (selector, elem) => {
+    if (!elem) {
+        elem = document
+    }
+    return elem.querySelector(selector)
+}
+
+const findAll = (selector, elem) => {
+    if (!elem) {
+        elem = document
+    }
+    return [...elem.querySelectorAll(selector)]
+}
+
+const dom = {
+    getStaticRow: (key, value) => {
+        const envRow = templateEnvRow.content.cloneNode(true)
+        const isObj = typeof value === 'object' && value !== null
+        const values = isObj ? Object.keys(value).map((k) => `${k}: ${value[k]}`) : null
+
+        const valuesElement = htmlToElements(
+            values ? `<ul>${values.map((val) => `<li>${val}</li>`).join('')}<ul>` : `<div>${value}</div>`)[0]
+        const td = findAll('td', envRow)
+        td[0].textContent = key
+        td[1].appendChild(valuesElement)
+
+        return envRow
+    },
+    getResultTBody: ({ testId, id, log, extras, resultsTableRow, tableHtml, result, collapsed }) => {
+        const resultBody = templateResult.content.cloneNode(true)
+        resultBody.querySelector('tbody').classList.add(result.toLowerCase())
+        resultBody.querySelector('tbody').id = testId
+        resultBody.querySelector('.collapsible').dataset.id = id
+
+        resultsTableRow.forEach((html) => {
+            const t = document.createElement('template')
+            t.innerHTML = html
+            resultBody.querySelector('.collapsible').appendChild(t.content)
+        })
+
+        if (log) {
+            // Wrap lines starting with "E" with span.error to color those lines red
+            const wrappedLog = log.replace(/^E.*$/gm, (match) => `<span class="error">${match}</span>`)
+            resultBody.querySelector('.log').innerHTML = wrappedLog
+        } else {
+            resultBody.querySelector('.log').remove()
+        }
+
+        if (collapsed) {
+            resultBody.querySelector('.collapsible > td')?.classList.add('collapsed')
+            resultBody.querySelector('.extras-row').classList.add('hidden')
+        } else {
+            resultBody.querySelector('.collapsible > td')?.classList.remove('collapsed')
+        }
+
+        const media = []
+        extras?.forEach(({ name, format_type, content }) => {
+            if (['image', 'video'].includes(format_type)) {
+                media.push({ path: content, name, format_type })
+            }
+
+            if (format_type === 'html') {
+                resultBody.querySelector('.extraHTML').insertAdjacentHTML('beforeend', `<div>${content}</div>`)
+            }
+        })
+        mediaViewer.setup(resultBody, media)
+
+        // Add custom html from the pytest_html_results_table_html hook
+        tableHtml?.forEach((item) => {
+            resultBody.querySelector('td[class="extra"]').insertAdjacentHTML('beforeend', item)
+        })
+
+        return resultBody
+    },
+}
+
+module.exports = {
+    dom,
+    htmlToElements,
+    find,
+    findAll,
+}
+
+},{"./mediaviewer.js":6}],3:[function(require,module,exports){
+const { manager } = require('./datamanager.js')
+const { doSort } = require('./sort.js')
+const storageModule = require('./storage.js')
+
+const getFilteredSubSet = (filter) =>
+    manager.allData.tests.filter(({ result }) => filter.includes(result.toLowerCase()))
+
+const doInitFilter = () => {
+    const currentFilter = storageModule.getVisible()
+    const filteredSubset = getFilteredSubSet(currentFilter)
+    manager.setRender(filteredSubset)
+}
+
+const doFilter = (type, show) => {
+    if (show) {
+        storageModule.showCategory(type)
+    } else {
+        storageModule.hideCategory(type)
+    }
+
+    const currentFilter = storageModule.getVisible()
+    const filteredSubset = getFilteredSubSet(currentFilter)
+    manager.setRender(filteredSubset)
+
+    const sortColumn = storageModule.getSort()
+    doSort(sortColumn, true)
+}
+
+module.exports = {
+    doFilter,
+    doInitFilter,
+}
+
+},{"./datamanager.js":1,"./sort.js":7,"./storage.js":8}],4:[function(require,module,exports){
+const { redraw, bindEvents, renderStatic } = require('./main.js')
+const { doInitFilter } = require('./filter.js')
+const { doInitSort } = require('./sort.js')
+const { manager } = require('./datamanager.js')
+const data = JSON.parse(document.getElementById('data-container').dataset.jsonblob)
+
+function init() {
+    manager.setManager(data)
+    doInitFilter()
+    doInitSort()
+    renderStatic()
+    redraw()
+    bindEvents()
+}
+
+init()
+
+},{"./datamanager.js":1,"./filter.js":3,"./main.js":5,"./sort.js":7}],5:[function(require,module,exports){
+const { dom, find, findAll } = require('./dom.js')
+const { manager } = require('./datamanager.js')
+const { doSort } = require('./sort.js')
+const { doFilter } = require('./filter.js')
+const {
+    getVisible,
+    getCollapsedIds,
+    setCollapsedIds,
+    getSort,
+    getSortDirection,
+    possibleFilters,
+} = require('./storage.js')
+
+const removeChildren = (node) => {
+    while (node.firstChild) {
+        node.removeChild(node.firstChild)
+    }
+}
+
+const renderStatic = () => {
+    const renderEnvironmentTable = () => {
+        const environment = manager.environment
+        const rows = Object.keys(environment).map((key) => dom.getStaticRow(key, environment[key]))
+        const table = document.getElementById('environment')
+        removeChildren(table)
+        rows.forEach((row) => table.appendChild(row))
+    }
+    renderEnvironmentTable()
+}
+
+const addItemToggleListener = (elem) => {
+    elem.addEventListener('click', ({ target }) => {
+        const id = target.parentElement.dataset.id
+        manager.toggleCollapsedItem(id)
+
+        const collapsedIds = getCollapsedIds()
+        if (collapsedIds.includes(id)) {
+            const updated = collapsedIds.filter((item) => item !== id)
+            setCollapsedIds(updated)
+        } else {
+            collapsedIds.push(id)
+            setCollapsedIds(collapsedIds)
+        }
+        redraw()
+    })
+}
+
+const renderContent = (tests) => {
+    const sortAttr = getSort(manager.initialSort)
+    const sortAsc = JSON.parse(getSortDirection())
+    const rows = tests.map(dom.getResultTBody)
+    const table = document.getElementById('results-table')
+    const tableHeader = document.getElementById('results-table-head')
+
+    const newTable = document.createElement('table')
+    newTable.id = 'results-table'
+
+    // remove all sorting classes and set the relevant
+    findAll('.sortable', tableHeader).forEach((elem) => elem.classList.remove('asc', 'desc'))
+    tableHeader.querySelector(`.sortable[data-column-type="${sortAttr}"]`)?.classList.add(sortAsc ? 'desc' : 'asc')
+    newTable.appendChild(tableHeader)
+
+    if (!rows.length) {
+        const emptyTable = document.getElementById('template_results-table__body--empty').content.cloneNode(true)
+        newTable.appendChild(emptyTable)
+    } else {
+        rows.forEach((row) => {
+            if (!!row) {
+                findAll('.collapsible td:not(.col-links', row).forEach(addItemToggleListener)
+                find('.logexpander', row).addEventListener('click',
+                    (evt) => evt.target.parentNode.classList.toggle('expanded'),
+                )
+                newTable.appendChild(row)
+            }
+        })
+    }
+
+    table.replaceWith(newTable)
+}
+
+const renderDerived = () => {
+    const currentFilter = getVisible()
+    possibleFilters.forEach((result) => {
+        const input = document.querySelector(`input[data-test-result="${result}"]`)
+        input.checked = currentFilter.includes(result)
+    })
+}
+
+const bindEvents = () => {
+    const filterColumn = (evt) => {
+        const { target: element } = evt
+        const { testResult } = element.dataset
+
+        doFilter(testResult, element.checked)
+        const collapsedIds = getCollapsedIds()
+        const updated = manager.renderData.tests.map((test) => {
+            return {
+                ...test,
+                collapsed: collapsedIds.includes(test.id),
+            }
+        })
+        manager.setRender(updated)
+        redraw()
+    }
+
+    const header = document.getElementById('environment-header')
+    header.addEventListener('click', () => {
+        const table = document.getElementById('environment')
+        table.classList.toggle('hidden')
+        header.classList.toggle('collapsed')
+    })
+
+    findAll('input[name="filter_checkbox"]').forEach((elem) => {
+        elem.addEventListener('click', filterColumn)
+    })
+
+    findAll('.sortable').forEach((elem) => {
+        elem.addEventListener('click', (evt) => {
+            const { target: element } = evt
+            const { columnType } = element.dataset
+            doSort(columnType)
+            redraw()
+        })
+    })
+
+    document.getElementById('show_all_details').addEventListener('click', () => {
+        manager.allCollapsed = false
+        setCollapsedIds([])
+        redraw()
+    })
+    document.getElementById('hide_all_details').addEventListener('click', () => {
+        manager.allCollapsed = true
+        const allIds = manager.renderData.tests.map((test) => test.id)
+        setCollapsedIds(allIds)
+        redraw()
+    })
+}
+
+const redraw = () => {
+    const { testSubset } = manager
+
+    renderContent(testSubset)
+    renderDerived()
+}
+
+module.exports = {
+    redraw,
+    bindEvents,
+    renderStatic,
+}
+
+},{"./datamanager.js":1,"./dom.js":2,"./filter.js":3,"./sort.js":7,"./storage.js":8}],6:[function(require,module,exports){
+class MediaViewer {
+    constructor(assets) {
+        this.assets = assets
+        this.index = 0
+    }
+
+    nextActive() {
+        this.index = this.index === this.assets.length - 1 ? 0 : this.index + 1
+        return [this.activeFile, this.index]
+    }
+
+    prevActive() {
+        this.index = this.index === 0 ? this.assets.length - 1 : this.index -1
+        return [this.activeFile, this.index]
+    }
+
+    get currentIndex() {
+        return this.index
+    }
+
+    get activeFile() {
+        return this.assets[this.index]
+    }
+}
+
+
+const setup = (resultBody, assets) => {
+    if (!assets.length) {
+        resultBody.querySelector('.media').classList.add('hidden')
+        return
+    }
+
+    const mediaViewer = new MediaViewer(assets)
+    const container = resultBody.querySelector('.media-container')
+    const leftArrow = resultBody.querySelector('.media-container__nav--left')
+    const rightArrow = resultBody.querySelector('.media-container__nav--right')
+    const mediaName = resultBody.querySelector('.media__name')
+    const counter = resultBody.querySelector('.media__counter')
+    const imageEl = resultBody.querySelector('img')
+    const sourceEl = resultBody.querySelector('source')
+    const videoEl = resultBody.querySelector('video')
+
+    const setImg = (media, index) => {
+        if (media?.format_type === 'image') {
+            imageEl.src = media.path
+
+            imageEl.classList.remove('hidden')
+            videoEl.classList.add('hidden')
+        } else if (media?.format_type === 'video') {
+            sourceEl.src = media.path
+
+            videoEl.classList.remove('hidden')
+            imageEl.classList.add('hidden')
+        }
+
+        mediaName.innerText = media?.name
+        counter.innerText = `${index + 1} / ${assets.length}`
+    }
+    setImg(mediaViewer.activeFile, mediaViewer.currentIndex)
+
+    const moveLeft = () => {
+        const [media, index] = mediaViewer.prevActive()
+        setImg(media, index)
+    }
+    const doRight = () => {
+        const [media, index] = mediaViewer.nextActive()
+        setImg(media, index)
+    }
+    const openImg = () => {
+        window.open(mediaViewer.activeFile.path, '_blank')
+    }
+    if (assets.length === 1) {
+        container.classList.add('media-container--fullscreen')
+    } else {
+        leftArrow.addEventListener('click', moveLeft)
+        rightArrow.addEventListener('click', doRight)
+    }
+    imageEl.addEventListener('click', openImg)
+}
+
+module.exports = {
+    setup,
+}
+
+},{}],7:[function(require,module,exports){
+const { manager } = require('./datamanager.js')
+const storageModule = require('./storage.js')
+
+const genericSort = (list, key, ascending, customOrder) => {
+    let sorted
+    if (customOrder) {
+        sorted = list.sort((a, b) => {
+            const aValue = a.result.toLowerCase()
+            const bValue = b.result.toLowerCase()
+
+            const aIndex = customOrder.findIndex((item) => item.toLowerCase() === aValue)
+            const bIndex = customOrder.findIndex((item) => item.toLowerCase() === bValue)
+
+            // Compare the indices to determine the sort order
+            return aIndex - bIndex
+        })
+    } else {
+        sorted = list.sort((a, b) => a[key] === b[key] ? 0 : a[key] > b[key] ? 1 : -1)
+    }
+
+    if (ascending) {
+        sorted.reverse()
+    }
+    return sorted
+}
+
+const durationSort = (list, ascending) => {
+    const parseDuration = (duration) => {
+        if (duration.includes(':')) {
+            // If it's in the format "HH:mm:ss"
+            const [hours, minutes, seconds] = duration.split(':').map(Number)
+            return (hours * 3600 + minutes * 60 + seconds) * 1000
+        } else {
+            // If it's in the format "nnn ms"
+            return parseInt(duration)
+        }
+    }
+    const sorted = list.sort((a, b) => parseDuration(a['duration']) - parseDuration(b['duration']))
+    if (ascending) {
+        sorted.reverse()
+    }
+    return sorted
+}
+
+const doInitSort = () => {
+    const type = storageModule.getSort(manager.initialSort)
+    const ascending = storageModule.getSortDirection()
+    const list = manager.testSubset
+    const initialOrder = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed', 'Skipped', 'Passed']
+
+    storageModule.setSort(type)
+    storageModule.setSortDirection(ascending)
+
+    if (type?.toLowerCase() === 'original') {
+        manager.setRender(list)
+    } else {
+        let sortedList
+        switch (type) {
+        case 'duration':
+            sortedList = durationSort(list, ascending)
+            break
+        case 'result':
+            sortedList = genericSort(list, type, ascending, initialOrder)
+            break
+        default:
+            sortedList = genericSort(list, type, ascending)
+            break
+        }
+        manager.setRender(sortedList)
+    }
+}
+
+const doSort = (type, skipDirection) => {
+    const newSortType = storageModule.getSort(manager.initialSort) !== type
+    const currentAsc = storageModule.getSortDirection()
+    let ascending
+    if (skipDirection) {
+        ascending = currentAsc
+    } else {
+        ascending = newSortType ? false : !currentAsc
+    }
+    storageModule.setSort(type)
+    storageModule.setSortDirection(ascending)
+
+    const list = manager.testSubset
+    const sortedList = type === 'duration' ? durationSort(list, ascending) : genericSort(list, type, ascending)
+    manager.setRender(sortedList)
+}
+
+module.exports = {
+    doInitSort,
+    doSort,
+}
+
+},{"./datamanager.js":1,"./storage.js":8}],8:[function(require,module,exports){
+const possibleFilters = [
+    'passed',
+    'skipped',
+    'failed',
+    'error',
+    'xfailed',
+    'xpassed',
+    'rerun',
+]
+
+const getVisible = () => {
+    const url = new URL(window.location.href)
+    const settings = new URLSearchParams(url.search).get('visible')
+    const lower = (item) => {
+        const lowerItem = item.toLowerCase()
+        if (possibleFilters.includes(lowerItem)) {
+            return lowerItem
+        }
+        return null
+    }
+    return settings === null ?
+        possibleFilters :
+        [...new Set(settings?.split(',').map(lower).filter((item) => item))]
+}
+
+const hideCategory = (categoryToHide) => {
+    const url = new URL(window.location.href)
+    const visibleParams = new URLSearchParams(url.search).get('visible')
+    const currentVisible = visibleParams ? visibleParams.split(',') : [...possibleFilters]
+    const settings = [...new Set(currentVisible)].filter((f) => f !== categoryToHide).join(',')
+
+    url.searchParams.set('visible', settings)
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const showCategory = (categoryToShow) => {
+    if (typeof window === 'undefined') {
+        return
+    }
+    const url = new URL(window.location.href)
+    const currentVisible = new URLSearchParams(url.search).get('visible')?.split(',').filter(Boolean) ||
+        [...possibleFilters]
+    const settings = [...new Set([categoryToShow, ...currentVisible])]
+    const noFilter = possibleFilters.length === settings.length || !settings.length
+
+    noFilter ? url.searchParams.delete('visible') : url.searchParams.set('visible', settings.join(','))
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const getSort = (initialSort) => {
+    const url = new URL(window.location.href)
+    let sort = new URLSearchParams(url.search).get('sort')
+    if (!sort) {
+        sort = initialSort || 'result'
+    }
+    return sort
+}
+
+const setSort = (type) => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('sort', type)
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const getCollapsedCategory = (renderCollapsed) => {
+    let categories
+    if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        const collapsedItems = new URLSearchParams(url.search).get('collapsed')
+        switch (true) {
+        case !renderCollapsed && collapsedItems === null:
+            categories = ['passed']
+            break
+        case collapsedItems?.length === 0 || /^["']{2}$/.test(collapsedItems):
+            categories = []
+            break
+        case /^all$/.test(collapsedItems) || collapsedItems === null && /^all$/.test(renderCollapsed):
+            categories = [...possibleFilters]
+            break
+        default:
+            categories = collapsedItems?.split(',').map((item) => item.toLowerCase()) || renderCollapsed
+            break
+        }
+    } else {
+        categories = []
+    }
+    return categories
+}
+
+const getSortDirection = () => JSON.parse(sessionStorage.getItem('sortAsc')) || false
+const setSortDirection = (ascending) => sessionStorage.setItem('sortAsc', ascending)
+
+const getCollapsedIds = () => JSON.parse(sessionStorage.getItem('collapsedIds')) || []
+const setCollapsedIds = (list) => sessionStorage.setItem('collapsedIds', JSON.stringify(list))
+
+module.exports = {
+    getVisible,
+    hideCategory,
+    showCategory,
+    getCollapsedIds,
+    setCollapsedIds,
+    getSort,
+    setSort,
+    getSortDirection,
+    setSortDirection,
+    getCollapsedCategory,
+    possibleFilters,
+}
+
+},{}]},{},[4]);
+    </script>
+  </footer>
+</html>

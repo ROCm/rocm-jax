@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title id="head-title">multi_gpu_linalg_sharding_test_log.html</title>
+      <link href="assets/style.css" rel="stylesheet" type="text/css"/>
+  </head>
+  <body>
+    <h1 id="title">multi_gpu_linalg_sharding_test_log.html</h1>
+    <p>Report generated on 20-Nov-2025 at 00:51:52 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a>
+        v4.1.1</p>
+    <div id="environment-header">
+      <h2>Environment</h2>
+    </div>
+    <table id="environment"></table>
+    <!-- TEMPLATES -->
+      <template id="template_environment_row">
+      <tr>
+        <td></td>
+        <td></td>
+      </tr>
+    </template>
+    <template id="template_results-table__body--empty">
+      <tbody class="results-table-row">
+        <tr id="not-found-message">
+          <td colspan="4">No results found. Check the filters.</th>
+        </tr>
+    </template>
+    <template id="template_results-table__tbody">
+      <tbody class="results-table-row">
+        <tr class="collapsible">
+        </tr>
+        <tr class="extras-row">
+          <td class="extra" colspan="4">
+            <div class="extraHTML"></div>
+            <div class="media">
+              <div class="media-container">
+                  <div class="media-container__nav--left"><</div>
+                  <div class="media-container__viewport">
+                    <img src="" />
+                    <video controls>
+                      <source src="" type="video/mp4">
+                    </video>
+                  </div>
+                  <div class="media-container__nav--right">></div>
+                </div>
+                <div class="media__name"></div>
+                <div class="media__counter"></div>
+            </div>
+            <div class="logwrapper">
+              <div class="logexpander"></div>
+              <div class="log"></div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </template>
+    <!-- END TEMPLATES -->
+    <div class="summary">
+      <div class="summary__data">
+        <h2>Summary</h2>
+        <div class="additional-summary prefix">
+        </div>
+        <p class="run-count">60 tests took 00:01:26.</p>
+        <p class="filter">(Un)check the boxes to filter the results.</p>
+        <div class="summary__reload">
+          <div class="summary__reload__button hidden" onclick="location.reload()">
+            <div>There are still tests running. <br />Reload this page to get the latest results!</div>
+          </div>
+        </div>
+        <div class="summary__spacer"></div>
+        <div class="controls">
+          <div class="filters">
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="failed" />
+            <span class="failed">1 Failed,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="passed" />
+            <span class="passed">59 Passed,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="skipped" />
+            <span class="skipped">28 Skipped,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xfailed" disabled/>
+            <span class="xfailed">0 Expected failures,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xpassed" disabled/>
+            <span class="xpassed">0 Unexpected passes,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="error" disabled/>
+            <span class="error">0 Errors,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="rerun" />
+            <span class="rerun">4 Reruns</span>
+          </div>
+          <div class="collapse">
+            <button id="show_all_details">Show all details</button>&nbsp;/&nbsp;<button id="hide_all_details">Hide all details</button>
+          </div>
+        </div>
+      </div>
+      <div class="additional-summary summary">
+      </div>
+      <div class="additional-summary postfix">
+      </div>
+    </div>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable" data-column-type="result">Result</th>
+          <th class="sortable" data-column-type="testId">Test</th>
+          <th class="sortable" data-column-type="duration">Duration</th>
+          <th>Links</th>
+        </tr>
+      </thead>
+    </table>
+  </body>
+  <footer>
+    <div id="data-container" data-jsonblob="{&#34;environment&#34;: {&#34;Python&#34;: &#34;3.12.3&#34;, &#34;Platform&#34;: &#34;Linux-6.2.0-25-generic-x86_64-with-glibc2.39&#34;, &#34;Packages&#34;: {&#34;pytest&#34;: &#34;9.0.1&#34;, &#34;pluggy&#34;: &#34;1.6.0&#34;}, &#34;Plugins&#34;: {&#34;hypothesis&#34;: &#34;6.148.2&#34;, &#34;rerunfailures&#34;: &#34;16.1&#34;, &#34;reportlog&#34;: &#34;1.0.0&#34;, &#34;metadata&#34;: &#34;3.1.1&#34;, &#34;json-report&#34;: &#34;1.5.0&#34;, &#34;html&#34;: &#34;4.1.1&#34;}}, &#34;tests&#34;: {&#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding0&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding0&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 112, &amp;#x27;Skipped: Partitioning hessenberg not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding1&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding1&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 112, &amp;#x27;Skipped: Partitioning hessenberg not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding10&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding10&#34;, &#34;duration&#34;: &#34;00:00:03&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding10&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:03&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding11&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding11&#34;, &#34;duration&#34;: &#34;571 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding11&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;571 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding12&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding12&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding12&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding13&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding13&#34;, &#34;duration&#34;: &#34;562 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding13&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;562 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding14&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding14&#34;, &#34;duration&#34;: &#34;912 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding14&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;912 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding15&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding15&#34;, &#34;duration&#34;: &#34;898 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding15&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;898 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding16&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding16&#34;, &#34;duration&#34;: &#34;451 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding16&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;451 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding17&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding17&#34;, &#34;duration&#34;: &#34;388 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding17&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;388 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding18&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding18&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding18&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding19&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding19&#34;, &#34;duration&#34;: &#34;00:00:03&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding19&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:03&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding2&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding2&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding2&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 112, &amp;#x27;Skipped: Partitioning schur not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding20&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding20&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding20&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 112, &amp;#x27;Skipped: Partitioning tridiagonal_solve on GPU, requires a more recent jaxlib version.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding21&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding21&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding21&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 112, &amp;#x27;Skipped: Partitioning tridiagonal_solve on GPU, requires a more recent jaxlib version.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding3&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding3&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding3&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 112, &amp;#x27;Skipped: Partitioning schur not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding4&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding4&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding4&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding5&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding5&#34;, &#34;duration&#34;: &#34;00:00:01&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding5&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:01&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding6&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding6&#34;, &#34;duration&#34;: &#34;445 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding6&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;445 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding7&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding7&#34;, &#34;duration&#34;: &#34;366 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding7&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;366 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding8&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding8&#34;, &#34;duration&#34;: &#34;484 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding8&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;484 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding9&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding9&#34;, &#34;duration&#34;: &#34;372 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding9&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;372 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp0&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp0&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 156, &amp;#x27;Skipped: Partitioning hessenberg not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp1&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp1&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 156, &amp;#x27;Skipped: Partitioning hessenberg not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp10&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp10&#34;, &#34;duration&#34;: &#34;00:00:07&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp10&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:07&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp11&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp11&#34;, &#34;duration&#34;: &#34;00:00:05&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp11&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:05&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp12&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp12&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp12&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13&#34;, &#34;duration&#34;: &#34;86 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;86 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.linalg_sharding_test.LinalgShardingTest testMethod=test_batch_axis_sharding_jvp13&amp;gt;\nfun_and_shapes = (&amp;lt;function qr at 0x7f896428a7a0&amp;gt;, ((6, 6),))\ndtype = &amp;lt;class &amp;#x27;numpy.complex64&amp;#x27;&amp;gt;\n\n    @parameterized.product(\n        fun_and_shapes=ALL_FUN_AND_SHAPES, dtype=float_types + complex_types\n    )\n    @jtu.run_on_devices(&amp;quot;gpu&amp;quot;, &amp;quot;cpu&amp;quot;)\n    def test_batch_axis_sharding_jvp(self, fun_and_shapes, dtype):\n      fun, shapes = self.get_fun_and_shapes(fun_and_shapes, grad=True)\n      primals = self.get_args(shapes, dtype, batch_size=8)\n      tangents = tuple(map(jnp.ones_like, primals))\n    \n      def jvp_fun(primals, tangents):\n        return jax.jvp(fun, primals, tangents)\n    \n      mesh = jtu.create_mesh((2,), (&amp;quot;i&amp;quot;,))\n      sharding = jax.NamedSharding(mesh, P(&amp;quot;i&amp;quot;))\n      primals_sharded = jax.device_put(primals, sharding)\n      tangents_sharded = jax.device_put(tangents, sharding)\n    \n      jvp_fun_jit = jax.jit(jvp_fun)\n      _, expected = jvp_fun(primals, tangents)\n      for args in [\n          (primals_sharded, tangents_sharded),\n          (primals, tangents_sharded),\n          (primals_sharded, tangents),\n      ]:\n        _, actual = jvp_fun_jit(*args)\n&amp;gt;       self.assertAllClose(actual, expected, rtol={\n            np.float32: 1e-4, np.float64: 2e-11, np.complex64: 1e-4,\n            np.complex128: 1e-11})\n\njax/tests/linalg_sharding_test.py:181: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1339: in assertAllClose\n    self.assertAllClose(actual_elt, desired_elt, check_dtypes=check_dtypes, atol=atol,\n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1348: in assertAllClose\n    self.assertArraysAllClose(actual, desired, check_dtypes=False, atol=atol, rtol=rtol,\n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1313: in assertArraysAllClose\n    _assert_numpy_allclose(actual, desired, atol=atol, rtol=rtol, err_msg=err_msg)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\na = array([[[-6.18004659e-03+4.44611578e-12j,\n         -5.96124772e-03-1.76757702e-03j,\n         -3.33263632e-03+4.3648472....50172764e-02j,\n          3.58575918e-02+4.18992639e-02j,\n         -1.87036097e-02-2.98023224e-08j]]], dtype=complex64)\nb = array([[[-6.18004659e-03+4.44611578e-12j,\n         -5.96124772e-03-1.76757690e-03j,\n         -3.33263632e-03+4.3648472....50172764e-02j,\n          3.58575918e-02+4.18992601e-02j,\n         -1.87036060e-02-1.49011612e-08j]]], dtype=complex64)\natol = 1e-06, rtol = 0.0001, err_msg = &amp;#x27;&amp;#x27;\n\n    def _assert_numpy_allclose(a, b, atol=None, rtol=None, err_msg=&amp;#x27;&amp;#x27;):\n      if a.dtype == b.dtype == _dtypes.float0:\n        np.testing.assert_array_equal(a, b, err_msg=err_msg)\n        return\n    \n      custom_float_dtypes = [\n        _dtypes.float4_e2m1fn,\n        _dtypes.float8_e8m0fnu,\n        _dtypes.float8_e3m4,\n        _dtypes.float8_e4m3,\n        _dtypes.float8_e4m3b11fnuz,\n        _dtypes.float8_e4m3fn,\n        _dtypes.float8_e4m3fnuz,\n        _dtypes.float8_e5m2,\n        _dtypes.float8_e5m2fnuz,\n        _dtypes.bfloat16,\n      ]\n    \n      def maybe_upcast(x):\n        if x.dtype in custom_float_dtypes:\n          return x.astype(np.float32)\n        # TODO(reedwm): Upcasting int2/int4 to int8 will no longer be necessary once\n        # JAX depends on a version of ml_dtypes which contains\n        # https://github.com/jax-ml/ml_dtypes/commit/348fd3704306cae97f617c38045cee6bc416bf10.\n        if x.dtype in _dtypes._intn_dtypes:\n          return x.astype(np.int8 if _dtypes.iinfo(x.dtype).min &amp;lt; 0 else np.uint8)\n        return x\n    \n      a = maybe_upcast(a)\n      b = maybe_upcast(b)\n    \n      kw = {}\n      if atol: kw[&amp;quot;atol&amp;quot;] = atol\n      if rtol: kw[&amp;quot;rtol&amp;quot;] = rtol\n      with np.errstate(invalid=&amp;#x27;ignore&amp;#x27;):\n        # TODO(phawkins): surprisingly, assert_allclose sometimes reports invalid\n        # value errors. It should not do that.\n&amp;gt;       np.testing.assert_allclose(a, b, **kw, err_msg=err_msg)\nE       AssertionError: \nE       Not equal to tolerance rtol=0.0001, atol=1e-06\nE       \nE       Mismatched elements: 5 / 288 (1.74%)\nE       Max absolute difference among violations: 2.670288e-05\nE       Max relative difference among violations: 0.00054328\nE        ACTUAL: array([[[-6.180047e-03+4.446116e-12j, -5.961248e-03-1.767577e-03j,\nE                -3.332636e-03+4.364847e-03j, -4.240282e-02+1.251319e-02j,\nE                 8.208449e-02-5.700754e-02j,  6.439096e-02-3.665674e-02j],...\nE        DESIRED: array([[[-6.180047e-03+4.446116e-12j, -5.961248e-03-1.767577e-03j,\nE                -3.332636e-03+4.364847e-03j, -4.240282e-02+1.251318e-02j,\nE                 8.208448e-02-5.700755e-02j,  6.439093e-02-3.665678e-02j],...\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/public_test_util.py:141: AssertionError\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13&#34;, &#34;duration&#34;: &#34;86 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;86 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.linalg_sharding_test.LinalgShardingTest testMethod=test_batch_axis_sharding_jvp13&amp;gt;\nfun_and_shapes = (&amp;lt;function qr at 0x7f896428a7a0&amp;gt;, ((6, 6),))\ndtype = &amp;lt;class &amp;#x27;numpy.complex64&amp;#x27;&amp;gt;\n\n    @parameterized.product(\n        fun_and_shapes=ALL_FUN_AND_SHAPES, dtype=float_types + complex_types\n    )\n    @jtu.run_on_devices(&amp;quot;gpu&amp;quot;, &amp;quot;cpu&amp;quot;)\n    def test_batch_axis_sharding_jvp(self, fun_and_shapes, dtype):\n      fun, shapes = self.get_fun_and_shapes(fun_and_shapes, grad=True)\n      primals = self.get_args(shapes, dtype, batch_size=8)\n      tangents = tuple(map(jnp.ones_like, primals))\n    \n      def jvp_fun(primals, tangents):\n        return jax.jvp(fun, primals, tangents)\n    \n      mesh = jtu.create_mesh((2,), (&amp;quot;i&amp;quot;,))\n      sharding = jax.NamedSharding(mesh, P(&amp;quot;i&amp;quot;))\n      primals_sharded = jax.device_put(primals, sharding)\n      tangents_sharded = jax.device_put(tangents, sharding)\n    \n      jvp_fun_jit = jax.jit(jvp_fun)\n      _, expected = jvp_fun(primals, tangents)\n      for args in [\n          (primals_sharded, tangents_sharded),\n          (primals, tangents_sharded),\n          (primals_sharded, tangents),\n      ]:\n        _, actual = jvp_fun_jit(*args)\n&amp;gt;       self.assertAllClose(actual, expected, rtol={\n            np.float32: 1e-4, np.float64: 2e-11, np.complex64: 1e-4,\n            np.complex128: 1e-11})\n\njax/tests/linalg_sharding_test.py:181: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1339: in assertAllClose\n    self.assertAllClose(actual_elt, desired_elt, check_dtypes=check_dtypes, atol=atol,\n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1348: in assertAllClose\n    self.assertArraysAllClose(actual, desired, check_dtypes=False, atol=atol, rtol=rtol,\n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1313: in assertArraysAllClose\n    _assert_numpy_allclose(actual, desired, atol=atol, rtol=rtol, err_msg=err_msg)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\na = array([[[-6.18004659e-03+4.44611578e-12j,\n         -5.96124772e-03-1.76757702e-03j,\n         -3.33263632e-03+4.3648472....50172764e-02j,\n          3.58575918e-02+4.18992639e-02j,\n         -1.87036097e-02-2.98023224e-08j]]], dtype=complex64)\nb = array([[[-6.18004659e-03+4.44611578e-12j,\n         -5.96124772e-03-1.76757690e-03j,\n         -3.33263632e-03+4.3648472....50172764e-02j,\n          3.58575918e-02+4.18992601e-02j,\n         -1.87036060e-02-1.49011612e-08j]]], dtype=complex64)\natol = 1e-06, rtol = 0.0001, err_msg = &amp;#x27;&amp;#x27;\n\n    def _assert_numpy_allclose(a, b, atol=None, rtol=None, err_msg=&amp;#x27;&amp;#x27;):\n      if a.dtype == b.dtype == _dtypes.float0:\n        np.testing.assert_array_equal(a, b, err_msg=err_msg)\n        return\n    \n      custom_float_dtypes = [\n        _dtypes.float4_e2m1fn,\n        _dtypes.float8_e8m0fnu,\n        _dtypes.float8_e3m4,\n        _dtypes.float8_e4m3,\n        _dtypes.float8_e4m3b11fnuz,\n        _dtypes.float8_e4m3fn,\n        _dtypes.float8_e4m3fnuz,\n        _dtypes.float8_e5m2,\n        _dtypes.float8_e5m2fnuz,\n        _dtypes.bfloat16,\n      ]\n    \n      def maybe_upcast(x):\n        if x.dtype in custom_float_dtypes:\n          return x.astype(np.float32)\n        # TODO(reedwm): Upcasting int2/int4 to int8 will no longer be necessary once\n        # JAX depends on a version of ml_dtypes which contains\n        # https://github.com/jax-ml/ml_dtypes/commit/348fd3704306cae97f617c38045cee6bc416bf10.\n        if x.dtype in _dtypes._intn_dtypes:\n          return x.astype(np.int8 if _dtypes.iinfo(x.dtype).min &amp;lt; 0 else np.uint8)\n        return x\n    \n      a = maybe_upcast(a)\n      b = maybe_upcast(b)\n    \n      kw = {}\n      if atol: kw[&amp;quot;atol&amp;quot;] = atol\n      if rtol: kw[&amp;quot;rtol&amp;quot;] = rtol\n      with np.errstate(invalid=&amp;#x27;ignore&amp;#x27;):\n        # TODO(phawkins): surprisingly, assert_allclose sometimes reports invalid\n        # value errors. It should not do that.\n&amp;gt;       np.testing.assert_allclose(a, b, **kw, err_msg=err_msg)\nE       AssertionError: \nE       Not equal to tolerance rtol=0.0001, atol=1e-06\nE       \nE       Mismatched elements: 5 / 288 (1.74%)\nE       Max absolute difference among violations: 2.670288e-05\nE       Max relative difference among violations: 0.00054328\nE        ACTUAL: array([[[-6.180047e-03+4.446116e-12j, -5.961248e-03-1.767577e-03j,\nE                -3.332636e-03+4.364847e-03j, -4.240282e-02+1.251319e-02j,\nE                 8.208449e-02-5.700754e-02j,  6.439096e-02-3.665674e-02j],...\nE        DESIRED: array([[[-6.180047e-03+4.446116e-12j, -5.961248e-03-1.767577e-03j,\nE                -3.332636e-03+4.364847e-03j, -4.240282e-02+1.251318e-02j,\nE                 8.208448e-02-5.700755e-02j,  6.439093e-02-3.665678e-02j],...\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/public_test_util.py:141: AssertionError\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13&#34;, &#34;duration&#34;: &#34;86 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;86 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.linalg_sharding_test.LinalgShardingTest testMethod=test_batch_axis_sharding_jvp13&amp;gt;\nfun_and_shapes = (&amp;lt;function qr at 0x7f896428a7a0&amp;gt;, ((6, 6),))\ndtype = &amp;lt;class &amp;#x27;numpy.complex64&amp;#x27;&amp;gt;\n\n    @parameterized.product(\n        fun_and_shapes=ALL_FUN_AND_SHAPES, dtype=float_types + complex_types\n    )\n    @jtu.run_on_devices(&amp;quot;gpu&amp;quot;, &amp;quot;cpu&amp;quot;)\n    def test_batch_axis_sharding_jvp(self, fun_and_shapes, dtype):\n      fun, shapes = self.get_fun_and_shapes(fun_and_shapes, grad=True)\n      primals = self.get_args(shapes, dtype, batch_size=8)\n      tangents = tuple(map(jnp.ones_like, primals))\n    \n      def jvp_fun(primals, tangents):\n        return jax.jvp(fun, primals, tangents)\n    \n      mesh = jtu.create_mesh((2,), (&amp;quot;i&amp;quot;,))\n      sharding = jax.NamedSharding(mesh, P(&amp;quot;i&amp;quot;))\n      primals_sharded = jax.device_put(primals, sharding)\n      tangents_sharded = jax.device_put(tangents, sharding)\n    \n      jvp_fun_jit = jax.jit(jvp_fun)\n      _, expected = jvp_fun(primals, tangents)\n      for args in [\n          (primals_sharded, tangents_sharded),\n          (primals, tangents_sharded),\n          (primals_sharded, tangents),\n      ]:\n        _, actual = jvp_fun_jit(*args)\n&amp;gt;       self.assertAllClose(actual, expected, rtol={\n            np.float32: 1e-4, np.float64: 2e-11, np.complex64: 1e-4,\n            np.complex128: 1e-11})\n\njax/tests/linalg_sharding_test.py:181: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1339: in assertAllClose\n    self.assertAllClose(actual_elt, desired_elt, check_dtypes=check_dtypes, atol=atol,\n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1348: in assertAllClose\n    self.assertArraysAllClose(actual, desired, check_dtypes=False, atol=atol, rtol=rtol,\n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1313: in assertArraysAllClose\n    _assert_numpy_allclose(actual, desired, atol=atol, rtol=rtol, err_msg=err_msg)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\na = array([[[-6.18004659e-03+4.44611578e-12j,\n         -5.96124772e-03-1.76757702e-03j,\n         -3.33263632e-03+4.3648472....50172764e-02j,\n          3.58575918e-02+4.18992639e-02j,\n         -1.87036097e-02-2.98023224e-08j]]], dtype=complex64)\nb = array([[[-6.18004659e-03+4.44611578e-12j,\n         -5.96124772e-03-1.76757690e-03j,\n         -3.33263632e-03+4.3648472....50172764e-02j,\n          3.58575918e-02+4.18992601e-02j,\n         -1.87036060e-02-1.49011612e-08j]]], dtype=complex64)\natol = 1e-06, rtol = 0.0001, err_msg = &amp;#x27;&amp;#x27;\n\n    def _assert_numpy_allclose(a, b, atol=None, rtol=None, err_msg=&amp;#x27;&amp;#x27;):\n      if a.dtype == b.dtype == _dtypes.float0:\n        np.testing.assert_array_equal(a, b, err_msg=err_msg)\n        return\n    \n      custom_float_dtypes = [\n        _dtypes.float4_e2m1fn,\n        _dtypes.float8_e8m0fnu,\n        _dtypes.float8_e3m4,\n        _dtypes.float8_e4m3,\n        _dtypes.float8_e4m3b11fnuz,\n        _dtypes.float8_e4m3fn,\n        _dtypes.float8_e4m3fnuz,\n        _dtypes.float8_e5m2,\n        _dtypes.float8_e5m2fnuz,\n        _dtypes.bfloat16,\n      ]\n    \n      def maybe_upcast(x):\n        if x.dtype in custom_float_dtypes:\n          return x.astype(np.float32)\n        # TODO(reedwm): Upcasting int2/int4 to int8 will no longer be necessary once\n        # JAX depends on a version of ml_dtypes which contains\n        # https://github.com/jax-ml/ml_dtypes/commit/348fd3704306cae97f617c38045cee6bc416bf10.\n        if x.dtype in _dtypes._intn_dtypes:\n          return x.astype(np.int8 if _dtypes.iinfo(x.dtype).min &amp;lt; 0 else np.uint8)\n        return x\n    \n      a = maybe_upcast(a)\n      b = maybe_upcast(b)\n    \n      kw = {}\n      if atol: kw[&amp;quot;atol&amp;quot;] = atol\n      if rtol: kw[&amp;quot;rtol&amp;quot;] = rtol\n      with np.errstate(invalid=&amp;#x27;ignore&amp;#x27;):\n        # TODO(phawkins): surprisingly, assert_allclose sometimes reports invalid\n        # value errors. It should not do that.\n&amp;gt;       np.testing.assert_allclose(a, b, **kw, err_msg=err_msg)\nE       AssertionError: \nE       Not equal to tolerance rtol=0.0001, atol=1e-06\nE       \nE       Mismatched elements: 5 / 288 (1.74%)\nE       Max absolute difference among violations: 2.670288e-05\nE       Max relative difference among violations: 0.00054328\nE        ACTUAL: array([[[-6.180047e-03+4.446116e-12j, -5.961248e-03-1.767577e-03j,\nE                -3.332636e-03+4.364847e-03j, -4.240282e-02+1.251319e-02j,\nE                 8.208449e-02-5.700754e-02j,  6.439096e-02-3.665674e-02j],...\nE        DESIRED: array([[[-6.180047e-03+4.446116e-12j, -5.961248e-03-1.767577e-03j,\nE                -3.332636e-03+4.364847e-03j, -4.240282e-02+1.251318e-02j,\nE                 8.208448e-02-5.700755e-02j,  6.439093e-02-3.665678e-02j],...\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/public_test_util.py:141: AssertionError\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Failed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13&#34;, &#34;duration&#34;: &#34;86 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Failed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;86 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.linalg_sharding_test.LinalgShardingTest testMethod=test_batch_axis_sharding_jvp13&amp;gt;\nfun_and_shapes = (&amp;lt;function qr at 0x7f896428a7a0&amp;gt;, ((6, 6),))\ndtype = &amp;lt;class &amp;#x27;numpy.complex64&amp;#x27;&amp;gt;\n\n    @parameterized.product(\n        fun_and_shapes=ALL_FUN_AND_SHAPES, dtype=float_types + complex_types\n    )\n    @jtu.run_on_devices(&amp;quot;gpu&amp;quot;, &amp;quot;cpu&amp;quot;)\n    def test_batch_axis_sharding_jvp(self, fun_and_shapes, dtype):\n      fun, shapes = self.get_fun_and_shapes(fun_and_shapes, grad=True)\n      primals = self.get_args(shapes, dtype, batch_size=8)\n      tangents = tuple(map(jnp.ones_like, primals))\n    \n      def jvp_fun(primals, tangents):\n        return jax.jvp(fun, primals, tangents)\n    \n      mesh = jtu.create_mesh((2,), (&amp;quot;i&amp;quot;,))\n      sharding = jax.NamedSharding(mesh, P(&amp;quot;i&amp;quot;))\n      primals_sharded = jax.device_put(primals, sharding)\n      tangents_sharded = jax.device_put(tangents, sharding)\n    \n      jvp_fun_jit = jax.jit(jvp_fun)\n      _, expected = jvp_fun(primals, tangents)\n      for args in [\n          (primals_sharded, tangents_sharded),\n          (primals, tangents_sharded),\n          (primals_sharded, tangents),\n      ]:\n        _, actual = jvp_fun_jit(*args)\n&amp;gt;       self.assertAllClose(actual, expected, rtol={\n            np.float32: 1e-4, np.float64: 2e-11, np.complex64: 1e-4,\n            np.complex128: 1e-11})\n\njax/tests/linalg_sharding_test.py:181: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1339: in assertAllClose\n    self.assertAllClose(actual_elt, desired_elt, check_dtypes=check_dtypes, atol=atol,\n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1348: in assertAllClose\n    self.assertArraysAllClose(actual, desired, check_dtypes=False, atol=atol, rtol=rtol,\n/usr/local/lib/python3.12/dist-packages/jax/_src/test_util.py:1313: in assertArraysAllClose\n    _assert_numpy_allclose(actual, desired, atol=atol, rtol=rtol, err_msg=err_msg)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\na = array([[[-6.18004659e-03+4.44611578e-12j,\n         -5.96124772e-03-1.76757702e-03j,\n         -3.33263632e-03+4.3648472....50172764e-02j,\n          3.58575918e-02+4.18992639e-02j,\n         -1.87036097e-02-2.98023224e-08j]]], dtype=complex64)\nb = array([[[-6.18004659e-03+4.44611578e-12j,\n         -5.96124772e-03-1.76757690e-03j,\n         -3.33263632e-03+4.3648472....50172764e-02j,\n          3.58575918e-02+4.18992601e-02j,\n         -1.87036060e-02-1.49011612e-08j]]], dtype=complex64)\natol = 1e-06, rtol = 0.0001, err_msg = &amp;#x27;&amp;#x27;\n\n    def _assert_numpy_allclose(a, b, atol=None, rtol=None, err_msg=&amp;#x27;&amp;#x27;):\n      if a.dtype == b.dtype == _dtypes.float0:\n        np.testing.assert_array_equal(a, b, err_msg=err_msg)\n        return\n    \n      custom_float_dtypes = [\n        _dtypes.float4_e2m1fn,\n        _dtypes.float8_e8m0fnu,\n        _dtypes.float8_e3m4,\n        _dtypes.float8_e4m3,\n        _dtypes.float8_e4m3b11fnuz,\n        _dtypes.float8_e4m3fn,\n        _dtypes.float8_e4m3fnuz,\n        _dtypes.float8_e5m2,\n        _dtypes.float8_e5m2fnuz,\n        _dtypes.bfloat16,\n      ]\n    \n      def maybe_upcast(x):\n        if x.dtype in custom_float_dtypes:\n          return x.astype(np.float32)\n        # TODO(reedwm): Upcasting int2/int4 to int8 will no longer be necessary once\n        # JAX depends on a version of ml_dtypes which contains\n        # https://github.com/jax-ml/ml_dtypes/commit/348fd3704306cae97f617c38045cee6bc416bf10.\n        if x.dtype in _dtypes._intn_dtypes:\n          return x.astype(np.int8 if _dtypes.iinfo(x.dtype).min &amp;lt; 0 else np.uint8)\n        return x\n    \n      a = maybe_upcast(a)\n      b = maybe_upcast(b)\n    \n      kw = {}\n      if atol: kw[&amp;quot;atol&amp;quot;] = atol\n      if rtol: kw[&amp;quot;rtol&amp;quot;] = rtol\n      with np.errstate(invalid=&amp;#x27;ignore&amp;#x27;):\n        # TODO(phawkins): surprisingly, assert_allclose sometimes reports invalid\n        # value errors. It should not do that.\n&amp;gt;       np.testing.assert_allclose(a, b, **kw, err_msg=err_msg)\nE       AssertionError: \nE       Not equal to tolerance rtol=0.0001, atol=1e-06\nE       \nE       Mismatched elements: 5 / 288 (1.74%)\nE       Max absolute difference among violations: 2.670288e-05\nE       Max relative difference among violations: 0.00054328\nE        ACTUAL: array([[[-6.180047e-03+4.446116e-12j, -5.961248e-03-1.767577e-03j,\nE                -3.332636e-03+4.364847e-03j, -4.240282e-02+1.251319e-02j,\nE                 8.208449e-02-5.700754e-02j,  6.439096e-02-3.665674e-02j],...\nE        DESIRED: array([[[-6.180047e-03+4.446116e-12j, -5.961248e-03-1.767577e-03j,\nE                -3.332636e-03+4.364847e-03j, -4.240282e-02+1.251318e-02j,\nE                 8.208448e-02-5.700755e-02j,  6.439093e-02-3.665678e-02j],...\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/public_test_util.py:141: AssertionError\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp14&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp14&#34;, &#34;duration&#34;: &#34;00:00:08&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp14&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:08&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp15&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp15&#34;, &#34;duration&#34;: &#34;00:00:04&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp15&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:04&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp16&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp16&#34;, &#34;duration&#34;: &#34;00:00:01&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp16&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:01&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp17&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp17&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp17&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp18&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp18&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp18&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 156, &amp;#x27;Skipped: tridiagonal does not support differentation&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp19&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp19&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp19&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 156, &amp;#x27;Skipped: tridiagonal does not support differentation&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp2&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp2&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp2&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 156, &amp;#x27;Skipped: Partitioning schur not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp20&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp20&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp20&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 156, &amp;#x27;Skipped: Partitioning tridiagonal_solve on GPU, requires a more recent jaxlib version.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp21&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp21&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp21&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 156, &amp;#x27;Skipped: Partitioning tridiagonal_solve on GPU, requires a more recent jaxlib version.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp3&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp3&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp3&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 156, &amp;#x27;Skipped: Partitioning schur not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp4&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp4&#34;, &#34;duration&#34;: &#34;00:00:01&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp4&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:01&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp5&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp5&#34;, &#34;duration&#34;: &#34;00:00:01&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp5&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:01&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp6&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp6&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp6&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp7&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp7&#34;, &#34;duration&#34;: &#34;831 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp7&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;831 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp8&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp8&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp8&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp9&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp9&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp9&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp0&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp0&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 187, &amp;#x27;Skipped: Partitioning hessenberg not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp1&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp1&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 187, &amp;#x27;Skipped: Partitioning hessenberg not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp10&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp10&#34;, &#34;duration&#34;: &#34;00:00:04&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp10&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:04&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp11&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp11&#34;, &#34;duration&#34;: &#34;00:00:01&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp11&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:01&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp12&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp12&#34;, &#34;duration&#34;: &#34;711 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp12&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;711 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp13&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp13&#34;, &#34;duration&#34;: &#34;799 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp13&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;799 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp14&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp14&#34;, &#34;duration&#34;: &#34;00:00:05&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp14&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:05&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp15&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp15&#34;, &#34;duration&#34;: &#34;00:00:02&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp15&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:02&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp16&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp16&#34;, &#34;duration&#34;: &#34;350 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp16&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;350 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp17&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp17&#34;, &#34;duration&#34;: &#34;633 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp17&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;633 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp18&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp18&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp18&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 187, &amp;#x27;Skipped: tridiagonal does not support differentation&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp19&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp19&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp19&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 187, &amp;#x27;Skipped: tridiagonal does not support differentation&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp2&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp2&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp2&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 187, &amp;#x27;Skipped: Partitioning schur not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp20&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp20&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp20&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 187, &amp;#x27;Skipped: Partitioning tridiagonal_solve on GPU, requires a more recent jaxlib version.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp21&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp21&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp21&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 187, &amp;#x27;Skipped: Partitioning tridiagonal_solve on GPU, requires a more recent jaxlib version.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp3&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp3&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp3&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 187, &amp;#x27;Skipped: Partitioning schur not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp4&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp4&#34;, &#34;duration&#34;: &#34;639 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp4&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;639 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp5&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp5&#34;, &#34;duration&#34;: &#34;791 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp5&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;791 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp6&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp6&#34;, &#34;duration&#34;: &#34;894 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp6&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;894 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp7&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp7&#34;, &#34;duration&#34;: &#34;223 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp7&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;223 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp8&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp8&#34;, &#34;duration&#34;: &#34;386 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp8&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;386 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp9&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp9&#34;, &#34;duration&#34;: &#34;353 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp9&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;353 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding0&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding0&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding0&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 137, &amp;#x27;Skipped: Partitioning hessenberg not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding1&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding1&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding1&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 137, &amp;#x27;Skipped: Partitioning hessenberg not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding10&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Rerun&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding10&#34;, &#34;duration&#34;: &#34;5 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Rerun&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding10&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;5 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;self = &amp;lt;tests.linalg_sharding_test.LinalgShardingTest testMethod=test_non_batch_axis_sharding10&amp;gt;\nfun_and_shapes = (&amp;lt;function lu at 0x7f896428a3e0&amp;gt;, ((10, 6),))\ndtype = &amp;lt;class &amp;#x27;numpy.float32&amp;#x27;&amp;gt;\n\n    @parameterized.product(\n        fun_and_shapes=ALL_FUN_AND_SHAPES, dtype=float_types + complex_types\n    )\n    @jtu.run_on_devices(&amp;quot;gpu&amp;quot;, &amp;quot;cpu&amp;quot;)\n    def test_non_batch_axis_sharding(self, fun_and_shapes, dtype):\n      fun, shapes = self.get_fun_and_shapes(fun_and_shapes)\n      args = self.get_args(shapes, dtype)\n    \n      mesh = jtu.create_mesh((2,), (&amp;quot;i&amp;quot;,))\n      sharding = jax.NamedSharding(mesh, P(&amp;quot;i&amp;quot;))\n      args_sharded = jax.device_put(args, sharding)\n    \n      fun_jit = jax.jit(fun)\n      expected = fun(*args)\n&amp;gt;     actual = fun_jit(*args_sharded)\n               ^^^^^^^^^^^^^^^^^^^^^^\n\njax/tests/linalg_sharding_test.py:151: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:263: in cache_miss\n    executable, pgle_profiler, const_args) = _python_pjit_helper(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:146: in _python_pjit_helper\n    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(\n/usr/local/lib/python3.12/dist-packages/jax/_src/pjit.py:1622: in _pjit_call_impl_python\n    return (compiled.unsafe_call(*computation.const_args, *args),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.12/dist-packages/jax/_src/profiler.py:359: in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = &amp;lt;jax._src.interpreters.pxla.ExecuteReplicated object at 0x7f463810e7b0&amp;gt;\nargs = [Array([[ 3.2371181e-01,  3.5008659e+00,  3.3611963e+00, -4.5686107e+00,\n        -4.9213675e-01, -2.1924310e+00],\n    ....3522382e+00,  3.8004136e+00,  1.6876156e+00,  1.3298054e+00,\n         2.1991184e+00, -1.9875594e+00]], dtype=float32)]\ninput_bufs = [Array([[ 3.2371181e-01,  3.5008659e+00,  3.3611963e+00, -4.5686107e+00,\n        -4.9213675e-01, -2.1924310e+00],\n    ....3522382e+00,  3.8004136e+00,  1.6876156e+00,  1.3298054e+00,\n         2.1991184e+00, -1.9875594e+00]], dtype=float32)]\n\n    @profiler.annotate_function\n    def __call__(self, *args):\n      if config.no_execution.value:\n        raise RuntimeError(\n        f&amp;quot;JAX tried to execute function {self.name}, but the no_execution config &amp;quot;\n        &amp;quot;option is set&amp;quot;)\n      args = [x for i, x in enumerate(args) if i in self.kept_var_idx]\n      if self.mut:\n        args = [*args, *self.mut.in_mut]\n      input_bufs = self.in_handler(args)\n      with profiler.PGLEProfiler.trace(self.pgle_profiler):\n        if (self.ordered_effects or self.has_unordered_effects\n            or self.has_host_callbacks):\n          input_bufs = self._add_tokens_to_inputs(input_bufs)\n          results = self.xla_executable.execute_sharded(input_bufs, with_tokens=True)\n    \n          result_token_bufs = results.disassemble_prefix_into_single_device_arrays(\n              len(self.ordered_effects))\n          sharded_runtime_token = results.consume_token()\n          self._handle_token_bufs(result_token_bufs, sharded_runtime_token)\n        else:\n&amp;gt;         results = self.xla_executable.execute_sharded(input_bufs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE         jax.errors.JaxRuntimeError: INTERNAL: external/jax/jaxlib/gpu/linalg_kernels.cc:113: operation gpuGetLastError() failed: peer access is already enabled: while running replica 0 and partition 1 of a replicated computation (other replicas may have failed as well).\n\n/usr/local/lib/python3.12/dist-packages/jax/_src/interpreters/pxla.py:1378: JaxRuntimeError\n&#34;}, {&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding10&#34;, &#34;duration&#34;: &#34;5 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding10&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;5 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;----------------------------- Captured stderr call -----------------------------\nE1120 00:51:44.901309 2554574 pjrt_stream_executor_client.cc:2974] Execution of replica 0 failed: INTERNAL: external/jax/jaxlib/gpu/linalg_kernels.cc:113: operation gpuGetLastError() failed: peer access is already enabled\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding11&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding11&#34;, &#34;duration&#34;: &#34;297 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding11&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;297 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding12&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding12&#34;, &#34;duration&#34;: &#34;323 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding12&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;323 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding13&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding13&#34;, &#34;duration&#34;: &#34;327 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding13&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;327 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding14&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding14&#34;, &#34;duration&#34;: &#34;333 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding14&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;333 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding15&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding15&#34;, &#34;duration&#34;: &#34;342 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding15&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;342 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding16&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding16&#34;, &#34;duration&#34;: &#34;370 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding16&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;370 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding17&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding17&#34;, &#34;duration&#34;: &#34;318 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding17&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;318 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding18&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding18&#34;, &#34;duration&#34;: &#34;470 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding18&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;470 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding19&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding19&#34;, &#34;duration&#34;: &#34;504 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding19&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;504 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding2&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding2&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding2&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 137, &amp;#x27;Skipped: Partitioning schur not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding20&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding20&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding20&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 137, &amp;#x27;Skipped: Partitioning tridiagonal_solve on GPU, requires a more recent jaxlib version.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding21&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding21&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding21&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 137, &amp;#x27;Skipped: Partitioning tridiagonal_solve on GPU, requires a more recent jaxlib version.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding3&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding3&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding3&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;/dockerx/rocm/rocm-jax/jax/tests/linalg_sharding_test.py&amp;#x27;, 137, &amp;#x27;Skipped: Partitioning schur not supported on GPU.&amp;#x27;)\n&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding4&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding4&#34;, &#34;duration&#34;: &#34;00:00:01&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding4&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:01&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding5&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding5&#34;, &#34;duration&#34;: &#34;00:00:01&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding5&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;00:00:01&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding6&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding6&#34;, &#34;duration&#34;: &#34;309 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding6&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;309 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding7&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding7&#34;, &#34;duration&#34;: &#34;322 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding7&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;322 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding8&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding8&#34;, &#34;duration&#34;: &#34;397 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding8&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;397 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding9&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding9&#34;, &#34;duration&#34;: &#34;335 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/linalg_sharding_test.py::LinalgShardingTest::test_non_batch_axis_sharding9&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;335 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}]}, &#34;renderCollapsed&#34;: [&#34;passed&#34;], &#34;initialSort&#34;: &#34;result&#34;, &#34;title&#34;: &#34;multi_gpu_linalg_sharding_test_log.html&#34;}"></div>
+    <script>
+      (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+const { getCollapsedCategory, setCollapsedIds } = require('./storage.js')
+
+class DataManager {
+    setManager(data) {
+        const collapsedCategories = [...getCollapsedCategory(data.renderCollapsed)]
+        const collapsedIds = []
+        const tests = Object.values(data.tests).flat().map((test, index) => {
+            const collapsed = collapsedCategories.includes(test.result.toLowerCase())
+            const id = `test_${index}`
+            if (collapsed) {
+                collapsedIds.push(id)
+            }
+            return {
+                ...test,
+                id,
+                collapsed,
+            }
+        })
+        const dataBlob = { ...data, tests }
+        this.data = { ...dataBlob }
+        this.renderData = { ...dataBlob }
+        setCollapsedIds(collapsedIds)
+    }
+
+    get allData() {
+        return { ...this.data }
+    }
+
+    resetRender() {
+        this.renderData = { ...this.data }
+    }
+
+    setRender(data) {
+        this.renderData.tests = [...data]
+    }
+
+    toggleCollapsedItem(id) {
+        this.renderData.tests = this.renderData.tests.map((test) =>
+            test.id === id ? { ...test, collapsed: !test.collapsed } : test,
+        )
+    }
+
+    set allCollapsed(collapsed) {
+        this.renderData = { ...this.renderData, tests: [...this.renderData.tests.map((test) => (
+            { ...test, collapsed }
+        ))] }
+    }
+
+    get testSubset() {
+        return [...this.renderData.tests]
+    }
+
+    get environment() {
+        return this.renderData.environment
+    }
+
+    get initialSort() {
+        return this.data.initialSort
+    }
+}
+
+module.exports = {
+    manager: new DataManager(),
+}
+
+},{"./storage.js":8}],2:[function(require,module,exports){
+const mediaViewer = require('./mediaviewer.js')
+const templateEnvRow = document.getElementById('template_environment_row')
+const templateResult = document.getElementById('template_results-table__tbody')
+
+function htmlToElements(html) {
+    const temp = document.createElement('template')
+    temp.innerHTML = html
+    return temp.content.childNodes
+}
+
+const find = (selector, elem) => {
+    if (!elem) {
+        elem = document
+    }
+    return elem.querySelector(selector)
+}
+
+const findAll = (selector, elem) => {
+    if (!elem) {
+        elem = document
+    }
+    return [...elem.querySelectorAll(selector)]
+}
+
+const dom = {
+    getStaticRow: (key, value) => {
+        const envRow = templateEnvRow.content.cloneNode(true)
+        const isObj = typeof value === 'object' && value !== null
+        const values = isObj ? Object.keys(value).map((k) => `${k}: ${value[k]}`) : null
+
+        const valuesElement = htmlToElements(
+            values ? `<ul>${values.map((val) => `<li>${val}</li>`).join('')}<ul>` : `<div>${value}</div>`)[0]
+        const td = findAll('td', envRow)
+        td[0].textContent = key
+        td[1].appendChild(valuesElement)
+
+        return envRow
+    },
+    getResultTBody: ({ testId, id, log, extras, resultsTableRow, tableHtml, result, collapsed }) => {
+        const resultBody = templateResult.content.cloneNode(true)
+        resultBody.querySelector('tbody').classList.add(result.toLowerCase())
+        resultBody.querySelector('tbody').id = testId
+        resultBody.querySelector('.collapsible').dataset.id = id
+
+        resultsTableRow.forEach((html) => {
+            const t = document.createElement('template')
+            t.innerHTML = html
+            resultBody.querySelector('.collapsible').appendChild(t.content)
+        })
+
+        if (log) {
+            // Wrap lines starting with "E" with span.error to color those lines red
+            const wrappedLog = log.replace(/^E.*$/gm, (match) => `<span class="error">${match}</span>`)
+            resultBody.querySelector('.log').innerHTML = wrappedLog
+        } else {
+            resultBody.querySelector('.log').remove()
+        }
+
+        if (collapsed) {
+            resultBody.querySelector('.collapsible > td')?.classList.add('collapsed')
+            resultBody.querySelector('.extras-row').classList.add('hidden')
+        } else {
+            resultBody.querySelector('.collapsible > td')?.classList.remove('collapsed')
+        }
+
+        const media = []
+        extras?.forEach(({ name, format_type, content }) => {
+            if (['image', 'video'].includes(format_type)) {
+                media.push({ path: content, name, format_type })
+            }
+
+            if (format_type === 'html') {
+                resultBody.querySelector('.extraHTML').insertAdjacentHTML('beforeend', `<div>${content}</div>`)
+            }
+        })
+        mediaViewer.setup(resultBody, media)
+
+        // Add custom html from the pytest_html_results_table_html hook
+        tableHtml?.forEach((item) => {
+            resultBody.querySelector('td[class="extra"]').insertAdjacentHTML('beforeend', item)
+        })
+
+        return resultBody
+    },
+}
+
+module.exports = {
+    dom,
+    htmlToElements,
+    find,
+    findAll,
+}
+
+},{"./mediaviewer.js":6}],3:[function(require,module,exports){
+const { manager } = require('./datamanager.js')
+const { doSort } = require('./sort.js')
+const storageModule = require('./storage.js')
+
+const getFilteredSubSet = (filter) =>
+    manager.allData.tests.filter(({ result }) => filter.includes(result.toLowerCase()))
+
+const doInitFilter = () => {
+    const currentFilter = storageModule.getVisible()
+    const filteredSubset = getFilteredSubSet(currentFilter)
+    manager.setRender(filteredSubset)
+}
+
+const doFilter = (type, show) => {
+    if (show) {
+        storageModule.showCategory(type)
+    } else {
+        storageModule.hideCategory(type)
+    }
+
+    const currentFilter = storageModule.getVisible()
+    const filteredSubset = getFilteredSubSet(currentFilter)
+    manager.setRender(filteredSubset)
+
+    const sortColumn = storageModule.getSort()
+    doSort(sortColumn, true)
+}
+
+module.exports = {
+    doFilter,
+    doInitFilter,
+}
+
+},{"./datamanager.js":1,"./sort.js":7,"./storage.js":8}],4:[function(require,module,exports){
+const { redraw, bindEvents, renderStatic } = require('./main.js')
+const { doInitFilter } = require('./filter.js')
+const { doInitSort } = require('./sort.js')
+const { manager } = require('./datamanager.js')
+const data = JSON.parse(document.getElementById('data-container').dataset.jsonblob)
+
+function init() {
+    manager.setManager(data)
+    doInitFilter()
+    doInitSort()
+    renderStatic()
+    redraw()
+    bindEvents()
+}
+
+init()
+
+},{"./datamanager.js":1,"./filter.js":3,"./main.js":5,"./sort.js":7}],5:[function(require,module,exports){
+const { dom, find, findAll } = require('./dom.js')
+const { manager } = require('./datamanager.js')
+const { doSort } = require('./sort.js')
+const { doFilter } = require('./filter.js')
+const {
+    getVisible,
+    getCollapsedIds,
+    setCollapsedIds,
+    getSort,
+    getSortDirection,
+    possibleFilters,
+} = require('./storage.js')
+
+const removeChildren = (node) => {
+    while (node.firstChild) {
+        node.removeChild(node.firstChild)
+    }
+}
+
+const renderStatic = () => {
+    const renderEnvironmentTable = () => {
+        const environment = manager.environment
+        const rows = Object.keys(environment).map((key) => dom.getStaticRow(key, environment[key]))
+        const table = document.getElementById('environment')
+        removeChildren(table)
+        rows.forEach((row) => table.appendChild(row))
+    }
+    renderEnvironmentTable()
+}
+
+const addItemToggleListener = (elem) => {
+    elem.addEventListener('click', ({ target }) => {
+        const id = target.parentElement.dataset.id
+        manager.toggleCollapsedItem(id)
+
+        const collapsedIds = getCollapsedIds()
+        if (collapsedIds.includes(id)) {
+            const updated = collapsedIds.filter((item) => item !== id)
+            setCollapsedIds(updated)
+        } else {
+            collapsedIds.push(id)
+            setCollapsedIds(collapsedIds)
+        }
+        redraw()
+    })
+}
+
+const renderContent = (tests) => {
+    const sortAttr = getSort(manager.initialSort)
+    const sortAsc = JSON.parse(getSortDirection())
+    const rows = tests.map(dom.getResultTBody)
+    const table = document.getElementById('results-table')
+    const tableHeader = document.getElementById('results-table-head')
+
+    const newTable = document.createElement('table')
+    newTable.id = 'results-table'
+
+    // remove all sorting classes and set the relevant
+    findAll('.sortable', tableHeader).forEach((elem) => elem.classList.remove('asc', 'desc'))
+    tableHeader.querySelector(`.sortable[data-column-type="${sortAttr}"]`)?.classList.add(sortAsc ? 'desc' : 'asc')
+    newTable.appendChild(tableHeader)
+
+    if (!rows.length) {
+        const emptyTable = document.getElementById('template_results-table__body--empty').content.cloneNode(true)
+        newTable.appendChild(emptyTable)
+    } else {
+        rows.forEach((row) => {
+            if (!!row) {
+                findAll('.collapsible td:not(.col-links', row).forEach(addItemToggleListener)
+                find('.logexpander', row).addEventListener('click',
+                    (evt) => evt.target.parentNode.classList.toggle('expanded'),
+                )
+                newTable.appendChild(row)
+            }
+        })
+    }
+
+    table.replaceWith(newTable)
+}
+
+const renderDerived = () => {
+    const currentFilter = getVisible()
+    possibleFilters.forEach((result) => {
+        const input = document.querySelector(`input[data-test-result="${result}"]`)
+        input.checked = currentFilter.includes(result)
+    })
+}
+
+const bindEvents = () => {
+    const filterColumn = (evt) => {
+        const { target: element } = evt
+        const { testResult } = element.dataset
+
+        doFilter(testResult, element.checked)
+        const collapsedIds = getCollapsedIds()
+        const updated = manager.renderData.tests.map((test) => {
+            return {
+                ...test,
+                collapsed: collapsedIds.includes(test.id),
+            }
+        })
+        manager.setRender(updated)
+        redraw()
+    }
+
+    const header = document.getElementById('environment-header')
+    header.addEventListener('click', () => {
+        const table = document.getElementById('environment')
+        table.classList.toggle('hidden')
+        header.classList.toggle('collapsed')
+    })
+
+    findAll('input[name="filter_checkbox"]').forEach((elem) => {
+        elem.addEventListener('click', filterColumn)
+    })
+
+    findAll('.sortable').forEach((elem) => {
+        elem.addEventListener('click', (evt) => {
+            const { target: element } = evt
+            const { columnType } = element.dataset
+            doSort(columnType)
+            redraw()
+        })
+    })
+
+    document.getElementById('show_all_details').addEventListener('click', () => {
+        manager.allCollapsed = false
+        setCollapsedIds([])
+        redraw()
+    })
+    document.getElementById('hide_all_details').addEventListener('click', () => {
+        manager.allCollapsed = true
+        const allIds = manager.renderData.tests.map((test) => test.id)
+        setCollapsedIds(allIds)
+        redraw()
+    })
+}
+
+const redraw = () => {
+    const { testSubset } = manager
+
+    renderContent(testSubset)
+    renderDerived()
+}
+
+module.exports = {
+    redraw,
+    bindEvents,
+    renderStatic,
+}
+
+},{"./datamanager.js":1,"./dom.js":2,"./filter.js":3,"./sort.js":7,"./storage.js":8}],6:[function(require,module,exports){
+class MediaViewer {
+    constructor(assets) {
+        this.assets = assets
+        this.index = 0
+    }
+
+    nextActive() {
+        this.index = this.index === this.assets.length - 1 ? 0 : this.index + 1
+        return [this.activeFile, this.index]
+    }
+
+    prevActive() {
+        this.index = this.index === 0 ? this.assets.length - 1 : this.index -1
+        return [this.activeFile, this.index]
+    }
+
+    get currentIndex() {
+        return this.index
+    }
+
+    get activeFile() {
+        return this.assets[this.index]
+    }
+}
+
+
+const setup = (resultBody, assets) => {
+    if (!assets.length) {
+        resultBody.querySelector('.media').classList.add('hidden')
+        return
+    }
+
+    const mediaViewer = new MediaViewer(assets)
+    const container = resultBody.querySelector('.media-container')
+    const leftArrow = resultBody.querySelector('.media-container__nav--left')
+    const rightArrow = resultBody.querySelector('.media-container__nav--right')
+    const mediaName = resultBody.querySelector('.media__name')
+    const counter = resultBody.querySelector('.media__counter')
+    const imageEl = resultBody.querySelector('img')
+    const sourceEl = resultBody.querySelector('source')
+    const videoEl = resultBody.querySelector('video')
+
+    const setImg = (media, index) => {
+        if (media?.format_type === 'image') {
+            imageEl.src = media.path
+
+            imageEl.classList.remove('hidden')
+            videoEl.classList.add('hidden')
+        } else if (media?.format_type === 'video') {
+            sourceEl.src = media.path
+
+            videoEl.classList.remove('hidden')
+            imageEl.classList.add('hidden')
+        }
+
+        mediaName.innerText = media?.name
+        counter.innerText = `${index + 1} / ${assets.length}`
+    }
+    setImg(mediaViewer.activeFile, mediaViewer.currentIndex)
+
+    const moveLeft = () => {
+        const [media, index] = mediaViewer.prevActive()
+        setImg(media, index)
+    }
+    const doRight = () => {
+        const [media, index] = mediaViewer.nextActive()
+        setImg(media, index)
+    }
+    const openImg = () => {
+        window.open(mediaViewer.activeFile.path, '_blank')
+    }
+    if (assets.length === 1) {
+        container.classList.add('media-container--fullscreen')
+    } else {
+        leftArrow.addEventListener('click', moveLeft)
+        rightArrow.addEventListener('click', doRight)
+    }
+    imageEl.addEventListener('click', openImg)
+}
+
+module.exports = {
+    setup,
+}
+
+},{}],7:[function(require,module,exports){
+const { manager } = require('./datamanager.js')
+const storageModule = require('./storage.js')
+
+const genericSort = (list, key, ascending, customOrder) => {
+    let sorted
+    if (customOrder) {
+        sorted = list.sort((a, b) => {
+            const aValue = a.result.toLowerCase()
+            const bValue = b.result.toLowerCase()
+
+            const aIndex = customOrder.findIndex((item) => item.toLowerCase() === aValue)
+            const bIndex = customOrder.findIndex((item) => item.toLowerCase() === bValue)
+
+            // Compare the indices to determine the sort order
+            return aIndex - bIndex
+        })
+    } else {
+        sorted = list.sort((a, b) => a[key] === b[key] ? 0 : a[key] > b[key] ? 1 : -1)
+    }
+
+    if (ascending) {
+        sorted.reverse()
+    }
+    return sorted
+}
+
+const durationSort = (list, ascending) => {
+    const parseDuration = (duration) => {
+        if (duration.includes(':')) {
+            // If it's in the format "HH:mm:ss"
+            const [hours, minutes, seconds] = duration.split(':').map(Number)
+            return (hours * 3600 + minutes * 60 + seconds) * 1000
+        } else {
+            // If it's in the format "nnn ms"
+            return parseInt(duration)
+        }
+    }
+    const sorted = list.sort((a, b) => parseDuration(a['duration']) - parseDuration(b['duration']))
+    if (ascending) {
+        sorted.reverse()
+    }
+    return sorted
+}
+
+const doInitSort = () => {
+    const type = storageModule.getSort(manager.initialSort)
+    const ascending = storageModule.getSortDirection()
+    const list = manager.testSubset
+    const initialOrder = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed', 'Skipped', 'Passed']
+
+    storageModule.setSort(type)
+    storageModule.setSortDirection(ascending)
+
+    if (type?.toLowerCase() === 'original') {
+        manager.setRender(list)
+    } else {
+        let sortedList
+        switch (type) {
+        case 'duration':
+            sortedList = durationSort(list, ascending)
+            break
+        case 'result':
+            sortedList = genericSort(list, type, ascending, initialOrder)
+            break
+        default:
+            sortedList = genericSort(list, type, ascending)
+            break
+        }
+        manager.setRender(sortedList)
+    }
+}
+
+const doSort = (type, skipDirection) => {
+    const newSortType = storageModule.getSort(manager.initialSort) !== type
+    const currentAsc = storageModule.getSortDirection()
+    let ascending
+    if (skipDirection) {
+        ascending = currentAsc
+    } else {
+        ascending = newSortType ? false : !currentAsc
+    }
+    storageModule.setSort(type)
+    storageModule.setSortDirection(ascending)
+
+    const list = manager.testSubset
+    const sortedList = type === 'duration' ? durationSort(list, ascending) : genericSort(list, type, ascending)
+    manager.setRender(sortedList)
+}
+
+module.exports = {
+    doInitSort,
+    doSort,
+}
+
+},{"./datamanager.js":1,"./storage.js":8}],8:[function(require,module,exports){
+const possibleFilters = [
+    'passed',
+    'skipped',
+    'failed',
+    'error',
+    'xfailed',
+    'xpassed',
+    'rerun',
+]
+
+const getVisible = () => {
+    const url = new URL(window.location.href)
+    const settings = new URLSearchParams(url.search).get('visible')
+    const lower = (item) => {
+        const lowerItem = item.toLowerCase()
+        if (possibleFilters.includes(lowerItem)) {
+            return lowerItem
+        }
+        return null
+    }
+    return settings === null ?
+        possibleFilters :
+        [...new Set(settings?.split(',').map(lower).filter((item) => item))]
+}
+
+const hideCategory = (categoryToHide) => {
+    const url = new URL(window.location.href)
+    const visibleParams = new URLSearchParams(url.search).get('visible')
+    const currentVisible = visibleParams ? visibleParams.split(',') : [...possibleFilters]
+    const settings = [...new Set(currentVisible)].filter((f) => f !== categoryToHide).join(',')
+
+    url.searchParams.set('visible', settings)
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const showCategory = (categoryToShow) => {
+    if (typeof window === 'undefined') {
+        return
+    }
+    const url = new URL(window.location.href)
+    const currentVisible = new URLSearchParams(url.search).get('visible')?.split(',').filter(Boolean) ||
+        [...possibleFilters]
+    const settings = [...new Set([categoryToShow, ...currentVisible])]
+    const noFilter = possibleFilters.length === settings.length || !settings.length
+
+    noFilter ? url.searchParams.delete('visible') : url.searchParams.set('visible', settings.join(','))
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const getSort = (initialSort) => {
+    const url = new URL(window.location.href)
+    let sort = new URLSearchParams(url.search).get('sort')
+    if (!sort) {
+        sort = initialSort || 'result'
+    }
+    return sort
+}
+
+const setSort = (type) => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('sort', type)
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const getCollapsedCategory = (renderCollapsed) => {
+    let categories
+    if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        const collapsedItems = new URLSearchParams(url.search).get('collapsed')
+        switch (true) {
+        case !renderCollapsed && collapsedItems === null:
+            categories = ['passed']
+            break
+        case collapsedItems?.length === 0 || /^["']{2}$/.test(collapsedItems):
+            categories = []
+            break
+        case /^all$/.test(collapsedItems) || collapsedItems === null && /^all$/.test(renderCollapsed):
+            categories = [...possibleFilters]
+            break
+        default:
+            categories = collapsedItems?.split(',').map((item) => item.toLowerCase()) || renderCollapsed
+            break
+        }
+    } else {
+        categories = []
+    }
+    return categories
+}
+
+const getSortDirection = () => JSON.parse(sessionStorage.getItem('sortAsc')) || false
+const setSortDirection = (ascending) => sessionStorage.setItem('sortAsc', ascending)
+
+const getCollapsedIds = () => JSON.parse(sessionStorage.getItem('collapsedIds')) || []
+const setCollapsedIds = (list) => sessionStorage.setItem('collapsedIds', JSON.stringify(list))
+
+module.exports = {
+    getVisible,
+    hideCategory,
+    showCategory,
+    getCollapsedIds,
+    setCollapsedIds,
+    getSort,
+    setSort,
+    getSortDirection,
+    setSortDirection,
+    getCollapsedCategory,
+    possibleFilters,
+}
+
+},{}]},{},[4]);
+    </script>
+  </footer>
+</html>
