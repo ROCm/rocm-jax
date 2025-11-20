@@ -29,7 +29,7 @@ dpkg-reconfigure --frontend noninteractive tzdata
 
 # Default values
 rocm_version="7.2.0"
-rocm_build_number="16623"
+rocm_build_number="16864"
 rocm_job_name="compute-rocm-dkms-no-npi-hipclang"
 
 # Parse named command-line arguments
