@@ -100,12 +100,8 @@ build:rocm --copt=-Qunused-arguments
 build:rocm --action_env=TF_HIPCC_CLANG="1"
 
 
-#############################################################################
-# Configuration for running RBE builds and tests
-#############################################################################
+# Flag to enable remote config
 common --experimental_repo_remote_exec
-
-try-import %workspace%/rbe.bazelrc
 
 #############################################################################
 # Some configs to make getting some forms of debug builds. In general, the
