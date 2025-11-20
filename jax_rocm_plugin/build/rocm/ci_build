@@ -57,7 +57,21 @@ def build_jaxlib_wheel(rocm_version, pyver_string):
             f"--clang_path=/opt/rocm-{rocm_version}/llvm/bin/clang",
             f"--bazel_options=--repo_env=ML_WHEEL_VERSION_SUFFIX=+rocm{rocm_version}",
             "--bazel_options=--repo_env=ML_WHEEL_TYPE=custom", "&&",
-            "auditwheel", "repair", "dist/jaxlib*.whl", "-w", "../", "&&",
+            "bash", "-c",
+            "set -euo pipefail; "
+            "echo '==> Contents of dist before auditwheel:'; ls -la dist || true; "
+            "shopt -s nullglob; WHLS=(dist/*.whl); "
+            "if [ ${#WHLS[@]} -eq 0 ]; then "
+            "  echo 'ERROR: No wheel found in dist. Searching for artifacts...'; "
+            "  echo '==> bazel-bin/jaxlib/tools/dist:'; ls -la bazel-bin/jaxlib/tools/dist || true; "
+            "  echo '==> bazel-bin/dist:'; ls -la bazel-bin/dist || true; "
+            "  echo '==> find . -type f -name *.whl:'; find . -type f -name '*.whl' -print || true; "
+            "  exit 1; "
+            "fi; "
+            "for w in \"${WHLS[@]}\"; do "
+            "  echo '==> Running auditwheel repair on:' \"$w\"; "
+            "  auditwheel repair \"$w\" -w ../; "
+            "done", "&&",
             ]
 
     cmd += ["popd", "&&",  "rm -rf /wheelhouse/jax_repo",]
