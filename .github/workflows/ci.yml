@@ -36,7 +36,7 @@ jobs:
       rocm-version: ${{ matrix.rocm-version }}
   run-python-unit-tests:
     needs: call-build-docker
-    runs-on: linux-mi355-1
+    runs-on: linux-mi355-8
     strategy:
       matrix:
         rocm-version: ["7.1.0"]
