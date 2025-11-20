@@ -159,7 +159,7 @@ git checkout upstream/release/X.X.X
 You can also set up your environment command-by-command.
 
 Create a fresh ubuntu 22.04 container
-```
+```shell
 sudo docker run -it --network=host \
     --device=/dev/kfd \
     --device=/dev/dri \
@@ -177,32 +177,34 @@ sudo docker run -it --network=host \
 
 Use the docker setup script in tools to set up your environment.
 
-```
+```shell
 cd /rocm-jax
-bash tools/docker_dev_setup.sh
+./tools/docker_dev_setup.sh
 ```
 
 This will do the following
   - Install system deps with apt-get
   - Install clang-18
-  - Install ROCm
+  - Install ROCm (if needed)
+  - Install Python3.11 if it's not available already
   - Create a python virtualenv for JAX + python packages
+  - Activate the virtualenv for the current terminal
 
 
 After this you should re-run stack.py develop to rebuild your makefile
-```
+```shell
 python stack.py develop --rebuild-makefile
 ```
 
-Activate the virtual environment
-```shell
-source .venv/bin/activate
-```
 and build and install the wheels
 ```shell
 (cd jax_rocm_plugin && make clean dist install)
 ```
 
 You can fully customize your setup by modifying the 
-`tools/docker_dev_setup.sh` script, or doing its steps manually.
+`tools/docker_dev_setup.sh` script and `jax_rocm_plugin/Makefile` rule set,
+or by doing steps manually.
 
+NOTE: you need to run `./tools/docker_dev_setup.sh` only once. Remember to run
+`source ./source_venv.sh` (or `source ./.venv/bin/activate` if you prefer)
+in each new terminal session to activate a proper python virtual environment.

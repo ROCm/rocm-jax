@@ -149,6 +149,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+source_venv.sh
 
 # Spyder project settings
 .spyderproject
