@@ -23,8 +23,8 @@ pushd "${JAX_DIR}" || exit
 if ! grep -q jax_rocm7 build/requirements.in; then
     {
         echo "jaxlib==${JAX_VERSION}"
-        echo "${WHEELHOUSE}/jax_rocm7_pjrt-${JAX_VERSION}-py3-none-manylinux_2_28_x86_64.whl"
-        echo "${WHEELHOUSE}/jax_rocm7_plugin-${JAX_VERSION}-cp${PYTHON//.}-cp${PYTHON//.}-manylinux_2_28_x86_64.whl"
+	echo ${WHEELHOUSE}/jax_rocm7_pjrt*${JAX_VERSION}*
+	echo ${WHEELHOUSE}/jax_rocm7_plugin*${JAX_VERSION}*
     } >> build/requirements.in
 fi
 
