@@ -24,7 +24,7 @@ if ! grep -q jax_rocm7 build/requirements.in; then
     {
         echo "jaxlib==${JAX_VERSION}"
 	echo ${WHEELHOUSE}/jax_rocm7_pjrt*${JAX_VERSION}*
-	echo ${WHEELHOUSE}/jax_rocm7_plugin*${JAX_VERSION}*
+	echo ${WHEELHOUSE}/jax_rocm7_plugin*${JAX_VERSION}*${PYTHON//.}*
     } >> build/requirements.in
 fi
 
