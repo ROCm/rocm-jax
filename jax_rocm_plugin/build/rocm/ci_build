@@ -58,7 +58,7 @@ def build_jaxlib_wheel(rocm_version, pyver_string):
             "--bazel_options=--repo_env=ML_WHEEL_TYPE=release",
             f"--bazel_options=--repo_env=ML_WHEEL_VERSION_SUFFIX=\"+rocm{rocm_version}\"" \
             "&&",
-            "auditwheel", "repair", "dist/jaxlib*.whl", "-w", "../", "&&",
+            "auditwheel", "repair", "--plat", "manylinux_2_27_x86_64", "--only-plat", "dist/jaxlib*.whl", "-w", "../", "&&",
             ]
 
     cmd += ["popd", "&&",  "rm -rf /wheelhouse/jax_repo",]
