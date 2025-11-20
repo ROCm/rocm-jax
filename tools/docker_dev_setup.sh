@@ -118,7 +118,7 @@ apt-get install -y \
   build-essential \
   make \
   patchelf \
-  python3.10-venv \
+  python3-venv \
   lsb-release \
   cmake \
   yamllint \
