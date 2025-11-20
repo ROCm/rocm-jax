@@ -7,7 +7,11 @@ ARG THEROCK_PATH
 
 # Install system GCC and C++ libraries, and build deps
 RUN --mount=type=cache,target=/var/cache/dnf \
-    dnf install -y patchelf numactl-devel
+    dnf install -y patchelf numactl-devel python3.11 python3.11-devel python3.11-pip && \
+    rm -f /usr/bin/python3 && ln -sf /usr/bin/python3.11 /usr/bin/python3 && \
+    rm -f /usr/bin/pip3 && ln -sf /usr/bin/pip3.11 /usr/bin/pip3 && \
+    python3.11 -m pip install --upgrade pip setuptools wheel
+
 
 RUN --mount=type=cache,target=/var/cache/dnf \
     --mount=type=bind,source=build/rocm/tools/get_rocm.py,target=get_rocm.py \
