@@ -90,6 +90,9 @@ jobs:
         with:
           name: plugin_wheels_r${{ matrix.rocm-version }}
           path: ./wheelhouse
+      - name: list files in the wheelhouse
+        run: |
+          ls -alth ./wheelhouse || true
       - name: Run tests
         env:
           GPU_COUNT: "8"
