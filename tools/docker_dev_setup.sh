@@ -46,7 +46,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 install_python_v311() {
-  PY_VERSION=3.11.13
+  PY_VERSION=3.11.14
 
   # System packages needed to compile Python and installed bzip2, sqlite3 packages
   apt-get update && \
@@ -64,11 +64,11 @@ install_python_v311() {
   # Download and unpack python-v3.11
   pushd . \
   && mkdir -p /tmp && cd /tmp && wget https://www.python.org/ftp/python/${PY_VERSION}/Python-${PY_VERSION}.tgz \
-  && tar -xzf Python-${PY_VERSION}.tgz \
-  && rm Python-${PY_VERSION}.tgz \
+  && tar -xzf ./Python-${PY_VERSION}.tgz \
+  && rm ./Python-${PY_VERSION}.tgz \
   && cd /tmp/Python-${PY_VERSION} && ./configure --enable-optimizations --with-lto \
   && make -j"$(nproc)" && make install && ln -s -f /usr/local/bin/python3 /usr/local/bin/python \
-  && popd
+  && cd /tmp && rm -rf /tmp/Python-${PY_VERSION} && popd
 
   # checking the assumption that $PYTHON_BINARY was indeed installed
   hash -r 2>/dev/null # to refresh binaries cache
