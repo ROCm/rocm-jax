@@ -29,6 +29,7 @@ TEXT_LIMIT = 250
 BATCH_SIZE = 2000
 SKIP_FILES = {
     "final_compiled_report.json",
+    "final_compiled_report.csv",
     "final_compiled_report.html",
     "collect_module_log.jsonl",
 }

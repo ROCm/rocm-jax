@@ -24,6 +24,7 @@ import os
 import shutil
 import sys
 import json
+import csv
 import argparse
 import threading
 import subprocess
@@ -60,6 +61,55 @@ def combine_json_reports():
         json.dump(combined_data, outfile, indent=4)
 
 
+def convert_json_to_csv(json_file, csv_file):
+    """
+    Convert a compiled JSON test report to CSV format.
+    
+    Args:
+        json_file: Path to the input JSON file
+        csv_file: Path to the output CSV file
+        
+    Returns:
+        int: Number of test results converted, or -1 on error
+    """
+    try:
+        with open(json_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        test_results = []
+        # data is a list of test report objects
+        for report in data:
+            if "tests" in report:
+                for item in report["tests"]:
+                    test_results.append({
+                        "name": item.get("nodeid", ""),
+                        "outcome": item.get("outcome", ""),
+                        "duration": item.get("call", {}).get("duration", 0) if "call" in item else 0,
+                        "keywords": ';'.join(item.get("keywords", []))
+                    })
+
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f, fieldnames=["name", "outcome", "duration", "keywords"]
+            )
+            writer.writeheader()
+            writer.writerows(test_results)
+
+        print(f"CSV report generated: {csv_file}")
+        print(f"Total test results in CSV: {len(test_results)}")
+        return len(test_results)
+
+    except FileNotFoundError:
+        print(f"Error: {json_file} not found")
+        return -1
+    except json.JSONDecodeError as e:
+        print(f"Error parsing JSON: {e}")
+        return -1
+    except Exception as e:  # pylint: disable=broad-except
+        print(f"Error converting JSON to CSV: {e}")
+        return -1
+
+
 def generate_final_report(shell=False, env_vars=None):
     """Generate final HTML and JSON reports by merging individual test reports."""
     if env_vars is None:
@@ -83,6 +133,11 @@ def generate_final_report(shell=False, env_vars=None):
 
     # Generate json reports.
     combine_json_reports()
+
+    # Generate CSV report from JSON
+    combined_json_file = f"{BASE_DIR}/final_compiled_report.json"
+    combined_csv_file = f"{BASE_DIR}/final_compiled_report.csv"
+    convert_json_to_csv(combined_json_file, combined_csv_file)
 
 
 def run_shell_command(cmd, shell=False, env_vars=None):
