@@ -23,8 +23,8 @@ pushd "${JAX_DIR}" || exit
 if ! grep -q jax_rocm7 build/requirements.in; then
     {
         echo "jaxlib==${JAX_VERSION}"
-        echo "${WHEELHOUSE}/jax_rocm7_pjrt-${JAX_VERSION}-py3-none-manylinux_2_28_x86_64.whl"
-        echo "${WHEELHOUSE}/jax_rocm7_plugin-${JAX_VERSION}-cp${PYTHON//.}-cp${PYTHON//.}-manylinux_2_28_x86_64.whl"
+	echo ${WHEELHOUSE}/jax_rocm7_pjrt*${JAX_VERSION}*
+	echo ${WHEELHOUSE}/jax_rocm7_plugin*${JAX_VERSION}*${PYTHON//.}*
     } >> build/requirements.in
 fi
 
@@ -43,9 +43,5 @@ python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_
     --test_verbose_timeout_warnings \
     --test_output=errors \
     //tests:core_test_gpu \
-    //tests:linalg_test_gpu \
-    --test_filter=CoreTest \
-    --test_filter=JaxprTypeChecks \
-    --test_filter=DynamicShapesTest \
-    --test_filter=testMatmul
+    //tests:ffi_test_gpu
 

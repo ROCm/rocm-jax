@@ -33,6 +33,9 @@ jobs:
       rocm-build-job: ${{ matrix.rocm-build-job }}
       rocm-build-num: ${{ matrix.rocm-build-num }}
       runner-label: ${{ matrix.runner-label }}
+    secrets:
+      rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
+      rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
   call-build-docker:
     needs: call-build-wheels
     strategy:
