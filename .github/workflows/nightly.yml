@@ -75,7 +75,7 @@ jobs:
           # TODO: Change the repo and ref once we figure out how exactly we're going to
           #       manage tests
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.7.1
+          ref: rocm-jaxlib-v0.8.0
           path: jax
       - name: Authenticate to GitHub Container Registry
         run: |
