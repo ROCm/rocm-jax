@@ -106,42 +106,10 @@ def check_system_resources():
         return True  # Continue if check fails
 
 
-# pylint: disable=line-too-long
+# pylint: disable=unused-argument
 def get_deselected_tests(test_name):
     """filter out listed test for a given test_name."""
-    tests_dict = {
-        "export_harnesses_multi_platform_test": [
-            "--deselect=tests/export_harnesses_multi_platform_test.py::PrimitiveTest::test_prim_tridiagonal_solve_shape_float32_3_",
-            "--deselect=tests/export_harnesses_multi_platform_test.py::PrimitiveTest::test_prim_tridiagonal_solve_shape_float64_3_",
-        ],
-        "linalg_sharding_test": [
-            "--deselect=tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_jvp13",
-            "--deselect=tests/linalg_sharding_test.py::LinalgShardingTest::test_batch_axis_sharding_vjp11",
-        ],
-        "multi_device_test": [
-            "--deselect=tests/multi_device_test.py::MultiDeviceTest::test_lax_full_like_efficient",
-        ],
-        "pgle_test": [
-            "--deselect=tests/pgle_test.py::PgleTest::testAutoPgle",
-            "--deselect=tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers0",
-            "--deselect=tests/pgle_test.py::PgleTest::testAutoPgleWithCommandBuffers1",
-            "--deselect=tests/pgle_test.py::PgleTest::testAutoPgleWithPersistentCache",
-            "--deselect=tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfile",
-            "--deselect=tests/pgle_test.py::PgleTest::testPGLEProfilerGetFDOProfileLarge",
-        ],
-        "pjit_test": [
-            "--deselect=tests/pjit_test.py::ShardingInTypesTest::test_sparse_linalg_cg_indexing",
-        ],
-        "shard_map_test": [
-            "--deselect=tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_two_gpus",
-            "--deselect=tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_with_deadlock_cycle",
-            "--deselect=tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_with_duplicate_source_target_pairs",
-            "--deselect=tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_with_no_deadlock_cycle",
-            "--deselect=tests/shard_map_test.py::ShardMapTest::test_psend_precv_basic_with_non_matching_source_target_pairs",
-            "--deselect=tests/shard_map_test.py::ShardMapTest::test_psend_precv_reverse_two_gpus",
-        ],
-    }
-    return tests_dict[test_name] if test_name in tests_dict else []
+    return []
 
 
 # pylint: disable=too-many-locals

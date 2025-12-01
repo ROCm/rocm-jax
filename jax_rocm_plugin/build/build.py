@@ -167,12 +167,6 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
       """,
     )
 
-    parser.add_argument(
-        "--rbe",
-        action="store_true",
-        help="If set, uses Bazel Remote Build Execution",
-    )
-
     # CUDA Options
     cuda_group = parser.add_argument_group("CUDA Options")
     cuda_group.add_argument(
@@ -483,10 +477,6 @@ async def main():
         "aarch64": "aarch64",
     }
     target_cpu = wheel_cpus[args.target_cpu] if args.target_cpu is not None else arch
-
-    if args.rbe:
-        logging.debug("Using RBE")
-        wheel_build_command_base.append("--config=rocm_rbe")
 
     if args.local_xla_path:
         logging.debug("Local XLA path: %s", args.local_xla_path)

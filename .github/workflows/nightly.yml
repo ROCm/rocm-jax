@@ -75,13 +75,8 @@ jobs:
           # TODO: Change the repo and ref once we figure out how exactly we're going to
           #       manage tests
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.7.1
+          ref: rocm-jaxlib-v0.8.0
           path: jax
-      - name: Apply patches to rocm/jax test repo
-        run: |
-          pushd jax
-          git apply ../ci/patches/*
-          popd
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
@@ -100,11 +95,10 @@ jobs:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
         run: |
-          # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && \
-                        python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c"
+            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s && \
+                        python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
       - name: Upload logs to artifact (per-matrix)
         if: always()
         uses: actions/upload-artifact@v4
