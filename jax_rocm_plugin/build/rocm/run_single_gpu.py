@@ -64,11 +64,11 @@ def combine_json_reports():
 def convert_json_to_csv(json_file, csv_file):
     """
     Convert a compiled JSON test report to CSV format.
-    
+
     Args:
         json_file: Path to the input JSON file
         csv_file: Path to the output CSV file
-        
+
     Returns:
         int: Number of test results converted, or -1 on error
     """
@@ -81,12 +81,18 @@ def convert_json_to_csv(json_file, csv_file):
         for report in data:
             if "tests" in report:
                 for item in report["tests"]:
-                    test_results.append({
-                        "name": item.get("nodeid", ""),
-                        "outcome": item.get("outcome", ""),
-                        "duration": item.get("call", {}).get("duration", 0) if "call" in item else 0,
-                        "keywords": ';'.join(item.get("keywords", []))
-                    })
+                    test_results.append(
+                        {
+                            "name": item.get("nodeid", ""),
+                            "outcome": item.get("outcome", ""),
+                            "duration": (
+                                item.get("call", {}).get("duration", 0)
+                                if "call" in item
+                                else 0
+                            ),
+                            "keywords": ";".join(item.get("keywords", [])),
+                        }
+                    )
 
         with open(csv_file, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(

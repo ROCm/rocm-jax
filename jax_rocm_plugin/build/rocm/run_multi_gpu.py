@@ -324,7 +324,7 @@ def main():
     try:
         generate_final_report()
         print("Final HTML and JSON reports generated")
-        
+
         # Generate CSV report for multi-GPU tests
         combined_json_file = f"{LOG_DIR}/final_compiled_report.json"
         combined_csv_file = f"{LOG_DIR}/final_compiled_report.csv"
