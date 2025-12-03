@@ -70,6 +70,9 @@ jobs:
           docker run --rm --device=/dev/kfd --device=/dev/dri --group-add video \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
             rocm-smi -a || true
+      - name: list files in the wheelhouse
+        run: |
+          ls -alth ./wheelhouse || true
       - name: Run tests
         env:
           GPU_COUNT: "8"
