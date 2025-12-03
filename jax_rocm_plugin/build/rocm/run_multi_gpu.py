@@ -31,7 +31,7 @@ sys.path.insert(0, "jax_rocm_plugin/build/rocm")
 
 try:
     from multi_gpu_tests_config import MULTI_GPU_TESTS
-    from run_single_gpu import handle_abort, generate_final_report
+    from run_single_gpu import handle_abort, generate_final_report, convert_json_to_csv
 except ImportError as e:
     print(f"Error importing required modules: {e}")
     sys.exit(1)
@@ -323,7 +323,13 @@ def main():
     # Generate final report (reuse from run_single_gpu.py)
     try:
         generate_final_report()
-        print("Final HTML report generated")
+        print("Final HTML and JSON reports generated")
+
+        # Generate CSV report for multi-GPU tests
+        combined_json_file = f"{LOG_DIR}/final_compiled_report.json"
+        combined_csv_file = f"{LOG_DIR}/final_compiled_report.csv"
+        convert_json_to_csv(combined_json_file, combined_csv_file)
+        print("Final CSV report generated")
     except (ImportError, OSError, ValueError) as excp:
         print(f"Warning: Could not generate final report: {excp}")
 
