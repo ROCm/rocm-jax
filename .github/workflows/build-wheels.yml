@@ -51,6 +51,34 @@ jobs:
           rocm-smi -a || true
           rocminfo | grep gfx || true
       - uses: actions/checkout@v4
+      - name: Cache Bazel
+        id: cache-bazel
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/bazel
+            ~/.bazel
+          key: ${{ runner.os }}-bazel-${{ inputs.rocm-version }}-${{ hashFiles('jax_rocm_plugin/WORKSPACE', 'jax_rocm_plugin/**/*.bzl', 'jax_rocm_plugin/**/BUILD.bazel') }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-${{ inputs.rocm-version }}-
+            ${{ runner.os }}-bazel-
+      - name: Verify Bazel cache status
+        run: |
+          bazel_hit="${{ steps.cache-bazel.outputs.cache-hit }}"
+          bazel_key="${{ steps.cache-bazel.outputs.cache-primary-key }}"
+          bazel_matched="${{ steps.cache-bazel.outputs.cache-matched-key }}"
+          
+          echo "=== Bazel Cache Status ==="
+          if [ "$bazel_hit" == "true" ]; then
+            echo "✅ Bazel cache HIT"
+            echo "   Key: $bazel_key"
+          else
+            echo "❌ Bazel cache MISS"
+            echo "   Will save with key: $bazel_key"
+            if [ -n "$bazel_matched" ] && [ "$bazel_matched" != "" ]; then
+              echo "   Matched restore key: $bazel_matched"
+            fi
+          fi
       - name: Build plugin wheels
         run: |
           python3 build/ci_build \
