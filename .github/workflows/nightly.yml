@@ -21,7 +21,7 @@ jobs:
         rocm-version: ["7.1.0", "7.2.0"]
         include:
           - rocm-version: "7.1.0"
-            runner-label: "mi-250"
+            runner-label: "linux-mi355-1"
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16849"
@@ -41,7 +41,7 @@ jobs:
         rocm-version: ["7.1.0", "7.2.0"]
         include:
           - rocm-version: "7.1.0"
-            runner-label: "mi-250"
+            runner-label: "linux-mi355-1"
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16849"
@@ -55,7 +55,7 @@ jobs:
       extra-cr-tag: "nightly"
   run-python-unit-tests:
     needs: call-build-docker
-    runs-on: mi-250
+    runs-on: linux-mi355-1
     strategy:
       fail-fast: false
       matrix:
