@@ -26,7 +26,7 @@ jobs:
       #       fails with a complaint abou the pipes module.
       python-versions: "3.11,3.12"
       rocm-version: ${{ matrix.rocm-version }}
-      runner-label: "linux-mi355-1"
+      runner-label: "mi-250"
   call-build-docker:
     needs: call-build-wheels
     strategy:
@@ -35,10 +35,10 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
-      runner-label: "linux-mi355-1"
+      runner-label: "mi-250"
   run-python-unit-tests:
     needs: call-build-docker
-    runs-on: linux-mi355-1
+    runs-on: mi-250
     strategy:
       matrix:
         rocm-version: ["7.1.0"]
