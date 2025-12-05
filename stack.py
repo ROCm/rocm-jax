@@ -351,8 +351,6 @@ def dev_docker(rm):
     cur_abs_path = os.path.abspath(os.curdir)
     image_name = "ubuntu:22.04"
 
-    ep = "/rocm-jax/tools/docker_dev_setup.sh"
-
     cmd = [
         "docker",
         "run",
@@ -369,11 +367,7 @@ def dev_docker(rm):
         "seccomp=unconfined",
         "-v",
         "%s:/rocm-jax" % cur_abs_path,
-        "--env",
-        "ROCM_JAX_DIR=/rocm-jax",
-        "--env",
-        "_IS_ENTRYPOINT=1",
-        "--entrypoint=%s" % ep,
+        "--env=ROCM_JAX_DIR=/rocm-jax",
     ]
 
     if rm:
