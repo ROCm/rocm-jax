@@ -74,12 +74,27 @@ jobs:
             -t $IMAGE:run${{ github.run_id }} \
             .
 
+      - name: Configure GPU devices for K8s
+        id: gpu-config
+        run: |
+          if [ -f "/etc/podinfo/gha-render-devices" ]; then
+            DEVICE_FLAG=$(cat /etc/podinfo/gha-render-devices)
+          elif [ -d "/dev/dri" ]; then
+            DEVICE_FLAG=""
+            for dev in /dev/dri/renderD*; do
+              [ -e "$dev" ] && DEVICE_FLAG="$DEVICE_FLAG --device $dev"
+            done
+          else
+            DEVICE_FLAG="--device /dev/dri"
+          fi
+          echo "device_flag=$DEVICE_FLAG" >> $GITHUB_OUTPUT
+
       - name: Launch container
         run: |
           docker run -d --name maxtext_container \
             --network=host \
             --device=/dev/kfd \
-            --device=/dev/dri \
+            ${{ steps.gpu-config.outputs.device_flag }} \
             --ipc=host \
             --shm-size=64G \
             --group-add=video \
