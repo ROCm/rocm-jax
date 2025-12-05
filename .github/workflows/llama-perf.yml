@@ -163,7 +163,7 @@ jobs:
               $(gh run list \
                 -R ROCm/rocm-jax \
                 -w nightly.yml \
-                -L 200 \
+                -L 2000 \
                 --json databaseId,event,createdAt \
                 -q '
                   map(select(
