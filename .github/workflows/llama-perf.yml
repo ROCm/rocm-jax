@@ -2,11 +2,8 @@ name: Llama Performance Benchmarks
 
 # This workflow runs Llama performance benchmarks
 # using two different JAX versions: 0.6.0 & 0.7.1
-# For JAX 0.6.0: uses official released wheels
-# and Docker image.
-# For JAX 0.7.1: uses wheels and Docker image
-# built from the latest nightly results.
-
+# For JAX 0.6.0: uses official released wheels and Docker image.
+# For JAX 0.7.1: uses wheels and Docker image built from the latest nightly results.
 # PS: Ubuntu 24 & ROCm 7.0.2 used for all tests.
 
 on:
@@ -27,6 +24,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CONTAINER_SHM_SIZE: 32G
+  NVTE_FRAMEWORK: jax
+  NVTE_USE_ROCM: 1
+  HIP_PLATFORM: amd
+  NVTE_FUSED_ATTN_AOTRITON: 0
+  CU_NUM: 64
+
 jobs:
   build-te-wheels:
     runs-on: linux-mi355-1
@@ -44,12 +49,7 @@ jobs:
           - jax-version: "0.7.1"
             jaxlib-version: "0.7.1"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:nightly"
-    env:
-      NVTE_FRAMEWORK: jax
-      NVTE_USE_ROCM: 1
-      HIP_PLATFORM: amd
-      NVTE_FUSED_ATTN_AOTRITON: 0
-      CU_NUM: 64
+
     steps:
       - name: Checkout TE source
         uses: actions/checkout@v4
@@ -59,12 +59,14 @@ jobs:
           submodules: recursive
           fetch-depth: 0
           path: transformerengine
+
       - name: Print workspace
-        run: |
-          ls -la ${{ github.workspace }}
+        run: ls -la ${{ github.workspace }}
+
       - name: Get TE commit SHA
         id: tsha
         run: echo "hash=$(git -C transformerengine rev-parse HEAD)" >> $GITHUB_OUTPUT
+
       - name: Define ROCm arch & runner-label
         id: arch
         run: |
@@ -75,15 +77,33 @@ jobs:
             echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
             echo "label=MI355" >> $GITHUB_OUTPUT
           fi
+
+      - name: Configure GPU devices for K8s
+        id: gpu-config
+        run: |
+          set -ex
+          if [ -f "/etc/podinfo/gha-render-devices" ]; then
+            DEVICE_FLAG=$(cat /etc/podinfo/gha-render-devices)
+          elif [ -d "/dev/dri" ]; then
+            DEVICE_FLAG=""
+            for dev in /dev/dri/renderD*; do
+              [ -e "$dev" ] && DEVICE_FLAG="$DEVICE_FLAG --device $dev"
+            done
+          else
+            DEVICE_FLAG="--device /dev/dri"
+          fi
+          echo "device_flag=$DEVICE_FLAG" >> $GITHUB_OUTPUT
+
       - name: Run Container for ${{ matrix.jax-version }}
         run: |
+          set -ex
           docker run -d \
             --name te-build-jax${{ matrix.jax-version }} \
             --network=host \
             --device=/dev/kfd \
-            --device=/dev/dri \
+            ${{ steps.gpu-config.outputs.device_flag }} \
             --ipc=host \
-            --shm-size 32G \
+            --shm-size ${{ env.CONTAINER_SHM_SIZE }} \
             --group-add video \
             --cap-add=SYS_PTRACE \
             --security-opt seccomp=unconfined \
@@ -97,6 +117,7 @@ jobs:
             -v "${{ github.workspace }}:/workspace" \
             ${{ matrix.docker-image }} \
             tail -f /dev/null
+
       - name: Build TE-wheel
         run: |
           docker exec te-build-jax${{ matrix.jax-version }} bash -lc '
@@ -105,16 +126,19 @@ jobs:
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
             python3 setup.py bdist_wheel'
+
       - name: Upload TE wheels artifacts
         uses: actions/upload-artifact@v4
         with:
           name: te-wheel-jax${{ matrix.jax-version }}
           path: transformerengine/dist/*whl
-      - name: Cleanup containers
+
+      - name: Cleanup
         if: always()
         run: |
           docker stop te-build-jax${{ matrix.jax-version }} || true
           docker rm te-build-jax${{ matrix.jax-version }} || true
+
   run-llama-perf-model:
     needs: build-te-wheels
     runs-on: ${{ inputs.runner-label || 'linux-mi355-8' }}
@@ -141,12 +165,30 @@ jobs:
             jaxlib-version: "0.7.1"
             model-name: "train_dense_8b"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:nightly"
+
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v4
         with:
           repository: AMD-AGI/scif_repro
           token: ${{ secrets.SECRET_TOKEN }}
+
+      - name: Configure GPU devices for K8s
+        id: gpu-config
+        run: |
+          set -ex
+          if [ -f "/etc/podinfo/gha-render-devices" ]; then
+            DEVICE_FLAG=$(cat /etc/podinfo/gha-render-devices)
+          elif [ -d "/dev/dri" ]; then
+            DEVICE_FLAG=""
+            for dev in /dev/dri/renderD*; do
+              [ -e "$dev" ] && DEVICE_FLAG="$DEVICE_FLAG --device $dev"
+            done
+          else
+            DEVICE_FLAG="--device /dev/dri"
+          fi
+          echo "device_flag=$DEVICE_FLAG" >> $GITHUB_OUTPUT
+
       - name: Download JAX wheels
         env:
           GH_TOKEN: ${{ secrets.SECRET_TOKEN }}
@@ -155,9 +197,9 @@ jobs:
             mkdir -p wheelhouse
             REL_URL="https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0"
             curl -L --output-dir wheelhouse -O \
-            "$REL_URL/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
+              "$REL_URL/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
             curl -L --output-dir wheelhouse -O \
-            "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
+              "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
           else
             gh run download \
               $(gh run list \
@@ -175,19 +217,21 @@ jobs:
               -D wheelhouse
             rm -v wheelhouse/*311*
           fi
+
       - name: Download TE wheel artifact
         uses: actions/download-artifact@v4
         with:
           name: te-wheel-jax${{ matrix.jax-version }}
           path: wheelhouse
+
       - name: Print wheels
-        run: |
-          ls -la ${{ github.workspace }}/wheelhouse
+        run: ls -la ${{ github.workspace }}/wheelhouse
+
       - name: Disable non-root check
         run: |
           sed -i '/python.toolchain(/a\    ignore_root_user_error = True,' MODULE.bazel
+
       - name: Patch source files
-        # these patches will be removed when the repo is updated/tested accordingly
         run: |
           find . -type f -exec sed -i 's/jax_rocm60_plugin/jax_rocm7_plugin/g' {} +
           find . -type f -exec sed -i 's/jax_rocm60_pjrt/jax_rocm7_pjrt/g' {} +
@@ -200,9 +244,9 @@ jobs:
           PLUGIN_BASE=$(basename "$PLUGIN_WHL")
           TE_BASE=$(basename "$TE_WHL")
           {
-          echo "jax_rocm7_pjrt @ file:///workspace/wheelhouse/$PJRT_BASE"
-          echo "jax_rocm7_plugin @ file:///workspace/wheelhouse/$PLUGIN_BASE"
-          echo "transformer_engine @ file:///workspace/wheelhouse/$TE_BASE"
+            echo "jax_rocm7_pjrt @ file:///workspace/wheelhouse/$PJRT_BASE"
+            echo "jax_rocm7_plugin @ file:///workspace/wheelhouse/$PLUGIN_BASE"
+            echo "transformer_engine @ file:///workspace/wheelhouse/$TE_BASE"
           } >> kylix/third_party/requirements.lock
           sed -i '9,29s/^/#/' bazel_run_anynode.sh
           sed -i '/^TRAIN_SETTING/s/^/# /' bazel_run_anynode.sh
@@ -217,21 +261,24 @@ jobs:
             kylix/max/projects/llama/BUILD
           sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a \
             model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh
+
       - name: Run Container for ${{ matrix.jax-version }} and ${{ matrix.model-name }}
         run: |
+          set -ex
           docker run -d \
             --name model-run-jax${{ matrix.jax-version }}-${{ matrix.model-name }} \
             --network=host \
             --device=/dev/kfd \
-            --device=/dev/dri \
+            ${{ steps.gpu-config.outputs.device_flag }} \
             --ipc=host \
-            --shm-size 32G \
+            --shm-size ${{ env.CONTAINER_SHM_SIZE }} \
             --group-add video \
             --cap-add=SYS_PTRACE \
             --security-opt seccomp=unconfined \
             -v "${{ github.workspace }}:/workspace" \
             ${{ matrix.docker-image }} \
             tail -f /dev/null
+
       - name: Run model
         run: |
           docker exec model-run-jax${{ matrix.jax-version }}-${{ matrix.model-name }} bash -lc '
@@ -243,16 +290,19 @@ jobs:
             export TRAIN_SETTING="${{ matrix.model-name }}"
             cd /workspace && bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
             tail -n 25 logs.log > training_summary.txt'
+
       - name: Upload training summary
         uses: actions/upload-artifact@v4
         with:
           name: training-summary-${{ matrix.jax-version }}-${{ matrix.model-name }}
           path: training_summary.txt
-      - name: Cleanup container
+
+      - name: Cleanup
         if: always()
         run: |
           docker stop model-run-jax${{ matrix.jax-version }}-${{ matrix.model-name }} || true
           docker rm model-run-jax${{ matrix.jax-version }}-${{ matrix.model-name }} || true
+
   upload-result-db:
     needs: ['run-llama-perf-model', 'build-te-wheels']
     runs-on: mysqldb
@@ -262,14 +312,17 @@ jobs:
       matrix:
         jax-version: ["0.6.0", "0.7.1"]
         model-name: ["train_moe", "train_dense_8b"]
+
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
+
       - name: Download training summary
         uses: actions/download-artifact@v4
         with:
           name: training-summary-${{ matrix.jax-version }}-${{ matrix.model-name }}
           path: .
+
       - name: Upload result to DB
         env:
           ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
@@ -289,5 +342,4 @@ jobs:
           source venv/bin/activate
           pip install --upgrade pip
           pip install mysql-connector-python
-
           python3 ci/upload_to_llama_db.py
