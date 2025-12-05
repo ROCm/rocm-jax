@@ -63,14 +63,50 @@ def _get_commit_info_from_wheel():
     }
 
 
+def build_manylinux_dockers(
+    rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None, tag=None
+):
+    if tag:
+        computed_tag = tag
+    else:
+        computed_tag = "ghcr.io/rocm/jax-manylinux_2_28-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
+            rocm_type="therock" if therock_path else "rocm",
+            rocm_version=rocm_version,
+            rocm_build_job="-%s" % rocm_build_job if rocm_build_job else "",
+            rocm_build_num="-%s" % rocm_build_num if rocm_build_num else "",
+        )
+
+    if therock_path:
+        cmd = [
+            "docker",
+            "build",
+            "-t=%s" % computed_tag,
+            "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-therock",
+            "--build-arg=ROCM_VERSION=%s" % rocm_version,
+            "--build-context=%s" % therock_path,
+            ".",
+        ]
+    else:
+        cmd = [
+            "docker",
+            "build",
+            "-t=%s" % computed_tag,
+            "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-rocm",
+            "--build-arg=ROCM_VERSION=%s" % rocm_version,
+            "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
+            "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
+            ".",
+        ]
+    subprocess.run(cmd, check=True)
+    return computed_tag
+
+
 def dist_wheels(
     rocm_version,
     python_versions,
     xla_source_dir,
-    rocm_build_job="",
-    rocm_build_num="",
-    therock_path=None,
     compiler="gcc",
+    builder_image=None,
 ):
     jax_plugin_dir = "jax_rocm_plugin"
 
@@ -79,10 +115,8 @@ def dist_wheels(
         "build/rocm/ci_build",
         "--rocm-version=%s" % rocm_version,
         "--python-versions=%s" % ",".join(python_versions),
-        "--rocm-build-job=%s" % rocm_build_job,
-        "--rocm-build-num=%s" % rocm_build_num,
-        "--therock-path=%s" % therock_path,
         "--compiler=%s" % compiler,
+        "--builder-image=%s" % builder_image,
     ]
 
     if xla_source_dir:
@@ -194,7 +228,10 @@ def test(image_name, test_cmd=None):
 
     print("ROCm JAX Build Information")
     if "com.amdgpu.rocm_jax_commit" in labels:
-        print(f"rocm/rocm-jax commit hash: {labels['com.amdgpu.rocm_jax_commit']}", flush=True)
+        print(
+            f"rocm/rocm-jax commit hash: {labels['com.amdgpu.rocm_jax_commit']}",
+            flush=True,
+        )
     if "com.amdgpu.jax_commit" in labels:
         print(f"rocm/jax commit hash: {labels['com.amdgpu.jax_commit']}", flush=True)
     if "com.amdgpu.xla_commit" in labels:
@@ -300,7 +337,18 @@ def parse_args():
 
     subp = p.add_subparsers(dest="action", required=True)
 
+    ml_parser = subp.add_parser("build_manylinux_dockers")
+    ml_parser.add_argument(
+        "--tag", "-t", type=str, help="Override the default image name and tag"
+    )
+
     dwp = subp.add_parser("dist_wheels")
+    dwp.add_argument(
+        "--builder-image",
+        "-b",
+        type=str,
+        help="Name of the docker image to build with",
+    )
 
     dtestp = subp.add_parser("test_docker")
     dtestp.add_argument("--docker-build-only", action="store_true")
@@ -345,16 +393,32 @@ def parse_args():
 def main():
     args = parse_args()
 
+    if args.action == "build_manylinux_dockers":
+        build_manylinux_dockers(
+            rocm_version=args.rocm_version,
+            rocm_build_job=args.rocm_build_job,
+            rocm_build_num=args.rocm_build_num,
+            therock_path=args.therock_path,
+            tag=args.tag,
+        )
+
     if args.action == "dist_wheels":
+        # If we weren't passed a builder image in the args, create an image
+        builder_image = args.builder_image
+        if not builder_image:
+            builder_image = build_manylinux_dockers(
+                rocm_version=args.rocm_version,
+                rocm_build_job=args.rocm_build_job,
+                rocm_build_num=args.rocm_build_num,
+                therock_path=args.therock_path,
+            )
 
         dist_wheels(
             rocm_version=args.rocm_version,
             python_versions=args.python_versions,
             xla_source_dir=args.xla_source_dir,
-            rocm_build_job=args.rocm_build_job,
-            rocm_build_num=args.rocm_build_num,
-            therock_path=args.therock_path,
             compiler=args.compiler,
+            builder_image=builder_image,
         )
 
     if args.action == "build_dockers":
