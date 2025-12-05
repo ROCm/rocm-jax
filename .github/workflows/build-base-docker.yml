@@ -5,6 +5,35 @@ on:
     # Run every Sunday at midnight UTC
     - cron: '0 0 * * 0'
   workflow_dispatch:
+    inputs:
+      rocm-version:
+        required: true
+        type: string
+      rocm-build-job:
+        required: false
+        type: string
+      rocm-build-num:
+        required: false
+        type: string
+      runner-label:
+        required: false
+        type: string
+        default: "mi-250"
+  workflow_call:
+    inputs:
+      rocm-version:
+        required: true
+        type: string
+      rocm-build-job:
+        required: false
+        type: string
+      rocm-build-num:
+        required: false
+        type: string
+      runner-label:
+        required: false
+        type: string
+        default: "mi-250"
   pull_request:
     paths:
       - 'build/ci_build'
@@ -97,4 +126,49 @@ jobs:
             echo "Image name (latest): ${ghcr_image_latest}"
             docker tag "${image_tag}" "${ghcr_image_latest}"
             docker push "${ghcr_image_latest}"
+            docker push "${ghcr_image_latest}"
           fi
+
+
+
+  build-manylinux-builder-images:
+    runs-on: ${{ inputs.runner-label }}
+    steps:
+      - name: Clean up old runs
+        run: |
+          ls -lah
+          # Make sure that we own all of the files so that we have permissions to delete them
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+          # Remove any old work directories from this machine
+          rm -rf * || true
+          ls -lah
+          # Clean up any docker stuff that's more than a week old
+          docker system prune -a --filter "until=168h"
+          # Stop any containers running for more than 12 hours. No CI job should take this long.
+          docker ps --format="{{.RunningFor}} {{.Names}}" | grep hours \
+            | awk -F: '{if($1>12)print$1}' | awk ' {print $4} ' | xargs docker stop || true
+      - uses: actions/checkout@v4
+      - name: Build docker images
+        run: |
+          python3 build/ci_build \
+            --rocm-version="${{ inputs.rocm-version }}" \
+            --rocm-build-job="${{ inputs.rocm-build-job }}" \
+            --rocm-build-num="${{ inputs.rocm-build-num }}" \
+            build_manylinux_dockers
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push docker images
+        env:
+          ROCM_VERSION: ${{ inputs.rocm-version }}
+          ROCM_BUILD_JOB: ${{ inputs.rocm-build-job && format('-{0}', inputs.rocm-build-job) || '' }}
+          ROCM_BUILD_NUM: ${{ inputs.rocm-build-num && format('-{0}', inputs.rocm-build-num) || '' }}
+        run: |
+          manylinux_img="ghcr.io/rocm/jax-manylinux_2_28-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
+          echo "Image Name: ${manylinux_img}"
+          docker push "${manylinux_img}"
+
