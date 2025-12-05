@@ -63,6 +63,16 @@ def _get_commit_info_from_wheel():
     }
 
 
+def build_manylinux_dockers():
+    cmd = [
+        "docker",
+        "build",
+        "./docker/manylinux/Dockerfile.jax-manylinux_2_28-rocm7.2.0",
+        ".",
+    ]
+    subprocess.check_call(cmd)
+
+
 def dist_wheels(
     rocm_version,
     python_versions,
@@ -300,6 +310,8 @@ def parse_args():
 
     subp = p.add_subparsers(dest="action", required=True)
 
+    ml_parser = subp.add_parser("build_manylinux_dockers")
+
     dwp = subp.add_parser("dist_wheels")
 
     dtestp = subp.add_parser("test_docker")
@@ -344,6 +356,9 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    if args.action == "build_manylinux_dockers":
+        build_manylinux_dockers()
 
     if args.action == "dist_wheels":
 
