@@ -75,6 +75,10 @@ jobs:
             echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
             echo "label=MI355" >> $GITHUB_OUTPUT
           fi
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.SECRET_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Run Container for ${{ matrix.jax-version }}
         run: |
           docker run -d \
@@ -217,6 +221,10 @@ jobs:
             kylix/max/projects/llama/BUILD
           sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a \
             model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.SECRET_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Run Container for ${{ matrix.jax-version }} and ${{ matrix.model-name }}
         run: |
           docker run -d \
