@@ -22,8 +22,8 @@ jobs:
         rocm-version: ["7.1.0"]
     uses: ./.github/workflows/build-wheels.yml
     with:
-      # TODO: Add back Python 3.13 when we're ready to move to a more recent
-      #       version of XLA. 3.13 fails with a complaint about the pipes module.
+      # TODO: Add back Python 3.13 when we're ready to move to a more recent version of XLA. 3.13
+      #       fails with a complaint abou the pipes module.
       python-versions: "3.11,3.12"
       rocm-version: ${{ matrix.rocm-version }}
 
@@ -56,8 +56,9 @@ jobs:
       - name: Checkout JAX repo
         uses: actions/checkout@v4
         with:
-          # TODO: Load the ref from a file that sets the min and max JAX version.
-          # TODO: Change the repo/ref once we determine how tests will be managed.
+          # TODO: Load the ref from a file that sets the min and max JAX version
+          # TODO: Change the repo and ref once we figure out how exactly we're going to
+          #       manage tests
           clean: false
           repository: rocm/jax
           ref: rocm-jaxlib-v0.8.0
