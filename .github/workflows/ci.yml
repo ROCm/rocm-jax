@@ -67,29 +67,28 @@ jobs:
         run: >
           echo "${{ secrets.GITHUB_TOKEN }}" |
           docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Configure GPU devices for K8s
+      
+      - name: ROCm set GPU_FLAG
         id: gpu-config
+        shell: bash
         run: |
+          # Determine GPU device flags: use K8s-provided list if available; else fallback to /dev/dri.
           if [ -f "/etc/podinfo/gha-render-devices" ]; then
-            DEVICE_FLAG=$(cat /etc/podinfo/gha-render-devices)
-          elif [ -d "/dev/dri" ]; then
-            DEVICE_FLAG=""
-            for dev in /dev/dri/renderD*; do
-              [ -e "$dev" ] && DEVICE_FLAG="$DEVICE_FLAG --device $dev"
-            done
+            DEVICE_FLAG="$(cat /etc/podinfo/gha-render-devices)"
           else
             DEVICE_FLAG="--device /dev/dri"
           fi
-          echo "device_flag=$DEVICE_FLAG" >> $GITHUB_OUTPUT
+          echo "device_flag=$DEVICE_FLAG" >> "$GITHUB_OUTPUT"
+
       - name: Check ROCm GPUs with rocm-smi
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
-        run: >
-          docker run --rm --device=/dev/kfd
-          ${{ steps.gpu-config.outputs.device_flag }} --group-add video
-          "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
-          rocm-smi -a || true
+        run: |
+          docker run --rm \
+            ${{ steps.gpu-config.outputs.device_flag }} \
+            "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
+             rocm-smi -a || true
+
       - name: list files in the wheelhouse
         run: |
           ls -alth ./wheelhouse || true
