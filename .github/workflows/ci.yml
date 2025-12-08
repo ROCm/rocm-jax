@@ -44,10 +44,9 @@ jobs:
         rocm-version: ["7.1.0"]
     steps:
       - name: Change owners for cleanup
-        run: >
-          docker run --rm -v "./:/rocm-jax" ubuntu /bin/bash -c
-          "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
-
+        run: |
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
       - name: Checkout plugin repo
         uses: actions/checkout@v4
         with:
@@ -83,7 +82,6 @@ jobs:
             DEVICE_FLAG="--device /dev/dri"
           fi
           echo "device_flag=$DEVICE_FLAG" >> $GITHUB_OUTPUT
-
       - name: Check ROCm GPUs with rocm-smi
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
@@ -92,18 +90,17 @@ jobs:
           ${{ steps.gpu-config.outputs.device_flag }} --group-add video
           "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
           rocm-smi -a || true
-
       - name: list files in the wheelhouse
         run: |
           ls -alth ./wheelhouse || true
-
       - name: Run tests
         env:
           GPU_COUNT: "8"
           GFX: "gfx90a"
           JAX_SKIP_SLOW_TESTS: "1"
           ROCM_VERSION: ${{ matrix.rocm-version }}
-        run: >
-          python3 build/ci_build test
-          "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
-          --test-cmd "pytest jax/tests/core_test.py"
+        # TODO: Add the tests/linalg_test.py test back once we fix the XLAClient thing.
+        run: |
+          python3 build/ci_build test \
+            "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
+            --test-cmd "pytest jax/tests/core_test.py"
