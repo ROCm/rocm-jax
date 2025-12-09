@@ -78,7 +78,8 @@ jobs:
       - name: Configure GPU devices for K8s
         id: gpu-config
         run: |
-          # Determine GPU device flags: use K8s-provided list if available; else fallback to /dev/dri.
+          # Determine GPU device flags
+          # use K8s-provided list if available; else fallback to /dev/dri.
           if [ -f "/etc/podinfo/gha-render-devices" ]; then
             DEVICE_FLAG="$(cat /etc/podinfo/gha-render-devices)"
           else

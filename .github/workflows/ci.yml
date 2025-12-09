@@ -67,7 +67,8 @@ jobs:
         id: gpu-config
         shell: bash
         run: |
-          # Determine GPU device flags: use K8s-provided list if available; else fallback to /dev/dri.
+          # Determine GPU device flags
+          # use K8s-provided list if available; else fallback to /dev/dri.
           if [ -f "/etc/podinfo/gha-render-devices" ]; then
             DEVICE_FLAG="$(cat /etc/podinfo/gha-render-devices)"
           else
@@ -78,9 +79,11 @@ jobs:
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
         run: |
-          docker run --rm --device=/dev/kfd ${{ steps.gpu-config.outputs.device_flag }}  --group-add video \
-            "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            rocm-smi -a || true
+          IMAGE="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          docker run --rm --device=/dev/kfd ${{ steps.gpu-config.outputs.device_flag }} \
+          --group-add video \
+          "$IMAGE" \
+          rocm-smi -a || true
       - name: list files in the wheelhouse
         run: |
           ls -alth ./wheelhouse || true
