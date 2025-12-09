@@ -78,7 +78,7 @@ jobs:
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
         run: |
-          docker run --rm --device=/dev/kfd --device=/dev/dri --group-add video \
+          docker run --rm --device=/dev/kfd ${{ steps.gpu-config.outputs.device_flag }}  --group-add video \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
             rocm-smi -a || true
       - name: list files in the wheelhouse
