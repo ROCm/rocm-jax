@@ -51,15 +51,15 @@ def _get_commit_info_from_wheel():
         )
         commit_content = whl.read(commit_info_file).decode("utf-8")
 
-    # Matches variable assignments with their hexadecimal commit value
-    # xla_commit = "abc123def"
-    pattern = re.compile(r'(\w+)\s*=\s*[\'"]([0-9a-fA-F]+)[\'"]')
+    # Parse the commits dictionary from commit_info.py
+    # Matches: "repo/name": "abc123def"
+    pattern = re.compile(r'[\'"]([^"\']+)[\'"]\s*:\s*[\'"]([0-9a-fA-F]+)[\'"]')
     commits = dict(pattern.findall(commit_content))
 
     return {
-        "xla_commit": commits["xla_commit"],
-        "jax_commit": commits["jax_commit"],
-        "rocm_jax_commit": commits["rocm_jax_commit"],
+        "xla_commit": commits["ROCm/xla"],
+        "jax_commit": commits["jax"],
+        "rocm_jax_commit": commits["ROCm/rocm-jax"],
     }
 
 
