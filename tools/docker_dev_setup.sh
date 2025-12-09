@@ -31,8 +31,6 @@ dpkg-reconfigure --frontend noninteractive tzdata
 
 # Default values
 rocm_version="7.2.0"
-rocm_build_number="16864"
-rocm_job_name="compute-rocm-dkms-no-npi-hipclang"
 
 # Parse named command-line arguments
 while [[ "$#" -gt 0 ]]; do
@@ -152,18 +150,8 @@ elif [[ -d "/opt/rocm" ]]; then
 else
   info "ROCm is not installed. Proceeding with installation..."
 
-  # if major version is >= 7, then build number and name must be provided
-  if [ "$major_version" -ge 7 ]; then
-    if [[ -z "$rocm_build_number" || -z "$rocm_job_name" ]]; then
-      info "ERROR: For ROCm version >= 7.x, both --rocm_build_number and --rocm_job_name must be provided."
-      exit 1
-    fi
-  fi
-
-  info "Installing ROCm version: $rocm_version"
-  
-  # run get_rocm.py with appropriate arguments based on major version.
-  if [ "$major_version" -ge 7 ]; then
+  # run get_rocm.py with appropriate arguments based on major version
+  if [[ -n "$rocm_build_number" && -n "$rocm_job_name" ]]; then
     info "Running get_rocm.py with rocm_version $rocm_version, build number $rocm_build_number and build name $rocm_job_name"
     "$PYTHON_BINARY_PATH" build/tools/get_rocm.py --rocm-version "$rocm_version"  --job-name "$rocm_job_name" --build-num "$rocm_build_number"|| die "error while installing rocm"
   else
