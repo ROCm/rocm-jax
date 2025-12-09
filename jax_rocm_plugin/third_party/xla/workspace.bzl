@@ -16,8 +16,8 @@ load("//third_party:repo.bzl", "amd_http_archive")
 #    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
 #    and update XLA_SHA256 with the result.
 
-XLA_COMMIT = "70e0d3f7ce76990fa4bf30a11eb8e5fc2c120a0f"
-XLA_SHA256 = "f723be83eea3cf099bfc1bce4e56b29b782acafd4db75b3fe041fe3e42bc8cbd"
+XLA_COMMIT = "f714d07e276ac6eadcea85cae6630cc0af485fc5"
+XLA_SHA256 = "ec10520f028c4e670c80c1dc2eb737a59c5955f758ebd068d7b9bec1b71aa3f1"
 
 def repo():
     amd_http_archive(
