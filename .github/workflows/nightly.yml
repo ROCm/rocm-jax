@@ -23,8 +23,8 @@ jobs:
           - rocm-version: "7.1.0"
             runner-label: "mi-250"
           - rocm-version: "7.2.0"
-            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16849"
+            rocm-build-job: "compute-rocm-rel-7.2"
+            rocm-build-num: "14"
             runner-label: "internal"
     uses: ./.github/workflows/build-wheels.yml
     with:
@@ -46,8 +46,8 @@ jobs:
           - rocm-version: "7.1.0"
             runner-label: "mi-250"
           - rocm-version: "7.2.0"
-            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16849"
+            rocm-build-job: "compute-rocm-rel-7.2"
+            rocm-build-num: "14"
             runner-label: "internal"
     uses: ./.github/workflows/build-docker.yml
     with:
