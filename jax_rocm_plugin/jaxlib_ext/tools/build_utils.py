@@ -151,10 +151,11 @@ def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
         f"""
       # auto-generated; do not edit
 
-      # Commit information
-      xla_commit = "{xla_commit}"
-      jax_commit = "{jax_commit}"
-      rocm_jax_commit = "{rocm_jax_commit}"
+      commits = {{
+          "ROCm/xla": "{xla_commit}",
+          "ROCm/rocm-jax": "{rocm_jax_commit}",
+          "jax": "{jax_commit}",
+      }}
   """
     )
 
