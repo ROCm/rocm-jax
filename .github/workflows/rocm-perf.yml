@@ -73,22 +73,33 @@ jobs:
             -t $IMAGE:${{ github.sha }} \
             -t $IMAGE:run${{ github.run_id }} \
             .
-
+      - name: ROCm set GPU_FLAG
+        id: gpu-config
+        shell: bash
+        run: |
+          # Determine GPU device flags
+          # use K8s-provided list if available; else fallback to /dev/dri.
+          if [ -f "/etc/podinfo/gha-render-devices" ]; then
+            DEVICE_FLAG="$(cat /etc/podinfo/gha-render-devices)"
+          else
+            DEVICE_FLAG="--device /dev/dri"
+          fi
+          echo "device_flag=$DEVICE_FLAG" >> "$GITHUB_OUTPUT"
       - name: Launch container
         run: |
+          IMAGE=ghcr.io/rocm/maxtext-jax-rocm${ROCM_VERSION//.}:run${{ github.run_id }}
           docker run -d --name maxtext_container \
             --network=host \
             --device=/dev/kfd \
-            --device=/dev/dri \
+            ${{ steps.gpu-config.outputs.device_flag }} \
             --ipc=host \
             --shm-size=64G \
             --group-add=video \
             --cap-add=SYS_PTRACE \
             --security-opt seccomp=unconfined \
             -w /maxtext \
-            ghcr.io/rocm/maxtext-jax-rocm${ROCM_VERSION//.}:run${{ github.run_id }} \
+            $IMAGE  \
             tail -f /dev/null
-
       - name: Run MaxText training and save logs
         run: |
           for config in \
