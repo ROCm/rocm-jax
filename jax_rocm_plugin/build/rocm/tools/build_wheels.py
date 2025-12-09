@@ -136,6 +136,7 @@ def build_jaxlib_wheel(
     python_version,
     output_dir,
     xla_path=None,
+    rbe=False,
     compiler="gcc",
 ):
     """Build jaxlib and ROCm plugin wheels."""
@@ -177,6 +178,9 @@ def build_jaxlib_wheel(
 
     if xla_path:
         cmd.append("--bazel_options=--override_repository=xla=%s" % xla_path)
+
+    if rbe:
+        cmd.append("--rbe")
 
     cpy = to_cpy_ver(python_version)
     py_bin = "/opt/python/%s-%s/bin" % (cpy, cpy)
@@ -301,6 +305,11 @@ def parse_args():
         help="Optional directory where XLA source is located to use instead of JAX builtin XLA",
     )
     p.add_argument(
+        "--rbe",
+        action="store_true",
+        help="Build with Bazel RBE",
+    )
+    p.add_argument(
         "--compiler",
         type=str,
         default="gcc",
@@ -367,6 +376,7 @@ def main():
             py,
             full_output_path,
             args.xla_path,
+            args.rbe,
             args.compiler,
         )
         wheel_paths = find_wheels(full_output_path)

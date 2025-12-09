@@ -21,8 +21,10 @@ multi-GPU tests that require multiple devices.
 """
 
 import os
+import shutil
 import sys
 import json
+import csv
 import argparse
 import threading
 import subprocess
@@ -31,32 +33,19 @@ import html
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from collections import defaultdict
 
 # Add the configuration directory to Python path
 sys.path.insert(0, "jax_rocm_plugin/build/rocm")
-
-# Import multi-GPU tests configuration
-try:
-    from multi_gpu_tests_config import MULTI_GPU_TESTS
-except ImportError as e:
-    print(
-        f"Error: Could not import multi_gpu_tests_config from jax_rocm_plugin/build/rocm/: {e}"
-    )
-    print(
-        "Please ensure multi_gpu_tests_config.py exists in jax_rocm_plugin/build/rocm/ directory"
-    )
-    sys.exit(1)
 
 GPU_LOCK = threading.Lock()
 LAST_CODE = 0
 BASE_DIR = "./logs"
 
 
-def extract_filename(path):
-    """Extract filename without extension from a path."""
-    base_name = os.path.basename(path)
-    file_name, _ = os.path.splitext(base_name)
-    return file_name
+def extract_test_name(path: str) -> str:
+    """Return the base filename (without .py and without test suffixes)."""
+    return os.path.splitext(os.path.basename(path.split("::")[0]))[0]
 
 
 def combine_json_reports():
@@ -70,6 +59,61 @@ def combine_json_reports():
     combined_json_file = f"{BASE_DIR}/final_compiled_report.json"
     with open(combined_json_file, "w", encoding="utf-8") as outfile:
         json.dump(combined_data, outfile, indent=4)
+
+
+def convert_json_to_csv(json_file, csv_file):
+    """
+    Convert a compiled JSON test report to CSV format.
+
+    Args:
+        json_file: Path to the input JSON file
+        csv_file: Path to the output CSV file
+
+    Returns:
+        int: Number of test results converted, or -1 on error
+    """
+    try:
+        with open(json_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        test_results = []
+        # data is a list of test report objects
+        for report in data:
+            if "tests" in report:
+                for item in report["tests"]:
+                    test_results.append(
+                        {
+                            "name": item.get("nodeid", ""),
+                            "outcome": item.get("outcome", ""),
+                            "duration": (
+                                item.get("call", {}).get("duration", 0)
+                                if "call" in item
+                                else 0
+                            ),
+                            "keywords": ";".join(item.get("keywords", [])),
+                        }
+                    )
+
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f, fieldnames=["name", "outcome", "duration", "keywords"]
+            )
+            writer.writeheader()
+            writer.writerows(test_results)
+
+        print(f"CSV report generated: {csv_file}")
+        print(f"Total test results in CSV: {len(test_results)}")
+        return len(test_results)
+
+    except FileNotFoundError:
+        print(f"Error: {json_file} not found")
+        return -1
+    except json.JSONDecodeError as e:
+        print(f"Error parsing JSON: {e}")
+        return -1
+    except Exception as e:  # pylint: disable=broad-except
+        print(f"Error converting JSON to CSV: {e}")
+        return -1
 
 
 def generate_final_report(shell=False, env_vars=None):
@@ -95,6 +139,11 @@ def generate_final_report(shell=False, env_vars=None):
 
     # Generate json reports.
     combine_json_reports()
+
+    # Generate CSV report from JSON
+    combined_json_file = f"{BASE_DIR}/final_compiled_report.json"
+    combined_csv_file = f"{BASE_DIR}/final_compiled_report.csv"
+    convert_json_to_csv(combined_json_file, combined_csv_file)
 
 
 def run_shell_command(cmd, shell=False, env_vars=None):
@@ -125,60 +174,56 @@ def parse_test_log(log_file):
     return test_files
 
 
-def collect_testmodules(ignore_skipfile):
+def collect_testmodules(ignore_skipfile=True):
     """Collect all test modules, excluding multi-GPU tests."""
-    log_file = f"{BASE_DIR}/collect_module_log.jsonl"
+
+    # copy to jax as it's node ids for pytest.
+    shutil.copy("ci/pytest_drop_test_list.ini", "jax/")
+
+    # jax/pytest_drop_test_list has ingore list for multi-gpu
+    # append skip list as -deselect
+    if not ignore_skipfile:
+        with open(
+            "./jax/pytest_drop_test_list.ini", "a", encoding="utf-8"
+        ) as outfile, open("ci/pytest_skips.ini", encoding="utf-8") as infile:
+            outfile.write(infile.read())
+
     pytest_cmd = [
         "python3",
         "-m",
         "pytest",
         "--collect-only",
-        "-qq",
-        "./jax/tests",
-        f"--report-log={log_file}",
+        "-q",
+        "--import-mode=prepend",
+        "-c",
+        "./jax/pytest_drop_test_list.ini",
+        "jax/tests",
     ]
-    if not ignore_skipfile:
-        pytest_cmd.extend(
-            [
-                "-c",
-                "ci/pytest_skips.ini",
-            ]
-        )
-    return_code, stderr, stdout = run_shell_command(pytest_cmd)
-    if return_code != 0:
-        print("Test module discovery failed.")
-        print("STDOUT:", stdout)
-        print("STDERR:", stderr)
-        sys.exit(return_code)
-    print("---------- collected test modules ----------")
-    test_files = parse_test_log(log_file)
 
-    # Filter out multi-GPU tests
-    filtered_test_files = set()
-    excluded_count = 0
-    for test_file in test_files:
-        # Convert absolute path to relative path for comparison
-        relative_path = os.path.relpath(test_file)
+    print(f"collect_testmodules: cmd={pytest_cmd}")
 
-        # Normalize the path to match config format
-        if relative_path.startswith("jax/"):
-            normalized_path = relative_path[4:]  # Remove "jax/" prefix
-        else:
-            normalized_path = relative_path
+    # run pytest collection and save in file collected_tests.txt
+    with open("collected_tests.txt", "w", encoding="utf-8") as f:
+        try:
+            subprocess.run(pytest_cmd, stdout=f, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"command failed: {e}")
 
-        if normalized_path not in MULTI_GPU_TESTS:
-            filtered_test_files.add(test_file)
-        else:
-            excluded_count += 1
-            print(f"Excluding multi-GPU test: {normalized_path}")
+    # create key value store for test_name, test-ids
+    tests_count = 0
+    tests_dict = defaultdict(list)
+    with open("collected_tests.txt", "r", encoding="utf-8") as f:
+        for test_id in f:
+            if test_id.startswith(("tests/", "./tests/")):
+                test_name = extract_test_name(test_id.strip())
+                tests_dict[test_name].append(f"jax/{test_id.strip()}")
+                tests_count += 1
 
-    print(f"Found {len(filtered_test_files)} test modules.")
-    print(f"Excluded {excluded_count} multi-GPU test modules.")
-    print("--------------------------------------------")
-    return filtered_test_files
+    print(f"test-files={len(tests_dict)}, total number of tests={tests_count}")
+    return tests_dict
 
 
-def run_test(testmodule, gpu_tokens, continue_on_fail):
+def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
     """Run a single test module on an available GPU."""
     global LAST_CODE  # pylint: disable=global-statement
     with GPU_LOCK:
@@ -190,10 +235,10 @@ def run_test(testmodule, gpu_tokens, continue_on_fail):
         "HIP_VISIBLE_DEVICES": str(target_gpu),
         "XLA_PYTHON_CLIENT_ALLOCATOR": "default",
     }
-    testfile = extract_filename(testmodule)
-    json_log_file = f"{BASE_DIR}/{testfile}_log.json"
-    html_log_file = f"{BASE_DIR}/{testfile}_log.html"
-    last_running_file = f"{BASE_DIR}/{testfile}_last_running.json"
+
+    json_log_file = f"{BASE_DIR}/{log_name}_log.json"
+    html_log_file = f"{BASE_DIR}/{log_name}_log.html"
+    last_running_file = f"{BASE_DIR}/{log_name}_last_running.json"
 
     if continue_on_fail:
         cmd = [
@@ -206,7 +251,7 @@ def run_test(testmodule, gpu_tokens, continue_on_fail):
             "--reruns",
             "3",
             "-v",
-            testmodule,
+            *tests_list,
         ]
     else:
         cmd = [
@@ -220,26 +265,27 @@ def run_test(testmodule, gpu_tokens, continue_on_fail):
             "3",
             "-x",
             "-v",
-            testmodule,
+            *tests_list,
         ]
 
     return_code, stderr, stdout = run_shell_command(cmd, env_vars=env_vars)
 
     # Check for aborted test log and append abort info if present
-    if handle_abort(json_log_file, html_log_file, last_running_file, testfile):
+    if handle_abort(json_log_file, html_log_file, last_running_file, log_name):
         # Abort was detected and handled
         pass
 
     with GPU_LOCK:
         gpu_tokens.append(target_gpu)
         if LAST_CODE == 0:
-            print(f"Running tests in module {testmodule} on GPU {target_gpu}:")
+            print(f"Running tests in module {tests_list} on GPU {target_gpu}:")
             print(stdout)
             print(stderr)
             if not continue_on_fail:
                 LAST_CODE = return_code
 
 
+# pylint: disable=too-many-branches
 def append_abort_to_json(json_file, testfile, abort_info):
     # pylint: disable=too-many-locals
     """Append abort info to JSON report in pytest format."""
@@ -544,15 +590,16 @@ def _update_html_json_data(
             html_content,
         )
 
-    except (  # pylint: disable=broad-exception-caught
+    except (  # pylint: disable=broad-except
         json.JSONDecodeError,
         Exception,
-    ) as ex:  # pylint: disable=broad-exception-caught
+    ) as ex:  # pylint: disable=broad-except
         print(f"Warning: Could not update JSON data in HTML file: {ex}")
 
     return html_content
 
 
+# pylint: disable=too-many-branches
 def append_abort_to_html(html_file, testfile, abort_info):
     """Generate or append abort info to pytest-html format HTML report."""
     try:
@@ -720,7 +767,7 @@ def _create_new_html_file(
 
     except (OSError, IOError) as io_err:
         print(f"Failed to write new HTML report for {testfile}: {io_err}")
-    except Exception as ex:  # pylint: disable=broad-exception-caught
+    except Exception as ex:  # pylint: disable=broad-except
         print(f"Unexpected error creating new HTML report for {testfile}: {ex}")
         traceback.print_exc()
 
@@ -870,20 +917,20 @@ def handle_abort(json_file, html_file, last_running_file, testfile):
         # Remove the last running file after successful processing
         # os.remove(last_running_file)
         return True
-    except Exception as ex:  # pylint: disable=broad-exception-caught
+    except Exception as ex:  # pylint: disable=broad-except
         print(f"Error logging abort for {testfile}: {ex}")
         # Don't remove the file if there was an error processing it
         return False
 
 
-def run_parallel(all_testmodules, p, c):
+def run_parallel(tests_dict, p, c):
     """Run tests in parallel across multiple GPUs."""
     print(f"Running tests with parallelism = {p}")
     available_gpu_tokens = list(range(p))
     executor = ThreadPoolExecutor(max_workers=p)
     # walking through test modules.
-    for testmodule in all_testmodules:
-        executor.submit(run_test, testmodule, available_gpu_tokens, c)
+    for log_name, tests_list in tests_dict.items():
+        executor.submit(run_test, log_name, tests_list, available_gpu_tokens, c)
     # waiting for all modules to finish.
     executor.shutdown(wait=True)
 
@@ -899,8 +946,8 @@ def find_num_gpus():
 
 def main(args):
     """Main function to run all test modules."""
-    all_testmodules = collect_testmodules(args.ignore_skipfile)
-    run_parallel(all_testmodules, args.parallel, args.continue_on_fail)
+    tests_dict = collect_testmodules(args.ignore_skipfile)
+    run_parallel(tests_dict, args.parallel, args.continue_on_fail)
     generate_final_report()
     sys.exit(LAST_CODE)
 

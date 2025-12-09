@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - master
-      - 'release/*'
+      - 'rocm-jaxlib-v*'
   pull_request:
     branches:
       - master
-      - 'release/*'
+      - 'rocm-jaxlib-v*'
   workflow_dispatch:
 
 concurrency:
@@ -19,18 +19,21 @@ jobs:
   call-build-wheels:
     strategy:
       matrix:
-        rocm-version: ["7.0.2"]
+        rocm-version: ["7.1.0"]
     uses: ./.github/workflows/build-wheels.yml
     with:
       # TODO: Add back Python 3.13 when we're ready to move to a more recent version of XLA. 3.13
       #       fails with a complaint abou the pipes module.
       python-versions: "3.11,3.12"
       rocm-version: ${{ matrix.rocm-version }}
+    secrets:
+      rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
+      rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
   call-build-docker:
     needs: call-build-wheels
     strategy:
       matrix:
-        rocm-version: ["7.0.2"]
+        rocm-version: ["7.1.0"]
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
@@ -39,7 +42,7 @@ jobs:
     runs-on: mi-250
     strategy:
       matrix:
-        rocm-version: ["7.0.2"]
+        rocm-version: ["7.1.0"]
     steps:
       - name: Change owners for cleanup
         run: |
@@ -57,8 +60,20 @@ jobs:
           #       manage tests
           clean: false
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.7.1
+          ref: rocm-jaxlib-v0.8.0
           path: jax
+      - name: Apply patches to rocm/jax test repo
+        run: |
+          pushd jax
+          git apply ../ci/patches/*
+          popd
+      - name: Get RBE cluster keys
+        env:
+          RBE_CI_CERT: ${{ secrets.RBE_CI_CERT }}
+          RBE_CI_KEY: ${{ secrets.RBE_CI_KEY }}
+        run: |
+          echo "$RBE_CI_CERT" >> ./jax/ci-cert.crt
+          echo "$RBE_CI_KEY" >> ./jax/ci-cert.key
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
@@ -70,6 +85,14 @@ jobs:
           docker run --rm --device=/dev/kfd --device=/dev/dri --group-add video \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
             rocm-smi -a || true
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin_wheels_r${{ matrix.rocm-version }}
+          path: ./wheelhouse
+      - name: List files in the wheelhouse
+        run: |
+          ls -alth ./wheelhouse || true
       - name: Run tests
         env:
           GPU_COUNT: "8"
@@ -80,5 +103,5 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest -c ci/pytest_skips.ini jax/tests/core_test.py"
+            --test-cmd "bash ci/jax_rbe/pr_setup.sh && ci/jax_rbe/pr_test.sh 0.8.0 3.12"
 

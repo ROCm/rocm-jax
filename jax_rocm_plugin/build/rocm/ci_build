@@ -40,6 +40,7 @@ def dist_wheels(
     rocm_build_job,
     rocm_build_num,
     therock_path,
+    rbe,
     compiler,
 ):
     if xla_path:
@@ -101,6 +102,9 @@ def dist_wheels(
     if xla_path:
         bw_cmd.extend(["--xla-path", container_xla_path])
 
+    if rbe:
+        bw_cmd.append("--rbe")
+
     bw_cmd.append("/jax")
 
     cmd = ["docker", "run"]
@@ -131,6 +135,8 @@ def dist_wheels(
             "GIT_DIR=/repo/.git",
             "-e",
             "GIT_WORK_TREE=/repo",
+            "-e",
+            "ROCM_VERSION_EXTRA=" + rocm_version,
             image,
             "bash",
             "-c",
@@ -198,7 +204,6 @@ def parse_args():
 
     p.add_argument(
         "--rocm-version",
-        default="7.1.0",
         help="ROCm version used for building wheels, testing, and installing into Docker image",
     )
 
@@ -223,6 +228,12 @@ def parse_args():
     p.add_argument(
         "--xla-source-dir",
         help="Path to XLA source to use during jaxlib build, instead of builtin XLA",
+    )
+
+    p.add_argument(
+        "--rbe",
+        action="store_true",
+        help="Enable Bazel RBE builds for JAX",
     )
 
     p.add_argument(
@@ -252,6 +263,7 @@ def main():
             args.rocm_build_job,
             args.rocm_build_num,
             args.therock_path,
+            args.rbe,
             args.compiler,
         )
 

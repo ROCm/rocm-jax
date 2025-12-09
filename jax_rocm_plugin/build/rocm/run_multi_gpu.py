@@ -31,7 +31,7 @@ sys.path.insert(0, "jax_rocm_plugin/build/rocm")
 
 try:
     from multi_gpu_tests_config import MULTI_GPU_TESTS
-    from run_single_gpu import handle_abort, generate_final_report
+    from run_single_gpu import handle_abort, generate_final_report, convert_json_to_csv
 except ImportError as e:
     print(f"Error importing required modules: {e}")
     sys.exit(1)
@@ -106,8 +106,15 @@ def check_system_resources():
         return True  # Continue if check fails
 
 
+# pylint: disable=unused-argument
+def get_deselected_tests(test_name):
+    """filter out listed test for a given test_name."""
+    return []
+
+
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
+# pylint: disable=too-many-branches
 def run_multi_gpu_test(
     test_file, gpu_count, continue_on_fail, max_gpus=None, ignore_skipfile=False
 ):
@@ -174,12 +181,9 @@ def run_multi_gpu_test(
             f"./jax/{test_file}",
         ]
     if not ignore_skipfile:
-        cmd.extend(
-            [
-                "-c",
-                "ci/pytest_skips.ini",
-            ]
-        )
+        de_list = get_deselected_tests(test_name)
+        if len(de_list) > 0:
+            cmd.extend(de_list)
 
     print(f"Running: {' '.join(cmd)}")
 
@@ -319,7 +323,13 @@ def main():
     # Generate final report (reuse from run_single_gpu.py)
     try:
         generate_final_report()
-        print("Final HTML report generated")
+        print("Final HTML and JSON reports generated")
+
+        # Generate CSV report for multi-GPU tests
+        combined_json_file = f"{LOG_DIR}/final_compiled_report.json"
+        combined_csv_file = f"{LOG_DIR}/final_compiled_report.csv"
+        convert_json_to_csv(combined_json_file, combined_csv_file)
+        print("Final CSV report generated")
     except (ImportError, OSError, ValueError) as excp:
         print(f"Warning: Could not generate final report: {excp}")
 

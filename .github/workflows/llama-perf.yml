@@ -160,8 +160,16 @@ jobs:
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
           else
             gh run download \
-              $(gh run list -R ROCm/rocm-jax -w nightly.yml -L 1 \
-              --json databaseId -q '.[0].databaseId') \
+              $(gh run list \
+                -R ROCm/rocm-jax \
+                -w nightly.yml \
+                -L 200 \
+                --json databaseId,event,createdAt \
+                -q '
+                  map(select(
+                    .event == "schedule"))
+                  | max_by(.createdAt)
+                  | .databaseId') \
               -R ROCm/rocm-jax \
               -n plugin_wheels_r7.0.2 \
               -D wheelhouse
