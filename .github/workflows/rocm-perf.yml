@@ -73,22 +73,17 @@ jobs:
             -t $IMAGE:${{ github.sha }} \
             -t $IMAGE:run${{ github.run_id }} \
             .
-
-      - name: Configure GPU devices for K8s
+      - name: ROCm set GPU_FLAG
         id: gpu-config
+        shell: bash
         run: |
+          # Determine GPU device flags: use K8s-provided list if available; else fallback to /dev/dri.
           if [ -f "/etc/podinfo/gha-render-devices" ]; then
-            DEVICE_FLAG=$(cat /etc/podinfo/gha-render-devices)
-          elif [ -d "/dev/dri" ]; then
-            DEVICE_FLAG=""
-            for dev in /dev/dri/renderD*; do
-              [ -e "$dev" ] && DEVICE_FLAG="$DEVICE_FLAG --device $dev"
-            done
+            DEVICE_FLAG="$(cat /etc/podinfo/gha-render-devices)"
           else
             DEVICE_FLAG="--device /dev/dri"
           fi
-          echo "device_flag=$DEVICE_FLAG" >> $GITHUB_OUTPUT
-
+          echo "device_flag=$DEVICE_FLAG" >> "$GITHUB_OUTPUT"
       - name: Launch container
         run: |
           docker run -d --name maxtext_container \

@@ -78,17 +78,13 @@ jobs:
       - name: Configure GPU devices for K8s
         id: gpu-config
         run: |
+          # Determine GPU device flags: use K8s-provided list if available; else fallback to /dev/dri.
           if [ -f "/etc/podinfo/gha-render-devices" ]; then
-            DEVICE_FLAG=$(cat /etc/podinfo/gha-render-devices)
-          elif [ -d "/dev/dri" ]; then
-            DEVICE_FLAG=""
-            for dev in /dev/dri/renderD*; do
-              [ -e "$dev" ] && DEVICE_FLAG="$DEVICE_FLAG --device $dev"
-            done
+            DEVICE_FLAG="$(cat /etc/podinfo/gha-render-devices)"
           else
             DEVICE_FLAG="--device /dev/dri"
           fi
-          echo "device_flag=$DEVICE_FLAG" >> $GITHUB_OUTPUT
+          echo "device_flag=$DEVICE_FLAG" >> "$GITHUB_OUTPUT"
       - name: Run Container for ${{ matrix.jax-version }}
         run: |
           docker run -d \
