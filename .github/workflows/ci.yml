@@ -26,7 +26,6 @@ jobs:
       #       fails with a complaint about the pipes module.
       python-versions: "3.11,3.12"
       rocm-version: ${{ matrix.rocm-version }}
-
   call-build-docker:
     needs: call-build-wheels
     strategy:
@@ -35,7 +34,6 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
-
   run-python-unit-tests:
     needs: call-build-docker
     runs-on: mi-250
@@ -62,9 +60,9 @@ jobs:
           ref: rocm-jaxlib-v0.8.0
           path: jax
       - name: Authenticate to GitHub Container Registry
-        run: >
-          echo "${{ secrets.GITHUB_TOKEN }}" |
-          docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: ROCm set GPU_FLAG
         id: gpu-config
         shell: bash
