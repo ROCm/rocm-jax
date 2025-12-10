@@ -25,6 +25,7 @@ cc_binary(
     linkshared = True,
     deps = [
         ":gpu_version_script.lds",
+        "@jax//jaxlib/mosaic/gpu:custom_call",
         "@xla//xla/pjrt/c:pjrt_c_api_gpu",
         "@xla//xla/pjrt/c:pjrt_c_api_gpu_version_script.lds",
         "@xla//xla/service:gpu_plugin",
