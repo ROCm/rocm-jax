@@ -21,6 +21,7 @@ test:rocm_rbe --extra_execution_platforms="//platform/linux:ubuntu_gpu"
 test:rocm_rbe --platforms="//platform/linux:ubuntu_gpu"
 test:rocm_rbe --remote_timeout=3600
 test:rocm_rbe --jobs=200
+test:rocm_rbe --test_sharding_strategy=disabled
 test:rocm_rbe --strategy=TestRunner=remote,local
 test:rocm_rbe --worker_sandboxing=true
 test:rocm_rbe --repo_env=REMOTE_GPU_TESTING=1
