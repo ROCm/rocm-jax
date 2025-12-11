@@ -12,5 +12,7 @@ RUN git clone --depth=1 --branch ${MAXTEXT_BRANCH} https://github.com/ROCm/maxte
 WORKDIR /maxtext
 
 # Install MaxText dependencies.
+# Explicitly install jax,jaxlib to avoid pip pulling a newer version (e.g. 0.8.1)
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
-    pip install -r requirements.txt && pip freeze
+    pip install -r requirements.txt && \
+    pip install jax==0.8.0 jaxlib==0.8.0 && pip freeze
