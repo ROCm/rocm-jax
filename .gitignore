@@ -208,3 +208,8 @@ cython_debug/
 # compile_commands related
 /jax_rocm_plugin/strace.txt
 /jax_rocm_plugin/compile_commands.json
+/llvm-raw
+/stablehlo
+/triton
+/_my_Pallas/dump*
+/_my_Pallas/t.tar.gz
