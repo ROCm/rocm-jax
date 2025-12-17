@@ -33,7 +33,7 @@ for pkg_name in ["jax_rocm7_plugin", "jax_rocm60_plugin", "jaxlib.rocm"]:
             f"{pkg_name}.rocm_plugin_extension"
         )
     except ImportError:
-        rocm_plugin_extension = None
+        rocm_plugin_extension = None  # pylint: disable=invalid-name
     else:
         break
 
@@ -161,19 +161,19 @@ def is_amd_gpu_available() -> bool:
                 if file_size <= 0 or file_size > 16 * 1024:
                     continue
 
-                with open(node_props_path, "r") as f:
+                with open(node_props_path, "r", encoding="ascii") as f:
                     match = r_wave_front_size.search(f.read())
                     if match:
                         wave_front_size = int(match.group(1))
                         if wave_front_size > 0:
                             return True  # one is enough
-            except Exception as e:
+            except Exception as e: # pylint: disable=broad-exception-caught
                 logger.debug(
                     "Failed to read KFD node file '%s': %s", node_props_path, e
                 )
                 continue
 
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         logger.warning("Failed to check for AMD KFD presence: %s", e)
     return False
 
