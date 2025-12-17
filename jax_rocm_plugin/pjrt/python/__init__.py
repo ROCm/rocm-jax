@@ -167,13 +167,13 @@ def is_amd_gpu_available() -> bool:
                         wave_front_size = int(match.group(1))
                         if wave_front_size > 0:
                             return True  # one is enough
-            except Exception as e: # pylint: disable=broad-exception-caught
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.debug(
                     "Failed to read KFD node file '%s': %s", node_props_path, e
                 )
                 continue
 
-    except Exception as e: # pylint: disable=broad-exception-caught
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning("Failed to check for AMD KFD presence: %s", e)
     return False
 
