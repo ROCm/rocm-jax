@@ -18,7 +18,9 @@ import functools
 import importlib
 import logging
 import os
+import os.path
 import pathlib
+import re
 
 from jax._src.lib import xla_client  # pylint: disable=import-error
 import jax._src.xla_bridge as xb  # pylint: disable=import-error
@@ -128,6 +130,54 @@ def set_rocm_paths(path):  # pylint: disable=too-many-branches
     os.environ["JAX_ROCM_PLUGIN_INTERNAL_LLD_PATH"] = lld_path
 
 
+def is_amd_gpu_available() -> bool:
+    """Checks if any AMD GPU is available to safeguard loading of the ROCm pjrt.
+
+    Different approaches to this are possible. We chose testing for existence
+    of KFD kernel driver entities as a proxy for the presence of AMD GPUs as
+    a good compromise between performance, reliability and simplicity.
+    Presence of such entities doesn't guarantee that the GPUs are usable through
+    HIP and PJRT, however, we can't do much much better without spawning an
+    additional process with a potentially complicated setup to run actual HIP
+    code. And we don't want to initialize HIP right now inside the current
+    process, because doing so might spoil a proper initialization of the
+    rocprofiler-sdk later during PJRT startup."""
+
+    try:
+        kfd_nodes_path = "/sys/class/kfd/kfd/topology/nodes/"
+        if not os.path.exists(kfd_nodes_path):
+            return False
+
+        r_wave_front_size = re.compile(r"\bwave_front_size\s+(\d+)\b", re.MULTILINE)
+
+        for node in os.listdir(kfd_nodes_path):
+            node_props_path = os.path.join(kfd_nodes_path, node, "properties")
+            if not os.path.exists(node_props_path):
+                continue
+
+            try:
+                file_size = os.path.getsize(node_props_path)
+                # 16KB is more than a reasonable limit
+                if file_size <= 0 or file_size > 16 * 1024:
+                    continue
+
+                with open(node_props_path, "r") as f:
+                    match = r_wave_front_size.search(f.read())
+                    if match:
+                        wave_front_size = int(match.group(1))
+                        if wave_front_size > 0:
+                            return True  # one is enough
+            except Exception as e:
+                logger.debug(
+                    "Failed to read KFD node file '%s': %s", node_props_path, e
+                )
+                continue
+
+    except Exception as e:
+        logger.warning("Failed to check for AMD KFD presence: %s", e)
+    return False
+
+
 def initialize():
     """Initialize the JAX ROCm plugin."""
     path = _get_library_path()
@@ -140,8 +190,7 @@ def initialize():
         logger.warning("rocm_plugin_extension not found")
         return
 
-    device_count = rocm_plugin_extension.get_device_count()
-    if device_count <= 0:
+    if not is_amd_gpu_available():
         raise ValueError("No GPUs found")
 
     options = xla_client.generate_pjrt_gpu_plugin_options()
