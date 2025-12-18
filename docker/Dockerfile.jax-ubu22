@@ -1,6 +1,14 @@
-FROM base-ubu22.rocm711
+### Container Build Arguments:
+# The ROCm version tag (dots removed, e.g., 7.1.1 -> 711, 7.2.0 -> 720)
+ARG ROCM_VERSION_TAG
+# The base image tag to use (defaults to latest, can be set to commit SHA)
+ARG BASE_IMAGE_TAG=latest
+
+FROM ghcr.io/rocm/jax-base-ubu22.rocm${ROCM_VERSION_TAG}:${BASE_IMAGE_TAG}
 
 ### Container Build Arguments:
+# The ROCm version used to build the base image
+ARG ROCM_VERSION
 # The jax version that will be included in the container
 ARG JAX_VERSION
 # The XLA commit used to build PJRT
@@ -11,6 +19,7 @@ ARG JAX_COMMIT
 ARG ROCM_JAX_COMMIT
 # The plugin namespace for the different version of ROCm: {60,7}
 ARG PLUGIN_NAMESPACE
+
 
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     /usr/local/bin/pip3 install --upgrade --force-reinstall setuptools pip && \

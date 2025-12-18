@@ -40,6 +40,19 @@ def _get_labels(image_name):
         return {}
 
 
+def _check_base_image_exists(base_image_name):
+    """Check if a base image exists in GHCR using docker manifest inspect."""
+    try:
+        subprocess.check_call(
+            ["docker", "manifest", "inspect", base_image_name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def _get_commit_info_from_wheel():
     """Extract commit hashes from commit_info.py inside a jax_rocm*_plugin wheel."""
 
@@ -269,6 +282,7 @@ def build_dockers(
     dockerfiles = _apply_filters(docker_filters, "Dockerfile.jax")
 
     rocm_ver_tag = "rocm%s" % "".join(rocm_version.split("."))
+    rocm_version_tag = "".join(rocm_version.split("."))
     plugin_namespace = rocm_version[0]
     if plugin_namespace == "6":
         plugin_namespace = "60"
@@ -278,9 +292,39 @@ def build_dockers(
         "--build-arg=JAX_COMMIT=%s" % commit_info["jax_commit"],
         "--build-arg=ROCM_JAX_COMMIT=%s" % commit_info["rocm_jax_commit"],
         "--build-arg=PLUGIN_NAMESPACE=%s" % plugin_namespace,
+        "--build-arg=ROCM_VERSION_TAG=%s" % rocm_version_tag,
     ]
     for dockerfile in dockerfiles:
         _, tag_suffix = dockerfile.split(".", 1)
+
+        # Extract ubuntu version from tag_suffix (e.g., "jax-ubu22" -> "ubu22")
+        # tag_suffix format is "jax-ubu<version>"
+        ubuntu_version = tag_suffix.split("-")[-1]  # "jax-ubu22" -> "ubu22"
+
+        # Construct base image name
+        base_image_name = "ghcr.io/rocm/base-ubu%s.rocm%s:latest" % (
+            ubuntu_version,
+            rocm_version_tag,
+        )
+
+        # Check if base image exists
+        if not _check_base_image_exists(base_image_name):
+            print(
+                "Base image %s not found in registry. Building it..." % base_image_name
+            )
+            # Build the base image
+            build_base_dockers(
+                rocm_version=rocm_version,
+                python_versions=python_versions,
+                rocm_build_job=rocm_build_job,
+                rocm_build_num=rocm_build_num,
+                therock_path=therock_path,
+                add_llvm=False,  # Base images, not dev images
+                docker_filters=[ubuntu_version],  # Filter for specific ubuntu version
+            )
+        else:
+            print("Base image %s found in registry." % base_image_name)
+
         if tag_base:
             tag = "%s.%s.%s" % (tag_base, tag_suffix, rocm_ver_tag)
         else:
