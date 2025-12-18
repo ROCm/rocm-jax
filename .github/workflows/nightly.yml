@@ -24,7 +24,7 @@ jobs:
             runner-label: "mi-250"
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-rel-7.2"
-            rocm-build-num: "14"
+            rocm-build-num: "32"
             runner-label: "internal"
     uses: ./.github/workflows/build-wheels.yml
     with:
@@ -44,7 +44,7 @@ jobs:
             runner-label: "mi-250"
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-rel-7.2"
-            rocm-build-num: "14"
+            rocm-build-num: "32"
             runner-label: "internal"
     uses: ./.github/workflows/build-docker.yml
     with:
