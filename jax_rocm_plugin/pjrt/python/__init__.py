@@ -140,10 +140,6 @@ def initialize():
         logger.warning("rocm_plugin_extension not found")
         return
 
-    device_count = rocm_plugin_extension.get_device_count()
-    if device_count <= 0:
-        raise ValueError("No GPUs found")
-
     options = xla_client.generate_pjrt_gpu_plugin_options()
     options["platform_name"] = "ROCM"
     c_api = xb.register_plugin(
