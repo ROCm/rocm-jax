@@ -323,13 +323,13 @@ def build_base_dockers(
 
     for dockerfile in dockerfiles:
         _, tag_suffix = dockerfile.split(".", 1)
+        if add_llvm:
+            # Change prefix from "base" to "dev" for LLVM images
+            tag_suffix = tag_suffix.replace("base-", "dev-", 1)
         if tag_base:
             tag = "%s.%s.%s" % (tag_base, tag_suffix, rocm_ver_tag)
         else:
             tag = "%s.%s" % (tag_suffix, rocm_ver_tag)
-
-        if add_llvm:
-            tag += f".llvm{llvm_version}"
 
         print("Building dockerfile=%r to tag=%r" % (dockerfile, tag))
 

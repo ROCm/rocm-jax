@@ -1,16 +1,31 @@
 name: Build Base Docker Images
 
 on:
+  schedule:
+    # Run every Sunday at midnight UTC
+    - cron: '0 0 * * 0'
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'build/ci_build'
+      - '.github/workflows/build-base-docker.yml'
+      - 'docker/Dockerfile*'
 
 jobs:
   build-base-images:
-    runs-on: mi-250
+    runs-on: ${{ matrix.runner-label }}
     strategy:
       matrix:
         ubuntu-version: ["22", "24"]
-        rocm-version: ["7.1.1", "7.2"]
+        rocm-version: ["7.1.1", "7.2.0"]
         install-llvm: [true, false]
+        include:
+          - rocm-version: "7.1.1"
+            runner-label: "mi-250"
+          - rocm-version: "7.2.0"
+            rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
+            rocm-build-num: "16849"
+            runner-label: "internal"
     steps:
       - name: Clean up old runs
         run: |
@@ -35,12 +50,23 @@ jobs:
           rocminfo | grep gfx || true
       - uses: actions/checkout@v4
       - name: Build base docker image
+        env:
+          ROCM_BUILD_JOB: ${{ matrix.rocm-build-job }}
+          ROCM_BUILD_NUM: ${{ matrix.rocm-build-num }}
         run: |
+          BUILD_ARGS=""
+          if [ -n "$ROCM_BUILD_JOB" ]; then
+            BUILD_ARGS="$BUILD_ARGS --rocm-build-job=$ROCM_BUILD_JOB"
+          fi
+          if [ -n "$ROCM_BUILD_NUM" ]; then
+            BUILD_ARGS="$BUILD_ARGS --rocm-build-num=$ROCM_BUILD_NUM"
+          fi
           python3 build/ci_build \
             --rocm-version="${{ matrix.rocm-version }}" \
+            $BUILD_ARGS \
+            build_base_dockers \
             --filter="ubu${{ matrix.ubuntu-version }}" \
-            ${{ matrix.install-llvm && '--install-llvm --llvm-version 18' || '' }} \
-            build_base_dockers
+            ${{ matrix.install-llvm && '--install-llvm --llvm-version 18' || '' }}
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
@@ -52,14 +78,24 @@ jobs:
           INSTALL_LLVM: ${{ matrix.install-llvm }}
         run: |
           # Construct image tag based on matrix values
-          # ROCm version tag removes dots (7.1.1 -> 711, 7.2 -> 72)
+          # ROCm version tag removes dots (7.1.1 -> 711, 7.2.0 -> 720)
           rocm_tag="rocm${ROCM_VERSION//.}"
           if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="base-ubu${UBUNTU_VERSION}.${rocm_tag}.llvm18"
+            image_tag="dev-ubu${UBUNTU_VERSION}.${rocm_tag}"
           else
             image_tag="base-ubu${UBUNTU_VERSION}.${rocm_tag}"
           fi
-          ghcr_image="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
-          echo "Image name: ${ghcr_image}"
-          docker tag "${image_tag}" "${ghcr_image}"
-          docker push "${ghcr_image}"
+          
+          # Push with commit SHA tag
+          ghcr_image_sha="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
+          echo "Image name (SHA): ${ghcr_image_sha}"
+          docker tag "${image_tag}" "${ghcr_image_sha}"
+          docker push "${ghcr_image_sha}"
+          
+          # Push with latest tag (only for schedule and workflow_dispatch, not PRs)
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            ghcr_image_latest="ghcr.io/rocm/${image_tag}:latest"
+            echo "Image name (latest): ${ghcr_image_latest}"
+            docker tag "${image_tag}" "${ghcr_image_latest}"
+            docker push "${ghcr_image_latest}"
+          fi
