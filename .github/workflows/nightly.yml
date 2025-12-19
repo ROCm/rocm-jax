@@ -56,7 +56,7 @@ jobs:
       rocm-build-num: ${{ matrix.rocm-build-num }}
       runner-label: ${{ matrix.runner-label }}
       extra-cr-tag: "nightly"
-  run-python-unit-tests:
+  test-and-upload:
     needs: call-build-docker
     runs-on: mi-250
     strategy:
@@ -64,6 +64,9 @@ jobs:
       matrix:
         rocm-version: ["7.1.0", "7.2.0"]
         ubuntu-version: ["22", "24"]
+        include:
+          - rocm-version: "7.2.0"
+            rocm-build-num: "16849"
     steps:
       - name: Change owners for cleanup
         run: |
@@ -108,29 +111,8 @@ jobs:
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
             --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s && \
                         python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
-      - name: Upload logs to artifact (per-matrix)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
-          path: logs/
-  upload-test-to-db:
-    needs: run-python-unit-tests
-    runs-on: mysqldb
-    strategy:
-      fail-fast: false
-      matrix:
-        rocm-version: ["7.1.0", "7.2.0"]
-        ubuntu-version: ["22", "24"]
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-      - name: Download logs from artifact (per-matrix)
-        uses: actions/download-artifact@v4
-        with:
-          name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
-          path: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
       - name: Upload logs to MySQL database
+        if: always()
         env:
           ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
           ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
@@ -138,7 +120,7 @@ jobs:
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
           ROCM_VERSION: ${{ matrix.rocm-version }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
-          LOGS_DIR: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
+          LOGS_DIR: logs
         run: |
           python3 -m venv venv
           source venv/bin/activate
