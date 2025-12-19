@@ -15,6 +15,7 @@ jobs:
   build-base-images:
     runs-on: ${{ matrix.runner-label }}
     strategy:
+      fail-fast: false
       matrix:
         ubuntu-version: ["22", "24"]
         rocm-version: ["7.1.1", "7.2.0"]
@@ -85,13 +86,13 @@ jobs:
           else
             image_tag="base-ubu${UBUNTU_VERSION}.${rocm_tag}"
           fi
-          
+
           # Push with commit SHA tag
           ghcr_image_sha="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
           echo "Image name (SHA): ${ghcr_image_sha}"
           docker tag "${image_tag}" "${ghcr_image_sha}"
           docker push "${ghcr_image_sha}"
-          
+
           # Push with latest tag (only for schedule and workflow_dispatch, not PRs)
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             ghcr_image_latest="ghcr.io/rocm/${image_tag}:latest"
