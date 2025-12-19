@@ -27,6 +27,8 @@ on:
 jobs:
   build-docker:
     runs-on: ${{ inputs.runner-label }}
+    env:
+      XLA_FLAGS: "--xla_gpu_use_embeded_device_lib=True"
     steps:
       - name: Clean up old runs
         run: |
