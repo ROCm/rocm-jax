@@ -82,9 +82,9 @@ jobs:
           # ROCm version tag removes dots (7.1.1 -> 711, 7.2.0 -> 720)
           rocm_tag="rocm${ROCM_VERSION//.}"
           if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="dev-ubu${UBUNTU_VERSION}.${rocm_tag}"
+            image_tag="jax-dev-ubu${UBUNTU_VERSION}.${rocm_tag}"
           else
-            image_tag="base-ubu${UBUNTU_VERSION}.${rocm_tag}"
+            image_tag="jax-base-ubu${UBUNTU_VERSION}.${rocm_tag}"
           fi
 
           # Push with commit SHA tag

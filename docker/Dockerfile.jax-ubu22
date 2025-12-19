@@ -16,7 +16,7 @@ ARG ROCM_JAX_COMMIT
 # The plugin namespace for the different version of ROCm: {60,7}
 ARG PLUGIN_NAMESPACE
 
-FROM ghcr.io/rocm/base-ubu22.rocm${ROCM_VERSION_TAG}:${BASE_IMAGE_TAG}
+FROM ghcr.io/rocm/jax-base-ubu22.rocm${ROCM_VERSION_TAG}:${BASE_IMAGE_TAG}
 
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     /usr/local/bin/pip3 install --upgrade --force-reinstall setuptools pip && \
