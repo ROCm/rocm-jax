@@ -28,7 +28,7 @@ jobs:
             runner-label: "internal"
     uses: ./.github/workflows/build-wheels.yml
     with:
-      python-versions: "3.11,3.12"
+      python-versions: "3.11,3.12.3.13,3.14"
       rocm-version: ${{ matrix.rocm-version }}
       rocm-build-job: ${{ matrix.rocm-build-job }}
       rocm-build-num: ${{ matrix.rocm-build-num }}
