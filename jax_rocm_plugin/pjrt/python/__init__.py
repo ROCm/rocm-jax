@@ -20,6 +20,12 @@ import logging
 import os
 import pathlib
 
+# Set XLA_FLAGS for ROCm compatibility with embedded device libraries
+_xla_flags = os.environ.get('XLA_FLAGS', '')
+if '--xla_gpu_use_embeded_device_lib' not in _xla_flags:
+    os.environ['XLA_FLAGS'] = f'{_xla_flags} --xla_gpu_use_embeded_device_lib=True'.strip()
+
+
 from jax._src.lib import xla_client  # pylint: disable=import-error
 import jax._src.xla_bridge as xb  # pylint: disable=import-error
 
