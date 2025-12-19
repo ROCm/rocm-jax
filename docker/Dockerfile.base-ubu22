@@ -35,7 +35,10 @@ RUN --mount=type=cache,target=/var/cache/apt   \
         libbz2-dev liblzma-dev     \
         libncursesw5-dev xz-utils  \
         tk-dev uuid-dev            \
-        && apt-get clean && rm -rf /var/lib/apt/lists/*
+        # workaround for ROCm missing dep
+        # Remove once that is fixed
+        libdw1                     \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Python:
 RUN mkdir -p /tmp && cd /tmp && wget https://www.python.org/ftp/python/${PY_VERSION}/Python-${PY_VERSION}.tgz \
