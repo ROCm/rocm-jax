@@ -104,7 +104,7 @@ jobs:
       - name: Build TE-wheel
         run: |
           docker exec te-build-jax${{ matrix.jax-version }} bash -lc '
-            pip install setuptools ninja
+            pip install setuptools ninja pybind11
             pip install cmake==4.1.0
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
