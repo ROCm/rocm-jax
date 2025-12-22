@@ -53,6 +53,28 @@ def _check_base_image_exists(base_image_name):
         return False
 
 
+def _tag_and_push_latest(local_tag, registry="ghcr.io/rocm"):
+    """
+    Tag a local Docker image and push it to GHCR with 'latest' tag.
+
+    This function tags a locally built image and pushes it to GitHub Container
+    Registry with the 'latest' tag, following the same naming scheme as the
+    build-base-docker.yml workflow.
+
+    Args:
+        local_tag (str): Local Docker image tag (e.g., "jax-base-ubu22.rocm711")
+        registry (str): Container registry prefix (default: "ghcr.io/rocm")
+
+    Raises:
+        subprocess.CalledProcessError: If docker tag or push fails
+    """
+    ghcr_image = "%s/%s:latest" % (registry, local_tag)
+    print("Tagging %s as %s" % (local_tag, ghcr_image))
+    subprocess.check_call(["docker", "tag", local_tag, ghcr_image])
+    print("Pushing %s" % ghcr_image)
+    subprocess.check_call(["docker", "push", ghcr_image])
+
+
 def _get_commit_info_from_wheel():
     """Extract commit hashes from commit_info.py inside a jax_rocm*_plugin wheel."""
 
@@ -321,6 +343,7 @@ def build_dockers(
                 therock_path=therock_path,
                 add_llvm=False,  # Base images, not dev images
                 docker_filters=[ubuntu_version],  # Filter for specific ubuntu version
+                push_latest=True,  # Tag and push as latest to preserve Dockerfile invariant
             )
         else:
             print("Base image %s found in registry." % base_image_name)
@@ -353,6 +376,7 @@ def build_base_dockers(
     therock_path=None,
     tag_base=None,
     docker_filters=None,
+    push_latest=False,
 ):
 
     dockerfiles = _apply_filters(docker_filters, "Dockerfile.base")
@@ -390,6 +414,10 @@ def build_base_dockers(
             tag,
             extra_args,
         )
+
+        # Tag and push as latest if requested
+        if push_latest:
+            _tag_and_push_latest(tag)
 
 
 def test(image_name, test_cmd=None):
