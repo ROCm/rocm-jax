@@ -195,7 +195,7 @@ def initialize():
         return
 
     if not is_amd_gpu_available():
-        raise ValueError("No GPUs found")
+        raise ValueError("No AMD GPUs were found, skipping ROCm plugin initialization")
 
     options = xla_client.generate_pjrt_gpu_plugin_options()
     options["platform_name"] = "ROCM"
