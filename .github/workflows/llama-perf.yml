@@ -127,7 +127,7 @@ jobs:
       max-parallel: 1
       matrix:
         jax-version: ["0.6.0", "0.8.0"]
-        model-name: ["train_moe", "train_dense_8b"]
+        model-name: ["train_moe", "train_dense"]
         include:
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
@@ -135,7 +135,7 @@ jobs:
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
-            model-name: "train_dense_8b"
+            model-name: "train_dense"
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
           - jax-version: "0.8.0"
             jaxlib-version: "0.8.0"
@@ -143,7 +143,7 @@ jobs:
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm710:nightly"
           - jax-version: "0.8.0"
             jaxlib-version: "0.8.0"
-            model-name: "train_dense_8b"
+            model-name: "train_dense"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm710:nightly"
     steps:
       - name: Checkout source repo
@@ -270,7 +270,7 @@ jobs:
       max-parallel: 1
       matrix:
         jax-version: ["0.6.0", "0.8.0"]
-        model-name: ["train_moe", "train_dense_8b"]
+        model-name: ["train_moe", "train_dense"]
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
