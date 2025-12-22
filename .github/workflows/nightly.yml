@@ -56,101 +56,25 @@ jobs:
       rocm-build-num: ${{ matrix.rocm-build-num }}
       runner-label: ${{ matrix.runner-label }}
       extra-cr-tag: "nightly"
-  run-python-unit-tests:
+  call-test-and-upload:
     needs: call-build-docker
-    runs-on: mi-250
     strategy:
       fail-fast: false
       matrix:
         rocm-version: ["7.1.0", "7.2.0"]
         ubuntu-version: ["22", "24"]
-    steps:
-      - name: Change owners for cleanup
-        run: |
-          docker run --rm -v "./:/rocm-jax" ubuntu \
-            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
-      - name: Checkout plugin repo
-        uses: actions/checkout@v4
-      - name: Checkout JAX repo
-        uses: actions/checkout@v4
-        with:
-          # TODO: Load the ref from a file that sets the min and max JAX version
-          # TODO: Change the repo and ref once we figure out how exactly we're going to
-          #       manage tests
-          repository: rocm/jax
-          ref: rocm-jaxlib-v0.8.0
-          path: jax
-      - name: Apply patches to rocm/jax test repo
-        run: |
-          pushd jax
-          git apply ../ci/patches/*
-          popd
-      - name: Authenticate to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Pull images
-        env:
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-          UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
-        run: |
-          IMAGE="ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
-          docker pull "$IMAGE"
-      - name: Run tests
-        env:
-          GPU_COUNT: "8"
-          GFX: "gfx90a"
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-          UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
-        run: |
-          # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
-          python3 build/ci_build test \
-            "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s && \
-                        python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
-      - name: Upload logs to artifact (per-matrix)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
-          path: logs/
-  upload-test-to-db:
-    needs: run-python-unit-tests
-    runs-on: mysqldb
-    strategy:
-      fail-fast: false
-      matrix:
-        rocm-version: ["7.1.0", "7.2.0"]
-        ubuntu-version: ["22", "24"]
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-      - name: Download logs from artifact (per-matrix)
-        uses: actions/download-artifact@v4
-        with:
-          name: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
-          path: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
-      - name: Upload logs to MySQL database
-        env:
-          ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
-          ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
-          ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
-          ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-          UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
-          LOGS_DIR: logs-${{ matrix.ubuntu-version }}_${{ matrix.rocm-version }}
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
-          pip install mysql-connector-python
-
-          python ci/upload_test_to_db.py \
-          --logs_dir "$LOGS_DIR" \
-          --run-tag "ci-run" \
-          --runner-label "MI250" \
-          --ubuntu-version "${UBUNTU_VERSION}" \
-          --rocm-version "${ROCM_VERSION//.}" \
-          --commit-sha "${{ github.sha }}" \
-          --build-num "${{ matrix.rocm-build-num || 0 }}" \
-          --github-run-id "${{ github.run_id }}"
+        include:
+          - rocm-version: "7.2.0"
+            rocm-build-num: "16849"
+    uses: ./.github/workflows/test-and-upload.yml
+    with:
+      rocm-version: ${{ matrix.rocm-version }}
+      ubuntu-version: ${{ matrix.ubuntu-version }}
+      rocm-build-num: ${{ matrix.rocm-build-num || '0' }}
+      github-sha: ${{ github.sha }}
+      github-run-id: ${{ github.run_id }}
+    secrets:
+      ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
+      ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
+      ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
+      ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
