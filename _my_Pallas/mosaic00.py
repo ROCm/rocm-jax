@@ -1,3 +1,5 @@
+import os
+
 import jax
 #from jax import api_util
 #from jax import lax
@@ -53,8 +55,16 @@ class OpsTest(PallasBaseTest):
 if __name__ == "__main__":
     test = OpsTest()
     shape = (256,)
-    
+
+    do_profile=False
+    if do_profile:
+        out_dir=os.getcwd()+ f"/results/mosaic00"
+        print(f"Profiling to {out_dir}")
+        jax.profiler.start_trace(out_dir)
+
     test.test_func(lambda x: 1+x, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32)
+    if do_profile:
+        jax.profiler.stop_trace()
     
     #test.test_func(jnp.isinf, jax.ShapeDtypeStruct(shape, jnp.float32)) #, jnp.float32)
     #test.test_func(jnp.exp2, jax.ShapeDtypeStruct(shape, jnp.float64), jnp.float64)
