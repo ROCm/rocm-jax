@@ -148,7 +148,11 @@ def is_amd_gpu_available() -> bool:
         if not os.path.exists(kfd_nodes_path):
             return False
 
-        r_wave_front_size = re.compile(r"\bwave_front_size\s+(\d+)\b", re.MULTILINE)
+        # the RE matches strings like "simd_count ##" and extracts the number ##
+        r_simd_count = re.compile(r"\bsimd_count\s+(\d+)\b", re.MULTILINE)
+        # we're using a non-zero simd_count as a trait of a GPU following the
+        # KFD implementation
+        # https://github.com/torvalds/linux/blob/ea1013c1539270e372fc99854bc6e4d94eaeff66/drivers/gpu/drm/amd/amdkfd/kfd_topology.c#L941
 
         for node in os.listdir(kfd_nodes_path):
             node_props_path = os.path.join(kfd_nodes_path, node, "properties")
@@ -162,10 +166,10 @@ def is_amd_gpu_available() -> bool:
                     continue
 
                 with open(node_props_path, "r", encoding="ascii") as f:
-                    match = r_wave_front_size.search(f.read())
+                    match = r_simd_count.search(f.read())
                     if match:
-                        wave_front_size = int(match.group(1))
-                        if wave_front_size > 0:
+                        simd_count = int(match.group(1))
+                        if simd_count > 0:
                             return True  # one is enough
             except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.debug(
