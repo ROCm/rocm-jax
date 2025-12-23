@@ -1,13 +1,13 @@
 name: Llama Performance Benchmarks
 
 # This workflow runs Llama performance benchmarks
-# using two different JAX versions: 0.6.0 & 0.7.1
+# using two different JAX versions: 0.6.0 & 0.8.0
 # For JAX 0.6.0: uses official released wheels
 # and Docker image.
-# For JAX 0.7.1: uses wheels and Docker image
+# For JAX 0.8.0: uses wheels and Docker image
 # built from the latest nightly results.
 
-# PS: Ubuntu 24 & ROCm 7.0.2 used for all tests.
+# PS: Ubuntu 24 & ROCm 7.0.2/7.1.0 respectively.
 
 on:
   schedule:
@@ -36,14 +36,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        jax-version: ["0.6.0", "0.7.1"]
+        jax-version: ["0.6.0", "0.8.0"]
         include:
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
-          - jax-version: "0.7.1"
-            jaxlib-version: "0.7.1"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:nightly"
+          - jax-version: "0.8.0"
+            jaxlib-version: "0.8.0"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm710:nightly"
     env:
       NVTE_FRAMEWORK: jax
       NVTE_USE_ROCM: 1
@@ -75,6 +75,10 @@ jobs:
             echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
             echo "label=MI355" >> $GITHUB_OUTPUT
           fi
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.SECRET_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Run Container for ${{ matrix.jax-version }}
         run: |
           docker run -d \
@@ -100,7 +104,7 @@ jobs:
       - name: Build TE-wheel
         run: |
           docker exec te-build-jax${{ matrix.jax-version }} bash -lc '
-            pip install setuptools ninja
+            pip install setuptools ninja pybind11
             pip install cmake==4.1.0
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
@@ -122,8 +126,8 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        jax-version: ["0.6.0", "0.7.1"]
-        model-name: ["train_moe", "train_dense_8b"]
+        jax-version: ["0.6.0", "0.8.0"]
+        model-name: ["train_moe", "train_dense"]
         include:
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
@@ -131,16 +135,16 @@ jobs:
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
-            model-name: "train_dense_8b"
+            model-name: "train_dense"
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
-          - jax-version: "0.7.1"
-            jaxlib-version: "0.7.1"
+          - jax-version: "0.8.0"
+            jaxlib-version: "0.8.0"
             model-name: "train_moe"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:nightly"
-          - jax-version: "0.7.1"
-            jaxlib-version: "0.7.1"
-            model-name: "train_dense_8b"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm702:nightly"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm710:nightly"
+          - jax-version: "0.8.0"
+            jaxlib-version: "0.8.0"
+            model-name: "train_dense"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm710:nightly"
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v4
@@ -163,7 +167,7 @@ jobs:
               $(gh run list \
                 -R ROCm/rocm-jax \
                 -w nightly.yml \
-                -L 200 \
+                -L 2000 \
                 --json databaseId,event,createdAt \
                 -q '
                   map(select(
@@ -171,7 +175,7 @@ jobs:
                   | max_by(.createdAt)
                   | .databaseId') \
               -R ROCm/rocm-jax \
-              -n plugin_wheels_r7.0.2 \
+              -n plugin_wheels_r7.1.0 \
               -D wheelhouse
             rm -v wheelhouse/*311*
           fi
@@ -204,7 +208,7 @@ jobs:
           echo "jax_rocm7_plugin @ file:///workspace/wheelhouse/$PLUGIN_BASE"
           echo "transformer_engine @ file:///workspace/wheelhouse/$TE_BASE"
           } >> kylix/third_party/requirements.lock
-          sed -i '9,29s/^/#/' bazel_run_anynode.sh
+          sed -i '11,35s/^/#/' bazel_run_anynode.sh
           sed -i '/^TRAIN_SETTING/s/^/# /' bazel_run_anynode.sh
           sed -i '/pip/s/^/#/' kylix/third_party/requirements.lock
           sed -i '/orbax-checkpoint/ s/^/# /' kylix/third_party/requirements.lock
@@ -217,6 +221,10 @@ jobs:
             kylix/max/projects/llama/BUILD
           sed -i 's/operations\[4\]/operations[5]/; /num_operation_workers=16;/a \
             model.mha_use_transformer_engine=True;optimizer.total_steps=200;' bazel_run_anynode.sh
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.SECRET_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Run Container for ${{ matrix.jax-version }} and ${{ matrix.model-name }}
         run: |
           docker run -d \
@@ -240,6 +248,7 @@ jobs:
             chmod +x /usr/local/bin/bazel
             bazel version
             apt update && apt install -y libglib2.0-0
+            export EXECUTOR="base_executor_config"
             export TRAIN_SETTING="${{ matrix.model-name }}"
             cd /workspace && bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
             tail -n 25 logs.log > training_summary.txt'
@@ -260,8 +269,8 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        jax-version: ["0.6.0", "0.7.1"]
-        model-name: ["train_moe", "train_dense_8b"]
+        jax-version: ["0.6.0", "0.8.0"]
+        model-name: ["train_moe", "train_dense"]
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
