@@ -11,9 +11,9 @@ def repo():
         strip_prefix = "jax-{commit}".format(commit = COMMIT),
         urls = ["https://github.com/jax-ml/jax/archive/{commit}.tar.gz".format(commit = COMMIT)],
         patch_file = [
-           "//third_party/jax:build.patch",
-           "//third_party/jax:jax_bzl.patch",
-           "//third_party/jax:hipBlas_typedef.patch",
-           "//third_party/jax:no_gpu_fail.patch"
+	    "//third_party/jax:0001-Remove-nvidia_wheel_versions.patch",
+	    "//third_party/jax:0002-Make-jaxlib-targets-visible.patch",
+	    "//third_party/jax:0003-hipblas-typedef-fix.patch",
+	    "//third_party/jax:0005-Fix-HIP-availability-errors.patch",
         ],
     )
