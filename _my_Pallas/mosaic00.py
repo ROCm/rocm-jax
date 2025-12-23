@@ -27,7 +27,7 @@ class PallasBaseTest(jtu.JaxTestCase):
 
   @classmethod
   def pallas_call(cls, *args, **kwargs):
-    return pl.pallas_call(*args, interpret=cls.INTERPRET, **kwargs)
+    return pl.pallas_call(*args, interpret=cls.INTERPRET, backend="mosaic_gpu", **kwargs)
 
 
 class OpsTest(PallasBaseTest):
