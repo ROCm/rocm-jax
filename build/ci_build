@@ -280,7 +280,6 @@ def _run_docker(
     else:
         if therock_path:
             cmd.append("--build-arg=THEROCK_PATH=%s" % therock_path)
-        print(tempfile.tempdir)
         temp_path = Path(tempfile.mkdtemp()) / "therock"
         temp_path.mkdir(exist_ok=True)
         cmd.append("--build-context=therock=%s" % temp_path)
@@ -308,6 +307,7 @@ def build_dockers(
     plugin_namespace = rocm_version[0]
     if plugin_namespace == "6":
         plugin_namespace = "60"
+    print(f"Setting Plugin Namespace to {plugin_namespace}")
 
     extra_args = [
         "--build-arg=XLA_COMMIT=%s" % commit_info["xla_commit"],
@@ -316,6 +316,7 @@ def build_dockers(
         "--build-arg=PLUGIN_NAMESPACE=%s" % plugin_namespace,
         "--build-arg=ROCM_VERSION_TAG=%s" % rocm_version_tag,
     ]
+    print(f"Extra args sent to docker: {extra_args}")
     for dockerfile in dockerfiles:
         _, tag_suffix = dockerfile.split(".", 1)
 
