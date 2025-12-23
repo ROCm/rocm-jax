@@ -325,7 +325,7 @@ def build_dockers(
         ubuntu_version = tag_suffix.split("-")[-1]  # "jax-ubu22" -> "ubu22"
 
         # Construct base image name
-        base_image_name = "ghcr.io/rocm/jax-base-ubu%s.rocm%s:latest" % (
+        base_image_name = "ghcr.io/rocm/jax-base-%s.rocm%s" % (
             ubuntu_version,
             rocm_version_tag,
         )
