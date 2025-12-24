@@ -1,0 +1,1 @@
+import %workspace%/jax_rocm_plugin/.bazelrc
