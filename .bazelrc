@@ -1,0 +1,3 @@
+import %workspace%/jax_rocm_plugin/.bazelrc
+
+build --enable_workspace
