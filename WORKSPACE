@@ -13,9 +13,11 @@ new_git_repository(
     remote = "https://github.com/ROCm/jax.git",
 )
 
-load("@jax//third_party/xla:workspace.bzl", jax_xla_workspace = "repo")
-
-jax_xla_workspace()
+new_git_repository(
+    name = "xla",
+    commit = "96b4835e5e31e878132524104d8cbf364f6d4662",
+    remote = "https://github.com/ROCm/xla.git",
+)
 
 load("@xla//:workspace3.bzl", "xla_workspace3")
 
