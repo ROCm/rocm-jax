@@ -40,7 +40,7 @@ ARG ROCM_BUILD_JOB
 ARG ROCM_BUILD_NUM
 ARG PLUGIN_NAMESPACE
 ARG THEROCK_PATH
-RUN --mount=type=bind,source=jax_rocm_plugin/build/rocm/tools/get_rocm.py,target=get_rocm.py \
+RUN --mount=type=bind,source=tools/get_rocm.py,target=get_rocm.py \
     --mount=type=cache,target=/var/cache/apt \
     --mount=type=bind,from=therock,target=/tmp/therock/ \
     python3 get_rocm.py --rocm-version=$ROCM_VERSION --job-name=$ROCM_BUILD_JOB --build-num=$ROCM_BUILD_NUM --therock-path=$THEROCK_PATH

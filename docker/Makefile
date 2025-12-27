@@ -1,20 +1,16 @@
-.PHONY: all clean
+manylinux: manylinux_2_28_rocm7.2.0
 
-all: .docker-jax-ubu22 .docker-jax-ubu24
+dev: dev_ubuntu24.04_rocm7.2.0
 
-clean: clean-jax-ubu22 clean-jax-ubu24
+manylinux_2_28_rocm7.2.0:
+	docker build \
+            -f manylinux/Dockerfile.jax-manylinux_2_28-rocm7.2.0 \
+            -t jax-manylinux_2_28-rocm7.2.0:latest \
+            .
 
-ROCM_VERSION ?= 7.2.0
+dev_ubuntu24.04_rocm7.2.0:
+	docker build \
+            -f devsetup/Dockerfile.jax-dev-ubuntu24-rocm7.2.0 \
+            -t jax-dev-ubuntu24-rocm7.2.0 \
+	    .
 
-.docker-%  : build/rocm/docker/Dockerfile.%
-	docker build -f $< --tag $(*F) --progress plain \
-		--build-arg=ROCM_VERSION=${ROCM_VERSION} \
-		--build-arg=JAX_VERSION=$(shell python setup.py -V) \
-		--build-arg=JAX_COMMIT=$(shell git rev-parse HEAD) \
-		.
-	@touch $@
-
-
-clean-%:
-	-docker rmi $(*F)
-	@rm -f .docker-$(*F)
