@@ -4,8 +4,10 @@ workspace(name = "rocm_jax")
 # Hermetic Python (FIRST)
 # -----------------------------------------------------------------------------
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("//third_party/jax:workspace.bzl", "jax_workspace")
+
+jax_workspace()
 
 http_archive(
     name = "rules_ml_toolchain",
@@ -16,10 +18,9 @@ http_archive(
     ],
 )
 
-new_git_repository(
-    name = "jax",
-    commit = "ad54f8b18bf44ad8511b59483baa73e6d2318093",
-    remote = "https://github.com/ROCm/jax.git",
+local_repository(
+    name = "jax_rocm_plugin",
+    path = "jax_rocm_plugin",
 )
 
 load("@jax//third_party/xla:workspace.bzl", jax_xla_workspace = "repo")
@@ -41,6 +42,10 @@ python_init_repositories(
         "ml-dtypes*",
         "numpy*",
         "scipy*",
+        "jax-*",
+        "jaxlib*",
+        "jax_cuda*",
+        "jax-cuda*",
     ],
     local_wheel_workspaces = ["@jax//jaxlib:jax.bzl"],
     requirements = {
