@@ -1,0 +1,68 @@
+From 5e6d27b98b054bd110efb24e4fad34454f513a94 Mon Sep 17 00:00:00 2001
+From: Charles Hofer <Charles.Hofer@amd.com>
+Date: Wed, 5 Nov 2025 01:25:50 +0000
+Subject: [PATCH] Enable testing with ROCm plugin wheels
+
+---
+ jaxlib/jax.bzl           |  8 +++++---
+ jaxlib/tools/BUILD.bazel | 19 +++++++++++++++++++
+ 2 files changed, 24 insertions(+), 3 deletions(-)
+
+diff --git jaxlib/jax.bzl jaxlib/jax.bzl
+index dfa7657e6..1d5b5f4cf 100644
+--- jaxlib/jax.bzl
++++ jaxlib/jax.bzl
+@@ -192,8 +192,10 @@ def _gpu_test_deps():
+             "//jax_plugins:gpu_plugin_only_test_deps",
+         ],
+         "//jax:config_build_jaxlib_false": [
+-            "//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
+-            "//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
++            "//jaxlib/tools:rocm_plugin_kernels_wheel",
++            "//jaxlib/tools:rocm_plugin_pjrt_wheel",
++            #"//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
++            #"//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
+         ],
+         "//jax:config_build_jaxlib_wheel": [
+             "//jaxlib/tools:jax_cuda_plugin_py_import",
+@@ -300,7 +302,7 @@ def jax_multiplatform_test(
+             shard_count = test_shards,
+             tags = test_tags,
+             main = main,
+-            exec_properties = tf_exec_properties({"tags": test_tags}),
++            exec_properties = {} #tf_exec_properties({"tags": test_tags}),
+         )
+ 
+ def jax_generate_backend_suites(backends = []):
+diff --git jaxlib/tools/BUILD.bazel b/jaxlib/tools/BUILD.bazel
+index 58fbfd734..57cbd4252 100644
+--- jaxlib/tools/BUILD.bazel
++++ jaxlib/tools/BUILD.bazel
+@@ -564,6 +564,25 @@ py_import(
+     wheel_deps = if_pypi_cuda_wheel_deps([":nvidia_wheel_deps"]),
+ )
+ 
++filegroup(
++    name = "rocm_wheel_deps",
++    srcs = [
++    ],
++)
++
++# Targets for importing ROCm plugin wheels
++py_import(
++    name = "rocm_plugin_kernels_wheel",
++    wheel = "@pypi_jax_rocm7_plugin//:whl",
++    wheel_deps = [":rocm_wheel_deps"],
++)
++
++py_import(
++    name = "rocm_plugin_pjrt_wheel",
++    wheel = "@pypi_jax_rocm7_pjrt//:whl",
++    wheel_deps = [":rocm_wheel_deps"],
++)
++
+ # Mosaic GPU
+ 
+ py_binary(
+-- 
+2.34.1

@@ -4,8 +4,10 @@ workspace(name = "rocm_jax")
 # Hermetic Python (FIRST)
 # -----------------------------------------------------------------------------
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("//third_party/jax:workspace.bzl", "jax_workspace")
+
+jax_workspace()
 
 http_archive(
     name = "rules_ml_toolchain",
@@ -14,12 +16,6 @@ http_archive(
     urls = [
         "https://github.com/google-ml-infra/rules_ml_toolchain/archive/0fccc2447ef3bec3d75046a60a1895f053424727.tar.gz",
     ],
-)
-
-new_git_repository(
-    name = "jax",
-    commit = "ad54f8b18bf44ad8511b59483baa73e6d2318093",
-    remote = "https://github.com/ROCm/jax.git",
 )
 
 load("@jax//third_party/xla:workspace.bzl", jax_xla_workspace = "repo")
@@ -41,6 +37,10 @@ python_init_repositories(
         "ml-dtypes*",
         "numpy*",
         "scipy*",
+        "jax-*",
+        "jaxlib*",
+        "jax_cuda*",
+        "jax-cuda*",
     ],
     local_wheel_workspaces = ["@jax//jaxlib:jax.bzl"],
     requirements = {
@@ -172,4 +172,28 @@ load(
 
 test_shard_count_repository(
     name = "test_shard_count",
+)
+
+python_init_repositories(
+    default_python_version = "system",
+    local_wheel_dist_folder = "../dist",
+    local_wheel_inclusion_list = [
+        "jaxlib*",
+        "jax_cuda*",
+        "jax-cuda*",
+    ],
+    local_wheel_workspaces = ["@jax//jaxlib:jax.bzl"],
+    requirements = {
+        "3.11": "@jax//build:requirements_lock_3_11.txt",
+        "3.12": "@jax//build:requirements_lock_3_12.txt",
+        "3.13": "@jax//build:requirements_lock_3_13.txt",
+        "3.14": "@jax//build:requirements_lock_3_14.txt",
+        "3.13-ft": "@jax//build:requirements_lock_3_13_ft.txt",
+        "3.14-ft": "@jax//build:requirements_lock_3_14_ft.txt",
+    },
+)
+
+local_repository(
+    name = "jax_rocm_plugin",
+    path = "jax_rocm_plugin",
 )

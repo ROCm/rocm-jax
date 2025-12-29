@@ -139,12 +139,12 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
     copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
 
     copy_runfiles(
-        "__main__/jax_plugins/rocm/plugin_pyproject.toml",
+        "jax_rocm_plugin/jax_plugins/rocm/plugin_pyproject.toml",
         dst_dir=wheel_sources_path,
         dst_filename="pyproject.toml",
     )
     copy_runfiles(
-        "__main__/jax_plugins/rocm/plugin_setup.py",
+        "jax_rocm_plugin/jax_plugins/rocm/plugin_setup.py",
         dst_dir=wheel_sources_path,
         dst_filename="setup.py",
     )
