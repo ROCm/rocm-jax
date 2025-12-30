@@ -1,0 +1,27 @@
+build:rocm --repo_env=HERMETIC_PYTHON_VERSION=3.12
+build:rocm --verbose_failures=true
+build:rocm --action_env=CLANG_COMPILER_PATH="/lib/llvm-18/bin/clang-18"
+build:rocm --repo_env=CC="/lib/llvm-18/bin/clang-18"
+build:rocm --repo_env=BAZEL_COMPILER="/lib/llvm-18/bin/clang-18"
+build:rocm --config=clang
+build:rocm --define=xnn_enable_avxvnniint8=false
+build:rocm --config=mkl_open_source_only
+build:rocm --config=native_arch_posix
+build:rocm --action_env=CLANG_COMPILER_PATH="/lib/llvm-18/bin/clang-18"
+build:rocm --action_env=ROCM_PATH="/opt/rocm"
+
+build:rocm_rbe --bes_backend="grpcs://wardite.cluster.engflow.com"
+build:rocm_rbe --bes_results_url="https://wardite.cluster.engflow.com/invocation/"
+build:rocm_rbe --host_platform="@local_config_rocm//rocm:linux_x64"
+build:rocm_rbe --extra_execution_platforms="@local_config_rocm//rocm:linux_x64"
+build:rocm_rbe --platforms="@local_config_rocm//rocm:linux_x64"
+build:rocm_rbe --bes_timeout=600s
+build:rocm_rbe --tls_client_certificate="/tf/certificates/ci-cert.crt"
+build:rocm_rbe --tls_client_key="/tf/certificates/ci-cert.key"
+build:rocm_rbe --spawn_strategy=remote,local
+build:rocm_rbe --grpc_keepalive_time=30s
+
+test:rocm_rbe --jobs=200
+test:rocm_rbe --remote_executor=grpcs://wardite.cluster.engflow.com
+test:rocm_rbe --remote_timeout=3600
+test:rocm_rbe --strategy=TestRunner=remote,local
