@@ -8,6 +8,7 @@ args['--python_version']=""
 args['--jax_version']=""
 args['--jax_dir']=""
 args['--jax_plugin_dir']=""
+args['--xla_dir']=""
 
 while [ $# -gt 0 ]; do
     key=$(echo $1 | cut -d "=" -f 1)
@@ -24,6 +25,7 @@ done
 JAX_DIR=${args['--jax_dir']}
 JAX_PLUGIN_DIR=${args['--jax_plugin_dir']}
 WHEELHOUSE="${JAX_DIR}/../wheelhouse"
+XLA_DIR=${args['--xla_dir']}
 
 pushd ${JAX_PLUGIN_DIR}
 python3 build/build.py build \
@@ -50,8 +52,9 @@ JAX_VERSION=${args['--jax_version']}
 python3 build/build.py requirements_update --python="${PYTHON}"
 python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_version="${PYTHON}" --local_xla_path=${XLA_DIR}
 
-bazel --bazelrc=$SCRIPT_DIR/jax.bazelrc test \
+bazel --bazelrc=${JAX_PLUGIN_DIR}/rbe.bazelrc test \
     --config=rocm \
+    --config=rocm_rbe \
     --//jax:build_jaxlib=false \
     --override_repository=xla=${XLA_DIR} \
     --build_tag_filters=cpu,gpu,-tpu,-config-cuda-only \
@@ -97,8 +100,8 @@ bazel --bazelrc=$SCRIPT_DIR/jax.bazelrc test \
     //tests:export_test_gpu \
     //tests:memories_test_gpu \
     //tests:debugger_test_gpu \
-    //tests:lax_control_flow_test_gpu
-#//tests:checkify_test_gpu \
-#//tests:colocated_gputhon_test \
-#//tests_gputhon_callback_test_gpu \
+    //tests:lax_control_flow_test_gpu \
+    //tests:checkify_test_gpu
+#//tests:colocated_gputhon_test
+#//tests_gputhon_callback_test_gpu
 #//tests/mosaic:gpu_test_gpu \
