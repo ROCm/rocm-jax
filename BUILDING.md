@@ -5,9 +5,67 @@ The plugin repo produces several different artifacts,
 2. Docker images with an installation of a JAX environment ready to use on ROCm
 3. Unit test reports on the plugin wheels
 
-All of these are produced by different commands to the `build/ci_build`
+# Local `build.py` Build
+
+If you're working inside a container or just want to build for your Linux
+distribution and your accelerator hardware, you can build using the
+`jax_rocm_plugin/build/build.py` script.
+
+## 1. Build & Install Plugin Wheels
+
+```shell
+# Set your GFX targets to whatever you've got installed
+AMDGPU_TARGETS="$(shell rocminfo | grep -o -m 1 'gfx.*')"
+
+# Clone rocm-jax and run build.py
+git clone git@github.com:ROCm/rocm-jax.git
+cd jax_rocm_plugin
+python3 build/build.py build
+    --use_clang=true \
+    --clang_path=/lib/llvm-18/bin/clang-18 \
+    --wheels=jax-rocm-plugin,jax-rocm-pjrt \
+    --target_cpu_features=native \
+    --rocm_path=/opt/rocm \
+    --rocm_version=7 \
+    --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
+    --verbose
+pip3 install dist/jax_rocm* --force-reinstall
+```
+
+By default, this builds against specific commits of `jax-ml/jax` and
+`rocm/xla` that are kept in `jax_rocm_plugin/third_party/xla/workspace.bzl` and
+`jax_rocm_plugin/third_party/jax/workspace.bzl`. You can override this and
+build with your local JAX and XLA by adding,
+
+```shell
+    --bazel_options=--override_repository=xla=<path to my XLA>
+    --bazel_options=--override_repository=jax=<path to my JAX>
+```
+
+## 2. Build & Install `jaxlib`
+
+```shell
+git clone git@github.com:ROCm/jax.git
+cd jax
+python3.11 ./build/build.py build \
+    --target_cpu_features=native \
+    --use_clang=true \
+    --clang_path=/lib/llvm-18/bin/clang-18 \
+    --wheels=jaxlib \
+    --verbose
+pip install dist/jaxlib* --force-reinstall
+```
+
+You do not need to override the XLA repository when building jaxlib.
+
+# manylinux Build
+
+Build artifacts are also produced by different commands to the `build/ci_build`
 script. This build script does nearly all of its work inside of containers.
 It requires that you have an installation of Docker and Python 3.6 or newer.
+
+NOTE: This should be run bare metal, as `build/ci_build` will perform its
+wheel builds inside of a container.
 
 # 1. Building `jax_rocmX_plugin` and `jax_rocmX_pjrt` Wheels
 
