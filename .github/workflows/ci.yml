@@ -40,6 +40,7 @@ jobs:
   run-python-unit-tests:
     needs: call-build-docker
     runs-on: mi-250
+    timeout-minutes: 60
     strategy:
       matrix:
         rocm-version: ["7.1.0"]
