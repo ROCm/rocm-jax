@@ -107,6 +107,8 @@ class System(object):
             "install",
             "-y",
         ]
+        if self.pkgbin == "apt":
+            cmd.append("--no-install-recommends")
         cmd.extend(package_specs)
 
         LOG.info("Running %r", cmd)

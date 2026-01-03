@@ -40,6 +40,53 @@ def _get_labels(image_name):
         return {}
 
 
+def _check_base_image_exists(base_image_name):
+    """Check if a base image exists in GHCR using docker manifest inspect."""
+    try:
+        subprocess.check_call(
+            ["docker", "manifest", "inspect", base_image_name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def _is_github_actions():
+    """Check if the script is running in a GitHub Actions environment."""
+    return os.environ.get("GITHUB_ACTIONS") == "true"
+
+
+def _tag_and_push_latest(local_tag, registry="ghcr.io/rocm"):
+    """
+    Tag a local Docker image and push it to GHCR with 'latest' tag.
+
+    This function tags a locally built image and pushes it to GitHub Container
+    Registry with the 'latest' tag, following the same naming scheme as the
+    build-base-docker.yml workflow.
+
+    Note: Pushing to GHCR only occurs when running in a GitHub Actions environment.
+    When running locally, the image is tagged but not pushed.
+
+    Args:
+        local_tag (str): Local Docker image tag (e.g., "jax-base-ubu22.rocm711")
+        registry (str): Container registry prefix (default: "ghcr.io/rocm")
+
+    Raises:
+        subprocess.CalledProcessError: If docker tag or push fails
+    """
+    ghcr_image = "%s/%s:latest" % (registry, local_tag)
+    print("Tagging %s as %s" % (local_tag, ghcr_image))
+    subprocess.check_call(["docker", "tag", local_tag, ghcr_image])
+    
+    if _is_github_actions():
+        print("Pushing %s" % ghcr_image)
+        subprocess.check_call(["docker", "push", ghcr_image])
+    else:
+        print("Skipping push to GHCR (not running in GitHub Actions)")
+
+
 def _get_commit_info_from_wheel():
     """Extract commit hashes from commit_info.py inside a jax_rocm*_plugin wheel."""
 
@@ -121,6 +168,140 @@ def _fetch_jax_metadata(xla_path):
     }
 
 
+def _apply_filters(docker_filters, dockerfile_basename, docker_dir="docker"):
+    """
+    Collect Dockerfile paths matching a basename prefix and optional substring filters.
+
+    This helper scans `docker_dir` for files whose names start with `dockerfile_basename`.
+    If `docker_filters` is provided (non-empty), only files that contain at least one of
+    the specified substrings in their filename are included. If `docker_filters` is None
+    or empty, all prefix-matching files are included.
+
+    Note:
+        - Matching is case-sensitive for both the prefix and substrings.
+        - If a filename contains multiple substrings from `docker_filters`, its path
+          may be appended multiple times (one per match).
+        - The order of results follows the order returned by `os.listdir`.
+
+    Args:
+        docker_filters (Iterable[str] | None):
+            Substrings to filter filenames by. When provided, a file is selected if
+            any substring is present in its name. If None or empty, no substring
+            filtering is applied.
+        dockerfile_basename (str):
+            Filename prefix to match (e.g., "Dockerfile" will match "Dockerfile",
+            "Dockerfile.rocm", etc.).
+        docker_dir (str, optional):
+            Directory to search for Dockerfiles. Defaults to "docker".
+
+    Returns:
+        list[str]:
+            A list of filesystem paths to matching Dockerfiles.
+
+    Raises:
+        FileNotFoundError:
+            If `docker_dir` does not exist.
+        PermissionError:
+            If the process lacks permission to list or access `docker_dir`.
+    """
+    dockerfiles = []
+    for f in os.listdir(docker_dir):
+        if f.startswith(dockerfile_basename):
+            path = os.path.join(docker_dir, f)
+
+            if docker_filters:
+                for substr in docker_filters:
+                    if substr in f:
+                        dockerfiles.append(path)
+            else:
+                dockerfiles.append(path)
+
+    return dockerfiles
+
+
+def _run_docker(
+    dockerfile,
+    rocm_version,
+    rocm_build_job,
+    rocm_build_num,
+    therock_path,
+    tag,
+    custom_flags=[],
+):
+    """
+    Build a Docker image with ROCm-related build arguments and an optional “therock”
+    build context.
+
+    This helper assembles and executes a `docker build` command using the provided
+    Dockerfile and ROCm parameters. It also manages the “therock” build context in
+    one of two ways:
+      - If `therock_path` is provided and exists on the filesystem, it is mounted
+        as a named build context (`--build-context=therock=<path>`) and the build
+        arg `THEROCK_PATH` is set to `/tmp/therock/`.
+      - Otherwise, a temporary directory is created with a `therock/` subfolder
+        and used as the build context. In this case, if `therock_path` was provided
+        but does not exist, `THEROCK_PATH` is set to that (nonexistent) path.
+
+    The build context root is the current directory (“.”). Any additional Docker
+    build flags can be injected via `custom_flags`.
+
+    Args:
+        dockerfile (str or pathlib.Path):
+            Path to the Dockerfile to use (passed to `docker build -f`).
+        rocm_version (str):
+            ROCm version string (e.g., "6.2"), passed as `--build-arg=ROCM_VERSION`.
+        rocm_build_job (str):
+            ROCm build job identifier, passed as `--build-arg=ROCM_BUILD_JOB`.
+        rocm_build_num (str or int):
+            ROCm build number, passed as `--build-arg=ROCM_BUILD_NUM`.
+        therock_path (str or pathlib.Path or None):
+            Path to the local “therock” directory to supply as a named build context.
+            If provided and exists, used directly; otherwise a temporary directory
+            is created and used. Also influences the `THEROCK_PATH` build arg as
+            described above.
+        tag (str):
+            Docker image tag to assign (passed as `--tag=<tag>`).
+        custom_flags (list[str], optional):
+            Additional `docker build` flags to append (e.g., ["--no-cache", "--pull"]).
+            Defaults to an empty list.
+
+    Raises:
+        subprocess.CalledProcessError:
+            If `docker build` exits with a non-zero status.
+        FileNotFoundError:
+            If the `docker` CLI is not available in PATH.
+        Exception:
+            Any other error raised while constructing temporary paths or invoking
+            the subprocess.
+    """
+    cmd = [
+        "docker",
+        "build",
+        "-f",
+        dockerfile,
+        "--build-arg=ROCM_VERSION=%s" % rocm_version,
+        "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
+        "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
+        "--tag=%s" % tag,
+    ]
+    cmd.extend(custom_flags)
+
+    if therock_path and Path(therock_path).exists():
+        cmd.append("--build-arg=THEROCK_PATH=/tmp/therock/")
+        cmd.append("--build-context=therock=%s" % therock_path)
+    else:
+        if therock_path:
+            cmd.append("--build-arg=THEROCK_PATH=%s" % therock_path)
+        temp_path = Path(tempfile.mkdtemp()) / "therock"
+        temp_path.mkdir(exist_ok=True)
+        cmd.append("--build-context=therock=%s" % temp_path)
+
+    # context dir
+    cmd.append(".")
+
+    subprocess.check_call(cmd)
+
+
 def build_dockers(
     rocm_version: str,
     python_versions: str,
@@ -131,27 +312,55 @@ def build_dockers(
     docker_filters=None,
 ):
     commit_info = _get_commit_info_from_wheel()
-    dockerfiles = []
-    docker_dir = "docker"
-    for f in os.listdir(docker_dir):
-        if f.startswith("Dockerfile"):
-            path = os.path.join(docker_dir, f)
-
-            if docker_filters:
-                for substr in docker_filters:
-                    if substr in f:
-                        dockerfiles.append(path)
-
-            else:
-                dockerfiles.append(path)
+    dockerfiles = _apply_filters(docker_filters, "Dockerfile.jax")
 
     rocm_ver_tag = "rocm%s" % "".join(rocm_version.split("."))
+    rocm_version_tag = "".join(rocm_version.split("."))
     plugin_namespace = rocm_version[0]
     if plugin_namespace == "6":
         plugin_namespace = "60"
+    print(f"Setting Plugin Namespace to {plugin_namespace}")
 
+    extra_args = [
+        "--build-arg=XLA_COMMIT=%s" % commit_info["xla_commit"],
+        "--build-arg=JAX_COMMIT=%s" % commit_info["jax_commit"],
+        "--build-arg=ROCM_JAX_COMMIT=%s" % commit_info["rocm_jax_commit"],
+        "--build-arg=PLUGIN_NAMESPACE=%s" % plugin_namespace,
+        "--build-arg=ROCM_VERSION_TAG=%s" % rocm_version_tag,
+    ]
+    print(f"Extra args sent to docker: {extra_args}")
     for dockerfile in dockerfiles:
         _, tag_suffix = dockerfile.split(".", 1)
+
+        # Extract ubuntu version from tag_suffix (e.g., "jax-ubu22" -> "ubu22")
+        # tag_suffix format is "jax-ubu<version>"
+        ubuntu_version = tag_suffix.split("-")[-1]  # "jax-ubu22" -> "ubu22"
+
+        # Construct base image name
+        base_image_name = "ghcr.io/rocm/jax-base-%s.rocm%s" % (
+            ubuntu_version,
+            rocm_version_tag,
+        )
+
+        # Check if base image exists
+        if not _check_base_image_exists(base_image_name):
+            print(
+                "Base image %s not found in registry. Building it..." % base_image_name
+            )
+            # Build the base image
+            build_base_dockers(
+                rocm_version=rocm_version,
+                python_versions=python_versions,
+                rocm_build_job=rocm_build_job,
+                rocm_build_num=rocm_build_num,
+                therock_path=therock_path,
+                add_llvm=False,  # Base images, not dev images
+                docker_filters=[ubuntu_version],  # Filter for specific ubuntu version
+                push_latest=True,  # Tag and push as latest to preserve Dockerfile invariant
+            )
+        else:
+            print("Base image %s found in registry." % base_image_name)
+
         if tag_base:
             tag = "%s.%s.%s" % (tag_base, tag_suffix, rocm_ver_tag)
         else:
@@ -159,36 +368,69 @@ def build_dockers(
 
         print("Building dockerfile=%r to tag=%r" % (dockerfile, tag))
 
-        cmd = [
-            "docker",
-            "build",
-            "-f",
+        _run_docker(
             dockerfile,
-            "--build-arg=ROCM_VERSION=%s" % rocm_version,
-            "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
-            "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
-            "--build-arg=XLA_COMMIT=%s" % commit_info["xla_commit"],
-            "--build-arg=JAX_COMMIT=%s" % commit_info["jax_commit"],
-            "--build-arg=ROCM_JAX_COMMIT=%s" % commit_info["rocm_jax_commit"],
-            "--build-arg=PLUGIN_NAMESPACE=%s" % plugin_namespace,
-            "--tag=%s" % tag,
+            rocm_version,
+            rocm_build_job,
+            rocm_build_num,
+            therock_path,
+            tag,
+            extra_args,
+        )
+
+
+def build_base_dockers(
+    rocm_version: str,
+    python_versions: str,
+    rocm_build_job="",
+    rocm_build_num="",
+    add_llvm=False,
+    llvm_version=18,
+    therock_path=None,
+    tag_base=None,
+    docker_filters=None,
+    push_latest=False,
+):
+
+    dockerfiles = _apply_filters(docker_filters, "Dockerfile.base")
+    rocm_ver_tag = "rocm%s" % "".join(rocm_version.split("."))
+
+    extra_args = []
+    if add_llvm:
+        extra_args = [
+            f"--build-arg=INSTALL_LLVM={int(add_llvm)}",
+            f"--build-arg=LLVM_VERSION={llvm_version}",
         ]
 
-        if therock_path and Path(therock_path).exists():
-            cmd.append("--build-arg=THEROCK_PATH=/tmp/therock/")
-            cmd.append("--build-context=therock=%s" % therock_path)
+    for dockerfile in dockerfiles:
+        _, tag_suffix = dockerfile.split(".", 1)
+        if add_llvm:
+            # Change prefix from "base" to "dev" for LLVM images
+            tag_suffix = tag_suffix.replace("base-", "dev-", 1)
+
+        # Add "jax-" prefix to all tags
+        tag_suffix = "jax-" + tag_suffix
+
+        if tag_base:
+            tag = "%s.%s.%s" % (tag_base, tag_suffix, rocm_ver_tag)
         else:
-            if therock_path:
-                cmd.append("--build-arg=THEROCK_PATH=%s" % therock_path)
-            print(tempfile.tempdir)
-            temp_path = Path(tempfile.mkdtemp()) / "therock"
-            temp_path.mkdir(exist_ok=True)
-            cmd.append("--build-context=therock=%s" % temp_path)
+            tag = "%s.%s" % (tag_suffix, rocm_ver_tag)
 
-        # context dir
-        cmd.append(".")
+        print("Building dockerfile=%r to tag=%r" % (dockerfile, tag))
 
-        subprocess.check_call(cmd)
+        _run_docker(
+            dockerfile,
+            rocm_version,
+            rocm_build_job,
+            rocm_build_num,
+            therock_path,
+            tag,
+            extra_args,
+        )
+
+        # Tag and push as latest if requested
+        if push_latest:
+            _tag_and_push_latest(tag)
 
 
 def test(image_name, test_cmd=None):
@@ -198,15 +440,20 @@ def test(image_name, test_cmd=None):
 
     print("ROCm JAX Build Information")
     if "com.amdgpu.rocm_jax_commit" in labels:
-        print(f"rocm/rocm-jax commit hash: {labels['com.amdgpu.rocm_jax_commit']}", flush=True)
+        print(
+            f"rocm/rocm-jax commit hash: {labels['com.amdgpu.rocm_jax_commit']}",
+            flush=True,
+        )
     if "com.amdgpu.jax_commit" in labels:
         print(f"rocm/jax commit hash: {labels['com.amdgpu.jax_commit']}", flush=True)
     if "com.amdgpu.xla_commit" in labels:
         print(f"rocm/xla commit hash: {labels['com.amdgpu.xla_commit']}", flush=True)
 
     if not test_cmd:
-        test_cmd = "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && " \
+        test_cmd = (
+            "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && "
             "python jax_rocm_plugin/build/rocm/run_multi_gpu.py"
+        )
 
     gpu_args = [
         "--device=/dev/kfd",
@@ -306,11 +553,7 @@ def parse_args():
     subp = p.add_subparsers(dest="action", required=True)
 
     dwp = subp.add_parser("dist_wheels")
-    dwp.add_argument(
-        "--rbe",
-        action="store_true",
-        help="Use Bazel RBE for building"
-    )
+    dwp.add_argument("--rbe", action="store_true", help="Use Bazel RBE for building")
 
     dtestp = subp.add_parser("test_docker")
     dtestp.add_argument("--docker-build-only", action="store_true")
@@ -327,6 +570,25 @@ def parse_args():
         type=str,
         help="Comma separated strings to filter Dockerfiles to build. Substring match",
         default="",
+    )
+
+    bbasedp = subp.add_parser("build_base_dockers")
+    bbasedp.add_argument(
+        "--filter",
+        "-f",
+        type=str,
+        help="Comma separated strings to filter Dockerfiles to build. Substring match",
+        default="",
+    )
+    bbasedp.add_argument(
+        "--install-llvm",
+        help="Enable the installation of LLVM in the containers.",
+        action="store_true",
+    )
+    bbasedp.add_argument(
+        "--llvm-version",
+        help="Set the version number of LLVM to be installed.",
+        type=int,
     )
 
     testp = subp.add_parser("test")
@@ -378,6 +640,19 @@ def main():
             rocm_build_num=args.rocm_build_num,
             therock_path=args.therock_path,
             docker_filters=filters,
+        )
+    elif args.action == "build_base_dockers":
+        filters = args.filter.split(",")
+
+        build_base_dockers(
+            rocm_version=args.rocm_version,
+            python_versions=args.python_versions,
+            rocm_build_job=args.rocm_build_job,
+            rocm_build_num=args.rocm_build_num,
+            therock_path=args.therock_path,
+            docker_filters=filters,
+            add_llvm=args.install_llvm,
+            llvm_version=args.llvm_version,
         )
 
     elif args.action == "test_docker":
