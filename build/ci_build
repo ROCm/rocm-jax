@@ -53,6 +53,11 @@ def _check_base_image_exists(base_image_name):
         return False
 
 
+def _is_github_actions():
+    """Check if the script is running in a GitHub Actions environment."""
+    return os.environ.get("GITHUB_ACTIONS") == "true"
+
+
 def _tag_and_push_latest(local_tag, registry="ghcr.io/rocm"):
     """
     Tag a local Docker image and push it to GHCR with 'latest' tag.
@@ -60,6 +65,9 @@ def _tag_and_push_latest(local_tag, registry="ghcr.io/rocm"):
     This function tags a locally built image and pushes it to GitHub Container
     Registry with the 'latest' tag, following the same naming scheme as the
     build-base-docker.yml workflow.
+
+    Note: Pushing to GHCR only occurs when running in a GitHub Actions environment.
+    When running locally, the image is tagged but not pushed.
 
     Args:
         local_tag (str): Local Docker image tag (e.g., "jax-base-ubu22.rocm711")
@@ -71,8 +79,12 @@ def _tag_and_push_latest(local_tag, registry="ghcr.io/rocm"):
     ghcr_image = "%s/%s:latest" % (registry, local_tag)
     print("Tagging %s as %s" % (local_tag, ghcr_image))
     subprocess.check_call(["docker", "tag", local_tag, ghcr_image])
-    print("Pushing %s" % ghcr_image)
-    subprocess.check_call(["docker", "push", ghcr_image])
+    
+    if _is_github_actions():
+        print("Pushing %s" % ghcr_image)
+        subprocess.check_call(["docker", "push", ghcr_image])
+    else:
+        print("Skipping push to GHCR (not running in GitHub Actions)")
 
 
 def _get_commit_info_from_wheel():
