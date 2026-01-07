@@ -55,6 +55,12 @@ jobs:
         with:
           name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
           path: ./wheelhouse
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          # Login must happen before calling build_dockers as the base image might need
+          # to be built and the pushed to the registry.
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Build JAX docker image
         run: |
           ls -lah ./wheelhouse
@@ -63,10 +69,6 @@ jobs:
             --rocm-build-job="${{ inputs.rocm-build-job }}" \
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
             build_dockers
-      - name: Authenticate to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Push docker images
         env:
           EXTRA_CR_TAG: ${{ inputs.extra-cr-tag }}
