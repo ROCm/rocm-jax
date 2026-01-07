@@ -1,0 +1,124 @@
+name: Test and Upload
+
+on:
+  workflow_call:
+    inputs:
+      rocm-version:
+        required: true
+        type: string
+      ubuntu-version:
+        required: true
+        type: string
+      rocm-build-num:
+        required: false
+        type: string
+        default: "0"
+      github-sha:
+        required: true
+        type: string
+      github-run-id:
+        required: true
+        type: string
+    secrets:
+      ROCM_JAX_DB_HOSTNAME:
+        required: true
+      ROCM_JAX_DB_USERNAME:
+        required: true
+      ROCM_JAX_DB_PASSWORD:
+        required: true
+      ROCM_JAX_DB_NAME:
+        required: true
+
+jobs:
+  run-tests:
+    runs-on: mi-250
+    steps:
+      - name: Change owners for cleanup
+        run: |
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
+      - name: Checkout JAX repo
+        uses: actions/checkout@v4
+        with:
+          # TODO: Load the ref from a file that sets the min and max JAX version
+          # TODO: Change the repo and ref once we figure out how exactly we're going to
+          #       manage tests
+          repository: rocm/jax
+          ref: rocm-jaxlib-v0.8.0
+          path: jax
+      - name: Apply patches to rocm/jax test repo
+        run: |
+          pushd jax
+          git apply ../ci/patches/*
+          popd
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Pull images
+        env:
+          ROCM_VERSION: ${{ inputs.rocm-version }}
+          UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
+          GITHUB_SHA: ${{ inputs.github-sha }}
+        run: |
+          IMAGE="ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          docker pull "$IMAGE"
+      - name: Run tests
+        env:
+          GPU_COUNT: "8"
+          GFX: "gfx90a"
+          ROCM_VERSION: ${{ inputs.rocm-version }}
+          UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
+          GITHUB_SHA: ${{ inputs.github-sha }}
+        run: |
+          # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
+          python3 build/ci_build test \
+            "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
+            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s && \
+                        python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
+      - name: Upload logs to artifact (per-matrix)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          path: logs/
+  upload-to-db:
+    needs: run-tests
+    runs-on: mysqldb
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Download logs from artifact (per-matrix)
+        uses: actions/download-artifact@v4
+        with:
+          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          path: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+      - name: Upload logs to MySQL database
+        env:
+          ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
+          ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
+          ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
+          ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
+          ROCM_VERSION: ${{ inputs.rocm-version }}
+          UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
+          LOGS_DIR: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          GITHUB_SHA: ${{ inputs.github-sha }}
+          GITHUB_RUN_ID: ${{ inputs.github-run-id }}
+          ROCM_BUILD_NUM: ${{ inputs.rocm-build-num }}
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install mysql-connector-python
+
+          python ci/upload_test_to_db.py \
+          --logs_dir "$LOGS_DIR" \
+          --run-tag "ci-run" \
+          --runner-label "MI250" \
+          --ubuntu-version "${UBUNTU_VERSION}" \
+          --rocm-version "${ROCM_VERSION//.}" \
+          --commit-sha "$GITHUB_SHA" \
+          --build-num "$ROCM_BUILD_NUM" \
+          --github-run-id "$GITHUB_RUN_ID"

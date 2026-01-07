@@ -19,6 +19,7 @@ Single GPU test runner for JAX with ROCm.
 This script runs JAX tests on individual GPUs in parallel, excluding
 multi-GPU tests that require multiple devices.
 """
+# pylint: disable=too-many-lines
 
 import os
 import shutil
@@ -174,19 +175,70 @@ def parse_test_log(log_file):
     return test_files
 
 
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
 def collect_testmodules(ignore_skipfile=True):
     """Collect all test modules, excluding multi-GPU tests."""
 
+    # Debug: Print filesystem state before starting
+    print("=== DEBUG: Filesystem state before test collection ===", file=sys.stderr)
+    print(f"Current working directory: {os.getcwd()}", file=sys.stderr)
+    print("Directory contents:", file=sys.stderr)
+    try:
+        for item in sorted(os.listdir(".")):
+            item_path = os.path.join(".", item)
+            if os.path.isdir(item_path):
+                print(f"  DIR:  {item}/", file=sys.stderr)
+            else:
+                print(f"  FILE: {item}", file=sys.stderr)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"  ERROR listing directory: {e}", file=sys.stderr)
+
+    # Check for key files/directories
+    key_paths = [
+        "ci/pytest_drop_test_list.ini",
+        "jax/",
+        "jax/tests",
+        "ci/pytest_skips.ini",
+    ]
+    print("\nKey paths status:", file=sys.stderr)
+    for path in key_paths:
+        exists = os.path.exists(path)
+        is_dir = os.path.isdir(path) if exists else False
+        is_file = os.path.isfile(path) if exists else False
+        perms = ""
+        if exists:
+            try:
+                perms = oct(os.stat(path).st_mode)[-3:]
+            except Exception:  # pylint: disable=broad-exception-caught
+                perms = "unknown"
+        print(
+            f"  {path}: exists={exists}, is_dir={is_dir}, is_file={is_file}, perms={perms}",
+            file=sys.stderr,
+        )
+
     # copy to jax as it's node ids for pytest.
-    shutil.copy("ci/pytest_drop_test_list.ini", "jax/")
+    try:
+        shutil.copy("ci/pytest_drop_test_list.ini", "jax/")
+        print("Copied ci/pytest_drop_test_list.ini to jax/", file=sys.stderr)
+    except Exception as e:
+        print(f"ERROR copying pytest_drop_test_list.ini: {e}", file=sys.stderr)
+        raise
 
     # jax/pytest_drop_test_list has ingore list for multi-gpu
     # append skip list as -deselect
     if not ignore_skipfile:
-        with open(
-            "./jax/pytest_drop_test_list.ini", "a", encoding="utf-8"
-        ) as outfile, open("ci/pytest_skips.ini", encoding="utf-8") as infile:
-            outfile.write(infile.read())
+        try:
+            with open(
+                "./jax/pytest_drop_test_list.ini", "a", encoding="utf-8"
+            ) as outfile, open("ci/pytest_skips.ini", encoding="utf-8") as infile:
+                outfile.write(infile.read())
+            print(
+                "Appended pytest_skips.ini to pytest_drop_test_list.ini",
+                file=sys.stderr,
+            )
+        except Exception as e:
+            print(f"ERROR appending skip file: {e}", file=sys.stderr)
+            raise
 
     pytest_cmd = [
         "python3",
@@ -201,25 +253,76 @@ def collect_testmodules(ignore_skipfile=True):
     ]
 
     print(f"collect_testmodules: cmd={pytest_cmd}")
+    print(f"collect_testmodules: cmd={pytest_cmd}", file=sys.stderr)
 
     # run pytest collection and save in file collected_tests.txt
     with open("collected_tests.txt", "w", encoding="utf-8") as f:
         try:
-            subprocess.run(pytest_cmd, stdout=f, check=True)
+            subprocess.run(
+                pytest_cmd, stdout=f, stderr=subprocess.PIPE, check=True, text=True
+            )
+            print("pytest collection succeeded", file=sys.stderr)
         except subprocess.CalledProcessError as e:
+            print("=== ERROR: pytest collection failed ===", file=sys.stderr)
+            print(f"Return code: {e.returncode}", file=sys.stderr)
+            print(f"Command: {' '.join(pytest_cmd)}", file=sys.stderr)
+            print("\nSTDERR output:", file=sys.stderr)
+            if e.stderr:
+                print(e.stderr, file=sys.stderr)
+            else:
+                print("(no stderr captured)", file=sys.stderr)
+            print("\nSTDOUT output (from collected_tests.txt):", file=sys.stderr)
+            # Read back what was written to the file
+            try:
+                f.seek(0)
+                stdout_content = f.read()
+                if stdout_content:
+                    print(stdout_content, file=sys.stderr)
+                else:
+                    print("(file is empty)", file=sys.stderr)
+            except Exception as read_err:  # pylint: disable=broad-exception-caught
+                print(f"(could not read file: {read_err})", file=sys.stderr)
+            print(f"\nException details: {e}", file=sys.stderr)
+            print(f"Exception type: {type(e).__name__}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            # Also print to stdout for visibility
             print(f"command failed: {e}")
+            print(f"stderr: {e.stderr}")
+            raise
+
+    # Debug: Print filesystem state after collection
+    print("\n=== DEBUG: Filesystem state after test collection ===", file=sys.stderr)
+    print(
+        f"collected_tests.txt exists: {os.path.exists('collected_tests.txt')}",
+        file=sys.stderr,
+    )
+    if os.path.exists("collected_tests.txt"):
+        try:
+            file_size = os.path.getsize("collected_tests.txt")
+            print(f"collected_tests.txt size: {file_size} bytes", file=sys.stderr)
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            print(f"ERROR getting file size: {e}", file=sys.stderr)
 
     # create key value store for test_name, test-ids
     tests_count = 0
     tests_dict = defaultdict(list)
-    with open("collected_tests.txt", "r", encoding="utf-8") as f:
-        for test_id in f:
-            if test_id.startswith(("tests/", "./tests/")):
-                test_name = extract_test_name(test_id.strip())
-                tests_dict[test_name].append(f"jax/{test_id.strip()}")
-                tests_count += 1
+    try:
+        with open("collected_tests.txt", "r", encoding="utf-8") as f:
+            for test_id in f:
+                if test_id.startswith(("tests/", "./tests/")):
+                    test_name = extract_test_name(test_id.strip())
+                    tests_dict[test_name].append(f"jax/{test_id.strip()}")
+                    tests_count += 1
+    except Exception as e:
+        print(f"ERROR parsing collected_tests.txt: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        raise
 
     print(f"test-files={len(tests_dict)}, total number of tests={tests_count}")
+    print(
+        f"test-files={len(tests_dict)}, total number of tests={tests_count}",
+        file=sys.stderr,
+    )
     return tests_dict
 
 
