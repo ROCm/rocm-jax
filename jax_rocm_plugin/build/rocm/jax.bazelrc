@@ -16,10 +16,11 @@ build:rocm_rbe --host_platform="@local_config_rocm//rocm:linux_x64"
 build:rocm_rbe --extra_execution_platforms="@local_config_rocm//rocm:linux_x64"
 build:rocm_rbe --platforms="@local_config_rocm//rocm:linux_x64"
 build:rocm_rbe --bes_timeout=600s
-build:rocm_rbe --tls_client_certificate="/tf/certificates/ci-cert.crt"
-build:rocm_rbe --tls_client_key="/tf/certificates/ci-cert.key"
+build:rocm_rbe --tls_client_certificate="ci-cert.crt"
+build:rocm_rbe --tls_client_key="ci-cert.key"
 build:rocm_rbe --spawn_strategy=remote,local
 build:rocm_rbe --grpc_keepalive_time=30s
+build:rocm_rbe --repo_env="TF_ROCM_RBE_DOCKER_IMAGE=rocm/jax-manylinux_2_28_x86_64_rocm702@sha256:3b7c7d786b72aa2524fbede28df822609106576d10deed6de7325164ebb724b7"
 
 test:rocm_rbe --jobs=200
 test:rocm_rbe --remote_executor=grpcs://wardite.cluster.engflow.com

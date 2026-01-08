@@ -27,6 +27,12 @@ JAX_PLUGIN_DIR=${args['--jax_plugin_dir']}
 WHEELHOUSE="${JAX_DIR}/../wheelhouse"
 XLA_DIR=${args['--xla_dir']}
 
+clean_up() {
+    rm -rf ${WHEELHOUSE}
+}
+
+trap clean_up EXIT
+
 pushd ${JAX_PLUGIN_DIR}
 python3 build/build.py build \
     --use_clang=true \
@@ -55,6 +61,9 @@ python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_
 bazel --bazelrc=${JAX_PLUGIN_DIR}/rbe.bazelrc test \
     --config=rocm \
     --config=rocm_rbe \
+    --spawn_strategy=local \
+    --strategy=TestRunner=local \
+    --config=multi_gpu \
     --//jax:build_jaxlib=false \
     --override_repository=xla=${XLA_DIR} \
     --build_tag_filters=cpu,gpu,-tpu,-config-cuda-only \

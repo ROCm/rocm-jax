@@ -1,8 +1,8 @@
 # Build configuration for running with Bazel RBE
 
 # When building in a container, these need to be mounted
-build:rocm_rbe --tls_client_certificate="/tf/certificates/ci-cert.crt"
-build:rocm_rbe --tls_client_key="/tf/certificates/ci-cert.key"
+build:rocm_rbe --tls_client_certificate="ci-cert.crt"
+build:rocm_rbe --tls_client_key="ci-cert.key"
 
 build:rocm_rbe --bes_backend="grpcs://wardite.cluster.engflow.com"
 build:rocm_rbe --bes_results_url="https://wardite.cluster.engflow.com/invocation/"
