@@ -1,0 +1,44 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+
+py_binary(
+    name = "requirements.update",
+    srcs = ["@rules_python//python/private/pypi/dependency_resolver:dependency_resolver.py"],
+    args = [
+        "--src=$(rlocationpath requirements.in)",
+        "$(rlocationpath requirements.txt)",
+        "--resolver=backtracking",
+        "--allow-unsafe",
+        "--generate-hashes",
+        "--allow-unsafe",
+        "--build-isolation",
+        "--rebuild",
+    ],
+    data = [
+        "requirements.in",
+        "requirements.txt",
+    ],
+    main = "@rules_python//python/private/pypi/dependency_resolver:dependency_resolver.py",
+    tags = [
+        "cpu",
+        "gpu",
+        "no-remote-exec",
+        "no-sandbox",
+        "requires-network",
+    ],
+    deps = [
+        "@pypi__build//:lib",
+        "@pypi__click//:lib",
+        "@pypi__colorama//:lib",
+        "@pypi__importlib_metadata//:lib",
+        "@pypi__more_itertools//:lib",
+        "@pypi__packaging//:lib",
+        "@pypi__pep517//:lib",
+        "@pypi__pip//:lib",
+        "@pypi__pip_tools//:lib",
+        "@pypi__pyproject_hooks//:lib",
+        "@pypi__setuptools//:lib",
+        "@pypi__tomli//:lib",
+        "@pypi__zipp//:lib",
+        "@rules_python//python/runfiles",
+    ],
+)

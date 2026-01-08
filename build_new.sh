@@ -6,7 +6,7 @@ WHEELHOUSE="$(pwd)/wheelhouse"
 
 bazel run \
     --config=rocm_wheels \
-    --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+    --repo_env=HERMETIC_PYTHON_VERSION=3.11 \
     @jax_rocm_plugin//jaxlib_ext/tools:build_gpu_kernels_wheel \
     -- \
     --output_path=${WHEELHOUSE} \
@@ -17,7 +17,7 @@ bazel run \
 
 bazel run \
     --config=rocm_wheels \
-    --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+    --repo_env=HERMETIC_PYTHON_VERSION=3.11 \
     @jax_rocm_plugin//pjrt/tools:build_gpu_plugin_wheel \
     -- \
     --output_path=${WHEELHOUSE} \
@@ -26,17 +26,18 @@ bazel run \
     --platform_version=7 \
     --rocm_jax_git_hash=
 
-JAX_VERSION=${args['--jax_version']}
+JAX_VERSION=0.8.0
+PYTHON_VERSION=3.11
+PYTHON_TAG=cp311
 {
     echo etils
     echo jaxlib=="$JAX_VERSION"
-    ls ${WHEELHOUSE}/jax_rocm7_pjrt*${JAX_VERSION}*
-    ls ${WHEELHOUSE}/jax_rocm7_plugin*$JAX_VERSION*${PYTHON//./}*
+    ls ${WHEELHOUSE}/jax_rocm7_pjrt*${JAX_VERSION}* 2>/dev/null || true
+    ls ${WHEELHOUSE}/jax_rocm7_plugin*${JAX_VERSION}*${PYTHON_TAG}* 2>/dev/null || true
 } >build/requirements.in
 
-python3 build/build.py requirements_update --python="3.11"
+bazel run --repo_env=HERMETIC_PYTHON_VERSION=3.11 --verbose_failures=true //build:requirements.update
 python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_version="3.11"
-popd
 
 bazel test \
     --config=rocm \
