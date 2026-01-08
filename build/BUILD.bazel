@@ -1,44 +1,34 @@
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@python_version_repo//:py_version.bzl", "REQUIREMENTS")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
-py_binary(
+# Use compile_pip_requirements like JAX does - this handles file paths better
+# than the py_binary approach with rlocationpath
+# REQUIREMENTS is a dict mapping Python versions to lock file names
+compile_pip_requirements(
     name = "requirements.update",
-    srcs = ["@rules_python//python/private/pypi/dependency_resolver:dependency_resolver.py"],
-    args = [
-        "--src=$(rlocationpath requirements.in)",
-        "$(rlocationpath requirements.txt)",
-        "--resolver=backtracking",
-        "--allow-unsafe",
-        "--generate-hashes",
+    srcs = ["requirements.in"],
+    extra_args = [
         "--allow-unsafe",
         "--build-isolation",
         "--rebuild",
+        "--resolver=backtracking",
     ],
-    data = [
-        "requirements.in",
-        "requirements.txt",
+    generate_hashes = True,
+    requirements_txt = REQUIREMENTS,
+)
+
+# Nightly requirements update (for pre-release packages)
+compile_pip_requirements(
+    name = "requirements_nightly.update",
+    srcs = ["requirements.in"],
+    extra_args = [
+        "--allow-unsafe",
+        "--build-isolation",
+        "--extra-index-url=https://pypi.anaconda.org/scientific-python-nightly-wheels/simple",
+        "--pre",
+        "--upgrade",
+        "--resolver=backtracking",
     ],
-    main = "@rules_python//python/private/pypi/dependency_resolver:dependency_resolver.py",
-    tags = [
-        "cpu",
-        "gpu",
-        "no-remote-exec",
-        "no-sandbox",
-        "requires-network",
-    ],
-    deps = [
-        "@pypi__build//:lib",
-        "@pypi__click//:lib",
-        "@pypi__colorama//:lib",
-        "@pypi__importlib_metadata//:lib",
-        "@pypi__more_itertools//:lib",
-        "@pypi__packaging//:lib",
-        "@pypi__pep517//:lib",
-        "@pypi__pip//:lib",
-        "@pypi__pip_tools//:lib",
-        "@pypi__pyproject_hooks//:lib",
-        "@pypi__setuptools//:lib",
-        "@pypi__tomli//:lib",
-        "@pypi__zipp//:lib",
-        "@rules_python//python/runfiles",
-    ],
+    generate_hashes = False,
+    requirements_txt = REQUIREMENTS,
 )

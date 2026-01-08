@@ -41,6 +41,8 @@ python_init_repositories(
         "jaxlib*",
         "jax_cuda*",
         "jax-cuda*",
+        "jax_rocm7_*",
+        "jax-rocm7-*",
     ],
     local_wheel_workspaces = ["@jax//jaxlib:jax.bzl"],
     requirements = {
@@ -172,25 +174,6 @@ load(
 
 test_shard_count_repository(
     name = "test_shard_count",
-)
-
-python_init_repositories(
-    default_python_version = "system",
-    local_wheel_dist_folder = "../dist",
-    local_wheel_inclusion_list = [
-        "jaxlib*",
-        "jax_cuda*",
-        "jax-cuda*",
-    ],
-    local_wheel_workspaces = ["@jax//jaxlib:jax.bzl"],
-    requirements = {
-        "3.11": "@jax//build:requirements_lock_3_11.txt",
-        "3.12": "@jax//build:requirements_lock_3_12.txt",
-        "3.13": "@jax//build:requirements_lock_3_13.txt",
-        "3.14": "@jax//build:requirements_lock_3_14.txt",
-        "3.13-ft": "@jax//build:requirements_lock_3_13_ft.txt",
-        "3.14-ft": "@jax//build:requirements_lock_3_14_ft.txt",
-    },
 )
 
 local_repository(

@@ -51,13 +51,13 @@ index 58fbfd734..57cbd4252 100644
 +# Targets for importing ROCm plugin wheels
 +py_import(
 +    name = "rocm_plugin_kernels_wheel",
-+    wheel = "@pypi_jax_rocm7_plugin//:whl",
++    wheel = "@pypi//jax_rocm7_plugin:whl",
 +    wheel_deps = [":rocm_wheel_deps"],
 +)
 +
 +py_import(
 +    name = "rocm_plugin_pjrt_wheel",
-+    wheel = "@pypi_jax_rocm7_pjrt//:whl",
++    wheel = "@pypi//jax_rocm7_pjrt:whl",
 +    wheel_deps = [":rocm_wheel_deps"],
 +)
 +

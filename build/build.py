@@ -418,6 +418,8 @@ async def main():
         for option in args.bazel_startup_options:
             bazel_command_base.append(option)
 
+    # Requirements update uses "build" (compile_pip_requirements generates a file)
+    # Other commands use "run" (they execute binaries)
     bazel_command_base.append("run")
 
     if args.python_version:
@@ -445,7 +447,26 @@ async def main():
 
     # Requirements update subcommand execution
     if args.command == "requirements_update":
-        requirements_command = copy.deepcopy(bazel_command_base)
+        # compile_pip_requirements uses "build" not "run" since it generates a file
+        requirements_command = command.CommandBuilder(bazel_path)
+        if args.bazel_startup_options:
+            for option in args.bazel_startup_options:
+                requirements_command.append(option)
+        requirements_command.append("build")
+        
+        # Add Python version if specified
+        if args.python_version:
+            python_version_opt = "--repo_env=HERMETIC_PYTHON_VERSION="
+            if any([python_version_opt in opt for opt in (args.bazel_options or [])]):
+                raise RuntimeError(
+                    "Please use python_version to set hermetic python version instead of "
+                    "setting --repo_env=HERMETIC_PYTHON_VERSION=<python version> bazel option"
+                )
+            logging.debug("Hermetic Python version: %s", args.python_version)
+            requirements_command.append(
+                f"--repo_env=HERMETIC_PYTHON_VERSION={args.python_version}"
+            )
+        
         if args.bazel_options:
             logging.debug("Using additional build options: %s", args.bazel_options)
             for option in args.bazel_options:
@@ -453,7 +474,7 @@ async def main():
 
         if args.nightly_update:
             logging.info(
-                "--nightly_update is set. Bazel will run"
+                "--nightly_update is set. Bazel will build"
                 " //build:requirements_nightly.update"
             )
             requirements_command.append("//build:requirements_nightly.update")
