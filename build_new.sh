@@ -5,31 +5,26 @@ set -ex
 WHEELHOUSE="$(pwd)/wheelhouse"
 
 bazel run \
-    --config=rocm \
+    --config=rocm_wheels \
     --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
-    --verbose_failures=true \
-    --define=xnn_enable_avxvnniint8=false \
-    --config=mkl_open_source_only \
-    --config=native_arch_posix \
     @jax_rocm_plugin//jaxlib_ext/tools:build_gpu_kernels_wheel \
     -- \
-    --output_path="/home/atheodor/projects/rocm-jax/wheelhouse" \
+    --output_path=${WHEELHOUSE} \
     --cpu=x86_64 \
     --enable-rocm=True \
     --platform_version=7 \
-    --rocm_jax_git_hash=333810a7b5b740250aa602a50652d3a261d45cd5
+    --rocm_jax_git_hash=
 
-#python3 build/build.py build \
-#--use_clang=true \
-#--clang_path=/lib/llvm-18/bin/clang-18 \
-#--wheels=jax-rocm-plugin,jax-rocm-pjrt \
-#--target_cpu_features=native \
-#--rocm_path=/opt/rocm \
-#--rocm_version=7 \
-#--rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-#--local_xla_path=${XLA_DIR} \
-#--output_path=${WHEELHOUSE} \
-#--verbose
+bazel run \
+    --config=rocm_wheels \
+    --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+    @jax_rocm_plugin//pjrt/tools:build_gpu_plugin_wheel \
+    -- \
+    --output_path=${WHEELHOUSE} \
+    --cpu=x86_64 \
+    --enable-rocm=True \
+    --platform_version=7 \
+    --rocm_jax_git_hash=
 
 JAX_VERSION=${args['--jax_version']}
 {

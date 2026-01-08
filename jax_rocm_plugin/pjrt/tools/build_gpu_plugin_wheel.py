@@ -140,8 +140,8 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
     copy_runfiles(
         dst_dir=wheel_sources_path,
         src_files=[
-            "__main__/pjrt/python/pyproject.toml",
-            "__main__/pjrt/python/setup.py",
+            "jax_rocm_plugin/pjrt/python/pyproject.toml",
+            "jax_rocm_plugin/pjrt/python/setup.py",
         ],
     )
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
@@ -154,12 +154,12 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
     copy_runfiles(
         dst_dir=plugin_dir,
         src_files=[
-            "__main__/pjrt/python/__init__.py",
-            "__main__/pjrt/python/version.py",
+            "jax_rocm_plugin/pjrt/python/__init__.py",
+            "jax_rocm_plugin/pjrt/python/version.py",
         ],
     )
     copy_runfiles(
-        "__main__/pjrt/pjrt_c_api_gpu_plugin.so",
+        "jax_rocm_plugin/pjrt/pjrt_c_api_gpu_plugin.so",
         dst_dir=plugin_dir,
         dst_filename="xla_rocm_plugin.so",
     )
