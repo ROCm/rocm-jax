@@ -7,7 +7,6 @@ declare -A args
 args['--python_version']=""
 args['--jax_version']=""
 args['--jax_dir']=""
-args['--jax_plugin_dir']=""
 args['--xla_dir']=""
 
 while [ $# -gt 0 ]; do
@@ -22,29 +21,14 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+SCRIPT_DIR=$(realpath $(dirname $0))
 JAX_DIR=${args['--jax_dir']}
-JAX_PLUGIN_DIR=${args['--jax_plugin_dir']}
 WHEELHOUSE="${JAX_DIR}/../wheelhouse"
 XLA_DIR=${args['--xla_dir']}
 
 clean_up() {
     rm -rf ${WHEELHOUSE}
 }
-
-trap clean_up EXIT
-
-pushd ${JAX_PLUGIN_DIR}
-python3 build/build.py build \
-    --use_clang=true \
-    --clang_path=/lib/llvm-18/bin/clang-18 \
-    --wheels=jax-rocm-plugin,jax-rocm-pjrt \
-    --target_cpu_features=native \
-    --rocm_path=/opt/rocm \
-    --rocm_version=7 \
-    --rocm_amdgpu_targets=${AMDGPU_TARGETS} \
-    --local_xla_path=${XLA_DIR} \
-    --output_path=${WHEELHOUSE} \
-    --verbose
 
 pushd ${JAX_DIR}
 JAX_VERSION=${args['--jax_version']}
@@ -58,12 +42,11 @@ JAX_VERSION=${args['--jax_version']}
 python3 build/build.py requirements_update --python="${PYTHON}"
 python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_version="${PYTHON}" --local_xla_path=${XLA_DIR}
 
-bazel --bazelrc=${JAX_PLUGIN_DIR}/rbe.bazelrc test \
+bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc test \
     --config=rocm \
     --config=rocm_rbe \
     --spawn_strategy=local \
     --strategy=TestRunner=local \
-    --config=multi_gpu \
     --//jax:build_jaxlib=false \
     --override_repository=xla=${XLA_DIR} \
     --build_tag_filters=cpu,gpu,-tpu,-config-cuda-only \
