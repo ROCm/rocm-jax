@@ -29,15 +29,18 @@ bazel run \
 JAX_VERSION=0.8.0
 PYTHON_VERSION=3.11
 PYTHON_TAG=cp311
+PROJECT_ROOT="$(pwd)"
 {
     echo etils
     echo jaxlib=="$JAX_VERSION"
+    # Use file:/// URIs (three slashes) for absolute paths to avoid pip-tools URI issues
     ls ${WHEELHOUSE}/jax_rocm7_pjrt*${JAX_VERSION}* 2>/dev/null || true
     ls ${WHEELHOUSE}/jax_rocm7_plugin*${JAX_VERSION}*${PYTHON_TAG}* 2>/dev/null || true
 } >build/requirements.in
 
 bazel run --repo_env=HERMETIC_PYTHON_VERSION=3.11 --verbose_failures=true //build:requirements.update
-python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_version="3.11"
+# Ensure bazel configuration is set up (equivalent to build.py --configure_only)
+bazel query --repo_env=HERMETIC_PYTHON_VERSION=3.11 --config=rocm_wheels @jax_rocm_plugin//jaxlib_ext/tools:build_gpu_kernels_wheel >/dev/null
 
 bazel test \
     --config=rocm \

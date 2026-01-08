@@ -3,7 +3,6 @@
 set -ex
 
 WHEELHOUSE="$(pwd)/wheelhouse"
-pushd jax_rocm_plugin
 
 python3 build/build.py build \
     --use_clang=true \
@@ -14,7 +13,6 @@ python3 build/build.py build \
     --rocm_version=7 \
     --output_path=${WHEELHOUSE} \
     --verbose
-popd
 
 JAX_VERSION='7'
 {
