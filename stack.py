@@ -50,12 +50,13 @@ KERNELS_JAX_OVERRIDE_OPTION="%(kernels_jax_override)s"
 ###
 
 
-.PHONY: test clean install dist
+.PHONY: test clean install dist all_wheels
 
 .default: dist
 
 
 dist: jax_rocm_plugin jax_rocm_pjrt
+all_wheels: clean dist jaxlib_clean jaxlib jaxlib_install install
 
 
 jax_rocm_plugin:
