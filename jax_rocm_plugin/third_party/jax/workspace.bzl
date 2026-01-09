@@ -10,10 +10,9 @@ def repo():
         sha256 = SHA,
         strip_prefix = "jax-{commit}".format(commit = COMMIT),
         urls = ["https://github.com/jax-ml/jax/archive/{commit}.tar.gz".format(commit = COMMIT)],
-        patch_file = [
-           "//third_party/jax:build.patch",
-           "//third_party/jax:jax_bzl.patch",
-           "//third_party/jax:hipBlas_typedef.patch",
-           "//third_party/jax:no_gpu_fail.patch"
+	patch_file = [
+            "//third_party/jax:build.patch",
+            "//third_party/jax:jax_bzl.patch",
+            "//third_party/jax:hipBlas_typedef.patch",
         ],
     )
