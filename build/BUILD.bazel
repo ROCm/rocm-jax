@@ -1,0 +1,34 @@
+load("@python_version_repo//:py_version.bzl", "REQUIREMENTS")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+
+# Use compile_pip_requirements like JAX does - this handles file paths better
+# than the py_binary approach with rlocationpath
+# REQUIREMENTS is a dict mapping Python versions to lock file names
+compile_pip_requirements(
+    name = "requirements.update",
+    srcs = ["requirements.in"],
+    extra_args = [
+        "--allow-unsafe",
+        "--build-isolation",
+        "--rebuild",
+        "--resolver=backtracking",
+    ],
+    generate_hashes = True,
+    requirements_txt = REQUIREMENTS,
+)
+
+# Nightly requirements update (for pre-release packages)
+compile_pip_requirements(
+    name = "requirements_nightly.update",
+    srcs = ["requirements.in"],
+    extra_args = [
+        "--allow-unsafe",
+        "--build-isolation",
+        "--extra-index-url=https://pypi.anaconda.org/scientific-python-nightly-wheels/simple",
+        "--pre",
+        "--upgrade",
+        "--resolver=backtracking",
+    ],
+    generate_hashes = False,
+    requirements_txt = REQUIREMENTS,
+)
