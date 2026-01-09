@@ -21,7 +21,7 @@ jobs:
         rocm-version: ["7.1.0", "7.2.0"]
         include:
           - rocm-version: "7.1.0"
-            runner-label: "mi-250"
+            runner-label: "linux-mi355-8"
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16849"
@@ -44,7 +44,7 @@ jobs:
         rocm-version: ["7.1.0", "7.2.0"]
         include:
           - rocm-version: "7.1.0"
-            runner-label: "mi-250"
+            runner-label: "linux-mi355-8"
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16849"
@@ -58,7 +58,7 @@ jobs:
       extra-cr-tag: "nightly"
   run-python-unit-tests:
     needs: call-build-docker
-    runs-on: mi-250
+    runs-on: linux-mi355-8
     strategy:
       fail-fast: false
       matrix:
@@ -148,7 +148,7 @@ jobs:
           python ci/upload_test_to_db.py \
           --logs_dir "$LOGS_DIR" \
           --run-tag "ci-run" \
-          --runner-label "MI250" \
+          --runner-label "MI350" \
           --ubuntu-version "${UBUNTU_VERSION}" \
           --rocm-version "${ROCM_VERSION//.}" \
           --commit-sha "${{ github.sha }}" \
