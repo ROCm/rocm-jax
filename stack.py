@@ -168,16 +168,21 @@ def find_clang():
 def get_amdgpu_targets():
     """Attempt to detect AMD GPU targets using rocminfo."""
     try:
+        cmd = "rocminfo | grep -o -m 1 'gfx.*'"
         out = subprocess.check_output(
-            "rocminfo | grep -o -m 1 'gfx.*'", shell=True, stderr=subprocess.DEVNULL
+            cmd, shell=True, stderr=subprocess.DEVNULL
         ).decode()
         target = out.strip()
         if target:
             return target
-    except Exception:
+    except (subprocess.SubprocessError, OSError):
         pass
     # Default targets if rocminfo fails
-    return "gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
+    targets = (
+        "gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,"
+        + "gfx1100,gfx1101,gfx1200,gfx1201"
+    )
+    return targets
 
 
 def _resolve_relative_paths(xla_dir: str, jax_dir: str) -> tuple[str, str, str]:
@@ -190,9 +195,10 @@ def _resolve_relative_paths(xla_dir: str, jax_dir: str) -> tuple[str, str, str]:
         if os.path.isabs(xla_dir)
         else os.path.abspath(f"{this_repo_root}/jax_rocm_plugin/{xla_dir}")
     )
-    assert os.path.isdir(
-        xla_path
-    ), f"XLA path (specified as '{xla_dir}') doesn't resolve to existing directory at '{xla_path}'"
+    assert os.path.isdir(xla_path), (
+        f"XLA path (specified as '{xla_dir}') doesn't resolve to "
+        f"existing directory at '{xla_path}'"
+    )
 
     if jax_dir:
         kernels_jax_path = (
@@ -201,9 +207,10 @@ def _resolve_relative_paths(xla_dir: str, jax_dir: str) -> tuple[str, str, str]:
             else os.path.abspath(f"{this_repo_root}/jax_rocm_plugin/{jax_dir}")
         )
         # pylint: disable=line-too-long
-        assert os.path.isdir(
-            kernels_jax_path
-        ), f"XLA path (specified as '{jax_dir}') doesn't resolve to existing directory at '{kernels_jax_path}'"
+        assert os.path.isdir(kernels_jax_path), (
+            f"XLA path (specified as '{jax_dir}') doesn't resolve to "
+            f"existing directory at '{kernels_jax_path}'"
+        )
     else:
         kernels_jax_path = None
     return this_repo_root, xla_path, kernels_jax_path
@@ -234,7 +241,7 @@ def _add_externals_symlink(this_repo_root: str, xla_path: str, kernels_jax_path:
         print(
             f"Bazelisk is detected (bazel=={v}), proceeding with creation of symlinks"
         )
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(
             "WARNING: Bazelisk is NOT detected and a wrapper for specific bazel "
             "versions isn't implemented. Symlinks to '$(bazel info output_base)/external' "
@@ -263,7 +270,7 @@ def _add_externals_symlink(this_repo_root: str, xla_path: str, kernels_jax_path:
                 .stdout.decode("utf-8")
                 .rstrip()
             )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"Failed to query 'bazel info output_base' for '{wrkspace}':{e}")
             return
         _link(f"{output_base}/external", f"{wrkspace}/external")
@@ -304,7 +311,8 @@ def setup_development(
 
     # create build/install/test script
     makefile_path = "./jax_rocm_plugin/Makefile"
-    if (rebuild_makefile or not os.path.exists(makefile_path) or fix_bazel_symbols) and write_makefile:
+    rebuild = rebuild_makefile or not os.path.exists(makefile_path)
+    if (rebuild or fix_bazel_symbols) and write_makefile:
         this_repo_root, xla_path, kernels_jax_path = _resolve_relative_paths(
             xla_dir, jax_dir
         )
@@ -314,7 +322,9 @@ def setup_development(
             custom_options = " ${CFG_RELEASE_WITH_SYM}"
             _add_externals_symlink(this_repo_root, xla_path, kernels_jax_path)
         else:  # not modifying the build unless asked
-            plugin_bazel_options, jaxlib_bazel_options, custom_options = "", "", ""
+            plugin_bazel_options = ""
+            jaxlib_bazel_options = ""
+            custom_options = ""
 
         # try to detect the  namespace version from the ROCm version
         # this is expected to throw an exception if the specified ROCm path is invalid, for example
@@ -376,7 +386,10 @@ def build_and_install(
     """Run develop setup, then build all wheels and install jax"""
     # Uninstall existing packages first
     print("Uninstalling existing JAX packages...")
-    subprocess.run(["python3", "-m", "pip", "uninstall", "jax", "-y"], check=False)
+    subprocess.run(
+        ["python3", "-m", "pip", "uninstall", "jax", "-y"],
+        check=False,
+    )
     subprocess.run(
         [
             "python3",
@@ -410,12 +423,13 @@ def build_and_install(
 
     # ROCm version detection
     try:
-        with open(os.path.join(rocm_path, ".info", "version"), encoding="utf-8") as f:
+        version_file = os.path.join(rocm_path, ".info", "version")
+        with open(version_file, encoding="utf-8") as f:
             full_version = f.readline().strip()
             rocm_version = full_version[0]
             if rocm_version == "6":
                 rocm_version = "60"
-    except Exception:
+    except (OSError, IndexError):
         rocm_version = "7"
 
     # Bazel options
@@ -425,12 +439,11 @@ def build_and_install(
 
     plugin_bazel_options = list(bazel_options)
     if fix_bazel_symbols:
-        plugin_bazel_options.append(
-            f"--copt=-fdebug-prefix-map=/proc/self/cwd={this_repo_root}/jax_rocm_plugin"
-        )
-        plugin_bazel_options.append(
-            f"--cxxopt=-fdebug-prefix-map=/proc/self/cwd={this_repo_root}/jax_rocm_plugin"
-        )
+        plugin_root = f"{this_repo_root}/jax_rocm_plugin"
+        map_copt = f"--copt=-fdebug-prefix-map=/proc/self/cwd={plugin_root}"
+        plugin_bazel_options.append(map_copt)
+        map_cxxopt = f"--cxxopt=-fdebug-prefix-map=/proc/self/cwd={plugin_root}"
+        plugin_bazel_options.append(map_cxxopt)
 
     jax_override = f"--override_repository=jax={jax_path}" if jax_path else ""
 
@@ -463,7 +476,11 @@ def build_and_install(
         subprocess.run(f"rm -f {jax_path}/dist/*", shell=True, check=True)
         run_build(jax_path, "jaxlib")
         print(f"Installing jaxlib from {jax_path}/dist...")
-        subprocess.run(f"pip install --force-reinstall {jax_path}/dist/*", shell=True, check=True)
+        subprocess.run(
+            f"pip install --force-reinstall {jax_path}/dist/*",
+            shell=True,
+            check=True,
+        )
 
     # 2. Build plugin and pjrt
     plugin_path = os.path.join(this_repo_root, "jax_rocm_plugin")
