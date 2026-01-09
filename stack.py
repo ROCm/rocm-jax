@@ -291,6 +291,7 @@ def setup_development(
     fix_bazel_symbols: bool = False,
     rocm_path: str = "/opt/rocm",
     write_makefile: bool = True,
+    debug: bool = False,
 ):
     """Clone jax and xla repos, and set up Makefile for developers"""
 
@@ -312,11 +313,16 @@ def setup_development(
     # create build/install/test script
     makefile_path = "./jax_rocm_plugin/Makefile"
     rebuild = rebuild_makefile or not os.path.exists(makefile_path)
-    if (rebuild or fix_bazel_symbols) and write_makefile:
+    if (rebuild or fix_bazel_symbols or debug) and write_makefile:
         this_repo_root, xla_path, kernels_jax_path = _resolve_relative_paths(
             xla_dir, jax_dir
         )
-        if fix_bazel_symbols:
+        if debug:
+            plugin_bazel_options = "${PLUGIN_SYMBOLS}"
+            jaxlib_bazel_options = "${JAXLIB_SYMBOLS}"
+            custom_options = " ${CFG_DEBUG}"
+            _add_externals_symlink(this_repo_root, xla_path, kernels_jax_path)
+        elif fix_bazel_symbols:
             plugin_bazel_options = "${PLUGIN_SYMBOLS}"
             jaxlib_bazel_options = "${JAXLIB_SYMBOLS}"
             custom_options = " ${CFG_RELEASE_WITH_SYM}"
@@ -382,6 +388,7 @@ def build_and_install(
     rebuild_makefile: bool = False,
     fix_bazel_symbols: bool = False,
     rocm_path: str = "/opt/rocm",
+    debug: bool = False,
 ):
     """Run develop setup, then build all wheels and install jax"""
     # Uninstall existing packages first
@@ -415,6 +422,7 @@ def build_and_install(
         fix_bazel_symbols=fix_bazel_symbols,
         rocm_path=rocm_path,
         write_makefile=False,  # Don't generate Makefile for direct build
+        debug=debug,
     )
 
     this_repo_root, xla_path, jax_path = _resolve_relative_paths(xla_dir, jax_dir)
@@ -434,7 +442,19 @@ def build_and_install(
 
     # Bazel options
     bazel_options = [f"--override_repository=xla={xla_path}"]
-    if fix_bazel_symbols:
+    if debug:
+        bazel_options.extend(
+            [
+                "--config=debug",
+                "--compilation_mode=dbg",
+                "--strip=never",
+                "--copt=-g3",
+                "--copt=-O0",
+                "--cxxopt=-g3",
+                "--cxxopt=-O0",
+            ]
+        )
+    elif fix_bazel_symbols:
         bazel_options.extend(["--strip=never", "--copt=-g3", "--cxxopt=-g3"])
 
     plugin_bazel_options = list(bazel_options)
@@ -608,6 +628,11 @@ def parse_args():
         action="store_true",
     )
     common.add_argument(
+        "--debug",
+        help="Build in debug mode (unoptimized with full debug symbols).",
+        action="store_true",
+    )
+    common.add_argument(
         "--rocm-path",
         help="Location of the ROCm to use for building Jax",
         default="/opt/rocm",
@@ -641,6 +666,7 @@ def main():
             rebuild_makefile=args.rebuild_makefile,
             fix_bazel_symbols=args.fix_bazel_symbols,
             rocm_path=args.rocm_path,
+            debug=args.debug,
         )
     elif args.action == "build":
         build_and_install(
@@ -651,6 +677,7 @@ def main():
             rebuild_makefile=True,
             fix_bazel_symbols=args.fix_bazel_symbols,
             rocm_path=args.rocm_path,
+            debug=args.debug,
         )
 
 
