@@ -450,9 +450,9 @@ def build_and_install(
         ]
         opts = extra_options or bazel_options
         for opt in opts:
-            cmd.extend(["--bazel_options", opt])
+            cmd.append(f"--bazel_options={opt}")
         if jax_override:
-            cmd.extend(["--bazel_options", jax_override])
+            cmd.append(f"--bazel_options={jax_override}")
 
         print(f"Building {wheels} in {cwd}...")
         subprocess.check_call(cmd, cwd=cwd)
@@ -460,20 +460,21 @@ def build_and_install(
     # 1. Build and install jaxlib
     if jax_path:
         # Clean jaxlib dist
-        subprocess.run(f"rm -f {jax_path}/dist/*", shell=True)
+        subprocess.run(f"rm -f {jax_path}/dist/*", shell=True, check=True)
         run_build(jax_path, "jaxlib")
         print(f"Installing jaxlib from {jax_path}/dist...")
-        subprocess.run(f"pip install --force-reinstall {jax_path}/dist/*", shell=True)
+        subprocess.run(f"pip install --force-reinstall {jax_path}/dist/*", shell=True, check=True)
 
     # 2. Build plugin and pjrt
-    subprocess.run("rm -rf dist", shell=True, cwd=this_repo_root)
+    plugin_path = os.path.join(this_repo_root, "jax_rocm_plugin")
+    subprocess.run("rm -rf dist", shell=True, cwd=plugin_path, check=True)
     run_build(
-        os.path.join(this_repo_root, "jax_rocm_plugin"),
+        plugin_path,
         "jax-rocm-plugin",
         plugin_bazel_options,
     )
     run_build(
-        os.path.join(this_repo_root, "jax_rocm_plugin"),
+        plugin_path,
         "jax-rocm-pjrt",
         plugin_bazel_options,
     )
@@ -481,8 +482,9 @@ def build_and_install(
     # 3. Install plugin and pjrt
     print("Installing jax-rocm-plugin and jax-rocm-pjrt...")
     subprocess.run(
-        f"pip install --force-reinstall {this_repo_root}/jax_rocm_plugin/dist/*",
+        f"pip install --force-reinstall {plugin_path}/dist/*",
         shell=True,
+        check=True,
     )
 
     # 4. Install JAX from source
