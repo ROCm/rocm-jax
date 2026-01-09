@@ -14,7 +14,8 @@ JAX_REPL_URL = "https://github.com/rocm/jax"
 XLA_REPL_URL = "https://github.com/rocm/xla"
 
 DEFAULT_XLA_DIR = "../xla"
-DEFAULT_KERNELS_JAX_DIR = "../jax"
+DEFAULT_JAX_DIR = "../jax"
+
 
 MAKE_TEMPLATE = r"""
 # gfx targets for which XLA and jax custom call kernels are built for
@@ -50,12 +51,13 @@ KERNELS_JAX_OVERRIDE_OPTION="%(kernels_jax_override)s"
 ###
 
 
-.PHONY: test clean install dist
+.PHONY: test clean install dist all_wheels
 
 .default: dist
 
 
 dist: jax_rocm_plugin jax_rocm_pjrt
+all_wheels: clean dist jaxlib_clean jaxlib jaxlib_install install
 
 
 jax_rocm_plugin:
@@ -163,7 +165,22 @@ def find_clang():
     return None
 
 
-def _resolve_relative_paths(xla_dir: str, kernels_jax_dir: str) -> tuple[str, str, str]:
+def get_amdgpu_targets():
+    """Attempt to detect AMD GPU targets using rocminfo."""
+    try:
+        out = subprocess.check_output(
+            "rocminfo | grep -o -m 1 'gfx.*'", shell=True, stderr=subprocess.DEVNULL
+        ).decode()
+        target = out.strip()
+        if target:
+            return target
+    except Exception:
+        pass
+    # Default targets if rocminfo fails
+    return "gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
+
+
+def _resolve_relative_paths(xla_dir: str, jax_dir: str) -> tuple[str, str, str]:
     """Transforms relative to absolute paths. This is needed to properly support
     symbolic information remapping"""
     this_repo_root = os.path.dirname(os.path.realpath(__file__))
@@ -177,16 +194,16 @@ def _resolve_relative_paths(xla_dir: str, kernels_jax_dir: str) -> tuple[str, st
         xla_path
     ), f"XLA path (specified as '{xla_dir}') doesn't resolve to existing directory at '{xla_path}'"
 
-    if kernels_jax_dir:
+    if jax_dir:
         kernels_jax_path = (
-            kernels_jax_dir
-            if os.path.isabs(kernels_jax_dir)
-            else os.path.abspath(f"{this_repo_root}/jax_rocm_plugin/{kernels_jax_dir}")
+            jax_dir
+            if os.path.isabs(jax_dir)
+            else os.path.abspath(f"{this_repo_root}/jax_rocm_plugin/{jax_dir}")
         )
         # pylint: disable=line-too-long
         assert os.path.isdir(
             kernels_jax_path
-        ), f"XLA path (specified as '{kernels_jax_dir}') doesn't resolve to existing directory at '{kernels_jax_path}'"
+        ), f"XLA path (specified as '{jax_dir}') doesn't resolve to existing directory at '{kernels_jax_path}'"
     else:
         kernels_jax_path = None
     return this_repo_root, xla_path, kernels_jax_path
@@ -262,10 +279,11 @@ def setup_development(
     xla_ref: str,
     xla_dir: str,
     test_jax_ref: str,
-    kernels_jax_dir: str,
+    jax_dir: str,
     rebuild_makefile: bool = False,
     fix_bazel_symbols: bool = False,
     rocm_path: str = "/opt/rocm",
+    write_makefile: bool = True,
 ):
     """Clone jax and xla repos, and set up Makefile for developers"""
 
@@ -286,9 +304,9 @@ def setup_development(
 
     # create build/install/test script
     makefile_path = "./jax_rocm_plugin/Makefile"
-    if rebuild_makefile or not os.path.exists(makefile_path) or fix_bazel_symbols:
+    if (rebuild_makefile or not os.path.exists(makefile_path) or fix_bazel_symbols) and write_makefile:
         this_repo_root, xla_path, kernels_jax_path = _resolve_relative_paths(
-            xla_dir, kernels_jax_dir
+            xla_dir, jax_dir
         )
         if fix_bazel_symbols:
             plugin_bazel_options = "${PLUGIN_SYMBOLS}"
@@ -346,6 +364,133 @@ def setup_development(
             mf.write(makefile_content)
 
 
+def build_and_install(
+    xla_ref: str,
+    xla_dir: str,
+    test_jax_ref: str,
+    jax_dir: str,
+    rebuild_makefile: bool = False,
+    fix_bazel_symbols: bool = False,
+    rocm_path: str = "/opt/rocm",
+):
+    """Run develop setup, then build all wheels and install jax"""
+    # Uninstall existing packages first
+    print("Uninstalling existing JAX packages...")
+    subprocess.run(["python3", "-m", "pip", "uninstall", "jax", "-y"], check=False)
+    subprocess.run(
+        [
+            "python3",
+            "-m",
+            "pip",
+            "uninstall",
+            "jaxlib",
+            "jax-rocm-pjrt",
+            "jax-rocm-plugin",
+            "jax-plugin",
+            "-y",
+        ],
+        check=False,
+    )
+
+    # Setup repos (but don't necessarily generate Makefile)
+    setup_development(
+        xla_ref=xla_ref,
+        xla_dir=xla_dir,
+        test_jax_ref=test_jax_ref,
+        jax_dir=jax_dir,
+        rebuild_makefile=rebuild_makefile,
+        fix_bazel_symbols=fix_bazel_symbols,
+        rocm_path=rocm_path,
+        write_makefile=False,  # Don't generate Makefile for direct build
+    )
+
+    this_repo_root, xla_path, jax_path = _resolve_relative_paths(xla_dir, jax_dir)
+    amdgpu_targets = get_amdgpu_targets()
+    clang_path = find_clang() or "/usr/lib/llvm-18/bin/clang"
+
+    # ROCm version detection
+    try:
+        with open(os.path.join(rocm_path, ".info", "version"), encoding="utf-8") as f:
+            full_version = f.readline().strip()
+            rocm_version = full_version[0]
+            if rocm_version == "6":
+                rocm_version = "60"
+    except Exception:
+        rocm_version = "7"
+
+    # Bazel options
+    bazel_options = [f"--override_repository=xla={xla_path}"]
+    if fix_bazel_symbols:
+        bazel_options.extend(["--strip=never", "--copt=-g3", "--cxxopt=-g3"])
+
+    plugin_bazel_options = list(bazel_options)
+    if fix_bazel_symbols:
+        plugin_bazel_options.append(
+            f"--copt=-fdebug-prefix-map=/proc/self/cwd={this_repo_root}/jax_rocm_plugin"
+        )
+        plugin_bazel_options.append(
+            f"--cxxopt=-fdebug-prefix-map=/proc/self/cwd={this_repo_root}/jax_rocm_plugin"
+        )
+
+    jax_override = f"--override_repository=jax={jax_path}" if jax_path else ""
+
+    def run_build(cwd, wheels, extra_options=None):
+        cmd = [
+            "python3",
+            "./build/build.py",
+            "build",
+            "--use_clang=true",
+            f"--wheels={wheels}",
+            "--target_cpu_features=native",
+            f"--rocm_path={rocm_path}",
+            f"--rocm_version={rocm_version}",
+            f"--rocm_amdgpu_targets={amdgpu_targets}",
+            f"--clang_path={clang_path}",
+            "--verbose",
+        ]
+        opts = extra_options or bazel_options
+        for opt in opts:
+            cmd.extend(["--bazel_options", opt])
+        if jax_override:
+            cmd.extend(["--bazel_options", jax_override])
+
+        print(f"Building {wheels} in {cwd}...")
+        subprocess.check_call(cmd, cwd=cwd)
+
+    # 1. Build and install jaxlib
+    if jax_path:
+        # Clean jaxlib dist
+        subprocess.run(f"rm -f {jax_path}/dist/*", shell=True)
+        run_build(jax_path, "jaxlib")
+        print(f"Installing jaxlib from {jax_path}/dist...")
+        subprocess.run(f"pip install --force-reinstall {jax_path}/dist/*", shell=True)
+
+    # 2. Build plugin and pjrt
+    subprocess.run("rm -rf dist", shell=True, cwd=this_repo_root)
+    run_build(
+        os.path.join(this_repo_root, "jax_rocm_plugin"),
+        "jax-rocm-plugin",
+        plugin_bazel_options,
+    )
+    run_build(
+        os.path.join(this_repo_root, "jax_rocm_plugin"),
+        "jax-rocm-pjrt",
+        plugin_bazel_options,
+    )
+
+    # 3. Install plugin and pjrt
+    print("Installing jax-rocm-plugin and jax-rocm-pjrt...")
+    subprocess.run(
+        f"pip install --force-reinstall {this_repo_root}/jax_rocm_plugin/dist/*",
+        shell=True,
+    )
+
+    # 4. Install JAX from source
+    if jax_path:
+        print(f"Installing JAX from {jax_path}...")
+        subprocess.check_call(["pip", "install", "."], cwd=jax_path)
+
+
 def dev_docker(rm):
     """Start a docker container for local plugin development"""
     cur_abs_path = os.path.abspath(os.curdir)
@@ -401,18 +546,19 @@ def parse_args():
 
     subp = p.add_subparsers(dest="action", required=True)
 
-    dev = subp.add_parser("develop")
-    dev.add_argument(
+    # Common arguments for develop and build
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument(
         "--rebuild-makefile",
         help="Force rebuild of Makefile from template.",
         action="store_true",
     )
-    dev.add_argument(
+    common.add_argument(
         "--xla-ref",
         help="XLA commit reference to checkout on clone",
         default=XLA_REPO_REF,
     )
-    dev.add_argument(
+    common.add_argument(
         "--xla-dir",
         help=(
             "Set the XLA path in the Makefile. This must either be a path "
@@ -420,22 +566,21 @@ def parse_args():
         ),
         default=DEFAULT_XLA_DIR,
     )
-    dev.add_argument(
+    common.add_argument(
         "--jax-ref",
         help="JAX commit reference to checkout on clone",
         default=TEST_JAX_REPO_REF,
     )
-    dev.add_argument(
-        "--kernel-jax-dir",
+    common.add_argument(
+        "--jax-dir",
         help=(
             "If you want to use a local JAX directory for building the "
             "plugin kernels wheel (jax_rocm7_plugin), the path to the "
-            "directory of repo. Defaults to %s" % DEFAULT_KERNELS_JAX_DIR
+            "directory of repo. Defaults to %s" % DEFAULT_JAX_DIR
         ),
-        default=DEFAULT_KERNELS_JAX_DIR,
+        default=DEFAULT_JAX_DIR,
     )
-
-    dev.add_argument(
+    common.add_argument(
         "--fix-bazel-symbols",
         help="When this option is enabled, the script assumes you need to build "
         "code in a release with symbolic info configuration to alleviate debugging. "
@@ -443,11 +588,15 @@ def parse_args():
         "links to corresponding workspaces pointing to bazel's dependencies storage.",
         action="store_true",
     )
-
-    dev.add_argument(
+    common.add_argument(
         "--rocm-path",
         help="Location of the ROCm to use for building Jax",
         default="/opt/rocm",
+    )
+
+    subp.add_parser("develop", parents=[common], help="Setup development environment")
+    subp.add_parser(
+        "build", parents=[common], help="Setup, build all wheels, and install JAX"
     )
 
     doc_parser = subp.add_parser("docker")
@@ -469,8 +618,18 @@ def main():
             xla_ref=args.xla_ref,
             xla_dir=args.xla_dir,
             test_jax_ref=args.jax_ref,
-            kernels_jax_dir=args.kernel_jax_dir,
+            jax_dir=args.jax_dir,
             rebuild_makefile=args.rebuild_makefile,
+            fix_bazel_symbols=args.fix_bazel_symbols,
+            rocm_path=args.rocm_path,
+        )
+    elif args.action == "build":
+        build_and_install(
+            xla_ref=args.xla_ref,
+            xla_dir=args.xla_dir,
+            test_jax_ref=args.jax_ref,
+            jax_dir=args.jax_dir,
+            rebuild_makefile=True,
             fix_bazel_symbols=args.fix_bazel_symbols,
             rocm_path=args.rocm_path,
         )
