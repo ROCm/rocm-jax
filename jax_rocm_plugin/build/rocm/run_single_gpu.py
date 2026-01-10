@@ -42,6 +42,81 @@ LAST_CODE = 0
 BASE_DIR = "./logs"
 
 
+def detect_amd_gpus():
+    """Detect number of AMD/ATI GPUs using rocm-smi."""
+    try:
+        cmd = [
+            "bash",
+            "-c",
+            (
+                "rocm-smi | grep -E '^Device' -A 1000 | "
+                "awk '$1 ~ /^[0-9]+$/ {count++} END {print count}'"
+            ),
+        ]
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=True, timeout=30
+        )
+        return int(result.stdout.strip())
+    except (subprocess.CalledProcessError, ValueError, subprocess.TimeoutExpired):
+        print("Warning: Could not detect GPUs using rocm-smi, defaulting to 8")
+        return 8
+
+
+def clear_crash_file(crash_file_path):
+    """Clear crash detection file if it exists.
+
+    Args:
+        crash_file_path: Path to crash detection file
+
+    Returns:
+        True if file was removed or didn't exist, False if removal failed
+    """
+    if os.path.exists(crash_file_path):
+        try:
+            os.remove(crash_file_path)
+            print(f"[DEBUG] Removed crash file: {crash_file_path}")
+            return True
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            print(f"[WARNING] Could not remove crash file: {e}")
+            return False
+    return True
+
+
+def build_pytest_command(
+    json_log_file, html_log_file, test_nodeid, continue_on_fail=False, reruns=3
+):
+    """Build pytest command for running a single test.
+
+    Args:
+        json_log_file: Path to JSON report file
+        html_log_file: Path to HTML report file
+        test_nodeid: Test node ID to run
+        continue_on_fail: Whether to continue on failure (don't use -x flag)
+        reruns: Number of times to rerun failed tests
+
+    Returns:
+        List of command arguments
+    """
+    cmd = [
+        "python3",
+        "-m",
+        "pytest",
+        "--json-report",
+        f"--json-report-file={json_log_file}",
+        f"--html={html_log_file}",
+        "--reruns",
+        str(reruns),
+        "-v",
+        test_nodeid,  # Single test
+    ]
+
+    if not continue_on_fail:
+        # Add -x flag to stop on first failure (before -v)
+        cmd.insert(-2, "-x")
+
+    return cmd
+
+
 def extract_test_name(path: str) -> str:
     """Return the base filename (without .py and without test suffixes)."""
     return os.path.splitext(os.path.basename(path.split("::")[0]))[0]
@@ -75,7 +150,9 @@ def generate_final_report(shell=False, env_vars=None):
         "-o",
         f"{BASE_DIR}/final_compiled_report.html",
     ]
-    result = subprocess.run(cmd, shell=shell, capture_output=True, env=env, check=False)
+    result = subprocess.run(
+        cmd, shell=shell, capture_output=True, env=env, check=False, timeout=300
+    )
     if result.returncode != 0:
         print(f"FAILED - {' '.join(cmd)}")
         print(result.stderr.decode())
@@ -85,18 +162,32 @@ def generate_final_report(shell=False, env_vars=None):
     combine_json_reports()
 
 
-def run_shell_command(cmd, shell=False, env_vars=None):
-    """Run a shell command and return the result."""
+def run_shell_command(cmd, shell=False, env_vars=None, timeout=3600):
+    """Run a shell command and return the result.
+
+    Args:
+        cmd: Command to run
+        shell: Whether to run in shell mode
+        env_vars: Environment variables to set
+        timeout: Timeout in seconds (default: 3600 = 1 hour)
+    """
     if env_vars is None:
         env_vars = {}
     env = os.environ.copy()
     env.update(env_vars)
-    result = subprocess.run(cmd, shell=shell, capture_output=True, env=env, check=False)
-    if result.returncode != 0:
-        print(f"FAILED - {' '.join(cmd)}")
-        print(result.stderr.decode())
 
-    return result.returncode, result.stderr.decode(), result.stdout.decode()
+    try:
+        result = subprocess.run(
+            cmd, shell=shell, capture_output=True, env=env, check=False, timeout=timeout
+        )
+        if result.returncode != 0:
+            print(f"FAILED - {' '.join(cmd)}")
+            print(result.stderr.decode())
+
+        return result.returncode, result.stderr.decode(), result.stdout.decode()
+    except subprocess.TimeoutExpired:
+        print(f"TIMEOUT - Command exceeded {timeout}s: {' '.join(cmd)}")
+        return 124, f"Timeout after {timeout}s", ""
 
 
 def parse_test_log(log_file):
@@ -163,65 +254,109 @@ def collect_testmodules(ignore_skipfile=True):
 
 
 def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
-    """Run a single test module on an available GPU."""
+    """Run tests from a test module on an available GPU with crash recovery.
+
+    Tests are run ONE AT A TIME to enable proper crash recovery.
+    If a test crashes, we simply move to the next test.
+    """
     global LAST_CODE  # pylint: disable=global-statement
+
+    # Acquire GPU token
     with GPU_LOCK:
         if LAST_CODE != 0:
             return
         target_gpu = gpu_tokens.pop()
 
-    env_vars = {
-        "HIP_VISIBLE_DEVICES": str(target_gpu),
-        "XLA_PYTHON_CLIENT_ALLOCATOR": "default",
-    }
+    try:
+        # Everything inside try block to ensure GPU token is always returned
+        env_vars = {
+            "HIP_VISIBLE_DEVICES": str(target_gpu),
+            "XLA_PYTHON_CLIENT_ALLOCATOR": "default",
+        }
 
-    json_log_file = f"{BASE_DIR}/{log_name}_log.json"
-    html_log_file = f"{BASE_DIR}/{log_name}_log.html"
-    last_running_file = f"{BASE_DIR}/{log_name}_last_running.json"
+        json_log_file = f"{BASE_DIR}/{log_name}_log.json"
+        html_log_file = f"{BASE_DIR}/{log_name}_log.html"
+        last_running_file = f"{BASE_DIR}/{log_name}_last_running.json"
 
-    if continue_on_fail:
-        cmd = [
-            "python3",
-            "-m",
-            "pytest",
-            "--json-report",
-            f"--json-report-file={json_log_file}",
-            f"--html={html_log_file}",
-            "--reruns",
-            "3",
-            "-v",
-            *tests_list,
-        ]
-    else:
-        cmd = [
-            "python3",
-            "-m",
-            "pytest",
-            "--json-report",
-            f"--json-report-file={json_log_file}",
-            f"--html={html_log_file}",
-            "--reruns",
-            "3",
-            "-x",
-            "-v",
-            *tests_list,
-        ]
+        # Clear any stale crash detection file before starting
+        clear_crash_file(last_running_file)
 
-    return_code, stderr, stdout = run_shell_command(cmd, env_vars=env_vars)
+        crashed_tests = []
+        passed_count = 0
+        failed_count = 0
+        total_tests = len(tests_list)
 
-    # Check for aborted test log and append abort info if present
-    if handle_abort(json_log_file, html_log_file, last_running_file, log_name):
-        # Abort was detected and handled
-        pass
+        print(f"\n[GPU {target_gpu}] Running {total_tests} tests from {log_name}")
 
-    with GPU_LOCK:
-        gpu_tokens.append(target_gpu)
-        if LAST_CODE == 0:
-            print(f"Running tests in module {tests_list} on GPU {target_gpu}:")
-            print(stdout)
-            print(stderr)
-            if not continue_on_fail:
-                LAST_CODE = return_code
+        # Run tests ONE AT A TIME for easy crash recovery
+        for test_idx, test_nodeid in enumerate(tests_list, 1):
+            # Check if we should stop
+            with GPU_LOCK:
+                if LAST_CODE != 0 and not continue_on_fail:
+                    print(f"[GPU {target_gpu}] Stopping due to previous failure")
+                    break
+
+            print(
+                f"\n[GPU {target_gpu}] [{test_idx}/{total_tests}] Running: {test_nodeid}"
+            )
+
+            # Ensure crash detection file is cleared before each test
+            clear_crash_file(last_running_file)
+
+            # Build pytest command for single test
+            cmd = build_pytest_command(
+                json_log_file, html_log_file, test_nodeid, continue_on_fail
+            )
+
+            return_code, _, _ = run_shell_command(cmd, env_vars=env_vars)
+
+            # Check for crash
+            crash_info = check_for_crash(last_running_file)
+
+            if crash_info:
+                # Crash detected!
+                crashed_test_nodeid = crash_info["nodeid"]
+                crashed_tests.append(crash_info)
+                failed_count += 1
+
+                print(
+                    f"[CRASH] {crashed_test_nodeid} crashed after {crash_info['duration']:.1f}s"
+                )
+
+                # Process the crash and add to reports
+                handle_abort(json_log_file, html_log_file, last_running_file, log_name)
+
+                # Continue to next test (crash file is deleted in handle_abort)
+                continue
+
+            # Test completed normally
+            if return_code == 0:
+                passed_count += 1
+            else:
+                failed_count += 1
+                if not continue_on_fail:
+                    with GPU_LOCK:
+                        if LAST_CODE == 0:
+                            LAST_CODE = return_code
+                    break
+
+        # Final summary
+        print(f"\n[GPU {target_gpu}] {log_name} Summary:")
+        print(f"  Total: {total_tests}")
+        print(f"  Passed: {passed_count}")
+        print(f"  Failed: {failed_count}")
+        print(f"  Crashed: {len(crashed_tests)}")
+
+        if crashed_tests:
+            print(f"\n[CRASH SUMMARY] {log_name}:")
+            for crash in crashed_tests:
+                print(f"  - {crash['nodeid']} ({crash['duration']:.1f}s)")
+
+    finally:
+        # CRITICAL: Always return GPU token, even on exception or early exit
+        with GPU_LOCK:
+            gpu_tokens.append(target_gpu)
+            print(f"[GPU {target_gpu}] Released GPU token")
 
 
 # pylint: disable=too-many-branches
@@ -811,21 +946,44 @@ def _generate_html_template(template_data):
         </html>"""
 
 
-def handle_abort(json_file, html_file, last_running_file, testfile):
-    """Handle abort detection and append abort info to both JSON and HTML reports."""
+def check_for_crash(last_running_file):
+    """Check if a crash occurred and return crash info.
+
+    Returns:
+        dict with crash info if crash detected, None otherwise
+
+    A crash is detected when:
+    1. The last_running file exists after pytest completes
+    2. The file has valid JSON with test information
+    3. The test was marked as "running" but never completed
+    """
     if not os.path.exists(last_running_file):
-        return False
+        # File doesn't exist = no crash (test completed normally)
+        return None
 
     try:
         with open(last_running_file, "r", encoding="utf-8") as f:
-            abort_data = json.load(f)
-        start_time = datetime.fromisoformat(abort_data["start_time"])
+            crash_data = json.load(f)
+
+        # Verify this is a valid crash detection file
+        if crash_data.get("status") != "running":
+            print(
+                f"[DEBUG] Crash file has status: {crash_data.get('status')}, not 'running'"
+            )
+            return None
+
+        start_time = datetime.fromisoformat(crash_data["start_time"])
         duration = (datetime.now() - start_time).total_seconds()
 
-        # Use nodeid if available (includes class and method names),
-        # otherwise fall back to test_name
-        test_identifier = abort_data.get(
-            "nodeid", abort_data.get("test_name", "unknown_test")
+        # Sanity check: if duration is very short, might be false positive
+        # (file from conftest.py might not have been cleared yet)
+        if duration < 0.1:
+            print(f"[DEBUG] Crash detection skipped - duration too short: {duration}s")
+            return None
+
+        # Use nodeid if available
+        test_identifier = crash_data.get(
+            "nodeid", crash_data.get("test_name", "unknown_test")
         )
 
         # Extract test class name
@@ -833,32 +991,61 @@ def handle_abort(json_file, html_file, last_running_file, testfile):
         if "::" in test_identifier:
             parts = test_identifier.split("::")
             if len(parts) >= 3:
-                test_class = parts[1]  # TestClass
+                test_class = parts[1]
             elif len(parts) == 2:
-                test_class = parts[1]  # Could be just test_method
+                test_class = parts[1]
 
-        abort_info = {
+        return {
             "test_name": test_identifier,
             "test_class": test_class,
-            "reason": "Test aborted or crashed.",
-            "abort_time": datetime.now().isoformat(),
+            "nodeid": crash_data.get("nodeid", test_identifier),
+            "reason": "Test crashed (segfault, abort, or fatal error)",
+            "crash_time": datetime.now().isoformat(),
             "duration": duration,
-            "gpu_id": abort_data.get("gpu_id", "unknown"),
+            "gpu_id": crash_data.get("gpu_id", "unknown"),
+            "pid": crash_data.get("pid", "unknown"),
         }
-        # Append to JSON log
-        append_abort_to_json(json_file, testfile, abort_info)
-        # Append to HTML log
-        append_abort_to_html(html_file, testfile, abort_info)
-        print(f"[ABORT DETECTED] {testfile}: {abort_info['test_name']}")
-        print(f"  Test Class: {test_class}")
-        print(f"  Duration: {duration:.2f}s")
-        print(f"  GPU ID: {abort_info['gpu_id']}")
-        # Remove the last running file after successful processing
-        # os.remove(last_running_file)
+    except (json.JSONDecodeError, KeyError, ValueError) as ex:
+        print(f"[WARNING] Invalid crash file {last_running_file}: {ex}")
+        # Clean up invalid file
+        try:
+            os.remove(last_running_file)
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
+        return None
+    except Exception as ex:  # pylint: disable=broad-except
+        print(f"[ERROR] Error reading crash file {last_running_file}: {ex}")
+        return None
+
+
+def handle_abort(json_file, html_file, last_running_file, testfile):
+    """Handle crash detection and append info to reports.
+
+    CRITICAL: This function MUST delete the crash detection file to prevent
+    infinite loops, even if processing fails.
+    """
+    crash_info = check_for_crash(last_running_file)
+
+    # CRITICAL: Delete crash file IMMEDIATELY to prevent infinite loop
+    # Do this before any processing that might fail
+    if os.path.exists(last_running_file):
+        try:
+            os.remove(last_running_file)
+            print(f"[DEBUG] Deleted crash file: {last_running_file}")
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            print(f"[ERROR] Could not delete crash file {last_running_file}: {e}")
+            # Continue anyway - we got the crash info already
+
+    if not crash_info:
+        return False
+
+    try:
+        append_abort_to_json(json_file, testfile, crash_info)
+        append_abort_to_html(html_file, testfile, crash_info)
         return True
     except Exception as ex:  # pylint: disable=broad-except
-        print(f"Error logging abort for {testfile}: {ex}")
-        # Don't remove the file if there was an error processing it
+        print(f"[ERROR] Error processing crash: {ex}")
+        traceback.print_exc()
         return False
 
 
@@ -872,15 +1059,6 @@ def run_parallel(tests_dict, p, c):
         executor.submit(run_test, log_name, tests_list, available_gpu_tokens, c)
     # waiting for all modules to finish.
     executor.shutdown(wait=True)
-
-
-def find_num_gpus():
-    """Find the number of AMD/ATI GPUs available."""
-    cmd = [
-        r"rocm-smi | grep -E '^Device' -A 1000 | awk '$1 ~ /^[0-9]+$/ {count++} END {print count}'"
-    ]
-    _, _, stdout = run_shell_command(cmd, shell=True)
-    return int(stdout)
 
 
 def main(args):
@@ -910,7 +1088,7 @@ if __name__ == "__main__":
     if parsed_args.continue_on_fail:
         print("continue on fail is set")
     if parsed_args.parallel is None:
-        sys_gpu_count = find_num_gpus()
+        sys_gpu_count = detect_amd_gpus()
         parsed_args.parallel = sys_gpu_count
         print(f"{sys_gpu_count} GPUs detected.")
 

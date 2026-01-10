@@ -31,31 +31,20 @@ sys.path.insert(0, "jax_rocm_plugin/build/rocm")
 
 try:
     from multi_gpu_tests_config import MULTI_GPU_TESTS
-    from run_single_gpu import handle_abort, generate_final_report
+    from run_single_gpu import (
+        check_for_crash,
+        handle_abort,
+        generate_final_report,
+        detect_amd_gpus,
+        clear_crash_file,
+        build_pytest_command,
+    )
 except ImportError as e:
     print(f"Error importing required modules: {e}")
     sys.exit(1)
 
 LOG_DIR = "./logs"
 MAX_GPUS_PER_TEST = 8  # Limit for stability
-
-
-def detect_amd_gpus():
-    """Detect number of AMD/ATI GPUs using rocm-smi."""
-    try:
-        cmd = [
-            "bash",
-            "-c",
-            (
-                "rocm-smi | grep -E '^Device' -A 1000 | "
-                "awk '$1 ~ /^[0-9]+$/ {count++} END {print count}'"
-            ),
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return int(result.stdout.strip())
-    except (subprocess.CalledProcessError, ValueError):
-        print("Warning: Could not detect GPUs using rocm-smi, defaulting to 8")
-        return 8
 
 
 def cleanup_system():
@@ -150,7 +139,11 @@ def get_deselected_tests(test_name):
 def run_multi_gpu_test(
     test_file, gpu_count, continue_on_fail, max_gpus=None, ignore_skipfile=False
 ):
-    """Run a single multi-GPU test."""
+    """Run a single multi-GPU test file with crash recovery.
+
+    Tests are run ONE AT A TIME for reliable crash recovery.
+    If a test crashes, we simply move to the next test.
+    """
     if max_gpus and gpu_count > max_gpus:
         gpu_count = max_gpus
         print(f"Limiting GPU count to {max_gpus} for stability")
@@ -164,7 +157,9 @@ def run_multi_gpu_test(
     # Setup file paths
     abs_json_log_file = os.path.abspath(f"{LOG_DIR}/multi_gpu_{test_name}_log.json")
     abs_html_log_file = os.path.abspath(f"{LOG_DIR}/multi_gpu_{test_name}_log.html")
-    abs_last_running_file = os.path.abspath(f"{LOG_DIR}/{test_name}_last_running.json")
+    abs_last_running_file = os.path.abspath(
+        f"{LOG_DIR}/multi_gpu_{test_name}_last_running.json"
+    )
 
     print(f"=== Starting multi-GPU test: {test_file} ===")
     print(f"GPUs: {gpu_list} (count: {gpu_count})")
@@ -175,6 +170,9 @@ def run_multi_gpu_test(
         print("Waiting for system resources...")
         time.sleep(30)
 
+    # Clear any stale crash detection file
+    clear_crash_file(abs_last_running_file)
+
     # Environment setup
     env = os.environ.copy()
     env.update(
@@ -183,85 +181,145 @@ def run_multi_gpu_test(
             "XLA_PYTHON_CLIENT_ALLOCATOR": "default",
         }
     )
-    # pylint: disable=duplicate-code
-    # Build pytest command
-    if continue_on_fail:
-        cmd = [
-            "python3",
-            "-m",
-            "pytest",
-            "--json-report",
-            f"--json-report-file={abs_json_log_file}",
-            f"--html={abs_html_log_file}",
-            "--reruns",
-            "3",
-            "-v",
-            f"./jax/{test_file}",
-        ]
-    else:
-        cmd = [
-            "python3",
-            "-m",
-            "pytest",
-            "--json-report",
-            f"--json-report-file={abs_json_log_file}",
-            f"--html={abs_html_log_file}",
-            "--reruns",
-            "3",
-            "-x",
-            "-v",
-            f"./jax/{test_file}",
-        ]
+
+    # Get deselected tests (permanent skips for this test file)
+    permanent_skips = []
     if not ignore_skipfile:
-        de_list = get_deselected_tests(test_name)
-        if len(de_list) > 0:
-            cmd.extend(de_list)
+        permanent_skips = get_deselected_tests(test_name)
 
-    print(f"Running: {' '.join(cmd)}")
+    # First, collect all tests in this file
+    print(f"Collecting tests from {test_file}...")
+    collect_cmd = [
+        "python3",
+        "-m",
+        "pytest",
+        "--collect-only",
+        "-q",
+        f"./jax/{test_file}",
+        *permanent_skips,
+    ]
 
-    start_time = time.time()
     try:
-        # Run the test
         result = subprocess.run(
-            cmd,
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=3600,  # 1 hour timeout per test
-            check=False,
+            collect_cmd, env=env, capture_output=True, text=True, check=False
         )
+        # Parse collected test IDs from output
+        test_nodeids = []
+        for line in result.stdout.split("\n"):
+            line = line.strip()
+            if line.startswith(test_file) or line.startswith(f"./{test_file}"):
+                test_nodeids.append(f"./jax/{line}")
 
-        duration = time.time() - start_time
+        if not test_nodeids:
+            print(f"[WARNING] No tests collected from {test_file}")
+            return 0
 
-        print(
-            f"Test completed in {duration:.2f}s with exit code: " f"{result.returncode}"
-        )
-
-        if result.stdout:
-            print("STDOUT:", result.stdout)
-        if result.stderr:
-            print("STDERR:", result.stderr)
-
-        # Handle any aborts
-        success = handle_abort(
-            abs_json_log_file,
-            abs_html_log_file,
-            abs_last_running_file,
-            f"multi_gpu_{test_name}",
-        )
-        if success:
-            print(f"Abort handling completed for {test_name}")
-
-        return result.returncode
-
-    except subprocess.TimeoutExpired:
-        print(f"ERROR: Test {test_file} timed out after 1 hour")
-        return 124  # Timeout exit code
-    except (subprocess.SubprocessError, OSError) as os_e:
-        print(f"ERROR: Exception running test {test_file}: {os_e}")
+        print(f"Collected {len(test_nodeids)} tests")
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"[ERROR] Failed to collect tests: {e}")
         return 1
-    finally:
-        cleanup_system()
+
+    # Run tests ONE AT A TIME
+    crashed_tests = []
+    passed_count = 0
+    failed_count = 0
+    total_tests = len(test_nodeids)
+
+    for test_idx, test_nodeid in enumerate(test_nodeids, 1):
+        print(f"\n[{test_idx}/{total_tests}] Running: {test_nodeid}")
+
+        # Clear crash file before each test
+        clear_crash_file(abs_last_running_file)
+
+        # Build pytest command for single test
+        cmd = build_pytest_command(
+            abs_json_log_file, abs_html_log_file, test_nodeid, continue_on_fail
+        )
+
+        print(f"Running: {' '.join(cmd)}")
+
+        start_time = time.time()
+        try:
+            # Run the single test
+            result = subprocess.run(
+                cmd,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=3600,  # 1 hour timeout per test
+                check=False,
+            )
+
+            duration = time.time() - start_time
+            return_code = result.returncode
+
+            print(f"Test completed in {duration:.2f}s with exit code: {return_code}")
+
+            if result.stdout:
+                print("STDOUT:", result.stdout[-500:])  # Last 500 chars
+            if result.stderr:
+                print("STDERR:", result.stderr[-500:])  # Last 500 chars
+
+            # Check for crash
+            crash_info = check_for_crash(abs_last_running_file)
+
+            if crash_info:
+                # Crash detected!
+                crashed_test_nodeid = crash_info["nodeid"]
+                crashed_tests.append(crash_info)
+                failed_count += 1
+
+                print(
+                    f"[CRASH] {crashed_test_nodeid} crashed after {crash_info['duration']:.1f}s"
+                )
+
+                # Process the crash
+                handle_abort(
+                    abs_json_log_file,
+                    abs_html_log_file,
+                    abs_last_running_file,
+                    f"multi_gpu_{test_name}",
+                )
+
+                # Continue to next test
+                continue
+
+            # Test completed normally
+            if return_code == 0:
+                passed_count += 1
+            else:
+                failed_count += 1
+                if not continue_on_fail:
+                    print("Stopping on first failure (no --continue_on_fail)")
+                    break
+
+        except subprocess.TimeoutExpired:
+            print(f"ERROR: Test {test_nodeid} timed out after 1 hour")
+            failed_count += 1
+            if not continue_on_fail:
+                break
+        except (subprocess.SubprocessError, OSError) as os_e:
+            print(f"ERROR: Exception running test {test_nodeid}: {os_e}")
+            failed_count += 1
+            if not continue_on_fail:
+                break
+        finally:
+            cleanup_system()
+
+    # Final summary
+    print(f"\n=== {test_file} Summary ===")
+    print(f"Total: {total_tests}")
+    print(f"Passed: {passed_count}")
+    print(f"Failed: {failed_count}")
+    print(f"Crashed: {len(crashed_tests)}")
+
+    if crashed_tests:
+        print(f"\n[CRASH SUMMARY] {test_name}:")
+        for crash in crashed_tests:
+            print(f"  - {crash['nodeid']} ({crash['duration']:.1f}s)")
+
+    # Return exit code: 0 if all passed, 1 otherwise
+    return 0 if failed_count == 0 and len(crashed_tests) == 0 else 1
 
 
 def main():
