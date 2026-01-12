@@ -19,6 +19,16 @@ on:
       github-run-id:
         required: true
         type: string
+      runner-label:
+        required: false
+        type: string
+        default: '["mi-250"]'
+      test-cmd:
+        required: false
+        type: string
+        default: >
+          python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s
+          && python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s
     secrets:
       ROCM_JAX_DB_HOSTNAME:
         required: true
@@ -31,7 +41,7 @@ on:
 
 jobs:
   run-tests:
-    runs-on: mi-250
+    runs-on: ${{ fromJSON(inputs.runner-label) }}
     steps:
       - name: Change owners for cleanup
         run: |
@@ -68,7 +78,6 @@ jobs:
       - name: Run tests
         env:
           GPU_COUNT: "8"
-          GFX: "gfx90a"
           ROCM_VERSION: ${{ inputs.rocm-version }}
           UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
           GITHUB_SHA: ${{ inputs.github-sha }}
@@ -76,8 +85,7 @@ jobs:
           # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s && \
-                        python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
+            --test-cmd "${{ inputs.test-command }}"
       - name: Upload logs to artifact (per-matrix)
         if: always()
         uses: actions/upload-artifact@v4
