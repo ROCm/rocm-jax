@@ -229,7 +229,7 @@ def convert_json_to_csv(json_file, csv_file):
         return -1
 
 
-# pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks
+# pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks,too-many-branches
 def generate_final_report(shell=False, env_vars=None):
     """Generate final HTML and JSON reports by merging individual test reports."""
 
@@ -293,7 +293,7 @@ def generate_final_report(shell=False, env_vars=None):
                                 result.append(next_c)
                                 i += 2
                                 continue
-                            elif next_c == "u":
+                            if next_c == "u":
                                 # Check for valid \uXXXX
                                 if i + 5 < length:
                                     hex_part = json_str[i + 2 : i + 6]
@@ -321,11 +321,10 @@ def generate_final_report(shell=False, env_vars=None):
                             result.extend(["\\", "\\"])
                             i += 1
                             continue
-                        else:
-                            # Trailing backslash
-                            result.extend(["\\", "\\"])
-                            i += 1
-                            continue
+                        # Trailing backslash
+                        result.extend(["\\", "\\"])
+                        i += 1
+                        continue
 
                     # Handle control characters (replace with JSON escapes)
                     elif c == "\n":
@@ -348,7 +347,8 @@ def generate_final_report(shell=False, env_vars=None):
                     data = json.loads(json_str)
                 except (json.JSONDecodeError, ValueError) as e:
                     print(
-                        f"  Still failed to parse {os.path.basename(html_file)} after sanitization: {e}"
+                        f"  Still failed to parse {os.path.basename(html_file)} "
+                        f"after sanitization: {e}"
                     )
                     # Last resort: create minimal valid JSON
                     data = {"tests": [], "summary": {}, "error": "Sanitization failed"}
@@ -358,7 +358,8 @@ def generate_final_report(shell=False, env_vars=None):
             sanitized_data = sanitize_recursive(data)
             sanitized_json_str = html.escape(json.dumps(sanitized_data))
 
-            # Update HTML content - use string replace instead of re.sub to avoid regex escape issues
+            # Update HTML content - use string replace instead of re.sub
+            # to avoid regex escape issues
             old_blob = f'data-jsonblob="{match.group(1)}"'
             new_blob = f'data-jsonblob="{sanitized_json_str}"'
             html_content = html_content.replace(old_blob, new_blob, 1)
@@ -1450,12 +1451,12 @@ if __name__ == "__main__":
     if os.path.exists(logs_dir) and os.path.isdir(logs_dir):
         if os.listdir(logs_dir):
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            archived_logs_dir = f"{logs_dir}_{timestamp}"
+            archive_path = f"{logs_dir}_{timestamp}"
             try:
-                print(f"Archiving old logs: {logs_dir} -> {archived_logs_dir}")
-                shutil.move(logs_dir, archived_logs_dir)
-                print(f"Old logs archived successfully to {archived_logs_dir}")
-            except Exception as e:
+                print(f"Archiving old logs: {logs_dir} -> {archive_path}")
+                shutil.move(logs_dir, archive_path)
+                print(f"Old logs archived successfully to {archive_path}")
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 print(f"WARNING: Failed to archive old logs: {e}")
 
     # Create fresh logs directory
