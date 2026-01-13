@@ -148,68 +148,62 @@ def extract_result_fields(
 # -----------------------------
 # Precompile skip categorization rules (regex etc.) once.
 # categorize_reason() reuses them; lru_cache avoids recompute.
+# Rules are evaluated in order - more specific rules should come before generic ones
 _RULES_RAW = [
-    # ROCm
-    {
-        "any": ["skip on rocm", "skip for rocm"],
-        "label": "Skipped on ROCm",
-    },
-    # Mosaic
-    {"contains": "mosaic", "label": "Mosaic"},
-    # Memory
-    {
-        "contains": "memory size limit exceeded",
-        "label": "Memory Limit Exceeded",
-    },
-    # Device constraints / applicability
-    {
-        "any": [
-            "tpu",
-            "x64",
-            "x32",
-            "backend is not cpu",
-            "only for cpu",
-            "at least",
-        ],
-        "label": "Device Inapplicability",
-    },
-    {
-        "contains": "memories do not work on cpu and gpu backends yet",
-        "label": "Device Inapplicability",
-    },
-    {
-        "contains": "test enabled only for cpu",
-        "label": "Device Inapplicability",
-    },
-    {
-        "contains": "jax implements eig only on cpu",
-        "label": "Device Inapplicability",
-    },
-    {
-        "contains": "schur decomposition is only implemented on cpu",
-        "label": "Device Inapplicability",
-    },
-    {"all": ["test", "requires", "device"], "label": "Device Inapplicability"},
-    # Missing module / API / plugin
-    {
-        "any": ["cuda", "sm90", "sm80", "cudnn", "magma is not installed"],
-        "label": "Missing Module/API/Plugin",
-    },
+    # TPU-specific (checked first)
+    {"contains": "tpu", "label": "TPU-Only"},
+    
+    # ROCm-specific checks
+    {"any": ["skip on rocm", "skip for rocm"], "label": "Skipped on ROCm"},
+    {"all": ["not supported on", "rocm"], "label": "Not Supported on ROCm"},
+    {"contains": "is not available for rocm", "label": "Not Supported on ROCm"},
+    
+    # Multiple devices required (before generic "support" check)
+    {"all": [">=", "devices"], "label": "Multiple Devices Required"},
+    {"all": ["test", "requires", "device"], "label": "Multiple Devices Required"},
+    
+    # NVIDIA-specific
+    {"any": ["cuda", "sm90", "sm100a", "sm80", "cudnn", "nvidia", "cupy"], "label": "NVIDIA-Specific"},
+    {"contains": "at least", "label": "NVIDIA-Specific"},
+    
+    # Apple-specific
+    {"any": ["metal", "apple"], "label": "Apple-Specific"},
+    
+    # CPU-only tests
+    {"contains": "test enabled only for cpu", "label": "CPU-Only"},
+    {"contains": "jax implements eig only on cpu", "label": "CPU-Only"},
+    {"contains": "schur decomposition is only implemented on cpu", "label": "CPU-Only"},
+    {"contains": "backend is not cpu", "label": "CPU-Only"},
+    {"contains": "only for cpu", "label": "CPU-Only"},
+    
+    # Device inapplicability
+    {"contains": "x64", "label": "Device Inapplicability"},
+    {"contains": "x32", "label": "Device Inapplicability"},
+    {"contains": "memories do not work on cpu and gpu backends yet", "label": "Device Inapplicability"},
+    
+    # Missing modules/plugins
+    {"contains": "magma is not installed", "label": "Missing Module/API/Plugin"},
     {"contains": "no module named", "label": "Missing Module/API/Plugin"},
-    {
-        "regex": re.compile(r"tests?\s+require?\s+(.+?)\s+plugin", re.I),
-        "label": "Missing Module/API/Plugin",
-    },
-    {"contains": "requires", "label": "Missing Module/API/Plugin"},
-    # Upstream / generic
-    {"contains": "not supported on device", "label": "Skipped Upstream"},
-    {
-        "contains": "skipping big tests under sanitizers due to slowdown",
-        "label": "Skipped Upstream",
-    },
+    {"contains": "requires pytorch", "label": "Missing Module/API/Plugin"},
+    {"contains": "requires tensorflow", "label": "Missing Module/API/Plugin"},
+    {"regex": re.compile(r"tests?\s+require?\s+(.+?)\s+plugin", re.I), "label": "Missing Module/API/Plugin"},
+    
+    # Other specific categories
+    {"contains": "mosaic", "label": "Mosaic"},
+    {"contains": "memory size limit exceeded", "label": "Memory Limit Exceeded"},
+    
+    # Performance-related skips
+    {"contains": "too slow", "label": "Too Slow (Skipped Upstream)"},
+    {"contains": "skipping big tests under sanitizers due to slowdown", "label": "Too Slow (Skipped Upstream)"},
+    
+    # Maintenance-related skips
+    {"any": ["unmaintained", "not maintained"], "label": "Currently Unmaintained (Skipped Upstream)"},
+    
+    # Generic "Skipped Upstream" checks (at the bottom)
+    {"contains": "dimension", "label": "Skipped Upstream"},
+    {"contains": "not supported in interpret mode", "label": "Skipped Upstream"},
     {"contains": "not implemented", "label": "Skipped Upstream"},
     {"contains": "not relevant", "label": "Skipped Upstream"},
-    {"contains": "dimension", "label": "Skipped Upstream"},
     {"contains": "support", "label": "Skipped Upstream"},
 ]
 
