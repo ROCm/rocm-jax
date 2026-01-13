@@ -152,6 +152,8 @@ def extract_result_fields(
 _RULES_RAW = [
     # TPU-specific (checked first)
     {"contains": "tpu", "label": "TPU-Only"},
+    # Mosaic (check reason only, filename/testname checked separately)
+    {"contains": "mosaic", "label": "Mosaic"},
     # ROCm-specific checks
     {"any": ["skip on rocm", "skip for rocm"], "label": "Skipped on ROCm"},
     {"all": ["not supported on", "rocm"], "label": "Not Supported on ROCm"},
@@ -161,7 +163,16 @@ _RULES_RAW = [
     {"all": ["test", "requires", "device"], "label": "Multiple Devices Required"},
     # NVIDIA-specific
     {
-        "any": ["cuda", "sm90", "sm100a", "sm80", "cudnn", "nvidia", "cupy"],
+        "any": [
+            "cuda",
+            "sm90",
+            "sm100a",
+            "sm80",
+            "cudnn",
+            "nvidia",
+            "cupy",
+            "capability",
+        ],
         "label": "NVIDIA-Specific",
     },
     {"contains": "at least", "label": "NVIDIA-Specific"},
@@ -189,8 +200,7 @@ _RULES_RAW = [
         "regex": re.compile(r"tests?\s+require?\s+(.+?)\s+plugin", re.I),
         "label": "Missing Module/API/Plugin",
     },
-    # Other specific categories
-    {"contains": "mosaic", "label": "Mosaic"},
+    # Memory Limit
     {"contains": "memory size limit exceeded", "label": "Memory Limit Exceeded"},
     # Performance-related skips
     {"contains": "too slow", "label": "Too Slow (Skipped Upstream)"},
@@ -420,7 +430,20 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
             nodeid, outcome, duration, longrepr, message = extract_result_fields(t)
             f, c, n = nodeid_parts(nodeid)
             test_id = test_id_map[(f, c, n)]
-            skip_label = categorize_reason(longrepr) if outcome == "skipped" else None
+
+            # Categorize skip reason, with special check for Mosaic in filename/testname (including mgpu)
+            skip_label = None
+            if outcome == "skipped":
+                # Check if "mosaic" or "mgpu" is in filename or test name
+                if (
+                    "mosaic" in f.lower()
+                    or "mosaic" in n.lower()
+                    or "mgpu" in f.lower()
+                ):
+                    skip_label = "Mosaic"
+                else:
+                    skip_label = categorize_reason(longrepr)
+
             append(
                 (
                     run_id,
