@@ -23,7 +23,7 @@ on:
         required: false
         type: string
         default: '["mi-250"]'
-      test-cmd:
+      test-command:
         required: false
         type: string
         default: >
