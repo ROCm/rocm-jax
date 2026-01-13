@@ -327,7 +327,7 @@ def generate_final_report(shell=False, env_vars=None):
                         continue
 
                     # Handle control characters (replace with JSON escapes)
-                    elif c == "\n":
+                    if c == "\n":
                         result.extend(["\\", "n"])
                     elif c == "\r":
                         result.extend(["\\", "r"])
@@ -1451,11 +1451,11 @@ if __name__ == "__main__":
     if os.path.exists(logs_dir) and os.path.isdir(logs_dir):
         if os.listdir(logs_dir):
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            archive_path = f"{logs_dir}_{timestamp}"
+            ARCHIVE_PATH = f"{logs_dir}_{timestamp}"  # pylint: disable=invalid-name
             try:
-                print(f"Archiving old logs: {logs_dir} -> {archive_path}")
-                shutil.move(logs_dir, archive_path)
-                print(f"Old logs archived successfully to {archive_path}")
+                print(f"Archiving old logs: {logs_dir} -> {ARCHIVE_PATH}")
+                shutil.move(logs_dir, ARCHIVE_PATH)
+                print(f"Old logs archived successfully to {ARCHIVE_PATH}")
             except Exception as e:  # pylint: disable=broad-exception-caught
                 print(f"WARNING: Failed to archive old logs: {e}")
 
