@@ -15,7 +15,7 @@ on:
       runner-label:
         required: false
         type: string
-        default: "mi-250"
+        default: '["mi-250"]'
       artifact-prefix:
         required: false
         default: 'plugin_wheels'
@@ -26,7 +26,7 @@ on:
 
 jobs:
   build-docker:
-    runs-on: ${{ inputs.runner-label }}
+    runs-on: ${{ fromJSON(inputs.runner-label) }}
     steps:
       - name: Clean up old runs
         run: |
