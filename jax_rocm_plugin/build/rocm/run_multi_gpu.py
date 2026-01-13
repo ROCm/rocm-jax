@@ -524,8 +524,14 @@ if __name__ == "__main__":
     # Set ROCm environment
     os.environ["HSA_TOOLS_LIB"] = "libroctracer64.so"
 
+    # Just ensure logs directory exists (don't archive, bec we are 
+    # going to use logs that run_single_gpu.py creates)
+    logs_dir = os.path.abspath("./logs")
+    os.makedirs(logs_dir, exist_ok=True)
+
     try:
         main()
     except KeyboardInterrupt:
         print("\nInterrupted by user")
         sys.exit(130)
+
