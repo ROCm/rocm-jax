@@ -262,49 +262,113 @@ def generate_final_report(shell=False, env_vars=None):
 
             pattern = r'data-jsonblob="([^"]*)"'
             match = re.search(pattern, html_content)
-            if match:
-                json_str = html.unescape(match.group(1))
+            if not match:
+                continue
 
-                # Remove/replace ALL control characters (ASCII < 32)
-                # This is more aggressive but ensures no control chars break JSON parsing
+            json_str = html.unescape(match.group(1))
 
-                cleaned_chars = []
-                for c in json_str:
-                    if c == "\n":
-                        cleaned_chars.append("\\n")  # Escape newline for JSON
+            # Robust sanitization: decode with json.JSONDecoder(strict=False)
+            # or use ast.literal_eval as fallback, or rebuild the string manually
+
+            # Step 1: Try to load the JSON as-is (some files might be OK)
+            try:
+                data = json.loads(json_str)
+            except (json.JSONDecodeError, ValueError):
+                # Step 2: Aggressive character-level cleaning
+                # Build a clean version character by character, efficiently
+                result = []
+                i = 0
+                length = len(json_str)
+
+                while i < length:
+                    c = json_str[i]
+
+                    # Handle backslashes
+                    if c == "\\":
+                        if i + 1 < length:
+                            next_c = json_str[i + 1]
+                            # Check for valid escape sequences
+                            if next_c in '"\\/bfnrt':
+                                result.append(c)
+                                result.append(next_c)
+                                i += 2
+                                continue
+                            elif next_c == "u":
+                                # Check for valid \uXXXX
+                                if i + 5 < length:
+                                    hex_part = json_str[i + 2 : i + 6]
+                                    if len(hex_part) == 4 and all(
+                                        hc in "0123456789abcdefABCDEF"
+                                        for hc in hex_part
+                                    ):
+                                        result.extend(
+                                            [
+                                                c,
+                                                next_c,
+                                                hex_part[0],
+                                                hex_part[1],
+                                                hex_part[2],
+                                                hex_part[3],
+                                            ]
+                                        )
+                                        i += 6
+                                        continue
+                                # Invalid \u - double escape the backslash
+                                result.extend(["\\", "\\"])
+                                i += 1
+                                continue
+                            # Invalid escape - double the backslash
+                            result.extend(["\\", "\\"])
+                            i += 1
+                            continue
+                        else:
+                            # Trailing backslash
+                            result.extend(["\\", "\\"])
+                            i += 1
+                            continue
+
+                    # Handle control characters (replace with JSON escapes)
+                    elif c == "\n":
+                        result.extend(["\\", "n"])
                     elif c == "\r":
-                        cleaned_chars.append("\\r")  # Escape carriage return
+                        result.extend(["\\", "r"])
                     elif c == "\t":
-                        cleaned_chars.append("\\t")  # Escape tab
-                    elif unicodedata.category(c)[0] == "C":
-                        # Other control character - replace with space
-                        cleaned_chars.append(" ")
+                        result.extend(["\\", "t"])
+                    elif ord(c) < 32:
+                        # Other control char - replace with space
+                        result.append(" ")
                     else:
-                        cleaned_chars.append(c)
+                        result.append(c)
+                    i += 1
 
-                json_str_fixed = "".join(cleaned_chars)
+                json_str = "".join(result)
 
+                # Try parsing again
                 try:
-                    data = json.loads(json_str_fixed)
-
-                    # Use the sanitize_recursive function defined at function level
-                    sanitized_data = sanitize_recursive(data)
-                    sanitized_json_str = html.escape(json.dumps(sanitized_data))
-                    html_content = re.sub(
-                        pattern, f'data-jsonblob="{sanitized_json_str}"', html_content
+                    data = json.loads(json_str)
+                except (json.JSONDecodeError, ValueError) as e:
+                    print(
+                        f"  Still failed to parse {os.path.basename(html_file)} after sanitization: {e}"
                     )
-
-                    with open(html_file, "w", encoding="utf-8") as f:
-                        f.write(html_content)
-                    sanitized_count += 1
-                except (  # pylint: disable=broad-exception-caught
-                    json.JSONDecodeError,
-                    Exception,
-                ) as e:  # pylint: disable=broad-except
-                    print(f"  Failed to sanitize {os.path.basename(html_file)}: {e}")
+                    # Last resort: create minimal valid JSON
+                    data = {"tests": [], "summary": {}, "error": "Sanitization failed"}
                     failed_count += 1
+
+            # Now we have valid data - sanitize for HTML display and write back
+            sanitized_data = sanitize_recursive(data)
+            sanitized_json_str = html.escape(json.dumps(sanitized_data))
+
+            # Update HTML content - use string replace instead of re.sub to avoid regex escape issues
+            old_blob = f'data-jsonblob="{match.group(1)}"'
+            new_blob = f'data-jsonblob="{sanitized_json_str}"'
+            html_content = html_content.replace(old_blob, new_blob, 1)
+
+            with open(html_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            sanitized_count += 1
+
         except (OSError, IOError) as e:
-            print(f"  Error reading {os.path.basename(html_file)}: {e}")
+            print(f"  Error processing {os.path.basename(html_file)}: {e}")
             failed_count += 1
 
     print(
@@ -1380,6 +1444,23 @@ def main(args):
 
 if __name__ == "__main__":
     os.environ["HSA_TOOLS_LIB"] = "libroctracer64.so"
+
+    # Archive old logs before starting test run
+    logs_dir = os.path.abspath("./logs")
+    if os.path.exists(logs_dir) and os.path.isdir(logs_dir):
+        if os.listdir(logs_dir):
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            archived_logs_dir = f"{logs_dir}_{timestamp}"
+            try:
+                print(f"Archiving old logs: {logs_dir} -> {archived_logs_dir}")
+                shutil.move(logs_dir, archived_logs_dir)
+                print(f"Old logs archived successfully to {archived_logs_dir}")
+            except Exception as e:
+                print(f"WARNING: Failed to archive old logs: {e}")
+
+    # Create fresh logs directory
+    os.makedirs(logs_dir, exist_ok=True)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-p", "--parallel", type=int, help="number of tests to run in parallel"
