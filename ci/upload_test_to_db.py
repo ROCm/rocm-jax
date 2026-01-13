@@ -431,7 +431,8 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
             f, c, n = nodeid_parts(nodeid)
             test_id = test_id_map[(f, c, n)]
 
-            # Categorize skip reason, with special check for Mosaic in filename/testname (including mgpu)
+            # Categorize skip reason, with special check for Mosaic
+            # in filename/testname (including mgpu)
             skip_label = None
             if outcome == "skipped":
                 # Check if "mosaic" or "mgpu" is in filename or test name
