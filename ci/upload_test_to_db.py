@@ -155,7 +155,7 @@ _RULES_RAW = [
     # Mosaic (check reason only, filename/testname checked separately)
     {"contains": "mosaic", "label": "Mosaic"},
     # ROCm-specific checks
-    {"any": ["skip on rocm", "skip for rocm"], "label": "Skipped on ROCm"},
+    {"any": ["skip on rocm", "skip for rocm"], "label": "Not Supported on ROCm"},
     {"all": ["not supported on", "rocm"], "label": "Not Supported on ROCm"},
     {"contains": "is not available for rocm", "label": "Not Supported on ROCm"},
     # Multiple devices required (before generic "support" check)
