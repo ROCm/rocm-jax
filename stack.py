@@ -18,7 +18,7 @@ DEFAULT_KERNELS_JAX_DIR = "../jax"
 
 MAKE_TEMPLATE = r"""
 # gfx targets for which XLA and jax custom call kernels are built for
-# AMDGPU_TARGETS ?= "gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
+# AMDGPU_TARGETS ?= "gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
 
 # customize to a single arch for local dev builds to reduce compile time
 AMDGPU_TARGETS ?= "$(shell rocminfo | grep -o -m 1 'gfx.*')"
@@ -349,7 +349,7 @@ def setup_development(
 def dev_docker(rm):
     """Start a docker container for local plugin development"""
     cur_abs_path = os.path.abspath(os.curdir)
-    image_name = "ubuntu:22.04"
+    image_name = "ubuntu:24.04"
 
     ep = "/rocm-jax/tools/docker_dev_setup.sh"
 

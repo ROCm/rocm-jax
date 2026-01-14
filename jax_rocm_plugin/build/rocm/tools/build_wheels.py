@@ -31,6 +31,7 @@ import logging
 import os
 import re
 import select
+import shutil
 import subprocess
 import sys
 
@@ -39,7 +40,7 @@ LOG = logging.getLogger(__name__)
 
 
 GPU_DEVICE_TARGETS = (
-    "gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
+    "gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
 )
 
 
@@ -128,9 +129,17 @@ def find_clang_path():
     return None
 
 
+def get_rocm_version_flag(rocm_version):
+    """Derive short ROCm version flag from full version string."""
+    version_string = rocm_version[0]
+    if version_string == "6":
+        version_string = "60"
+    return version_string
+
+
 # pylint: disable=R0913, R0917, too-many-locals
-def build_jaxlib_wheel(
-    jax_path,
+def build_plugin_wheel(
+    plugin_path,
     rocm_path,
     rocm_version,
     python_version,
@@ -139,7 +148,7 @@ def build_jaxlib_wheel(
     rbe=False,
     compiler="gcc",
 ):
-    """Build jaxlib and ROCm plugin wheels."""
+    """Build ROCm plugin and PJRT wheels via jax_rocm_plugin/build/build.py."""
     use_clang = compiler == "clang"
 
     # Avoid git warning by setting safe.directory.
@@ -152,9 +161,7 @@ def build_jaxlib_wheel(
         print(f"Failed to configure Git safe directory: {e}")
         raise
 
-    version_string = rocm_version[0]
-    if version_string == "6":
-        version_string = "60"
+    version_string = get_rocm_version_flag(rocm_version)
 
     cmd = [
         "python",
@@ -190,10 +197,73 @@ def build_jaxlib_wheel(
     env["JAXLIB_RELEASE"] = str(1)
     env["PATH"] = "%s:%s" % (py_bin, env["PATH"])
 
-    LOG.info("Running %r from cwd=%r", cmd, jax_path)
+    LOG.info("Running %r from cwd=%r", cmd, plugin_path)
     pattern = re.compile("Output wheel: (.+)\n")
 
-    _run_scan_for_output(cmd, pattern, env=env, cwd=jax_path, capture="stderr")
+    _run_scan_for_output(cmd, pattern, env=env, cwd=plugin_path, capture="stderr")
+
+
+# pylint: disable=R0913, R0917, too-many-locals
+def build_jaxlib_wheel(
+    jax_path,
+    rocm_path,
+    rocm_version,
+    python_version,
+    xla_path=None,
+    compiler="gcc",
+):
+    """Build jaxlib wheel via /jax/build/build.py."""
+    use_clang = compiler == "clang"
+
+    # Avoid git warning by setting safe.directory.
+    try:
+        subprocess.run(
+            ["git", "config", "--global", "--add", "safe.directory", "*"],
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to configure Git safe directory: {e}")
+        raise
+
+    version_string = get_rocm_version_flag(rocm_version)
+
+    cmd = [
+        "python",
+        "build/build.py",
+        "build",
+        "--wheels=jaxlib",
+        "--rocm_path=%s" % rocm_path,
+        "--rocm_version=%s" % version_string,
+        "--verbose",
+    ]
+
+    # Add clang path if clang is used.
+    if use_clang:
+        clang_path = find_clang_path()
+        if clang_path:
+            cmd.append("--clang_path=%s" % clang_path)
+        else:
+            raise RuntimeError("Clang binary not found in /usr/lib/llvm-*")
+
+    if xla_path:
+        cmd.append("--local_xla_path=%s" % xla_path)
+
+    cpy = to_cpy_ver(python_version)
+    py_bin = "/opt/python/%s-%s/bin" % (cpy, cpy)
+
+    env = dict(os.environ)
+    env["JAX_RELEASE"] = str(1)
+    env["JAXLIB_RELEASE"] = str(1)
+    env["PATH"] = "%s:%s" % (py_bin, env["PATH"])
+
+    LOG.info("Running %r from cwd=%r", cmd, jax_path)
+
+    # Run the build command directly - wheel finding is done separately in main().
+    result = subprocess.run(cmd, env=env, cwd=jax_path)
+    if result.returncode != 0:
+        raise RuntimeError(
+            "jaxlib build failed with return code: %d" % result.returncode
+        )
 
 
 # pylint: disable=R0914
@@ -283,6 +353,13 @@ def fix_wheel(path, jax_path):
         raise
 
 
+def is_release_jaxlib(filename):
+    """Check if wheel is a release jaxlib wheel (not selfbuilt)."""
+    # e.g. jaxlib-0.8.2-cp312-....whl (release)
+    # reject jaxlib-0.8.2.dev0+selfbuilt-cp312-....whl
+    return filename.startswith("jaxlib-") and "+selfbuilt" not in filename
+
+
 def parse_args():
     """Parse CLI arguments."""
     p = argparse.ArgumentParser()
@@ -305,6 +382,12 @@ def parse_args():
         help="Optional directory where XLA source is located to use instead of JAX builtin XLA",
     )
     p.add_argument(
+        "--jax-path",
+        type=str,
+        default=None,
+        help="Optional JAX source directory to build jaxlib wheel from",
+    )
+    p.add_argument(
         "--rbe",
         action="store_true",
         help="Build with Bazel RBE",
@@ -316,7 +399,7 @@ def parse_args():
         help="Compiler backend to use when compiling jax/jaxlib",
     )
 
-    p.add_argument("jax_path", help="Directory where JAX source directory is located")
+    p.add_argument("plugin_path", help="Directory where JAX ROCm plugin source is located")
 
     return p.parse_args()
 
@@ -339,6 +422,7 @@ def main():
     python_versions = args.python_versions.split(",")
 
     manylinux_output_dir = "dist_manylinux"
+    wheelhouse_dir = "/wheelhouse/"
 
     rocm_path = args.rocm_path
     if args.rocm_version:
@@ -352,6 +436,7 @@ def main():
     print("ROCM_PATH=%s" % rocm_path)
     print("ROCM_VERSION=%s" % rocm_version)
     print("PYTHON_VERSIONS=%r" % python_versions)
+    print("PLUGIN_PATH=%s" % args.plugin_path)
     print("JAX_PATH=%s" % args.jax_path)
     print("XLA_PATH=%s" % args.xla_path)
     print("COMPILER=%s" % args.compiler)
@@ -359,7 +444,8 @@ def main():
 
     update_rocm_targets(rocm_path, GPU_DEVICE_TARGETS)
 
-    full_output_path = os.path.join(args.jax_path, manylinux_output_dir)
+    # Build plugin + PJRT wheels.
+    full_output_path = os.path.join(args.plugin_path, manylinux_output_dir)
     os.makedirs(full_output_path, exist_ok=True)
 
     # wipe anything in output dir before building new
@@ -369,8 +455,8 @@ def main():
         os.remove(whl)
 
     for py in python_versions:
-        build_jaxlib_wheel(
-            args.jax_path,
+        build_plugin_wheel(
+            args.plugin_path,
             rocm_path,
             rocm_version,
             py,
@@ -381,7 +467,50 @@ def main():
         )
         wheel_paths = find_wheels(full_output_path)
         for wheel_path in wheel_paths:
-            fix_wheel(wheel_path, args.jax_path)
+            fix_wheel(wheel_path, args.plugin_path)
+
+    # Copy plugin + PJRT wheels to wheelhouse.
+    wheel_paths = find_wheels(full_output_path)
+    for whl in wheel_paths:
+        LOG.info("Copying %s into %s", whl, wheelhouse_dir)
+        shutil.copy(whl, wheelhouse_dir)
+
+    # Optionally build jaxlib wheel if --jax-path is provided.
+    if args.jax_path:
+        print("Building jaxlib from JAX_PATH=%s" % args.jax_path)
+        jax_dist_path = os.path.join(args.jax_path, "dist")
+        os.makedirs(jax_dist_path, exist_ok=True)
+
+        for py in python_versions:
+            build_jaxlib_wheel(
+                args.jax_path,
+                rocm_path,
+                rocm_version,
+                py,
+                args.xla_path,
+                args.compiler,
+            )
+            wheel_paths = find_wheels(jax_dist_path)
+            for wheel_path in wheel_paths:
+                base = os.path.basename(wheel_path)
+                # Fix non-jax wheels (jaxlib).
+                if not base.startswith("jax-"):
+                    fix_wheel(wheel_path, args.jax_path)
+
+        # Copy jaxlib wheels to wheelhouse (exclude selfbuilt wheels).
+        wheel_paths = find_wheels(jax_dist_path)
+        for whl in wheel_paths:
+            base = os.path.basename(whl)
+            if base.startswith("jax-"):
+                # Copy pure jax wheel.
+                LOG.info("Copying %s into %s", whl, wheelhouse_dir)
+                shutil.copy(whl, wheelhouse_dir)
+            elif is_release_jaxlib(base):
+                # Copy only release jaxlib wheels (not selfbuilt).
+                LOG.info("Copying jaxlib wheel %s into %s", whl, wheelhouse_dir)
+                shutil.copy(whl, wheelhouse_dir)
+            else:
+                LOG.info("Skipping selfbuilt wheel: %s", base)
 
 
 if __name__ == "__main__":

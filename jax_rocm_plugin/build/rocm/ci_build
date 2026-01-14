@@ -37,6 +37,7 @@ def dist_wheels(
     rocm_version,
     python_versions,
     xla_path,
+    jax_path,
     rocm_build_job,
     rocm_build_num,
     therock_path,
@@ -87,10 +88,13 @@ def dist_wheels(
     pyver_string = ",".join(python_versions)
 
     container_xla_path = "/xla"
+    container_jax_path = "/jax"
+    container_plugin_path = "/jax_rocm_plugin"
 
+    # Build wheels via plugin's build_wheels.py (plugin + PJRT, optionally jaxlib).
     bw_cmd = [
         "python3",
-        "/jax/build/rocm/tools/build_wheels.py",
+        "/jax_rocm_plugin/build/rocm/tools/build_wheels.py",
         "--rocm-version",
         rocm_version,
         "--python-versions",
@@ -102,10 +106,15 @@ def dist_wheels(
     if xla_path:
         bw_cmd.extend(["--xla-path", container_xla_path])
 
+    if jax_path:
+        bw_cmd.extend(["--jax-path", container_jax_path])
+
     if rbe:
         bw_cmd.append("--rbe")
 
-    bw_cmd.append("/jax")
+    bw_cmd.append(container_plugin_path)
+
+    container_cmd = " ".join(bw_cmd)
 
     cmd = ["docker", "run"]
 
@@ -113,13 +122,16 @@ def dist_wheels(
         "-v",
         os.path.abspath("../") + ":/repo",
         "-v",
-        os.path.abspath("./") + ":/jax",
+        os.path.abspath("./") + ":/jax_rocm_plugin",
         "-v",
         os.path.abspath("./wheelhouse") + ":/wheelhouse",
     ]
 
     if xla_path:
         mounts.extend(["-v", "%s:%s" % (xla_path, container_xla_path)])
+
+    if jax_path:
+        mounts.extend(["-v", "%s:%s" % (jax_path, container_jax_path)])
 
     cmd.extend(mounts)
 
@@ -129,6 +141,7 @@ def dist_wheels(
     # NOTE(mrodden): bazel times out without --init, probably blocking on a zombie PID
     cmd.extend(
         [
+            "-it",
             "--init",
             "--rm",
             "-e",
@@ -140,7 +153,9 @@ def dist_wheels(
             image,
             "bash",
             "-c",
-            " ".join(bw_cmd),
+            container_cmd,
+            "--shm-size",
+            "64G",
         ]
     )
 
@@ -227,7 +242,12 @@ def parse_args():
 
     p.add_argument(
         "--xla-source-dir",
-        help="Path to XLA source to use during jaxlib build, instead of builtin XLA",
+        help="Path to XLA source to use during plugin and jaxlib build, instead of builtin XLA",
+    )
+
+    p.add_argument(
+        "--jax-source-dir",
+        help="Optional JAX source directory. When provided, builds jaxlib wheel and copies to wheelhouse.",
     )
 
     p.add_argument(
@@ -260,6 +280,7 @@ def main():
             args.rocm_version,
             args.python_versions,
             args.xla_source_dir,
+            args.jax_source_dir,
             args.rocm_build_job,
             args.rocm_build_num,
             args.therock_path,

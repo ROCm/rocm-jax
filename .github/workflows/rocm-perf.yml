@@ -170,4 +170,4 @@ jobs:
             --python-version "${{ needs.build-and-test-jax-perf.outputs.python_version }}" \
             --rocm-version "${{ needs.build-and-test-jax-perf.outputs.rocm_version }}" \
             --gfx-version gfx90a \
-            --jax-version 0.8.0
+            --jax-version 0.8.2

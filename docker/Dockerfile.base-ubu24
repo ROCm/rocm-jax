@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 ### Container Build Arguments:
 # The list of target devices to be supported by the JAX ROCm plugin and pjrt.
-ARG GPU_DEVICE_TARGETS="gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
+ARG GPU_DEVICE_TARGETS="gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
 # The ROCm version to be used inside the container.
 ARG ROCM_VERSION
 # The installation path for ROCm.
