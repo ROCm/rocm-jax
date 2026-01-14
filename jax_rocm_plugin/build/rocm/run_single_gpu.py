@@ -59,7 +59,7 @@ def sanitize_for_json(text):
     """
     if not text:
         return text
-    # Remove problematic control characters but keep \n, \r, \t 
+    # Remove problematic control characters but keep \n, \r, \t
     # json.dumps() will properly escape these
     cleaned = "".join(
         char if unicodedata.category(char)[0] != "C" or char in "\n\r\t" else " "
@@ -334,7 +334,7 @@ def generate_final_report(shell=False, env_vars=None):
         print(f"FAILED - {' '.join(cmd)}")
         print(result.stderr.decode())
         print("HTML merger failed, but continuing with JSON report generation...")
-    
+
     # Generate json reports first (this has all tests including crashed ones)
     combine_json_reports()
 
@@ -799,7 +799,7 @@ def _update_html_json_data(
     html_content, testfile, abort_info
 ):  # pylint: disable=too-many-locals
     """Update JSON data in HTML file by adding crashed test info."""
-    
+
     jsonblob_pattern = r'data-jsonblob="([^"]*)"'
     match = re.search(jsonblob_pattern, html_content)
     if not match:
