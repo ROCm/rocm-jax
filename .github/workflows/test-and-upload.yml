@@ -76,7 +76,8 @@ jobs:
           # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s && \
+            --test-cmd "export XLA_FLAGS="--xla_gpu_enable_command_buffer="; \
+                        python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s && \
                         python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
       - name: Upload logs to artifact (per-matrix)
         if: always()
