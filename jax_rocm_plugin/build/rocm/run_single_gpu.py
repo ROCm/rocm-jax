@@ -48,29 +48,93 @@ ALL_CRASHED_TESTS = []  # Global list to track all crashed tests
 
 
 def sanitize_for_json(text):
-    """Remove or replace control characters that break JSON parsing.
+    """Remove control characters that break JSON parsing.
 
     Args:
         text: String that may contain control characters
 
     Returns:
-        Sanitized string safe for JSON embedding
+        Sanitized string safe for JSON - removes control chars but keeps \n, \r, \t
+        which json.dumps() will properly escape
     """
     if not text:
         return text
-    # Remove control characters except for newline, tab, and carriage return
-    # Then replace those with safe alternatives
-
-    # Remove control characters (categories Cc, Cf)
+    # Remove problematic control characters but keep \n, \r, \t 
+    # json.dumps() will properly escape these
     cleaned = "".join(
         char if unicodedata.category(char)[0] != "C" or char in "\n\r\t" else " "
         for char in text
     )
-    # Replace newlines with <br/> for HTML display
-    cleaned = cleaned.replace("\n", "<br/>")
-    cleaned = cleaned.replace("\r", "")
-    cleaned = cleaned.replace("\t", "  ")
     return cleaned
+
+
+def _sanitize_str_for_html_jsonblob(text: str) -> str:
+    """Sanitize a string for embedding inside pytest-html's data-jsonblob.
+
+    Goal: make the JSON blob robust for `pytest_html_merger` and the final UI.
+    We avoid leaving literal control characters (e.g. newline 0x0a) in strings
+    by converting newlines to `<br/>` and removing other control chars.
+    """
+    if not text:
+        return text
+
+    # Normalize newlines, then render as HTML-friendly breaks.
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = text.replace("\n", "<br/>")
+    text = text.replace("\t", "  ")
+
+    # Remove other control characters (unicode categories starting with "C").
+    return "".join(ch if unicodedata.category(ch)[0] != "C" else " " for ch in text)
+
+
+def _sanitize_obj_for_html_jsonblob(obj):
+    """Recursively sanitize nested dict/list structures for HTML jsonblob."""
+    if isinstance(obj, dict):
+        return {k: _sanitize_obj_for_html_jsonblob(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_obj_for_html_jsonblob(v) for v in obj]
+    if isinstance(obj, str):
+        return _sanitize_str_for_html_jsonblob(obj)
+    return obj
+
+
+def sanitize_html_file_jsonblob(html_path: str) -> bool:
+    """Parse + sanitize a single pytest-html report's data-jsonblob in place.
+
+    Returns True if the file was modified.
+    """
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+    except OSError:
+        return False
+
+    m = re.search(r'data-jsonblob="([^"]*)"', html_content, flags=re.DOTALL)
+    if not m:
+        return False
+
+    raw_attr = m.group(1)
+    try:
+        json_text = html.unescape(raw_attr)
+        data = json.loads(json_text)
+    except (json.JSONDecodeError, ValueError):
+        return False
+
+    sanitized = _sanitize_obj_for_html_jsonblob(data)
+    new_json_text = json.dumps(sanitized, ensure_ascii=False)
+    new_attr = html.escape(new_json_text, quote=True)
+
+    if new_attr == raw_attr:
+        return False
+
+    # Safe replacement via slicing (avoid regex replacement backslash handling).
+    new_html = html_content[: m.start(1)] + new_attr + html_content[m.end(1) :]
+    try:
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(new_html)
+    except OSError:
+        return False
+    return True
 
 
 def detect_amd_gpus():
@@ -233,148 +297,27 @@ def convert_json_to_csv(json_file, csv_file):
 def generate_final_report(shell=False, env_vars=None):
     """Generate final HTML and JSON reports by merging individual test reports."""
 
-    # Define sanitize_recursive outside loop to avoid cell-var-from-loop warning
-    def sanitize_recursive(obj):
-        """Recursively sanitize strings in nested data structures."""
-        if isinstance(obj, dict):
-            return {k: sanitize_recursive(v) for k, v in obj.items()}
-        if isinstance(obj, list):
-            return [sanitize_recursive(item) for item in obj]
-        if isinstance(obj, str):
-            # Replace actual control characters with HTML-friendly versions
-            return obj.replace("\n", "<br/>").replace("\r", "").replace("\t", "  ")
-        return obj
-
     if env_vars is None:
         env_vars = {}
     env = os.environ.copy()
     env.update(env_vars)
 
-    # Sanitize HTML files before merging to remove control characters from JSON blobs
+    # Sanitize all individual HTML jsonblobs so pytest_html_merger never consumes
+    # blobs containing literal control characters from captured output/logs.
     html_files = glob.glob(f"{BASE_DIR}/*_log.html")
-    sanitized_count = 0
-    failed_count = 0
-
-    for html_file in html_files:
+    modified = 0
+    failed = 0
+    for html_file in sorted(html_files):
         try:
-            with open(html_file, "r", encoding="utf-8") as f:
-                html_content = f.read()
-
-            pattern = r'data-jsonblob="([^"]*)"'
-            match = re.search(pattern, html_content)
-            if not match:
-                continue
-
-            json_str = html.unescape(match.group(1))
-
-            # Robust sanitization: decode with json.JSONDecoder(strict=False)
-            # or use ast.literal_eval as fallback, or rebuild the string manually
-
-            # Step 1: Try to load the JSON as-is (some files might be OK)
-            try:
-                data = json.loads(json_str)
-            except (json.JSONDecodeError, ValueError):
-                # Step 2: Aggressive character-level cleaning
-                # Build a clean version character by character, efficiently
-                result = []
-                i = 0
-                length = len(json_str)
-
-                while i < length:
-                    c = json_str[i]
-
-                    # Handle backslashes
-                    if c == "\\":
-                        if i + 1 < length:
-                            next_c = json_str[i + 1]
-                            # Check for valid escape sequences
-                            if next_c in '"\\/bfnrt':
-                                result.append(c)
-                                result.append(next_c)
-                                i += 2
-                                continue
-                            if next_c == "u":
-                                # Check for valid \uXXXX
-                                if i + 5 < length:
-                                    hex_part = json_str[i + 2 : i + 6]
-                                    if len(hex_part) == 4 and all(
-                                        hc in "0123456789abcdefABCDEF"
-                                        for hc in hex_part
-                                    ):
-                                        result.extend(
-                                            [
-                                                c,
-                                                next_c,
-                                                hex_part[0],
-                                                hex_part[1],
-                                                hex_part[2],
-                                                hex_part[3],
-                                            ]
-                                        )
-                                        i += 6
-                                        continue
-                                # Invalid \u - double escape the backslash
-                                result.extend(["\\", "\\"])
-                                i += 1
-                                continue
-                            # Invalid escape - double the backslash
-                            result.extend(["\\", "\\"])
-                            i += 1
-                            continue
-                        # Trailing backslash
-                        result.extend(["\\", "\\"])
-                        i += 1
-                        continue
-
-                    # Handle control characters (replace with JSON escapes)
-                    if c == "\n":
-                        result.extend(["\\", "n"])
-                    elif c == "\r":
-                        result.extend(["\\", "r"])
-                    elif c == "\t":
-                        result.extend(["\\", "t"])
-                    elif ord(c) < 32:
-                        # Other control char - replace with space
-                        result.append(" ")
-                    else:
-                        result.append(c)
-                    i += 1
-
-                json_str = "".join(result)
-
-                # Try parsing again
-                try:
-                    data = json.loads(json_str)
-                except (json.JSONDecodeError, ValueError) as e:
-                    print(
-                        f"  Still failed to parse {os.path.basename(html_file)} "
-                        f"after sanitization: {e}"
-                    )
-                    # Last resort: create minimal valid JSON
-                    data = {"tests": [], "summary": {}, "error": "Sanitization failed"}
-                    failed_count += 1
-
-            # Now we have valid data - sanitize for HTML display and write back
-            sanitized_data = sanitize_recursive(data)
-            sanitized_json_str = html.escape(json.dumps(sanitized_data))
-
-            # Update HTML content - use string replace instead of re.sub
-            # to avoid regex escape issues
-            old_blob = f'data-jsonblob="{match.group(1)}"'
-            new_blob = f'data-jsonblob="{sanitized_json_str}"'
-            html_content = html_content.replace(old_blob, new_blob, 1)
-
-            with open(html_file, "w", encoding="utf-8") as f:
-                f.write(html_content)
-            sanitized_count += 1
-
-        except (OSError, IOError) as e:
-            print(f"  Error processing {os.path.basename(html_file)}: {e}")
-            failed_count += 1
-
-    print(
-        f"Sanitized {sanitized_count}/{len(html_files)} HTML files ({failed_count} failed)"
-    )
+            if sanitize_html_file_jsonblob(html_file):
+                modified += 1
+        except Exception:  # pylint: disable=broad-exception-caught
+            failed += 1
+    if html_files:
+        print(
+            f"Sanitized HTML jsonblobs: modified={modified}/{len(html_files)}, "
+            f"failed={failed}"
+        )
 
     # First, try to merge HTML files
     cmd = [
@@ -391,8 +334,8 @@ def generate_final_report(shell=False, env_vars=None):
         print(f"FAILED - {' '.join(cmd)}")
         print(result.stderr.decode())
         print("HTML merger failed, but continuing with JSON report generation...")
-
-    # Generate json reports.
+    
+    # Generate json reports first (this has all tests including crashed ones)
     combine_json_reports()
 
     # Generate CSV report from JSON
@@ -784,9 +727,9 @@ def _create_abort_row_html(testfile, abort_info):
     gpu_id_clean = sanitize_for_json(str(gpu_id))
 
     log_content = (
-        f"Test aborted: {abort_reason}<br/>"
-        f"Test Class: {test_class_clean}<br/>"
-        f"Abort detected at: {abort_time_clean}<br/>"
+        f"Test aborted: {abort_reason}\n"
+        f"Test Class: {test_class_clean}\n"
+        f"Abort detected at: {abort_time_clean}\n"
         f"GPU ID: {gpu_id_clean}"
     )
 
@@ -855,7 +798,8 @@ def _update_html_summary_counts(html_content):
 def _update_html_json_data(
     html_content, testfile, abort_info
 ):  # pylint: disable=too-many-locals
-    """Update JSON data in HTML file."""
+    """Update JSON data in HTML file by adding crashed test info."""
+    
     jsonblob_pattern = r'data-jsonblob="([^"]*)"'
     match = re.search(jsonblob_pattern, html_content)
     if not match:
@@ -892,8 +836,8 @@ def _update_html_json_data(
         gpu_id_clean = sanitize_for_json(str(gpu_id))
 
         log_msg = (
-            f"Test aborted: {abort_reason}<br/>"
-            f"Abort detected at: {abort_time_clean}<br/>"
+            f"Test aborted: {abort_reason}\n"
+            f"Abort detected at: {abort_time_clean}\n"
             f"GPU ID: {gpu_id_clean}"
         )
         new_test = {
@@ -1030,8 +974,8 @@ def _create_new_html_file(
         gpu_id_clean = sanitize_for_json(str(gpu_id))
 
         log_msg = (
-            f"Test aborted: {abort_reason}<br/>"
-            f"Abort detected at: {abort_time_clean}<br/>"
+            f"Test aborted: {abort_reason}\n"
+            f"Abort detected at: {abort_time_clean}\n"
             f"GPU ID: {gpu_id_clean}"
         )
         json_data = {
@@ -1084,8 +1028,8 @@ def _create_new_html_file(
         # Create the HTML content
         current_time_str = datetime.now().strftime("%d-%b-%Y at %H:%M:%S")
         log_content = (
-            f"Test aborted: {abort_reason}<br/>"
-            f"Abort detected at: {abort_time}<br/>"
+            f"Test aborted: {abort_reason}\n"
+            f"Abort detected at: {abort_time}\n"
             f"GPU ID: {gpu_id}"
         )
 
