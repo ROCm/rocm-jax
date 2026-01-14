@@ -156,17 +156,33 @@ def build_jaxlib_wheel(
     if version_string == "6":
         version_string = "60"
 
+    bazel_opts = [
+        "--experimental_ui_max_stdouterr_bytes=200000000",
+        "--repo_env=ML_WHEEL_TYPE=release",
+
+        # Likely fixes for relocation overflow
+        "--linkopt=-Wl,--no-relax",
+        "--copt=-fno-asynchronous-unwind-tables",
+        "--cxxopt=-fno-asynchronous-unwind-tables",
+
+        # Quick test: reduce fat binary bloat (try one arch)
+        # "--repo_env=TF_ROCM_AMDGPU_TARGETS=gfx942",
+        "--action_env=TF_ROCM_AMDGPU_TARGETS=\"gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201\"",
+    ]
+
     cmd = [
         "python",
         "build/build.py",
         "build",
-        "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
+        "--wheels=jax-rocm-pjrt",
         "--rocm_path=%s" % rocm_path,
         "--rocm_version=%s" % version_string,
         "--use_clang=%s" % use_clang,
         "--verbose",
         "--output_path=%s" % output_dir,
     ]
+
+    cmd += ["--bazel_options=%s" % opt for opt in bazel_opts]
 
     # Add clang path if clang is used.
     if use_clang:

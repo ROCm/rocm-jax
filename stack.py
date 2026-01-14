@@ -349,7 +349,7 @@ def setup_development(
 def dev_docker(rm):
     """Start a docker container for local plugin development"""
     cur_abs_path = os.path.abspath(os.curdir)
-    image_name = "ubuntu:22.04"
+    image_name = "ubuntu:24.04"
 
     ep = "/rocm-jax/tools/docker_dev_setup.sh"
 

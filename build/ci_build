@@ -114,6 +114,7 @@ def dist_wheels(
     rocm_version,
     python_versions,
     xla_source_dir,
+    jax_source_dir,
     rocm_build_job="",
     rocm_build_num="",
     therock_path=None,
@@ -137,35 +138,15 @@ def dist_wheels(
         xla_path = os.path.realpath(os.path.expanduser(xla_source_dir))
         cmd.append("--xla-source-dir=%s" % xla_path)
 
+    if jax_source_dir:
+        jax_path = os.path.realpath(os.path.expanduser(jax_source_dir))
+        cmd.append("--jax-source-dir=%s" % jax_path)
+
     if rbe:
         cmd.append("--rbe")
 
     cmd.append("dist_wheels")
     subprocess.check_call(cmd, cwd=jax_plugin_dir)
-
-
-def _fetch_jax_metadata(xla_path):
-    cmd = ["git", "rev-parse", "HEAD"]
-    jax_commit = subprocess.check_output(cmd)
-    xla_commit = b""
-
-    if xla_path:
-        try:
-            xla_commit = subprocess.check_output(cmd, cwd=xla_path)
-        except Exception as ex:
-            LOG.warning("Exception while retrieving xla_commit: %s" % ex)
-
-    cmd = ["python3", "setup.py", "-V"]
-    env = dict(os.environ)
-    env["JAX_RELEASE"] = "1"
-
-    jax_version = subprocess.check_output(cmd, env=env)
-
-    return {
-        "jax_version": jax_version.decode("utf8").strip(),
-        "jax_commit": jax_commit.decode("utf8").strip(),
-        "xla_commit": xla_commit.decode("utf8").strip(),
-    }
 
 
 def _apply_filters(docker_filters, dockerfile_basename, docker_dir="docker"):
@@ -540,7 +521,12 @@ def parse_args():
 
     p.add_argument(
         "--xla-source-dir",
-        help="Path to XLA source to use during jaxlib build, instead of builtin XLA",
+        help="Path to XLA source to use during plugin and jaxlib build, instead of builtin XLA",
+    )
+
+    p.add_argument(
+        "--jax-source-dir",
+        help="Path to JAX source to use during jaxlib build",
     )
 
     p.add_argument(
@@ -623,6 +609,7 @@ def main():
             rocm_version=args.rocm_version,
             python_versions=args.python_versions,
             xla_source_dir=args.xla_source_dir,
+            jax_source_dir=args.jax_source_dir,
             rocm_build_job=args.rocm_build_job,
             rocm_build_num=args.rocm_build_num,
             therock_path=args.therock_path,
