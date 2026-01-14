@@ -94,10 +94,42 @@ build:rocm_base --action_env TF_ROCM_AMDGPU_TARGETS="gfx906,gfx908,gfx90a,gfx942
 # Build with hipcc for ROCm and clang for the host.
 build:rocm --config=rocm_base
 build:rocm --action_env=TF_ROCM_CLANG="1"
-build:rocm --action_env=CLANG_COMPILER_PATH="/usr/lib/llvm-18/bin/clang"
 build:rocm --copt=-Wno-gnu-offsetof-extensions
 build:rocm --copt=-Qunused-arguments
 build:rocm --action_env=TF_HIPCC_CLANG="1"
+
+build:rocm --config=clang
+build:rocm --verbose_failures=true
+build:rocm --repo_env=CLANG_COMPILER_PATH="/usr/lib/llvm-18/bin/clang"
+build:rocm --repo_env=CC="/lib/llvm-18/bin/clang"
+build:rocm --repo_env=BAZEL_COMPILER="/lib/llvm-18/bin/clang"
+build:rocm --repo_env=HERMETIC_PYTHON_VERSION=3.12
+build:rocm --define=xnn_enable_avxvnniint8=false
+build:rocm --config=mkl_open_source_only
+build:rocm --config=native_arch_posix
+build:rocm --repo_env=ROCM_PATH="/opt/rocm"
+build:rocm --repo_env=TF_ROCM_AMDGPU_TARGETS="gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
+
+# for @xla//build_tools/rocm:parallel_gpu_execute
+build:rocm --legacy_external_runfiles=true
+
+build:rocm_rbe --bes_backend="grpcs://wardite.cluster.engflow.com"
+build:rocm_rbe --bes_results_url="https://wardite.cluster.engflow.com/invocation/"
+build:rocm_rbe --host_platform="//platform/linux:tf_linux_gpu"
+build:rocm_rbe --extra_execution_platforms="//platform/linux:tf_linux_gpu"
+build:rocm_rbe --platforms="//platform/linux:tf_linux_gpu"
+build:rocm_rbe --bes_timeout=600s
+build:rocm_rbe --tls_client_certificate="ci-cert.crt"
+build:rocm_rbe --tls_client_key="ci-cert.key"
+build:rocm_rbe --spawn_strategy=local
+build:rocm_rbe --grpc_keepalive_time=30s
+build:rocm_rbe --test_sharding_strategy=disabled
+build:rocm_rbe --action_env=REMOTE_GPU_TESTING=1
+
+test:rocm_rbe --jobs=200
+test:rocm_rbe --remote_executor=grpcs://wardite.cluster.engflow.com
+test:rocm_rbe --remote_timeout=3600
+test:rocm_rbe --strategy=TestRunner=remote,local
 
 
 #############################################################################
@@ -124,9 +156,6 @@ try-import %workspace%/rbe.bazelrc
 
 build:debug_symbols --strip=never --per_file_copt="xla/pjrt|xla/python@-g3"
 build:debug --config=debug_symbols -c fastbuild
-
-# Load `.jax_configure.bazelrc` file written by build.py
-try-import %workspace%/.jax_configure.bazelrc
 
 # Load rc file with user-specific options.
 try-import %workspace%/.bazelrc.user
