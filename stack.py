@@ -292,6 +292,7 @@ def setup_development(
     rocm_path: str = "/opt/rocm",
     write_makefile: bool = True,
     debug: bool = False,
+    clang_path: str = None,
 ):
     """Clone jax and xla repos, and set up Makefile for developers"""
 
@@ -348,7 +349,7 @@ def setup_development(
             print(f"Warning: using unexpected ROCm version {plugin_namespace_version}")
 
         kvs = {
-            "clang_path": "/usr/lib/llvm-18/bin/clang",
+            "clang_path": clang_path or "/usr/lib/llvm-18/bin/clang",
             "plugin_version": plugin_namespace_version,
             "this_repo_root": this_repo_root,
             "xla_path": xla_path,
@@ -367,12 +368,15 @@ def setup_development(
             "rocm_path": rocm_path,
         }
 
-        clang_path = find_clang()
-        if clang_path:
-            print("Found clang at %r" % clang_path)
-            kvs["clang_path"] = clang_path
+        if not clang_path:
+            clang_discovered = find_clang()
+            if clang_discovered:
+                print("Found clang at %r" % clang_discovered)
+                kvs["clang_path"] = clang_discovered
+            else:
+                print("No clang found. Defaulting to %r" % kvs["clang_path"])
         else:
-            print("No clang found. Defaulting to %r" % kvs["clang_path"])
+            print("Using provided clang at %r" % clang_path)
 
         makefile_content = MAKE_TEMPLATE % kvs
 
@@ -389,6 +393,7 @@ def build_and_install(
     fix_bazel_symbols: bool = False,
     rocm_path: str = "/opt/rocm",
     debug: bool = False,
+    clang_path: str = None,
 ):
     """Run develop setup, then build all wheels and install jax"""
     # Uninstall existing packages first
@@ -423,11 +428,16 @@ def build_and_install(
         rocm_path=rocm_path,
         write_makefile=False,  # Don't generate Makefile for direct build
         debug=debug,
+        clang_path=clang_path,
     )
 
     this_repo_root, xla_path, jax_path = _resolve_relative_paths(xla_dir, jax_dir)
     amdgpu_targets = get_amdgpu_targets()
-    clang_path = find_clang() or "/usr/lib/llvm-18/bin/clang"
+
+    if not clang_path:
+        clang_path = find_clang() or "/usr/lib/llvm-18/bin/clang"
+    else:
+        print("Using provided clang at %r" % clang_path)
 
     # ROCm version detection
     try:
@@ -637,6 +647,11 @@ def parse_args():
         help="Location of the ROCm to use for building Jax",
         default="/opt/rocm",
     )
+    common.add_argument(
+        "--clang-path",
+        help="Path to the clang compiler to use.",
+        default=None,
+    )
 
     subp.add_parser("develop", parents=[common], help="Setup development environment")
     subp.add_parser(
@@ -667,6 +682,7 @@ def main():
             fix_bazel_symbols=args.fix_bazel_symbols,
             rocm_path=args.rocm_path,
             debug=args.debug,
+            clang_path=args.clang_path,
         )
     elif args.action == "build":
         build_and_install(
@@ -678,6 +694,7 @@ def main():
             fix_bazel_symbols=args.fix_bazel_symbols,
             rocm_path=args.rocm_path,
             debug=args.debug,
+            clang_path=args.clang_path,
         )
 
 
