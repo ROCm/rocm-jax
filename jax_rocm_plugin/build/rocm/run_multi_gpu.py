@@ -29,16 +29,29 @@ from pathlib import Path
 # Add the configuration directory to Python path
 sys.path.insert(0, "jax_rocm_plugin/build/rocm")
 
+def _external_abort_plugin_dir() -> str:
+    """Return absolute path to external /pytest-abort-plugin directory."""
+    rocm_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.abspath(os.path.join(rocm_dir, "..", "..", ".."))
+    return os.path.abspath(os.path.join(repo_root, "..", "pytest-abort-plugin"))
+
+
+_EXT_ABORT_PLUGIN_DIR = _external_abort_plugin_dir()  # pylint: disable=invalid-name
+if os.path.isdir(_EXT_ABORT_PLUGIN_DIR):
+    sys.path.insert(0, _EXT_ABORT_PLUGIN_DIR)
+
 try:
     from multi_gpu_tests_config import MULTI_GPU_TESTS
     from run_single_gpu import (
         check_for_crash,
-        handle_abort,
         generate_final_report,
         detect_amd_gpus,
         clear_crash_file,
         build_pytest_command,
         convert_json_to_csv,
+    )
+    from pytest_abort_plugin.abort_handling import (  # type: ignore  # pylint: disable=wrong-import-position
+        handle_abort,
     )
 except ImportError as e:
     print(f"Error importing required modules: {e}")
@@ -149,6 +162,13 @@ def run_multi_gpu_test(
             "HIP_VISIBLE_DEVICES": gpu_list,
             "XLA_PYTHON_CLIENT_ALLOCATOR": "default",
         }
+    )
+    # Enable pytest abort-detector plugin (writes this file per-test).
+    env["JAX_ROCM_LAST_RUNNING_FILE"] = abs_last_running_file
+    # Ensure external plugin is importable in the pytest subprocess.
+    env["PYTHONPATH"] = (
+        _EXT_ABORT_PLUGIN_DIR
+        + (":" + env.get("PYTHONPATH", "") if env.get("PYTHONPATH") else "")
     )
 
     # Get deselected tests (permanent skips for this test file)
