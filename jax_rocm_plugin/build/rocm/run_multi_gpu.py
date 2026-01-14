@@ -29,16 +29,36 @@ from pathlib import Path
 # Add the configuration directory to Python path
 sys.path.insert(0, "jax_rocm_plugin/build/rocm")
 
+
+def _external_abort_plugin_dir() -> str:
+    """Return absolute path to external /pytest-abort directory."""
+    rocm_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.abspath(os.path.join(rocm_dir, "..", "..", ".."))
+    return os.path.abspath(os.path.join(repo_root, "..", "pytest-abort"))
+
+
+_EXT_ABORT_PLUGIN_DIR = _external_abort_plugin_dir()  # pylint: disable=invalid-name
+if os.path.isdir(_EXT_ABORT_PLUGIN_DIR):
+    sys.path.insert(0, _EXT_ABORT_PLUGIN_DIR)
+
 try:
     from multi_gpu_tests_config import MULTI_GPU_TESTS
     from run_single_gpu import (
-        check_for_crash,
-        handle_abort,
-        generate_final_report,
         detect_amd_gpus,
         clear_crash_file,
         build_pytest_command,
-        convert_json_to_csv,
+    )
+    from pytest_abort.abort_handling import (  # type: ignore  # pylint: disable=wrong-import-position
+        handle_abort,
+    )
+    from pytest_abort.crash_file import (  # type: ignore  # pylint: disable=wrong-import-position
+        check_for_crash_file,
+    )
+    from pytest_abort.logs import (  # type: ignore  # pylint: disable=wrong-import-position
+        ensure_logs_dir,
+    )
+    from pytest_abort.report_utils import (  # type: ignore  # pylint: disable=wrong-import-position
+        generate_final_report as generate_final_report_plugin,
     )
 except ImportError as e:
     print(f"Error importing required modules: {e}")
@@ -46,6 +66,30 @@ except ImportError as e:
 
 LOG_DIR = "./logs"
 MAX_GPUS_PER_TEST = 8  # Limit for stability
+
+
+def _normalize_only_test_file(p: str) -> str:
+    """Normalize user-supplied test file path to the MULTI_GPU_TESTS format.
+
+    The multi-GPU config expects paths like: "tests/foo_test.py" (no leading "jax/").
+    We accept:
+      - "jax/tests/foo_test.py"
+      - "./jax/tests/foo_test.py"
+      - "tests/foo_test.py"
+      - "foo_test.py"  (shorthand -> "tests/foo_test.py")
+    """
+    p = (p or "").strip()
+    if not p:
+        return ""
+    if p.startswith("./"):
+        p = p[2:]
+    if p.startswith("jax/"):
+        p = p[len("jax/") :]
+    if p.startswith("tests/") or p.startswith("examples/"):
+        return p
+    if p.endswith(".py") and "/" not in p:
+        return f"tests/{p}"
+    return p
 
 
 def cleanup_system():
@@ -150,6 +194,12 @@ def run_multi_gpu_test(
             "XLA_PYTHON_CLIENT_ALLOCATOR": "default",
         }
     )
+    # Enable abort-detector plugin (writes this file per-test).
+    env["PYTEST_ABORT_LAST_RUNNING_FILE"] = abs_last_running_file
+    # Ensure external plugin is importable in the pytest subprocess.
+    env["PYTHONPATH"] = _EXT_ABORT_PLUGIN_DIR + (
+        ":" + env.get("PYTHONPATH", "") if env.get("PYTHONPATH") else ""
+    )
 
     # Get deselected tests (permanent skips for this test file)
     permanent_skips = []
@@ -232,7 +282,10 @@ def run_multi_gpu_test(
                 print("STDERR:", result.stderr[-500:])
 
             # Check for crash
-            crash_info = check_for_crash(abs_last_running_file)
+            # Use min_duration=0.0 here: if the marker exists with status=running
+            # after pytest returns, we want to attribute it as a hard crash even
+            # when the crash happened very quickly.
+            crash_info = check_for_crash_file(abs_last_running_file, min_duration=0.0)
 
             if not crash_info:
                 # No crash - all remaining tests completed
@@ -315,6 +368,15 @@ def main():
         "--test-filter", type=str, help="Run only tests containing this string"
     )
     parser.add_argument(
+        "--only-test-files",
+        default="",
+        help=(
+            "Comma-separated list of test files to run instead of the default MULTI_GPU_TESTS set. "
+            "Examples: 'tests/shard_map_test.py,tests/pjit_test.py' or "
+            "'jax/tests/shard_map_test.py,shard_map_test.py'."
+        ),
+    )
+    parser.add_argument(
         "-c", "--continue_on_fail", action="store_true", help="continue on failure"
     )
     parser.add_argument(
@@ -333,13 +395,22 @@ def main():
     # Ensure log directory exists
     os.makedirs(LOG_DIR, exist_ok=True)
 
-    # Filter tests if requested
-    tests_to_run = MULTI_GPU_TESTS
+    # Select which test files to run.
+    if args.only_test_files:
+        requested = {
+            _normalize_only_test_file(x)
+            for x in args.only_test_files.split(",")
+            if _normalize_only_test_file(x)
+        }
+        tests_to_run = requested
+        print(f"only_test_files set; running {len(tests_to_run)} test files")
+    else:
+        tests_to_run = MULTI_GPU_TESTS
+
+    # Optional filter (applies to either list).
     if args.test_filter:
-        tests_to_run = {test for test in MULTI_GPU_TESTS if args.test_filter in test}
-        print(
-            f"Filtered to {len(tests_to_run)} tests containing " f"'{args.test_filter}'"
-        )
+        tests_to_run = {test for test in tests_to_run if args.test_filter in test}
+        print(f"Filtered to {len(tests_to_run)} tests containing '{args.test_filter}'")
 
     print(
         f"Running {len(tests_to_run)} multi-GPU tests with up to "
@@ -350,6 +421,7 @@ def main():
     failed_tests = []
     passed_tests = []
     all_crashed_tests = []  # Collect all crashed tests
+    crashed_test_files = []
 
     for i, test_file in enumerate(sorted(tests_to_run), 1):
         print(f"\n[{i}/{len(tests_to_run)}] Running {test_file}")
@@ -365,11 +437,16 @@ def main():
 
             # Collect crashed tests
             all_crashed_tests.extend(crashed_tests)
+            if crashed_tests:
+                crashed_test_files.append(test_file)
 
             if exit_code == 0:
                 passed_tests.append(test_file)
             else:
-                failed_tests.append((test_file, exit_code))
+                # If this file only "failed" because we detected a hard crash,
+                # keep it out of FAILED TEST FILES (we list it separately as crashed).
+                if not crashed_tests:
+                    failed_tests.append((test_file, exit_code))
                 if not args.continue_on_fail:
                     print("fail-fast: stopping after first failure")
                     break
@@ -381,16 +458,10 @@ def main():
             print(f"ERROR: Exception with {test_file}: {os_e}")
             failed_tests.append((test_file, -1))
 
-    # Generate final report (reuse from run_single_gpu.py)
+    # Generate final report (plugin helper)
     try:
-        generate_final_report()
+        generate_final_report_plugin(LOG_DIR)
         print("Final HTML and JSON reports generated")
-
-        # Generate CSV report for multi-GPU tests
-        combined_json_file = f"{LOG_DIR}/final_compiled_report.json"
-        combined_csv_file = f"{LOG_DIR}/final_compiled_report.csv"
-        convert_json_to_csv(combined_json_file, combined_csv_file)
-        print("Final CSV report generated")
     except (ImportError, OSError, ValueError) as excp:
         print(f"Warning: Could not generate final report: {excp}")
 
@@ -504,6 +575,14 @@ def main():
         for crash in crashes_to_use:
             print(f"  - {crash['nodeid']} ({crash['duration']:.1f}s)")
 
+    # Print crashed test files (file-level invocations that experienced a crash)
+    if crashed_test_files:
+        print("\n" + "-" * 70)
+        print(f"CRASHED TEST FILES ({len(crashed_test_files)}):")
+        print("-" * 70)
+        for test_file in crashed_test_files:
+            print(f"  - {test_file}")
+
     # Print failed test files
     if failed_tests:
         print("\n" + "-" * 70)
@@ -524,10 +603,8 @@ if __name__ == "__main__":
     # Set ROCm environment
     os.environ["HSA_TOOLS_LIB"] = "libroctracer64.so"
 
-    # Just ensure logs directory exists (don't archive, bec we are
-    # going to use logs that run_single_gpu.py creates)
-    logs_dir = os.path.abspath("./logs")
-    os.makedirs(logs_dir, exist_ok=True)
+    # Ensure logs directory exists (never archive in multi-gpu runner).
+    ensure_logs_dir("./logs", archive_if_nonempty=False)
 
     try:
         main()

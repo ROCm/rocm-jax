@@ -26,8 +26,6 @@ import os
 import shutil
 import sys
 import json
-import csv
-import glob
 import argparse
 import threading
 import subprocess
@@ -48,94 +46,37 @@ BASE_DIR = "./logs"
 ALL_CRASHED_TESTS = []  # Global list to track all crashed tests
 
 
-def sanitize_for_json(text):
-    """Remove control characters that break JSON parsing.
+def _external_abort_plugin_dir() -> str:
+    """Return absolute path to external /pytest-abort directory.
 
-    Args:
-        text: String that may contain control characters
-
-    Returns:
-        Sanitized string safe for JSON - removes control chars but keeps \n, \r, \t
-        which json.dumps() will properly escape
+    We compute it relative to this repo root so it works regardless of cwd.
+    Repo root is three levels up from this file:
+      jax_rocm_plugin/build/rocm/run_single_gpu.py -> rocm-jax repo root
     """
-    if not text:
-        return text
-    # Remove problematic control characters but keep \n, \r, \t
-    # json.dumps() will properly escape these
-    cleaned = "".join(
-        char if unicodedata.category(char)[0] != "C" or char in "\n\r\t" else " "
-        for char in text
-    )
-    return cleaned
+    rocm_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.abspath(os.path.join(rocm_dir, "..", "..", ".."))
+    return os.path.abspath(os.path.join(repo_root, "..", "pytest-abort"))
 
 
-def _sanitize_str_for_html_jsonblob(text: str) -> str:
-    """Sanitize a string for embedding inside pytest-html's data-jsonblob.
+# Make external plugin importable in this process (for helpers).
+_EXT_ABORT_PLUGIN_DIR = _external_abort_plugin_dir()  # pylint: disable=invalid-name
+if os.path.isdir(_EXT_ABORT_PLUGIN_DIR):
+    sys.path.insert(0, _EXT_ABORT_PLUGIN_DIR)
 
-    Goal: make the JSON blob robust for `pytest_html_merger` and the final UI.
-    We avoid leaving literal control characters (e.g. newline 0x0a) in strings
-    by converting newlines to `<br/>` and removing other control chars.
-    """
-    if not text:
-        return text
-
-    # Normalize newlines, then render as HTML-friendly breaks.
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
-    text = text.replace("\n", "<br/>")
-    text = text.replace("\t", "  ")
-
-    # Remove other control characters (unicode categories starting with "C").
-    return "".join(ch if unicodedata.category(ch)[0] != "C" else " " for ch in text)
-
-
-def _sanitize_obj_for_html_jsonblob(obj):
-    """Recursively sanitize nested dict/list structures for HTML jsonblob."""
-    if isinstance(obj, dict):
-        return {k: _sanitize_obj_for_html_jsonblob(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_sanitize_obj_for_html_jsonblob(v) for v in obj]
-    if isinstance(obj, str):
-        return _sanitize_str_for_html_jsonblob(obj)
-    return obj
-
-
-def sanitize_html_file_jsonblob(html_path: str) -> bool:
-    """Parse + sanitize a single pytest-html report's data-jsonblob in place.
-
-    Returns True if the file was modified.
-    """
-    try:
-        with open(html_path, "r", encoding="utf-8") as f:
-            html_content = f.read()
-    except OSError:
-        return False
-
-    m = re.search(r'data-jsonblob="([^"]*)"', html_content, flags=re.DOTALL)
-    if not m:
-        return False
-
-    raw_attr = m.group(1)
-    try:
-        json_text = html.unescape(raw_attr)
-        data = json.loads(json_text)
-    except (json.JSONDecodeError, ValueError):
-        return False
-
-    sanitized = _sanitize_obj_for_html_jsonblob(data)
-    new_json_text = json.dumps(sanitized, ensure_ascii=False)
-    new_attr = html.escape(new_json_text, quote=True)
-
-    if new_attr == raw_attr:
-        return False
-
-    # Safe replacement via slicing (avoid regex replacement backslash handling).
-    new_html = html_content[: m.start(1)] + new_attr + html_content[m.end(1) :]
-    try:
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(new_html)
-    except OSError:
-        return False
-    return True
+# Shared abort/report + sanitization logic lives in external plugin package.
+from pytest_abort.abort_handling import (  # type: ignore  # pylint: disable=wrong-import-position
+    handle_abort,
+    sanitize_for_json,
+)
+from pytest_abort.crash_file import (  # type: ignore  # pylint: disable=wrong-import-position
+    check_for_crash_file,
+)
+from pytest_abort.logs import (  # type: ignore  # pylint: disable=wrong-import-position
+    ensure_logs_dir,
+)
+from pytest_abort.report_utils import (  # type: ignore  # pylint: disable=wrong-import-position
+    generate_final_report as generate_final_report_plugin,
+)
 
 
 def detect_amd_gpus():
@@ -223,123 +164,29 @@ def extract_test_name(path: str) -> str:
     return os.path.splitext(os.path.basename(path.split("::")[0]))[0]
 
 
-def combine_json_reports():
-    """Combine all individual JSON test reports into a single report."""
-    all_json_files = [f for f in os.listdir(BASE_DIR) if f.endswith("_log.json")]
-    combined_data = []
-    for json_file in all_json_files:
-        with open(os.path.join(BASE_DIR, json_file), "r", encoding="utf-8") as infile:
-            data = json.load(infile)
-            combined_data.append(data)
-    combined_json_file = f"{BASE_DIR}/final_compiled_report.json"
-    with open(combined_json_file, "w", encoding="utf-8") as outfile:
-        json.dump(combined_data, outfile, indent=4)
+def _tests_dict_from_only_test_files(only_test_files: str):
+    """Build a minimal tests_dict from a comma-separated list of test files.
 
-
-def convert_json_to_csv(json_file, csv_file):
+    Each entry is run as a single pytest invocation (per GPU token), which is
+    compatible with the existing crash retry logic (it will re-run the same file
+    with `--deselect <crashed-nodeid>` when a hard crash is detected).
     """
-    Convert a compiled JSON test report to CSV format.
-
-    Args:
-        json_file: Path to the input JSON file
-        csv_file: Path to the output CSV file
-
-    Returns:
-        int: Number of test results converted, or -1 on error
-    """
-    try:
-        with open(json_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        test_results = []
-        # data is a list of test report objects
-        for report in data:
-            if "tests" in report:
-                for item in report["tests"]:
-                    test_results.append(
-                        {
-                            "name": item.get("nodeid", ""),
-                            "outcome": item.get("outcome", ""),
-                            "duration": (
-                                item.get("call", {}).get("duration", 0)
-                                if "call" in item
-                                else 0
-                            ),
-                            "keywords": ";".join(item.get("keywords", [])),
-                        }
-                    )
-
-        with open(csv_file, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(
-                f, fieldnames=["name", "outcome", "duration", "keywords"]
-            )
-            writer.writeheader()
-            writer.writerows(test_results)
-
-        print(f"CSV report generated: {csv_file}")
-        print(f"Total test results in CSV: {len(test_results)}")
-        return len(test_results)
-
-    except FileNotFoundError:
-        print(f"Error: {json_file} not found")
-        return -1
-    except json.JSONDecodeError as e:
-        print(f"Error parsing JSON: {e}")
-        return -1
-    except Exception as e:  # pylint: disable=broad-except
-        print(f"Error converting JSON to CSV: {e}")
-        return -1
-
-
-# pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks,too-many-branches
-def generate_final_report(shell=False, env_vars=None):
-    """Generate final HTML and JSON reports by merging individual test reports."""
-
-    if env_vars is None:
-        env_vars = {}
-    env = os.environ.copy()
-    env.update(env_vars)
-
-    # Sanitize all individual HTML jsonblobs so pytest_html_merger never consumes
-    # blobs containing literal control characters from captured output/logs.
-    html_files = glob.glob(f"{BASE_DIR}/*_log.html")
-    modified = 0
-    failed = 0
-    for html_file in sorted(html_files):
-        try:
-            if sanitize_html_file_jsonblob(html_file):
-                modified += 1
-        except Exception:  # pylint: disable=broad-exception-caught
-            failed += 1
-    if html_files:
-        print(
-            f"Sanitized HTML jsonblobs: modified={modified}/{len(html_files)}, "
-            f"failed={failed}"
-        )
-
-    # First, try to merge HTML files
-    cmd = [
-        "pytest_html_merger",
-        "-i",
-        f"{BASE_DIR}",
-        "-o",
-        f"{BASE_DIR}/final_compiled_report.html",
-    ]
-    result = subprocess.run(
-        cmd, shell=shell, capture_output=True, env=env, check=False, timeout=300
-    )
-    if result.returncode != 0:
-        print(f"FAILED - {' '.join(cmd)}")
-        print(result.stderr.decode())
-        print("HTML merger failed, but continuing with JSON report generation...")
-
-    # Generate json reports first (this has all tests including crashed ones)
-    combine_json_reports()
-
-    # Generate CSV report from JSON
-    combined_json_file = f"{BASE_DIR}/final_compiled_report.json"
-    combined_csv_file = f"{BASE_DIR}/final_compiled_report.csv"
-    convert_json_to_csv(combined_json_file, combined_csv_file)
+    tests_dict = {}
+    for raw in (only_test_files or "").split(","):
+        p = raw.strip()
+        if not p:
+            continue
+        if p.startswith("./"):
+            p = p[2:]
+        # Allow shorthand "tests/foo_test.py" -> "jax/tests/foo_test.py"
+        if p.startswith("tests/"):
+            p = f"jax/{p}"
+        # Allow shorthand "foo_test.py" -> "jax/tests/foo_test.py"
+        if "/" not in p and p.endswith(".py"):
+            p = f"jax/tests/{p}"
+        log_name = os.path.splitext(os.path.basename(p))[0]
+        tests_dict[log_name] = [p]
+    return tests_dict
 
 
 def run_shell_command(cmd, shell=False, env_vars=None, timeout=3600):
@@ -456,6 +303,13 @@ def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
         json_log_file = f"{BASE_DIR}/{log_name}_log.json"
         html_log_file = f"{BASE_DIR}/{log_name}_log.html"
         last_running_file = f"{BASE_DIR}/{log_name}_last_running.json"
+        # Enable abort-detector plugin (writes this file per-test).
+        env_vars["PYTEST_ABORT_LAST_RUNNING_FILE"] = os.path.abspath(last_running_file)
+        # Ensure external plugin is importable in the pytest subprocess.
+        existing_pp = os.environ.get("PYTHONPATH", "")
+        env_vars["PYTHONPATH"] = _EXT_ABORT_PLUGIN_DIR + (
+            ":" + existing_pp if existing_pp else ""
+        )
 
         # Clear any stale crash detection file before starting
         clear_crash_file(last_running_file)
@@ -482,7 +336,10 @@ def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
             _, _, _ = run_shell_command(cmd, env_vars=env_vars)
 
             # Check for crash
-            crash_info = check_for_crash(last_running_file)
+            # Use min_duration=0.0 here: if the marker exists with status=running
+            # after pytest returns, we want to attribute it as a hard crash even
+            # when the crash happened very quickly.
+            crash_info = check_for_crash_file(last_running_file, min_duration=0.0)
 
             if not crash_info:
                 # No crash - all remaining tests completed
@@ -539,156 +396,6 @@ def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
         with GPU_LOCK:
             gpu_tokens.append(target_gpu)
             print(f"[GPU {target_gpu}] Released GPU token")
-
-
-# pylint: disable=too-many-branches
-def append_abort_to_json(json_file, testfile, abort_info):
-    # pylint: disable=too-many-locals
-    """Append abort info to JSON report in pytest format."""
-    # Use the test_name which could be a full nodeid or just a test name
-    test_identifier = abort_info["test_name"]
-    test_class = abort_info.get("test_class", "UnknownClass")
-
-    # If test_identifier is already a full nodeid, use it; otherwise construct one
-    if "::" in test_identifier and test_identifier.startswith("tests/"):
-        # Already a full nodeid like "tests/image_test.py::ImageTest::testMethod"
-        test_nodeid = test_identifier
-    elif "::" in test_identifier:
-        # Partial nodeid like "ImageTest::testMethod" - add the file part
-        test_nodeid = f"tests/{testfile}.py::{test_identifier}"
-    else:
-        # Just a test method name
-        test_nodeid = f"tests/{testfile}.py::{test_identifier}"
-
-    # For JSON report, we keep newlines but remove other control characters
-    abort_reason_clean = abort_info.get("reason", "Unknown abort reason")
-    if abort_reason_clean:
-        # Remove non-printable control characters but keep newlines
-
-        abort_reason_clean = "".join(
-            char if unicodedata.category(char)[0] != "C" or char == "\n" else " "
-            for char in abort_reason_clean
-        )
-
-    abort_longrepr = (
-        f"Test aborted: {abort_reason_clean}\n"
-        f"Test Class: {test_class}\n"
-        f"Abort detected at: {abort_info.get('abort_time', '')}\n"
-        f"GPU ID: {abort_info.get('gpu_id', 'unknown')}"
-    )
-
-    abort_test = {
-        "nodeid": test_nodeid,
-        "lineno": 1,
-        "outcome": "failed",
-        "keywords": [abort_info["test_name"], testfile, "abort", test_class, ""],
-        "setup": {"duration": 0.0, "outcome": "passed"},
-        "call": {
-            "duration": abort_info.get("duration", 0),
-            "outcome": "failed",
-            "longrepr": abort_longrepr,
-        },
-        "teardown": {"duration": 0.0, "outcome": "skipped"},
-    }
-
-    try:
-        # Check if JSON file already exists (normal test run completed)
-        if os.path.exists(json_file):
-            # File exists - read existing data and append the aborted test
-            with open(json_file, "r", encoding="utf-8") as f:
-                report_data = json.load(f)
-
-            # Add the abort test to existing tests
-            if "tests" not in report_data:
-                report_data["tests"] = []
-            report_data["tests"].append(abort_test)
-
-            # Update summary counts
-            if "summary" in report_data:
-                summary = report_data["summary"]
-                summary["failed"] = summary.get("failed", 0) + 1
-                summary["total"] = summary.get("total", 0) + 1
-                summary["collected"] = summary.get("collected", 0) + 1
-                if "unskipped_total" in summary:
-                    summary["unskipped_total"] = summary["unskipped_total"] + 1
-
-            # Update exit code to indicate failure
-            report_data["exitcode"] = 1
-
-            print(f"Appended abort test to existing JSON report: {json_file}")
-        else:
-            # File doesn't exist - create complete pytest JSON report structure
-            current_time = datetime.now().timestamp()
-            report_data = {
-                "created": current_time,
-                "duration": abort_info.get("duration", 0),
-                "exitcode": 1,  # Non-zero exit code for failure
-                "root": "/rocm-jax/jax",
-                "environment": {},
-                "summary": {
-                    "passed": 0,
-                    "failed": 1,
-                    "total": 1,
-                    "collected": 1,
-                    "unskipped_total": 1,
-                },
-                "collectors": [
-                    {
-                        "nodeid": "",
-                        "outcome": "failed",
-                        "result": [
-                            {"nodeid": f"tests/{testfile}.py", "type": "Module"}
-                        ],
-                    }
-                ],
-                "tests": [abort_test],
-            }
-            print(f"Created new JSON report with abort test: {json_file}")
-
-        # Ensure the logs directory exists
-        os.makedirs(os.path.dirname(json_file), exist_ok=True)
-
-        # Write the file
-        with open(json_file, "w", encoding="utf-8") as f:
-            json.dump(report_data, f, indent=2)
-
-    except (OSError, IOError) as io_err:
-        print(f"Failed to write JSON report for {testfile}: {io_err}")
-    except json.JSONDecodeError as json_err:
-        print(f"Failed to parse existing JSON report for {testfile}: {json_err}")
-        print("Creating new JSON file instead...")
-        # Try creating a new file structure with just the abort test
-        try:
-            current_time = datetime.now().timestamp()
-            new_report_data = {
-                "created": current_time,
-                "duration": abort_info.get("duration", 0),
-                "exitcode": 1,
-                "root": "/rocm-jax/jax",
-                "environment": {},
-                "summary": {
-                    "passed": 0,
-                    "failed": 1,
-                    "total": 1,
-                    "collected": 1,
-                    "unskipped_total": 1,
-                },
-                "collectors": [
-                    {
-                        "nodeid": "",
-                        "outcome": "failed",
-                        "result": [
-                            {"nodeid": f"tests/{testfile}.py", "type": "Module"}
-                        ],
-                    }
-                ],
-                "tests": [abort_test],
-            }
-            os.makedirs(os.path.dirname(json_file), exist_ok=True)
-            with open(json_file, "w", encoding="utf-8") as f:
-                json.dump(new_report_data, f, indent=2)
-        except (OSError, IOError) as io_e:
-            print(f"Failed to create new JSON report for {testfile}: {io_e}")
 
 
 def _create_abort_row_html(testfile, abort_info):
@@ -878,73 +585,6 @@ def _update_html_json_data(
         print(f"Warning: Could not update JSON data in HTML file: {ex}")
 
     return html_content
-
-
-# pylint: disable=too-many-branches
-def append_abort_to_html(html_file, testfile, abort_info):
-    """Generate or append abort info to pytest-html format HTML report."""
-    try:
-        # Check if HTML file already exists (normal test run completed)
-        if os.path.exists(html_file):
-            # File exists - read and append abort test row to existing HTML
-            with open(html_file, "r", encoding="utf-8") as f:
-                html_content = f.read()
-
-            # Create abort test row HTML
-            abort_row = _create_abort_row_html(testfile, abort_info)
-
-            # Insert the abort row before the closing </table> tag
-            if "</table>" in html_content:
-                # Find the results-table specifically, not the environment table
-                results_table_start = html_content.find('<table id="results-table">')
-                results_table_end = html_content.find("</table>", results_table_start)
-                if results_table_end != -1:
-                    # Insert before the specific results table closing tag
-                    html_content = (
-                        html_content[:results_table_end]
-                        + f"{abort_row}\n    "
-                        + html_content[results_table_end:]
-                    )
-                else:
-                    print(
-                        f"Warning: Could not find results-table closing tag in {html_file}"
-                    )
-                    _create_new_html_file(html_file, testfile, abort_info)
-                    return
-
-                # Update test counts and JSON data
-                html_content = _update_html_summary_counts(html_content)
-                html_content = _update_html_json_data(
-                    html_content, testfile, abort_info
-                )
-
-                # Ensure the reload button has the hidden class
-                html_content = re.sub(
-                    r'class="summary__reload__button\s*"',
-                    'class="summary__reload__button hidden"',
-                    html_content,
-                )
-
-                with open(html_file, "w", encoding="utf-8") as f:
-                    f.write(html_content)
-
-                print(f"Appended abort test to existing HTML report: {html_file}")
-            else:
-                print(
-                    f"Warning: Could not find </table> tag in existing HTML file {html_file}"
-                )
-                # Fall back to creating new file
-                _create_new_html_file(html_file, testfile, abort_info)
-        else:
-            # File doesn't exist - create complete new HTML file
-            _create_new_html_file(html_file, testfile, abort_info)
-
-    except (OSError, IOError) as io_err:
-        print(f"Failed to read/write HTML report for {testfile}: {io_err}")
-    except (json.JSONDecodeError, UnicodeDecodeError) as parse_err:
-        print(f"Failed to parse existing HTML report for {testfile}: {parse_err}")
-        print("Creating new HTML file instead...")
-        _create_new_html_file(html_file, testfile, abort_info)
 
 
 def _create_new_html_file(
@@ -1158,102 +798,6 @@ def _generate_html_template(template_data):
         </html>"""
 
 
-def check_for_crash(last_running_file):
-    """Check if a crash occurred and return crash info.
-
-    Returns:
-        dict with crash info if crash detected, None otherwise
-
-    A crash is detected when:
-    1. The last_running file exists after pytest completes
-    2. The file has valid JSON with test information
-    3. The test was marked as "running" but never completed
-    """
-    if not os.path.exists(last_running_file):
-        # File doesn't exist = no crash (test completed normally)
-        return None
-
-    try:
-        with open(last_running_file, "r", encoding="utf-8") as f:
-            crash_data = json.load(f)
-
-        # Verify this is a valid crash detection file
-        if crash_data.get("status") != "running":
-            print(
-                f"[DEBUG] Crash file has status: {crash_data.get('status')}, not 'running'"
-            )
-            return None
-
-        start_time = datetime.fromisoformat(crash_data["start_time"])
-        duration = (datetime.now() - start_time).total_seconds()
-
-        # Sanity check: if duration is very short, might be false positive
-        # (file from conftest.py might not have been cleared yet)
-        if duration < 0.1:
-            print(f"[DEBUG] Crash detection skipped - duration too short: {duration}s")
-            return None
-
-        # Use nodeid if available
-        test_identifier = crash_data.get(
-            "nodeid", crash_data.get("test_name", "unknown_test")
-        )
-
-        # Extract test class name
-        test_class = "UnknownClass"
-        if "::" in test_identifier:
-            parts = test_identifier.split("::")
-            if len(parts) >= 3:
-                test_class = parts[1]
-            elif len(parts) == 2:
-                test_class = parts[1]
-
-        return {
-            "test_name": test_identifier,
-            "test_class": test_class,
-            "nodeid": crash_data.get("nodeid", test_identifier),
-            "reason": "Test crashed (segfault, abort, or fatal error)",
-            "crash_time": datetime.now().isoformat(),
-            "duration": duration,
-            "gpu_id": crash_data.get("gpu_id", "unknown"),
-            "pid": crash_data.get("pid", "unknown"),
-        }
-    except (json.JSONDecodeError, KeyError, ValueError) as ex:
-        print(f"[WARNING] Invalid crash file {last_running_file}: {ex}")
-        # Clean up invalid file
-        try:
-            os.remove(last_running_file)
-        except Exception:  # pylint: disable=broad-exception-caught
-            pass
-        return None
-    except Exception as ex:  # pylint: disable=broad-except
-        print(f"[ERROR] Error reading crash file {last_running_file}: {ex}")
-        return None
-
-
-def handle_abort(json_file, html_file, last_running_file, testfile, crash_info=None):
-    """Handle crash detection and append info to reports."""
-    if crash_info is None:
-        crash_info = check_for_crash(last_running_file)
-
-    if os.path.exists(last_running_file):
-        try:
-            os.remove(last_running_file)
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            print(f"[ERROR] Could not delete crash file {last_running_file}: {e}")
-
-    if not crash_info:
-        return False
-
-    try:
-        append_abort_to_json(json_file, testfile, crash_info)
-        append_abort_to_html(html_file, testfile, crash_info)
-        return True
-    except Exception as ex:  # pylint: disable=broad-except
-        print(f"[ERROR] Error processing crash: {ex}")
-        traceback.print_exc()
-        return False
-
-
 def run_parallel(tests_dict, p, c):
     """Run tests in parallel across multiple GPUs."""
     print(f"Running tests with parallelism = {p}")
@@ -1268,9 +812,15 @@ def run_parallel(tests_dict, p, c):
 
 def main(args):
     """Main function to run all test modules."""
-    tests_dict = collect_testmodules(args.ignore_skipfile)
+    if getattr(args, "only_test_files", None):
+        tests_dict = _tests_dict_from_only_test_files(args.only_test_files)
+        print(f"only_test_files set; running {len(tests_dict)} test files:")
+        for k, v in tests_dict.items():
+            print(f"  - {k}: {v[0]}")
+    else:
+        tests_dict = collect_testmodules(args.ignore_skipfile)
     run_parallel(tests_dict, args.parallel, args.continue_on_fail)
-    generate_final_report()
+    generate_final_report_plugin(BASE_DIR)
 
     # Print comprehensive final summary
     print("\n" + "=" * 70)
@@ -1388,21 +938,8 @@ def main(args):
 if __name__ == "__main__":
     os.environ["HSA_TOOLS_LIB"] = "libroctracer64.so"
 
-    # Archive old logs before starting test run
-    logs_dir = os.path.abspath("./logs")
-    if os.path.exists(logs_dir) and os.path.isdir(logs_dir):
-        if os.listdir(logs_dir):
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            ARCHIVE_PATH = f"{logs_dir}_{timestamp}"  # pylint: disable=invalid-name
-            try:
-                print(f"Archiving old logs: {logs_dir} -> {ARCHIVE_PATH}")
-                shutil.move(logs_dir, ARCHIVE_PATH)
-                print(f"Old logs archived successfully to {ARCHIVE_PATH}")
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                print(f"WARNING: Failed to archive old logs: {e}")
-
-    # Create fresh logs directory
-    os.makedirs(logs_dir, exist_ok=True)
+    # Archive old logs (if non-empty) and create a fresh logs directory.
+    ensure_logs_dir("./logs", archive_if_nonempty=True)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -1416,6 +953,15 @@ if __name__ == "__main__":
         "--ignore_skipfile",
         action="store_true",
         help="Ignore the test skip file and run all single GPU tests",
+    )
+    parser.add_argument(
+        "--only-test-files",
+        default="",
+        help=(
+            "Comma-separated list of test files to run instead of collecting all tests. "
+            "Examples: 'jax/tests/linalg_test.py,jax/tests/crash_abort_test.py' or "
+            "'linalg_test.py,crash_abort_test.py' (shorthand expands under jax/tests/)."
+        ),
     )
     parsed_args = parser.parse_args()
     if parsed_args.continue_on_fail:
