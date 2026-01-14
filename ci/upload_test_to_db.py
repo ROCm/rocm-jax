@@ -156,8 +156,8 @@ _RULES_RAW = [
     {"contains": "mosaic", "label": "Mosaic"},
     # ROCm-specific checks
     {"any": ["skip on rocm", "skip for rocm"], "label": "Skipped on ROCm"},
-    {"all": ["not supported on", "rocm"], "label": "Not Supported on ROCm"},
-    {"contains": "is not available for rocm", "label": "Not Supported on ROCm"},
+    {"all": ["not supported on", "rocm"], "label": "Skipped on ROCm"},
+    {"contains": "is not available for rocm", "label": "Skipped on ROCm"},
     # Multiple devices required (before generic "support" check)
     {"all": [">=", "devices"], "label": "Multiple Devices Required"},
     {"all": ["test", "requires", "device"], "label": "Multiple Devices Required"},
