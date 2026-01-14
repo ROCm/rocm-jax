@@ -42,7 +42,7 @@ python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_
     --config=rocm_rbe \
     --noremote_accept_cached \
     --//jax:build_jaxlib=false \
-    --action_env=TF_ROCM_AMDGPU_TARGETS="gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201" \
+    --action_env=TF_ROCM_AMDGPU_TARGETS="gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201" \
     --test_verbose_timeout_warnings \
     --test_output=errors \
     //tests:core_test_gpu \

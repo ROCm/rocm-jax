@@ -167,7 +167,7 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
             f"jax/jaxlib/rocm/_rnn.{pyext}",
             f"jax/jaxlib/rocm/_triton.{pyext}",
             f"jax/jaxlib/rocm/rocm_plugin_extension.{pyext}",
-            "jax/jaxlib/version.py",
+            "__main__/pjrt/python/version.py",
         ],
     )
 
