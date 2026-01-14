@@ -14,6 +14,7 @@ def repo():
 	    "//third_party/jax:0001-Remove-nvidia_wheel_versions.patch",
 	    "//third_party/jax:0002-Make-jaxlib-targets-visible.patch",
 	    "//third_party/jax:0003-hipblas-typedef-fix.patch",
+	    "//third_party/jax:0004-No-GPU-fail.patch",
 	    "//third_party/jax:0005-Fix-HIP-availability-errors.patch",
         ],
     )
