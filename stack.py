@@ -137,29 +137,37 @@ refresh_jaxlib: jaxlib_clean jaxlib jaxlib_install
 def find_clang():
     """Find a local clang compiler and return its file path."""
 
-    clang_path = None
+    # 1. Prioritize specific LLVM versions
+    llvm_paths = [
+        "/usr/lib/llvm-18/bin/clang"
+    ]
+    for path in llvm_paths:
+        if os.path.exists(path):
+            return path
 
-    # check PATH
+    # 2. Check PATH
     try:
         out = subprocess.check_output(["which", "clang"])
-        clang_path = out.decode("utf-8").strip()
-        return clang_path
+        return out.decode("utf-8").strip()
     except subprocess.CalledProcessError:
         pass
 
-    # search /usr/lib/
+    # 3. search /usr/lib/llvm* directories as a fallback
     top = "/usr/lib"
-    for root, dirs, files in os.walk(top):
-        # only walk llvm dirs
-        if root == top:
-            for d in dirs:
-                if not d.startswith("llvm"):
-                    dirs.remove(d)
+    if os.path.exists(top):
+        for root, dirs, files in os.walk(top):
+            # only walk llvm dirs
+            if root == top:
+                # Prioritize higher versions by sorting reverse
+                dirs.sort(reverse=True)
+                for d in list(dirs):
+                    if not d.startswith("llvm"):
+                        dirs.remove(d)
 
-        for f in files:
-            if f == "clang":
-                clang_path = os.path.join(root, f)
-                return clang_path
+            for f in files:
+                if f == "clang":
+                    clang_path = os.path.join(root, f)
+                    return clang_path
 
     # We didn't find a clang install
     return None
