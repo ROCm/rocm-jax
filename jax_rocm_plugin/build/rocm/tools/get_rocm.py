@@ -193,6 +193,20 @@ def get_system():
     raise RocmInstallException("No system for %r" % md)
 
 
+def _get_latest_build_num(job_name):
+    """
+    Fetch the latest successful build number from Jenkins.
+
+    Returns a string of the build number (e.g., "16985")
+    """
+    url = "http://rocm-ci.amd.com/job/%s/lastSuccessfulBuild/buildNumber" % job_name
+    LOG.info("Fetching latest build number from %s", url)
+    with urllib.request.urlopen(url) as response:
+        build_num = response.read().decode("utf8").strip()
+        LOG.info("Latest successful build: %s", build_num)
+        return build_num
+
+
 def _install_therock(rocm_version, therock_path):
     """Install TheRock onto the system. This can be done in two different ways,
     1. By copying a directory containing TheRock into the regular ROCm install location
@@ -270,7 +284,11 @@ def install_rocm(rocm_version, job_name=None, build_num=None, therock_path=None)
         _install_therock(rocm_version, therock_path)
     else:
         s = get_system()
-        if job_name and build_num:
+        if job_name:
+            # Auto-fetch latest successful build if build_num not provided
+            if not build_num:
+                LOG.info("No build number provided, fetching latest successful build...")
+                build_num = _get_latest_build_num(job_name)
             _setup_internal_repo(s, rocm_version, job_name, build_num)
         else:
             if s == RHEL8:

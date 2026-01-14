@@ -591,11 +591,10 @@ def parse_args():
             "You cannot set both --therock-path and --rocm-build-job/--rocm-build-num."
         )
 
-    # Make sure that the user has set both a build job and build number if trying to get ROCm from the mainline build
-    if (args.rocm_build_job and not args.rocm_build_num) or (
-        args.rocm_build_num and not args.rocm_build_job
-    ):
-        p.error("You must set both --rocm-build-num and --rocm-build-job, not just one")
+    # Note: --rocm-build-job can be used alone - build_num will be auto-fetched
+    # from Jenkins. But --rocm-build-num requires --rocm-build-job.
+    if args.rocm_build_num and not args.rocm_build_job:
+        p.error("--rocm-build-num requires --rocm-build-job to also be set")
 
     return args
 
