@@ -141,9 +141,10 @@ def dist_wheels(
     # NOTE(mrodden): bazel times out without --init, probably blocking on a zombie PID
     cmd.extend(
         [
-            "-it",
             "--init",
             "--rm",
+            "--shm-size",
+            "64G",
             "-e",
             "GIT_DIR=/repo/.git",
             "-e",
@@ -154,8 +155,6 @@ def dist_wheels(
             "bash",
             "-c",
             container_cmd,
-            "--shm-size",
-            "64G",
         ]
     )
 
