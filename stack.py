@@ -3,7 +3,9 @@
 
 import argparse
 import os
+import re
 import subprocess
+import sys
 
 
 TEST_JAX_REPO_REF = "rocm-jaxlib-v0.8.0"
