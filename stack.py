@@ -189,8 +189,8 @@ def get_amdgpu_targets():
         pass
     # Default targets if rocminfo fails
     targets = (
-        "gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,"
-        + "gfx1100,gfx1101,gfx1200,gfx1201"
+        "gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030," +
+        "gfx1100,gfx1101,gfx1200,gfx1201"
     )
     return targets
 
@@ -493,7 +493,9 @@ def build_and_install(
 
     this_repo_root, xla_path, jax_path = _resolve_relative_paths(xla_dir, jax_dir)
     amdgpu_targets = get_amdgpu_targets()
-    python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+    # Use "system" to force build to use the container's python version
+    python_version = "system"
 
     if not clang_path:
         clang_path = find_clang() or "/usr/lib/llvm-18/bin/clang"
