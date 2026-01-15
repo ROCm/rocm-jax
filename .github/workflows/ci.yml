@@ -63,7 +63,7 @@ jobs:
           #       manage tests
           clean: false
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.8.0
+          ref: rocm-jaxlib-v0.8.2
           path: jax
       - name: Apply patches to rocm/jax test repo
         run: |
@@ -106,5 +106,5 @@ jobs:
         run: |
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "bash ci/jax_rbe/pr_setup.sh && ci/jax_rbe/pr_test.sh 0.8.0 3.12"
+            --test-cmd "bash ci/jax_rbe/pr_setup.sh && ci/jax_rbe/pr_test.sh 0.8.2 3.12"
 
