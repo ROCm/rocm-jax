@@ -7,8 +7,7 @@ PYTHON_VERSION='3.12'
 ROCM_VERSION='7'
 JAX_VERSION='0.8.0'
 
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-WHEELHOUSE="${SCRIPT_DIR}/wheelhouse"
+WHEELHOUSE=$(mktemp -d)
 
 # Get git hash for wheel metadata
 GIT_HASH=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
@@ -47,7 +46,10 @@ bazel run \
     --rocm_jax_git_hash=${GIT_HASH}
 
 {
-    echo "etils"
+    cat build/test-requirements.txt
+    echo opt-einsum
+    echo etils
+    echo zstandard
     echo "jaxlib==${JAX_VERSION}"
     ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_pjrt*"${JAX_VERSION}"* 2>/dev/null || true
     ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_plugin*"${JAX_VERSION}"* 2>/dev/null || true
@@ -62,8 +64,8 @@ bazel test \
     --config=rocm \
     --config=rocm_rbe \
     --test_output=streamed \
-    --repo_env=HERMETIC_PYTHON_VERSION=${PYTHON_VERSION} \
     --@jax//jax:build_jaxlib=false \
+    --repo_env=HERMETIC_PYTHON_VERSION=${PYTHON_VERSION} \
     --repo_env=TF_ROCM_AMDGPU_TARGETS=gfx902,gfx90a \
     --verbose_failures \
-    @jax//tests:ffi_test_gpu
+    --strategy=TestRunner=local @jax//tests:gpu_tests
