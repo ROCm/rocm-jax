@@ -137,7 +137,7 @@ def get_rocm_version_flag(rocm_version):
     return version_string
 
 
-# pylint: disable=R0913,too-many-locals
+# pylint: disable=R0913,R0917,too-many-locals
 def build_plugin_wheel(
     plugin_path,
     rocm_path,
@@ -203,7 +203,7 @@ def build_plugin_wheel(
     _run_scan_for_output(cmd, pattern, env=env, cwd=plugin_path, capture="stderr")
 
 
-# pylint: disable=R0913,too-many-locals
+# pylint: disable=R0913,R0917,too-many-locals
 def build_jaxlib_wheel(
     jax_path,
     rocm_path,
