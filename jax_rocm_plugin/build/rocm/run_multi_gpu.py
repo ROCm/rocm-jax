@@ -169,8 +169,8 @@ def run_multi_gpu_test(
             "XLA_PYTHON_CLIENT_ALLOCATOR": "default",
         }
     )
-    # Enable pytest abort-detector plugin (writes this file per-test).
-    env["JAX_ROCM_LAST_RUNNING_FILE"] = abs_last_running_file
+    # Enable abort-detector plugin (writes this file per-test).
+    env["PYTEST_ABORT_LAST_RUNNING_FILE"] = abs_last_running_file
     # Ensure external plugin is importable in the pytest subprocess.
     env["PYTHONPATH"] = (
         _EXT_ABORT_PLUGIN_DIR

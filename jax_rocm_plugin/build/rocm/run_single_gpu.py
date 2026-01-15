@@ -138,8 +138,6 @@ def build_pytest_command(
         "python3",
         "-m",
         "pytest",
-        "-p",
-        "pytest_abort_plugin.plugin",
         "--json-report",
         f"--json-report-file={json_log_file}",
         f"--html={html_log_file}",
@@ -281,8 +279,8 @@ def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
         json_log_file = f"{BASE_DIR}/{log_name}_log.json"
         html_log_file = f"{BASE_DIR}/{log_name}_log.html"
         last_running_file = f"{BASE_DIR}/{log_name}_last_running.json"
-        # Enable pytest abort-detector plugin (writes this file per-test).
-        env_vars["JAX_ROCM_LAST_RUNNING_FILE"] = os.path.abspath(last_running_file)
+        # Enable abort-detector plugin (writes this file per-test).
+        env_vars["PYTEST_ABORT_LAST_RUNNING_FILE"] = os.path.abspath(last_running_file)
         # Ensure external plugin is importable in the pytest subprocess.
         existing_pp = os.environ.get("PYTHONPATH", "")
         env_vars["PYTHONPATH"] = (
