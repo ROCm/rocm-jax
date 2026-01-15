@@ -15,5 +15,6 @@ def repo():
 	    "//third_party/jax:0002-Make-jaxlib-targets-visible.patch",
 	    "//third_party/jax:0003-hipblas-typedef-fix.patch",
 	    "//third_party/jax:0005-Fix-HIP-availability-errors.patch",
+	    "//third_party/jax:0006-GESVDJ-support-for-ROCm-GPUs-in-JAX.patch",
         ],
     )
