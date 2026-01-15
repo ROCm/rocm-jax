@@ -13,8 +13,8 @@ diff --git a/jaxlib/gpu/solver_interface.cc b/jaxlib/gpu/solver_interface.cc
 index 6ef8652ad..f6fc5bba1 100644
 --- a/jaxlib/gpu/solver_interface.cc
 +++ b/jaxlib/gpu/solver_interface.cc
-@@ -62,8 +62,8 @@ JAX_GPU_DEFINE_GETRF(gpuDoubleComplex, gpusolverDnZgetrf);
-
+@@ -60,8 +60,8 @@ JAX_GPU_DEFINE_GETRF(gpuDoubleComplex, gpusolverDnZgetrf);
+ 
  JAX_GPU_DEFINE_GETRF_BATCHED(float, gpublasSgetrfBatched);
  JAX_GPU_DEFINE_GETRF_BATCHED(double, gpublasDgetrfBatched);
 -JAX_GPU_DEFINE_GETRF_BATCHED(gpublasComplex, gpublasCgetrfBatched);
@@ -22,10 +22,10 @@ index 6ef8652ad..f6fc5bba1 100644
 +JAX_GPU_DEFINE_GETRF_BATCHED(gpuComplex, gpublasCgetrfBatched);
 +JAX_GPU_DEFINE_GETRF_BATCHED(gpuDoubleComplex, gpublasZgetrfBatched);
  #undef JAX_GPU_DEFINE_GETRF_BATCHED
-
+ 
  // QR decomposition: geqrf
-@@ -101,8 +101,8 @@ JAX_GPU_DEFINE_GEQRF(gpuDoubleComplex, gpusolverDnZgeqrf);
-
+@@ -98,8 +98,8 @@ JAX_GPU_DEFINE_GEQRF(gpuDoubleComplex, gpusolverDnZgeqrf);
+ 
  JAX_GPU_DEFINE_GEQRF_BATCHED(float, gpublasSgeqrfBatched);
  JAX_GPU_DEFINE_GEQRF_BATCHED(double, gpublasDgeqrfBatched);
 -JAX_GPU_DEFINE_GEQRF_BATCHED(gpublasComplex, gpublasCgeqrfBatched);
@@ -33,10 +33,10 @@ index 6ef8652ad..f6fc5bba1 100644
 +JAX_GPU_DEFINE_GEQRF_BATCHED(gpuComplex, gpublasCgeqrfBatched);
 +JAX_GPU_DEFINE_GEQRF_BATCHED(gpuDoubleComplex, gpublasZgeqrfBatched);
  #undef JAX_GPU_DEFINE_GEQRF_BATCHED
-
+ 
  // Householder transformations: orgqr
-@@ -272,8 +272,8 @@ JAX_GPU_DEFINE_SYEVD(gpuDoubleComplex, gpusolverDnZheevd);
-
+@@ -251,8 +251,8 @@ JAX_GPU_DEFINE_SYEVD(gpuDoubleComplex, gpusolverDnZheevd);
+ 
  JAX_GPU_DEFINE_SYRK(float, gpublasSsyrk);
  JAX_GPU_DEFINE_SYRK(double, gpublasDsyrk);
 -JAX_GPU_DEFINE_SYRK(gpublasComplex, gpublasCsyrk);
@@ -44,29 +44,29 @@ index 6ef8652ad..f6fc5bba1 100644
 +JAX_GPU_DEFINE_SYRK(gpuComplex, gpublasCsyrk);
 +JAX_GPU_DEFINE_SYRK(gpuDoubleComplex, gpublasZsyrk);
  #undef JAX_GPU_DEFINE_SYRK
-
-  // Singular Value Decomposition: gesvd
+ 
+ // Singular Value Decomposition: gesvd
 diff --git a/jaxlib/gpu/vendor.h b/jaxlib/gpu/vendor.h
 index b99474116..d407d75a8 100644
 --- a/jaxlib/gpu/vendor.h
 +++ b/jaxlib/gpu/vendor.h
-@@ -448,6 +448,8 @@ constexpr uint32_t kNumThreadsPerWarp = 32;
-
+@@ -446,6 +446,8 @@ namespace {
+ 
  #elif defined(JAX_GPU_HIP)
-
+ 
 +#define HIPBLAS_V2 1
 +
  // IWYU pragma: begin_exports
  #include "rocm/include/hip/hip_cooperative_groups.h"
  #include "rocm/include/hip/hip_runtime_api.h"
-@@ -468,11 +470,11 @@ constexpr uint32_t kNumThreadsPerWarp = 32;
+@@ -466,11 +468,11 @@ namespace {
  // MIOpen lib. Remove when MIOpen support is complete.
  #define MIOPEN_STATUS_SUCCESS 0
-
+ 
 -typedef hipFloatComplex gpuComplex;
 +typedef hipComplex gpuComplex;
  typedef hipDoubleComplex gpuDoubleComplex;
-
+ 
  #if TF_ROCM_VERSION >= 70000
 -typedef hipFloatComplex gpublasComplex;
 +typedef hipComplex gpublasComplex;
@@ -86,7 +86,7 @@ index 2d01912f4..b5f1d1e55 100644
 +        "-lamdhip64",
 +    ],
  )
-
+ 
  cc_library(
---
+-- 
 2.34.1
