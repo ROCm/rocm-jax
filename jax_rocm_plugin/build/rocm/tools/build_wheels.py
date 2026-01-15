@@ -235,7 +235,7 @@ def build_jaxlib_wheel(
         "--rocm_path=%s" % rocm_path,
         "--rocm_version=%s" % version_string,
         "--verbose",
-        "--action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress",
+        "--bazel_options=--action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress",
     ]
 
     # Add clang path if clang is used.
