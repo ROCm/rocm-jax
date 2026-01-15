@@ -26,8 +26,6 @@ import os
 import shutil
 import sys
 import json
-import csv
-import glob
 import argparse
 import threading
 import subprocess
@@ -52,7 +50,7 @@ def _external_abort_plugin_dir() -> str:
 
     We compute it relative to this repo root so it works regardless of cwd.
     Repo root is three levels up from this file:
-      jax_rocm_plugin/build/rocm/run_single_gpu.py -> repo root
+      jax_rocm_plugin/build/rocm/run_single_gpu.py -> rocm-jax repo root
     """
     rocm_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.abspath(os.path.join(rocm_dir, "..", "..", ".."))
@@ -65,12 +63,19 @@ if os.path.isdir(_EXT_ABORT_PLUGIN_DIR):
     sys.path.insert(0, _EXT_ABORT_PLUGIN_DIR)
 
 # Shared abort/report + sanitization logic lives in external plugin package.
-import pytest_abort_plugin.abort_handling as abort_plugin  # type: ignore  # pylint: disable=wrong-import-position
-
-
-def sanitize_for_json(text):
-    """Compatibility wrapper: sanitization logic lives in plugin package."""
-    return abort_plugin.sanitize_for_json(text)
+from pytest_abort_plugin.abort_handling import (  # type: ignore  # pylint: disable=wrong-import-position
+    handle_abort,
+    sanitize_for_json,
+)
+from pytest_abort_plugin.crash_file import (  # type: ignore  # pylint: disable=wrong-import-position
+    check_for_crash_file,
+)
+from pytest_abort_plugin.logs import (  # type: ignore  # pylint: disable=wrong-import-position
+    ensure_logs_dir,
+)
+from pytest_abort_plugin.report_utils import (  # type: ignore  # pylint: disable=wrong-import-position
+    generate_final_report as generate_final_report_plugin,
+)
 
 
 def detect_amd_gpus():
@@ -158,112 +163,6 @@ def build_pytest_command(
 def extract_test_name(path: str) -> str:
     """Return the base filename (without .py and without test suffixes)."""
     return os.path.splitext(os.path.basename(path.split("::")[0]))[0]
-
-
-def combine_json_reports():
-    """Combine all individual JSON test reports into a single report."""
-    all_json_files = [f for f in os.listdir(BASE_DIR) if f.endswith("_log.json")]
-    combined_data = []
-    for json_file in all_json_files:
-        with open(os.path.join(BASE_DIR, json_file), "r", encoding="utf-8") as infile:
-            data = json.load(infile)
-            combined_data.append(data)
-    combined_json_file = f"{BASE_DIR}/final_compiled_report.json"
-    with open(combined_json_file, "w", encoding="utf-8") as outfile:
-        json.dump(combined_data, outfile, indent=4)
-
-
-def convert_json_to_csv(json_file, csv_file):
-    """
-    Convert a compiled JSON test report to CSV format.
-
-    Args:
-        json_file: Path to the input JSON file
-        csv_file: Path to the output CSV file
-
-    Returns:
-        int: Number of test results converted, or -1 on error
-    """
-    try:
-        with open(json_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        test_results = []
-        # data is a list of test report objects
-        for report in data:
-            if "tests" in report:
-                for item in report["tests"]:
-                    test_results.append(
-                        {
-                            "name": item.get("nodeid", ""),
-                            "outcome": item.get("outcome", ""),
-                            "duration": (
-                                item.get("call", {}).get("duration", 0)
-                                if "call" in item
-                                else 0
-                            ),
-                            "keywords": ";".join(item.get("keywords", [])),
-                        }
-                    )
-
-        with open(csv_file, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(
-                f, fieldnames=["name", "outcome", "duration", "keywords"]
-            )
-            writer.writeheader()
-            writer.writerows(test_results)
-
-        print(f"CSV report generated: {csv_file}")
-        print(f"Total test results in CSV: {len(test_results)}")
-        return len(test_results)
-
-    except FileNotFoundError:
-        print(f"Error: {json_file} not found")
-        return -1
-    except json.JSONDecodeError as e:
-        print(f"Error parsing JSON: {e}")
-        return -1
-    except Exception as e:  # pylint: disable=broad-except
-        print(f"Error converting JSON to CSV: {e}")
-        return -1
-
-
-# pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks,too-many-branches
-def generate_final_report(shell=False, env_vars=None):
-    """Generate final HTML and JSON reports by merging individual test reports."""
-
-    if env_vars is None:
-        env_vars = {}
-    env = os.environ.copy()
-    env.update(env_vars)
-
-    modified, total, failed = abort_plugin.sanitize_all_html_jsonblobs(BASE_DIR)
-    if total:
-        print(f"Sanitized HTML jsonblobs: modified={modified}/{total}, failed={failed}")
-
-    # First, try to merge HTML files
-    cmd = [
-        "pytest_html_merger",
-        "-i",
-        f"{BASE_DIR}",
-        "-o",
-        f"{BASE_DIR}/final_compiled_report.html",
-    ]
-    result = subprocess.run(
-        cmd, shell=shell, capture_output=True, env=env, check=False, timeout=300
-    )
-    if result.returncode != 0:
-        print(f"FAILED - {' '.join(cmd)}")
-        print(result.stderr.decode())
-        print("HTML merger failed, but continuing with JSON report generation...")
-
-    # Generate json reports first (this has all tests including crashed ones)
-    combine_json_reports()
-
-    # Generate CSV report from JSON
-    combined_json_file = f"{BASE_DIR}/final_compiled_report.json"
-    combined_csv_file = f"{BASE_DIR}/final_compiled_report.csv"
-    convert_json_to_csv(combined_json_file, combined_csv_file)
 
 
 def run_shell_command(cmd, shell=False, env_vars=None, timeout=3600):
@@ -414,7 +313,7 @@ def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
             _, _, _ = run_shell_command(cmd, env_vars=env_vars)
 
             # Check for crash
-            crash_info = check_for_crash(last_running_file)
+            crash_info = check_for_crash_file(last_running_file)
 
             if not crash_info:
                 # No crash - all remaining tests completed
@@ -471,12 +370,6 @@ def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
         with GPU_LOCK:
             gpu_tokens.append(target_gpu)
             print(f"[GPU {target_gpu}] Released GPU token")
-
-
-# pylint: disable=too-many-branches
-def append_abort_to_json(json_file, testfile, abort_info):
-    """Compatibility wrapper: abort-report logic lives in plugin package."""
-    return abort_plugin.append_abort_to_json(json_file, testfile, abort_info)
 
 
 def _create_abort_row_html(testfile, abort_info):
@@ -666,12 +559,6 @@ def _update_html_json_data(
         print(f"Warning: Could not update JSON data in HTML file: {ex}")
 
     return html_content
-
-
-# pylint: disable=too-many-branches
-def append_abort_to_html(html_file, testfile, abort_info):
-    """Compatibility wrapper: abort-report logic lives in plugin package."""
-    return abort_plugin.append_abort_to_html(html_file, testfile, abort_info)
 
 
 def _create_new_html_file(
@@ -885,20 +772,6 @@ def _generate_html_template(template_data):
         </html>"""
 
 
-def check_for_crash(last_running_file):
-    """Back-compat wrapper around the pytest plugin's crash-file parser."""
-    from pytest_abort_plugin.crash_file import (  # type: ignore  # pylint: disable=import-outside-toplevel
-        check_for_crash_file,
-    )
-
-    return check_for_crash_file(last_running_file)
-
-
-def handle_abort(json_file, html_file, last_running_file, testfile, crash_info=None):
-    """Compatibility wrapper: abort handling logic lives in plugin package."""
-    return abort_plugin.handle_abort(
-        json_file, html_file, last_running_file, testfile, crash_info
-    )
 
 
 def run_parallel(tests_dict, p, c):
@@ -917,7 +790,7 @@ def main(args):
     """Main function to run all test modules."""
     tests_dict = collect_testmodules(args.ignore_skipfile)
     run_parallel(tests_dict, args.parallel, args.continue_on_fail)
-    generate_final_report()
+    generate_final_report_plugin(BASE_DIR)
 
     # Print comprehensive final summary
     print("\n" + "=" * 70)
@@ -1035,21 +908,8 @@ def main(args):
 if __name__ == "__main__":
     os.environ["HSA_TOOLS_LIB"] = "libroctracer64.so"
 
-    # Archive old logs before starting test run
-    logs_dir = os.path.abspath("./logs")
-    if os.path.exists(logs_dir) and os.path.isdir(logs_dir):
-        if os.listdir(logs_dir):
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            ARCHIVE_PATH = f"{logs_dir}_{timestamp}"  # pylint: disable=invalid-name
-            try:
-                print(f"Archiving old logs: {logs_dir} -> {ARCHIVE_PATH}")
-                shutil.move(logs_dir, ARCHIVE_PATH)
-                print(f"Old logs archived successfully to {ARCHIVE_PATH}")
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                print(f"WARNING: Failed to archive old logs: {e}")
-
-    # Create fresh logs directory
-    os.makedirs(logs_dir, exist_ok=True)
+    # Archive old logs (if non-empty) and create a fresh logs directory.
+    ensure_logs_dir("./logs", archive_if_nonempty=True)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(

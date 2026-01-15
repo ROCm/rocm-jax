@@ -43,15 +43,21 @@ if os.path.isdir(_EXT_ABORT_PLUGIN_DIR):
 try:
     from multi_gpu_tests_config import MULTI_GPU_TESTS
     from run_single_gpu import (
-        check_for_crash,
-        generate_final_report,
         detect_amd_gpus,
         clear_crash_file,
         build_pytest_command,
-        convert_json_to_csv,
     )
     from pytest_abort_plugin.abort_handling import (  # type: ignore  # pylint: disable=wrong-import-position
         handle_abort,
+    )
+    from pytest_abort_plugin.crash_file import (  # type: ignore  # pylint: disable=wrong-import-position
+        check_for_crash_file,
+    )
+    from pytest_abort_plugin.logs import (  # type: ignore  # pylint: disable=wrong-import-position
+        ensure_logs_dir,
+    )
+    from pytest_abort_plugin.report_utils import (  # type: ignore  # pylint: disable=wrong-import-position
+        generate_final_report as generate_final_report_plugin,
     )
 except ImportError as e:
     print(f"Error importing required modules: {e}")
@@ -252,7 +258,7 @@ def run_multi_gpu_test(
                 print("STDERR:", result.stderr[-500:])
 
             # Check for crash
-            crash_info = check_for_crash(abs_last_running_file)
+            crash_info = check_for_crash_file(abs_last_running_file)
 
             if not crash_info:
                 # No crash - all remaining tests completed
@@ -260,14 +266,14 @@ def run_multi_gpu_test(
 
             # Crash detected!
             crashed_test_nodeid = crash_info["nodeid"]
-
+            
             # Safety: prevent infinite loop
             if crashed_test_nodeid in tests_to_skip:
                 print(
                     f"[WARNING] Already processed crash for {crashed_test_nodeid}, breaking"
                 )
                 break
-
+            
             crashed_tests.append(crash_info)
             tests_to_skip.append(crashed_test_nodeid)
 
@@ -401,16 +407,10 @@ def main():
             print(f"ERROR: Exception with {test_file}: {os_e}")
             failed_tests.append((test_file, -1))
 
-    # Generate final report (reuse from run_single_gpu.py)
+    # Generate final report (plugin helper)
     try:
-        generate_final_report()
+        generate_final_report_plugin(LOG_DIR)
         print("Final HTML and JSON reports generated")
-
-        # Generate CSV report for multi-GPU tests
-        combined_json_file = f"{LOG_DIR}/final_compiled_report.json"
-        combined_csv_file = f"{LOG_DIR}/final_compiled_report.csv"
-        convert_json_to_csv(combined_json_file, combined_csv_file)
-        print("Final CSV report generated")
     except (ImportError, OSError, ValueError) as excp:
         print(f"Warning: Could not generate final report: {excp}")
 
@@ -544,10 +544,8 @@ if __name__ == "__main__":
     # Set ROCm environment
     os.environ["HSA_TOOLS_LIB"] = "libroctracer64.so"
 
-    # Just ensure logs directory exists (don't archive, bec we are
-    # going to use logs that run_single_gpu.py creates)
-    logs_dir = os.path.abspath("./logs")
-    os.makedirs(logs_dir, exist_ok=True)
+    # Ensure logs directory exists (never archive in multi-gpu runner).
+    ensure_logs_dir("./logs", archive_if_nonempty=False)
 
     try:
         main()
