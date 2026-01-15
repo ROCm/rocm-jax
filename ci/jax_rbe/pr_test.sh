@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -ex
+shopt -s nullglob
 
 args=("$@")
 JAX_VERSION="${args[0]}"
@@ -20,14 +21,19 @@ fi
 pushd "${JAX_DIR}" || exit
 
 # If we haven't stuck the plugin requirements in the requirements.in file yet, put them in.
-# Disable shellcheck's quoted string rule. Strings in the {} block need to be unquoted in order
-# for the * to expand.
-# shellcheck disable=SC2086
+# Use bash arrays to ensure exactly one wheel is selected per package, failing fast if
+# 0 or >1 matches are found.
 if ! grep -q jax_rocm7 build/requirements.in; then
+    pjrt=( "${WHEELHOUSE}"/jax_rocm7_pjrt-*"${JAX_VERSION}"*manylinux_2_28*.whl )
+    plugin=( "${WHEELHOUSE}"/jax_rocm7_plugin-*"${JAX_VERSION}"*cp"${PYTHON//.}"*manylinux_2_28*.whl )
+
+    (( ${#pjrt[@]} == 1 )) || { echo "Expected 1 pjrt wheel, found ${#pjrt[@]}: ${pjrt[*]}"; exit 1; }
+    (( ${#plugin[@]} == 1 )) || { echo "Expected 1 plugin wheel, found ${#plugin[@]}: ${plugin[*]}"; exit 1; }
+
     {
         echo "jaxlib==${JAX_VERSION}"
-	echo ${WHEELHOUSE}/jax_rocm7_pjrt*${JAX_VERSION}*
-	echo ${WHEELHOUSE}/jax_rocm7_plugin*${JAX_VERSION}*${PYTHON//.}*
+        echo "${pjrt[0]}"
+        echo "${plugin[0]}"
     } >> build/requirements.in
 fi
 
@@ -52,4 +58,3 @@ python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_
     --test_filter=DynamicShapesTest \
     --test_filter=testMatmul \
     //tests:ffi_test_gpu
-
