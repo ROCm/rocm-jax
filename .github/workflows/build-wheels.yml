@@ -23,6 +23,16 @@ on:
         required: false
         default: 'plugin_wheels'
         type: string
+      jax-repo:
+        description: 'JAX repository to checkout for jaxlib build'
+        required: false
+        type: string
+        default: 'ROCm/jax'
+      jax-ref:
+        description: 'JAX git ref (branch, tag, or commit) to checkout for jaxlib build'
+        required: false
+        type: string
+        default: 'rocm-jaxlib-v0.8.2'
     secrets:
       rbe_ci_key:
         required: true
@@ -56,6 +66,12 @@ jobs:
           rocm-smi -a || true
           rocminfo | grep gfx || true
       - uses: actions/checkout@v4
+      - name: Checkout JAX repo for jaxlib build
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.jax-repo }}
+          ref: ${{ inputs.jax-ref }}
+          path: jax
       - name: Get RBE cluster keys
         env:
           RBE_CI_CERT: ${{ secrets.rbe_ci_cert }}
@@ -71,6 +87,7 @@ jobs:
             --rocm-version="${{ inputs.rocm-version }}" \
             --rocm-build-job="${{ inputs.rocm-build-job }}" \
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
+            --jax-source-dir="./jax" \
             dist_wheels \
             --rbe
       - name: Archive plugin wheels
@@ -78,4 +95,3 @@ jobs:
         with:
           name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
           path: ./jax_rocm_plugin/wheelhouse/*.whl
-
