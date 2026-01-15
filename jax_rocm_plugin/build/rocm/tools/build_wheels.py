@@ -227,6 +227,8 @@ def build_jaxlib_wheel(
 
     version_string = get_rocm_version_flag(rocm_version)
 
+    os.environ["JAXLIB_RELEASE"] = "1"
+
     cmd = [
         "python",
         "build/build.py",
@@ -236,6 +238,7 @@ def build_jaxlib_wheel(
         "--rocm_version=%s" % version_string,
         "--verbose",
         "--bazel_options=--action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress",
+        "--bazel_options=--repo_env=JAXLIB_RELEASE=1",
     ]
 
     # Add clang path if clang is used.
