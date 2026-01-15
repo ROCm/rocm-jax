@@ -392,19 +392,8 @@ def setup_development(
             mf.write(makefile_content)
 
 
-def build_and_install(
-    xla_ref: str,
-    xla_dir: str,
-    test_jax_ref: str,
-    jax_dir: str,
-    rebuild_makefile: bool = False,
-    fix_bazel_symbols: bool = False,
-    rocm_path: str = "/opt/rocm",
-    debug: bool = False,
-    clang_path: str = None,
-):
-    """Run develop setup, then build all wheels and install jax"""
-    # Uninstall existing packages first
+def uninstall_jax_packages():
+    """Uninstall existing JAX packages."""
     print("Uninstalling existing JAX packages...")
     subprocess.run(
         ["python3", "-m", "pip", "uninstall", "jax", "-y"],
@@ -425,29 +414,9 @@ def build_and_install(
         check=False,
     )
 
-    # Setup repos (but don't necessarily generate Makefile)
-    setup_development(
-        xla_ref=xla_ref,
-        xla_dir=xla_dir,
-        test_jax_ref=test_jax_ref,
-        jax_dir=jax_dir,
-        rebuild_makefile=rebuild_makefile,
-        fix_bazel_symbols=fix_bazel_symbols,
-        rocm_path=rocm_path,
-        write_makefile=False,  # Don't generate Makefile for direct build
-        debug=debug,
-        clang_path=clang_path,
-    )
 
-    this_repo_root, xla_path, jax_path = _resolve_relative_paths(xla_dir, jax_dir)
-    amdgpu_targets = get_amdgpu_targets()
-
-    if not clang_path:
-        clang_path = find_clang() or "/usr/lib/llvm-18/bin/clang"
-    else:
-        print("Using provided clang at %r" % clang_path)
-
-    # ROCm version detection
+def get_rocm_version(rocm_path):
+    """Detect ROCm version from path."""
     try:
         version_file = os.path.join(rocm_path, ".info", "version")
         with open(version_file, encoding="utf-8") as f:
@@ -455,10 +424,15 @@ def build_and_install(
             rocm_version = full_version[0]
             if rocm_version == "6":
                 rocm_version = "60"
+            return rocm_version
     except (OSError, IndexError):
-        rocm_version = "7"
+        return "7"
 
-    # Bazel options
+
+def get_build_options(
+    xla_path, jax_path, debug, fix_bazel_symbols, this_repo_root
+):
+    """Calculate bazel options for build."""
     bazel_options = [f"--override_repository=xla={xla_path}"]
     if debug:
         bazel_options.extend(
@@ -484,6 +458,51 @@ def build_and_install(
         plugin_bazel_options.append(map_cxxopt)
 
     jax_override = f"--override_repository=jax={jax_path}" if jax_path else ""
+    return bazel_options, plugin_bazel_options, jax_override
+
+
+def build_and_install(
+    xla_ref: str,
+    xla_dir: str,
+    test_jax_ref: str,
+    jax_dir: str,
+    rebuild_makefile: bool = False,
+    fix_bazel_symbols: bool = False,
+    rocm_path: str = "/opt/rocm",
+    debug: bool = False,
+    clang_path: str = None,
+):
+    """Run develop setup, then build all wheels and install jax"""
+    uninstall_jax_packages()
+
+    # Setup repos (but don't necessarily generate Makefile)
+    setup_development(
+        xla_ref=xla_ref,
+        xla_dir=xla_dir,
+        test_jax_ref=test_jax_ref,
+        jax_dir=jax_dir,
+        rebuild_makefile=rebuild_makefile,
+        fix_bazel_symbols=fix_bazel_symbols,
+        rocm_path=rocm_path,
+        write_makefile=False,  # Don't generate Makefile for direct build
+        debug=debug,
+        clang_path=clang_path,
+    )
+
+    this_repo_root, xla_path, jax_path = _resolve_relative_paths(xla_dir, jax_dir)
+    amdgpu_targets = get_amdgpu_targets()
+    python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+    if not clang_path:
+        clang_path = find_clang() or "/usr/lib/llvm-18/bin/clang"
+    else:
+        print("Using provided clang at %r" % clang_path)
+
+    rocm_version = get_rocm_version(rocm_path)
+
+    bazel_options, plugin_bazel_options, jax_override = get_build_options(
+        xla_path, jax_path, debug, fix_bazel_symbols, this_repo_root
+    )
 
     def run_build(cwd, wheels, extra_options=None):
         cmd = [
@@ -493,6 +512,7 @@ def build_and_install(
             "--use_clang=true",
             f"--wheels={wheels}",
             "--target_cpu_features=native",
+            f"--python_version={python_version}",
             f"--rocm_path={rocm_path}",
             f"--rocm_version={rocm_version}",
             f"--rocm_amdgpu_targets={amdgpu_targets}",
@@ -523,16 +543,8 @@ def build_and_install(
     # 2. Build plugin and pjrt
     plugin_path = os.path.join(this_repo_root, "jax_rocm_plugin")
     subprocess.run("rm -rf dist", shell=True, cwd=plugin_path, check=True)
-    run_build(
-        plugin_path,
-        "jax-rocm-plugin",
-        plugin_bazel_options,
-    )
-    run_build(
-        plugin_path,
-        "jax-rocm-pjrt",
-        plugin_bazel_options,
-    )
+    run_build(plugin_path, "jax-rocm-plugin", plugin_bazel_options)
+    run_build(plugin_path, "jax-rocm-pjrt", plugin_bazel_options)
 
     # 3. Install plugin and pjrt
     print("Installing jax-rocm-plugin and jax-rocm-pjrt...")
