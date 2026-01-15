@@ -74,7 +74,7 @@ jobs:
             runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
           - test-command: "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
             runner-label: '["linux-x86-64-4gpu-amd-gfx942"]'
-          # rocm-build-num: For 7.2.0, will be set to 0 (default) since base image uses auto-fetch
+            # rocm-build-num: For 7.2.0, will be set to 0 (default) since base image uses auto-fetch
     uses: ./.github/workflows/test-and-upload.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
