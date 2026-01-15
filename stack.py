@@ -493,9 +493,7 @@ def build_and_install(
 
     this_repo_root, xla_path, jax_path = _resolve_relative_paths(xla_dir, jax_dir)
     amdgpu_targets = get_amdgpu_targets()
-
-    # Use "system" to force build to use the container's python version
-    python_version = "system"
+    python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
     if not clang_path:
         clang_path = find_clang() or "/usr/lib/llvm-18/bin/clang"
