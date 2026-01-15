@@ -57,18 +57,18 @@ def _version_from_git_tree(base_version: str) -> str | None:
 
         # Get date string from date of most recent git commit, and the abbreviated
         # hash of that commit.
-        p = subprocess.Popen(
+        with subprocess.Popen(
             ["git", "show", "-s", "--format=%at-%h", "HEAD"],
             cwd=root_directory,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-        )
-        stdout, _ = p.communicate()
-        timestamp, commit_hash = stdout.decode().strip().split("-", 1)
-        datestring = datetime.date.fromtimestamp(int(timestamp)).strftime("%Y%m%d")
-        assert datestring.isnumeric()
-        assert commit_hash.isalnum()
-    except Exception:
+        ) as p:
+            stdout, _ = p.communicate()
+            timestamp, commit_hash = stdout.decode().strip().split("-", 1)
+            datestring = datetime.date.fromtimestamp(int(timestamp)).strftime("%Y%m%d")
+            assert datestring.isnumeric()
+            assert commit_hash.isalnum()
+    except Exception:  # pylint: disable=broad-except
         return None
 
     version = f"{base_version}.dev{datestring}+{commit_hash}"
@@ -101,7 +101,7 @@ def _write_version(fname: str) -> None:
     old_version_string = "_release_version: str | None = None"
     new_version_string = f"_release_version: str = {release_version!r}"
     fhandle = pathlib.Path(fname)
-    contents = fhandle.read_text()
+    contents = fhandle.read_text(encoding="utf-8")
     # Expect two occurrences: one above, and one here.
     if contents.count(old_version_string) != 2:
         raise RuntimeError(f"Build: could not find {old_version_string!r} in {fname}")
@@ -116,7 +116,7 @@ def _write_version(fname: str) -> None:
                 f"Build: could not find {old_githash_string!r} in {fname}"
             )
         contents = contents.replace(old_githash_string, new_githash_string)
-    fhandle.write_text(contents)
+    fhandle.write_text(contents, encoding="utf-8")
 
 
 def _get_cmdclass(pkg_source_path):
@@ -153,7 +153,7 @@ def _get_cmdclass(pkg_source_path):
                     os.path.join(base_dir, pkg_source_path, os.path.basename(__file__))
                 )
 
-    return dict(sdist=_sdist, build_py=_build_py)
+    return {"sdist": _sdist, "build_py": _build_py}
 
 
 __version__ = _get_version_string()

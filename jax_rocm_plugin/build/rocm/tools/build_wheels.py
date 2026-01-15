@@ -137,7 +137,7 @@ def get_rocm_version_flag(rocm_version):
     return version_string
 
 
-# pylint: disable=R0913, R0917, too-many-locals
+# pylint: disable=R0913,R0917,too-many-locals
 def build_plugin_wheel(
     plugin_path,
     rocm_path,
@@ -203,7 +203,7 @@ def build_plugin_wheel(
     _run_scan_for_output(cmd, pattern, env=env, cwd=plugin_path, capture="stderr")
 
 
-# pylint: disable=R0913, R0917, too-many-locals
+# pylint: disable=R0913,R0917,too-many-locals
 def build_jaxlib_wheel(
     jax_path,
     rocm_path,
@@ -235,6 +235,7 @@ def build_jaxlib_wheel(
         "--rocm_path=%s" % rocm_path,
         "--rocm_version=%s" % version_string,
         "--verbose",
+        "--bazel_options=--action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress",
     ]
 
     # Add clang path if clang is used.
@@ -259,7 +260,7 @@ def build_jaxlib_wheel(
     LOG.info("Running %r from cwd=%r", cmd, jax_path)
 
     # Run the build command directly - wheel finding is done separately in main().
-    result = subprocess.run(cmd, env=env, cwd=jax_path)
+    result = subprocess.run(cmd, env=env, cwd=jax_path, check=False)
     if result.returncode != 0:
         raise RuntimeError(
             "jaxlib build failed with return code: %d" % result.returncode
@@ -399,7 +400,9 @@ def parse_args():
         help="Compiler backend to use when compiling jax/jaxlib",
     )
 
-    p.add_argument("plugin_path", help="Directory where JAX ROCm plugin source is located")
+    p.add_argument(
+        "plugin_path", help="Directory where JAX ROCm plugin source is located"
+    )
 
     return p.parse_args()
 
@@ -416,6 +419,7 @@ def find_wheels(path):
     return wheels
 
 
+# pylint: disable=too-many-branches,too-many-statements
 def main():
     """Main entry point."""
     args = parse_args()

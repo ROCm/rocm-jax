@@ -287,7 +287,9 @@ def install_rocm(rocm_version, job_name=None, build_num=None, therock_path=None)
         if job_name:
             # Auto-fetch latest successful build if build_num not provided
             if not build_num:
-                LOG.info("No build number provided, fetching latest successful build...")
+                LOG.info(
+                    "No build number provided, fetching latest successful build..."
+                )
                 build_num = _get_latest_build_num(job_name)
             _setup_internal_repo(s, rocm_version, job_name, build_num)
         else:
