@@ -22,11 +22,11 @@ jobs:
         install-llvm: [true, false]
         include:
           - rocm-version: "7.1.1"
-            runner-label: "mi-250"
+            runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16849"
-            runner-label: "internal"
+            runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
     steps:
       - name: Clean up old runs
         run: |
