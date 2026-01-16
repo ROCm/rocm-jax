@@ -238,7 +238,7 @@ def build_jaxlib_wheel(
         "--rocm_version=%s" % version_string,
         "--verbose",
         "--bazel_options=--action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress",
-        "--bazel_options=--repo_env=JAXLIB_RELEASE=1",
+        "--bazel_options=--repo_env=ML_WHEEL_TYPE=release",
     ]
 
     # Add clang path if clang is used.
