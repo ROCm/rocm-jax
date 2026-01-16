@@ -85,6 +85,7 @@ build:clang --copt=-Werror=mismatched-tags
 # Required when building with clang>=19, see jax-ml/jax#27091
 build:clang --copt=-Wno-error=c23-extensions
 
+config:rocm_base --define=xla_rocm_profiler=v1
 build:rocm_base --config=clang_local
 build:rocm_base --crosstool_top=@local_config_rocm//crosstool:toolchain
 build:rocm_base --define=using_rocm=true --define=using_rocm_hipcc=true
