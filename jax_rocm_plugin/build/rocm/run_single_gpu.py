@@ -138,22 +138,19 @@ def sanitize_html_file_jsonblob(html_path: str) -> bool:
 
 
 def detect_amd_gpus():
-    """Detect number of AMD/ATI GPUs using rocm-smi."""
+    """Detect number of AMD/ATI GPUs using rocminfo."""
     try:
         cmd = [
             "bash",
             "-c",
-            (
-                "rocm-smi | grep -E '^Device' -A 1000 | "
-                "awk '$1 ~ /^[0-9]+$/ {count++} END {print count}'"
-            ),
+            ('rocminfo | egrep -c "Device Type:\\s+GPU"'),
         ]
         result = subprocess.run(
             cmd, capture_output=True, text=True, check=True, timeout=30
         )
         return int(result.stdout.strip())
     except (subprocess.CalledProcessError, ValueError, subprocess.TimeoutExpired):
-        print("Warning: Could not detect GPUs using rocm-smi, defaulting to 8")
+        print("Warning: Could not detect GPUs using rocminfo, defaulting to 8")
         return 8
 
 
