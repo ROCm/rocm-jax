@@ -1,21 +1,24 @@
 diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
-index 067e4dd6e..5a401bdc7 100644
+index 067e4dd6e..5e0319b45 100644
 --- a/jaxlib/jax.bzl
 +++ b/jaxlib/jax.bzl
-@@ -193,8 +193,10 @@ def _gpu_test_deps():
+@@ -192,10 +192,13 @@ def _gpu_test_deps():
+             "//jaxlib/rocm:gpu_only_test_deps",
              "//jax_plugins:gpu_plugin_only_test_deps",
          ],
-         "//jax:config_build_jaxlib_false": [
--            "//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
--            "//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
+-        "//jax:config_build_jaxlib_false": [
++        "//jax:config_build_jaxlib_false": if_rocm_is_configured([
 +            "//jaxlib/tools:rocm_plugin_kernels_wheel",
 +            "//jaxlib/tools:rocm_plugin_pjrt_wheel",
-+            #"//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
-+            #"//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
-         ],
++        ]) + if_cuda_is_configured([
+             "//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
+             "//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
+-        ],
++        ]),
          "//jax:config_build_jaxlib_wheel": [
              "//jaxlib/tools:jax_cuda_plugin_py_import",
-@@ -302,7 +304,8 @@ def jax_multiplatform_test(
+             "//jaxlib/tools:jax_cuda_pjrt_py_import",
+@@ -302,7 +305,8 @@ def jax_multiplatform_test(
              shard_count = test_shards,
              tags = test_tags,
              main = main,
