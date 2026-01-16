@@ -26,7 +26,7 @@ ROCM_VERSION=${args['--rocm_version']}
 
 {
     cat build/test-requirements.txt
-    echo "jaxlib==${JAX_VERSION}"
+    ls "${WHEELHOUSE}"/jaxlib-${JAX_VERSION}*.whl
     ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_pjrt*"${JAX_VERSION}"* 2>/dev/null
     ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_plugin*"${JAX_VERSION}"* 2>/dev/null
 } >build/requirements.in

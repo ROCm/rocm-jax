@@ -26,9 +26,9 @@ ROCM_VERSION=${args['--rocm_version']}
 
 {
     cat build/test-requirements.txt
-    echo "jaxlib==${JAX_VERSION}"
-    ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_pjrt*"${JAX_VERSION}"* 2>/dev/null
-    ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_plugin*"${JAX_VERSION}"* 2>/dev/null
+    ls "${WHEELHOUSE}"/jaxlib-${JAX_VERSION}*.whl
+    ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_pjrt*"${JAX_VERSION}"*.whl
+    ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_plugin*"${JAX_VERSION}"*.whl
 } >build/requirements.in
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
