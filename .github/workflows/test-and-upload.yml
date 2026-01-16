@@ -22,7 +22,7 @@ on:
       runner-label:
         required: false
         type: string
-        default: '["mi-250"]'
+        default: '["linux-x86-64-1gpu-amd"]'
       test-command:
         required: false
         type: string
