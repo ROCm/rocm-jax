@@ -445,6 +445,8 @@ def test(image_name, test_cmd=None):
         "seccomp=unconfined",
         "--shm-size",
         "16G",
+        "--env-file",
+        "/etc/podinfo/gha-gpu-isolation-settings"
     ]
 
     cmd = [
