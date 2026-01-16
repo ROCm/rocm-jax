@@ -43,6 +43,7 @@ bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc test \
     --build_tag_filters=$TAG_FILTERS \
     --test_tag_filters=$TAG_FILTERS \
     --@jax//jax:build_jaxlib=false \
+    --keep_going \
     --test_verbose_timeout_warnings \
     --test_output=errors \
     --local_test_jobs=1 \
