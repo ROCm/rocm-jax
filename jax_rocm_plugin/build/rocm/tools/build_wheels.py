@@ -168,6 +168,8 @@ def build_jaxlib_wheel(
         "--output_path=%s" % output_dir,
     ]
 
+    cmd.append("--bazel_options=--define=xla_rocm_profiler=v1")
+
     # Add clang path if clang is used.
     if use_clang:
         clang_path = find_clang_path()
