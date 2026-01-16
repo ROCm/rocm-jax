@@ -22,6 +22,15 @@ done
 WHEELHOUSE=${args['--wheelhouse']}
 ROCM_VERSION=${args['--rocm_version']}
 
+#bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
+#--config=rocm \
+#"${BAZEL_ARGS[@]}" \
+#@jax//jaxlib/tools:build_wheel_tool \
+#-- \
+#--jaxlib_git_hash=${GIT_HASH} \
+#--output_path="${WHEELHOUSE}" \
+#--cpu=x86_64
+
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
     --config=rocm \
     "${BAZEL_ARGS[@]}" \
