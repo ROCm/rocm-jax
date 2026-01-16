@@ -54,33 +54,3 @@ index 3a1a48736..347b37091 100644
  # Mosaic GPU
  
  py_binary(
-diff --git a/third_party/xla/revision.bzl b/third_party/xla/revision.bzl
-index 8a9a1bb2e..3a60478a9 100644
---- a/third_party/xla/revision.bzl
-+++ b/third_party/xla/revision.bzl
-@@ -21,5 +21,5 @@
- #    and update XLA_SHA256 with the result.
- 
- # buildifier: disable=module-docstring
--XLA_COMMIT = "9f150f6b75c08d6ea7b97697c4f393f1a0eb6121"
--XLA_SHA256 = "523d23e8ea0d16c6134be49fbd0b25848ee3f1c00821e0a91207327dd3dc71cb"
-+XLA_COMMIT = "e7c898a5893cbfc7d00ca5c1fcd43b53fd4a3b30"
-+XLA_SHA256 = "056da8d9ce4f4f503e446eff0b346bcae37aba719aa87a437783e634d12e9851"
-diff --git a/third_party/xla/workspace.bzl b/third_party/xla/workspace.bzl
-index be345f8c6..689852c67 100644
---- a/third_party/xla/workspace.bzl
-+++ b/third_party/xla/workspace.bzl
-@@ -21,11 +21,11 @@ def repo():
-         name = "xla",
-         sha256 = XLA_SHA256,
-         type = "tar.gz",
--        strip_prefix = "openxla-xla-{commit}".format(commit = XLA_COMMIT[:7]),
-+        strip_prefix = "xla-{commit}".format(commit = XLA_COMMIT),
-         # We use an automated tool to update the revision.bzl file. GitHub prohibits the crawling of
-         # web links (`/archive/`) links so we use the GitHub API endpoint to get the tarball
-         # instead.
--        urls = tf_mirror_urls("https://api.github.com/repos/openxla/xla/tarball/{commit}".format(commit = XLA_COMMIT)),
-+        urls = tf_mirror_urls("https://github.com/ROCm/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
-     )
- 
-     # For development, one often wants to make changes to the TF repository as well
