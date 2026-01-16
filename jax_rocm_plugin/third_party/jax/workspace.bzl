@@ -1,8 +1,8 @@
 
 load("//third_party:repo.bzl", "amd_http_archive")
 
-COMMIT = "3f125024ecd17a1d90789a69c59962de4ff6af53"
-SHA = "184f45a87463d4e117a515b8d9060602b145f8eed69943add989c7039c1266fe"
+COMMIT = "9b33362373387dc915b1e472a5e7392f70cc2b7d"
+SHA = "0a723a725b60de0702be442cac270b074c39d26f2bc7a023b79dedc24a59b163"
 
 def repo():
     amd_http_archive(
