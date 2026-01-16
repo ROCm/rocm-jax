@@ -18,6 +18,10 @@ permissions:
 jobs:
   build-and-test:
     runs-on: linux-x86-64-4gpu-amd-gfx942
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.11", "3.12", "3.13", "3.14"]
     container:
       image: rocm/tensorflow-build@sha256:7fcfbd36b7ac8f6b0805b37c4248e929e31cf5ee3af766c8409dd70d5ab65faa
       options: >-
@@ -49,37 +53,37 @@ jobs:
           WHEELHOUSE_DIR=$(mktemp -d)
           echo "dir=$WHEELHOUSE_DIR" >> "$GITHUB_OUTPUT"
 
-      - name: Build rocm plugin wheels
+      - name: Build rocm plugin wheels (Python ${{ matrix.python_version }})
         run: |
           bash build/rocm/build_plugin_wheels.sh \
             --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
             --rocm_version=7 \
-            --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --config=rocm_rbe
 
-      - name: Run single-GPU unit tests (bazel RBE)
+      - name: Run single-GPU unit tests (Python ${{ matrix.python_version }})
         if: always()
         run: |
           bash build/rocm/run_jax_singlegpu_ut.sh \
             --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
             --rocm_version=7 \
             --jax_version=0.8.0 \
-            --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --config=rocm_rbe
 
-      - name: Run multi-GPU unit tests (bazel RBE)
+      - name: Run multi-GPU unit tests (Python ${{ matrix.python_version }})
         if: always()
         run: |
           bash build/rocm/run_jax_multigpu_ut.sh \
             --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
             --rocm_version=7 \
             --jax_version=0.8.0 \
-            --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --config=rocm_rbe
 
       - name: Upload logs to artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: logs-rbe-multigpu
+          name: logs-rbe-py${{ matrix.python_version }}
           path: jax_rocm_plugin/logs/
