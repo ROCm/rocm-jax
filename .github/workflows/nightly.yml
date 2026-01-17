@@ -83,6 +83,7 @@ jobs:
       rocm-build-num: ${{ matrix.rocm-build-num || '0' }}
       github-sha: ${{ github.sha }}
       github-run-id: ${{ github.run_id }}
+      runner-label: ${{ matrix.runner-label }}
       test-command: ${{ matrix.test-command }}
     secrets:
       ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
