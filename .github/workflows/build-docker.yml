@@ -15,7 +15,6 @@ on:
       runner-label:
         required: false
         type: string
-        default: '["mi-250"]'
       artifact-prefix:
         required: false
         default: 'plugin_wheels'

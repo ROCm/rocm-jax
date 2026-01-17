@@ -22,7 +22,10 @@ on:
       runner-label:
         required: false
         type: string
-        default: '["mi-250"]'
+      test-id:
+        description: 'Unique identifier for the test (e.g., single_gpu, multi_gpu)'
+        required: true
+        type: string
       test-command:
         required: false
         type: string
@@ -85,12 +88,12 @@ jobs:
           # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "${{ inputs.test-command }}"
+            --test-cmd "ulimit -c 0 && ${{ inputs.test-command }}"
       - name: Upload logs to artifact (per-matrix)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          name: logs-${{ inputs.test-id }}_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
           path: logs/
   upload-to-db:
     needs: run-tests
@@ -101,8 +104,8 @@ jobs:
       - name: Download logs from artifact (per-matrix)
         uses: actions/download-artifact@v4
         with:
-          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
-          path: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          name: logs-${{ inputs.test-id }}_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          path: logs-${{ inputs.test-id }}_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
       - name: Upload logs to MySQL database
         env:
           ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
@@ -111,7 +114,8 @@ jobs:
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
           ROCM_VERSION: ${{ inputs.rocm-version }}
           UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
-          LOGS_DIR: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          LOGS_DIR: >-
+            logs-${{ inputs.test-id }}_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
           GITHUB_SHA: ${{ inputs.github-sha }}
           GITHUB_RUN_ID: ${{ inputs.github-run-id }}
           ROCM_BUILD_NUM: ${{ inputs.rocm-build-num }}
@@ -124,7 +128,7 @@ jobs:
           python ci/upload_test_to_db.py \
           --logs_dir "$LOGS_DIR" \
           --run-tag "ci-run" \
-          --runner-label "MI250" \
+          --runner-label "linux-x86-64-1gpu-amd" \
           --ubuntu-version "${UBUNTU_VERSION}" \
           --rocm-version "${ROCM_VERSION//.}" \
           --commit-sha "$GITHUB_SHA" \

@@ -24,11 +24,11 @@ jobs:
         rocm-version: ["7.1.0", "7.2.0"]
         include:
           - rocm-version: "7.1.0"
-            runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
+            runner-label: '["linux-x86-64-1gpu-amd"]'
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             # rocm-build-num auto-fetched from Jenkins (latest successful build)
-            runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
+            runner-label: '["internal"]'
     uses: ./.github/workflows/build-wheels.yml
     with:
       python-versions: "3.11,3.12"
@@ -47,11 +47,11 @@ jobs:
         rocm-version: ["7.1.0", "7.2.0"]
         include:
           - rocm-version: "7.1.0"
-            runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
+            runner-label: '["linux-x86-64-1gpu-amd"]'
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             # rocm-build-num auto-fetched from Jenkins (latest successful build)
-            runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
+            runner-label: '["internal"]'
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
@@ -71,10 +71,9 @@ jobs:
         ubuntu-version: ["22", "24"]
         include:
           - test-command: "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
-            runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
+            runner-label: '["linux-x86-64-1gpu-amd"]'
           - test-command: "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
-            runner-label: '["linux-x86-64-4gpu-amd-gfx942"]'
-            # rocm-build-num: For 7.2.0, will be set to 0 (default) since base image uses auto-fetch
+            runner-label: '["linux-x86-64-4gpu-amd"]'
     uses: ./.github/workflows/test-and-upload.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
@@ -82,6 +81,7 @@ jobs:
       rocm-build-num: ${{ matrix.rocm-build-num || '0' }}
       github-sha: ${{ github.sha }}
       github-run-id: ${{ github.run_id }}
+      runner-label: ${{ matrix.runner-label }}
       test-command: ${{ matrix.test-command }}
     secrets:
       ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
