@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-test-jax-perf:
-    runs-on: "linux-x86-64-8gpu-amd"
+    runs-on: "linux-x86-64-4gpu-amd"
     strategy:
       matrix:
         python-version: ["3.12"]
