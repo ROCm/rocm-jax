@@ -26,7 +26,7 @@ jobs:
       #       fails with a complaint abou the pipes module.
       python-versions: "3.11,3.12"
       rocm-version: ${{ matrix.rocm-version }}
-      runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
+      runner-label: '["linux-x86-64-1gpu-amd"]'
     secrets:
       rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
       rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
@@ -38,10 +38,10 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
-      runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
+      runner-label: '["linux-x86-64-1gpu-amd"]'
   run-python-unit-tests:
     needs: call-build-docker
-    runs-on: "linux-x86-64-1gpu-amd-gfx942"
+    runs-on: "linux-x86-64-1gpu-amd"
     timeout-minutes: 60
     strategy:
       matrix:

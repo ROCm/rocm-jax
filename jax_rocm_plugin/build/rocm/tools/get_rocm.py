@@ -31,7 +31,6 @@ import subprocess
 import sys
 import urllib.request
 
-
 # pylint: disable=unspecified-encoding
 LOG = logging.getLogger(__name__)
 
@@ -418,8 +417,7 @@ def setup_repos_el8(rocm_version_str):
         rocm_version_str = "%d.%d" % (rv.major, rv.minor)
 
     with open("/etc/yum.repos.d/rocm.repo", "w") as rfd:
-        rfd.write(
-            """
+        rfd.write("""
 [ROCm]
 name=ROCm
 baseurl=http://repo.radeon.com/rocm/rhel8/%s/main
@@ -428,9 +426,7 @@ gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
 timeout=1000
 minrate=1
-"""
-            % rocm_version_str
-        )
+""" % rocm_version_str)
 
     with open("/etc/yum.repos.d/amdgpu.repo", "w") as afd:
         if rocm_version_str.startswith("7"):
@@ -439,8 +435,7 @@ minrate=1
         else:
             repodir = "amdgpu"
             rhel_minor = 8
-        afd.write(
-            """
+        afd.write("""
 [amdgpu]
 name=amdgpu
 baseurl=https://repo.radeon.com/%s/%s/rhel/8.%d/main/x86_64/
@@ -449,9 +444,7 @@ gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
 timeout=1000
 minrate=1
-"""
-            % (repodir, rocm_version_str, rhel_minor)
-        )
+""" % (repodir, rocm_version_str, rhel_minor))
 
 
 def parse_args():

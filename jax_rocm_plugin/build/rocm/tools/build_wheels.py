@@ -35,7 +35,6 @@ import shutil
 import subprocess
 import sys
 
-
 LOG = logging.getLogger(__name__)
 
 
@@ -173,6 +172,8 @@ def build_plugin_wheel(
         "--use_clang=%s" % use_clang,
         "--verbose",
         "--output_path=%s" % output_dir,
+        # Use roctracer (v1) instead of rocprofiler-sdk (v3) for profiling.
+        "--bazel_options=--define=xla_rocm_profiler=v1",
     ]
 
     # Add clang path if clang is used.
@@ -239,7 +240,7 @@ def build_jaxlib_wheel(
         "--verbose",
         "--bazel_options=--action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress",
         "--bazel_options=--repo_env=ML_WHEEL_TYPE=release",
-        f"--bazel_options=--repo_env=ML_WHEEL_VERSION_SUFFIX=\"+rocm{version_string}\"",
+        f"--bazel_options=--repo_env=ML_WHEEL_VERSION_SUFFIX=+rocm{version_string}",
     ]
 
     # Add clang path if clang is used.
