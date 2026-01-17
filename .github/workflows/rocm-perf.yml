@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-test-jax-perf:
-    runs-on: mi-250
+    runs-on: "linux-x86-64-8gpu-amd"
     strategy:
       matrix:
         python-version: ["3.12"]
@@ -169,5 +169,5 @@ jobs:
             --github-run-id "${{ github.run_id }}" \
             --python-version "${{ needs.build-and-test-jax-perf.outputs.python_version }}" \
             --rocm-version "${{ needs.build-and-test-jax-perf.outputs.rocm_version }}" \
-            --gfx-version gfx90a \
+            --gfx-version gfx942 \
             --jax-version 0.8.0
