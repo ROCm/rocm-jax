@@ -27,7 +27,7 @@ jobs:
             runner-label: '["linux-x86-64-1gpu-amd"]'
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16849"
+            rocm-build-num: "16874"
             runner-label: '["internal"]'
     uses: ./.github/workflows/build-wheels.yml
     with:
@@ -50,7 +50,7 @@ jobs:
             runner-label: '["linux-x86-64-1gpu-amd"]'
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16849"
+            rocm-build-num: "16874"
             runner-label: '["linux-x86-64-1gpu-amd-gfx942"]'
     uses: ./.github/workflows/build-docker.yml
     with:
@@ -75,7 +75,7 @@ jobs:
           - test-command: "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
             runner-label: '["linux-x86-64-4gpu-amd"]'
           - rocm-version: "7.2.0"
-            rocm-build-num: "16849"
+            rocm-build-num: "16874"
     uses: ./.github/workflows/test-and-upload.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}

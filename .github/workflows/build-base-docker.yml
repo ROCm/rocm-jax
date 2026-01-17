@@ -25,7 +25,7 @@ jobs:
             runner-label: '["linux-x86-64-1gpu-amd"]'
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16849"
+            rocm-build-num: "16874"
             runner-label: "internal"
     steps:
       - name: Clean up old runs
