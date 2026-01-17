@@ -27,8 +27,8 @@ jobs:
             runner-label: '["linux-x86-64-1gpu-amd"]'
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            rocm-build-num: "16989"
-            runner-label: '["linux-x86-64-1gpu-amd"]'
+            # rocm-build-num auto-fetched from Jenkins (latest successful build)
+            runner-label: '["internal"]'
     uses: ./.github/workflows/build-wheels.yml
     with:
       python-versions: "3.11,3.12"
@@ -51,7 +51,7 @@ jobs:
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16989"
-            runner-label: '["linux-x86-64-1gpu-amd"]'
+            runner-label: '["internal"]'
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
@@ -74,7 +74,6 @@ jobs:
             runner-label: '["linux-x86-64-1gpu-amd"]'
           - test-command: "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
             runner-label: '["linux-x86-64-4gpu-amd"]'
-            # rocm-build-num: For 7.2.0, will be set to 0 (default) since base image uses auto-fetch
     uses: ./.github/workflows/test-and-upload.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
