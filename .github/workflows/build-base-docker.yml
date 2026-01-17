@@ -22,7 +22,7 @@ jobs:
         install-llvm: [true, false]
         include:
           - rocm-version: "7.1.1"
-            runner-label: '["linux-x86-64-1gpu-amd"]'
+            runner-label: "linux-x86-64-1gpu-amd"
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
             rocm-build-num: "16874"
