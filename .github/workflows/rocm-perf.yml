@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-test-jax-perf:
-    runs-on: "linux-x86-64-4gpu-amd"
+    runs-on: mi-250
     strategy:
       matrix:
         python-version: ["3.12"]
