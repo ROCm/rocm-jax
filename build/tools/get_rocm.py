@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""
+ROCm installation and setup utilities.
+
+This module provides functions to install ROCm packages on various Linux
+distributions (Ubuntu, RHEL/AlmaLinux) and configure package repositories.
+
+NOTE(mrodden): This file is part of the ROCm build scripts, and
+needs be compatible with Python 3.6. Please do not include these
+in any "upgrade" scripts
+"""
 
 # Copyright 2024 The JAX Authors.
 #
@@ -15,11 +25,6 @@
 # limitations under the License.
 
 
-# NOTE(mrodden): This file is part of the ROCm build scripts, and
-# needs be compatible with Python 3.6. Please do not include these
-# in any "upgrade" scripts
-
-
 import argparse
 import json
 import logging
@@ -28,22 +33,25 @@ import sys
 import subprocess
 import urllib.request
 
-
 LOG = logging.getLogger(__name__)
 
 
 def latest_rocm():
-    dat = urllib.request.urlopen(
+    """Fetch the latest ROCm version from GitHub releases."""
+    with urllib.request.urlopen(
         "https://api.github.com/repos/rocm/rocm/releases/latest"
-    ).read()
+    ) as response:
+        dat = response.read()
     rd = json.loads(dat)
     _, ver_str = rd["tag_name"].split("-")
     return ver_str
 
 
 def os_release_meta():
+    """Parse /etc/os-release and return metadata as a dictionary."""
     try:
-        os_rel = open("/etc/os-release").read()
+        with open("/etc/os-release", encoding="utf-8") as f:
+            os_rel = f.read()
 
         kvs = {}
         for line in os_rel.split("\n"):
@@ -54,16 +62,18 @@ def os_release_meta():
 
         return kvs
     except OSError:
-        pass
+        return None
 
 
-class System(object):
+class System:
+    """Represents a Linux system with package management capabilities."""
 
     def __init__(self, pkgbin, rocm_package_list):
         self.pkgbin = pkgbin
         self.rocm_package_list = rocm_package_list
 
     def install_packages(self, package_specs):
+        """Install packages using the system package manager."""
         cmd = [
             self.pkgbin,
             "install",
@@ -77,10 +87,11 @@ class System(object):
             # Update indexes.
             subprocess.check_call(["apt-get", "update"])
 
-        LOG.info("Running %r" % cmd)
+        LOG.info("Running %r", cmd)
         subprocess.check_call(cmd, env=env)
 
     def install_rocm(self):
+        """Install ROCm packages on this system."""
         self.install_packages(self.rocm_package_list)
 
 
@@ -118,6 +129,7 @@ RHEL8 = System(
 
 
 def parse_version(version_str):
+    """Parse a version string into a Version object with major, minor, rev attributes."""
     if isinstance(version_str, str):
         parts = version_str.split(".")
         rv = type("Version", (), {})()
@@ -135,6 +147,7 @@ def parse_version(version_str):
 
 
 def get_system():
+    """Detect and return the appropriate System object for the current platform."""
     md = os_release_meta()
 
     if md["ID"] == "ubuntu":
@@ -144,31 +157,42 @@ def get_system():
         if md["PLATFORM_ID"] == "platform:el8":
             return RHEL8
 
-    raise Exception("No system for %r" % md)
+    raise RuntimeError("No system for %r" % md)
+
+
+def _get_latest_build_num(job_name):
+    """
+    Fetch the latest successful build number from Jenkins.
+
+    Returns a string of the build number (e.g., "16985")
+    """
+    url = "http://rocm-ci.amd.com/job/%s/lastSuccessfulBuild/buildNumber" % job_name
+    LOG.info("Fetching latest build number from %s", url)
+    with urllib.request.urlopen(url) as response:
+        build_num = response.read().decode("utf8").strip()
+        LOG.info("Latest successful build: %s", build_num)
+        return build_num
 
 
 def _setup_internal_repo(system, rocm_version, job_name, build_num):
+    """Set up internal AMD repository for ROCm packages."""
     # wget is required by amdgpu-repo
     system.install_packages(["wget"])
 
     install_amdgpu_installer_internal(rocm_version)
 
-    amdgpu_build = (
-        urllib.request.urlopen(
-            "http://rocm-ci.amd.com/job/%s/%s/artifact/amdgpu_kernel_info.txt"
-            % (job_name, build_num)
-        )
-        .read()
-        .decode("utf8")
-        .strip()
-    )
+    with urllib.request.urlopen(
+        "http://rocm-ci.amd.com/job/%s/%s/artifact/amdgpu_kernel_info.txt"
+        % (job_name, build_num)
+    ) as response:
+        amdgpu_build = response.read().decode("utf8").strip()
 
     cmd = [
         "amdgpu-repo",
         "--amdgpu-build=%s" % amdgpu_build,
         "--rocm-build=%s/%s" % (job_name, build_num),
     ]
-    LOG.info("Running %r" % cmd)
+    LOG.info("Running %r", cmd)
     subprocess.check_call(cmd)
 
     cmd = [
@@ -182,14 +206,26 @@ def _setup_internal_repo(system, rocm_version, job_name, build_num):
     if system.pkgbin == "apt":
         env["DEBIAN_FRONTEND"] = "noninteractive"
 
-    LOG.info("Running %r" % cmd)
+    LOG.info("Running %r", cmd)
     subprocess.check_call(cmd, env=env)
 
 
 def install_rocm(rocm_version, job_name=None, build_num=None):
+    """
+    Install ROCm packages on the current system.
+
+    Args:
+        rocm_version: The ROCm version to install.
+        job_name: Optional Jenkins job name for internal builds.
+        build_num: Optional Jenkins build number for internal builds.
+    """
     s = get_system()
 
-    if job_name and build_num:
+    if job_name:
+        # Auto-fetch latest successful build if build_num not provided
+        if not build_num:
+            LOG.info("No build number provided, fetching latest successful build...")
+            build_num = _get_latest_build_num(job_name)
         _setup_internal_repo(s, rocm_version, job_name, build_num)
     else:
         if s == RHEL8:
@@ -197,7 +233,7 @@ def install_rocm(rocm_version, job_name=None, build_num=None):
         elif s == UBUNTU:
             setup_repos_ubuntu(rocm_version)
         else:
-            raise Exception("Platform not supported")
+            raise RuntimeError("Platform not supported")
 
     s.install_rocm()
 
@@ -227,6 +263,7 @@ def install_amdgpu_installer_internal(rocm_version):
 
 
 def _build_installer_url(rocm_version, metadata):
+    """Build the URL for downloading the amdgpu-installer package."""
     md = metadata
 
     rv = parse_version(rocm_version)
@@ -234,7 +271,10 @@ def _build_installer_url(rocm_version, metadata):
     base_url = "https://artifactory-cdn.amd.com/artifactory/list"
 
     if md["ID"] == "ubuntu":
-        fmt = "amdgpu-install-internal_%(rocm_major)s.%(rocm_minor)s-%(os_version)s-1_all.deb"
+        fmt = (
+            "amdgpu-install-internal_%(rocm_major)s.%(rocm_minor)s"
+            "-%(os_version)s-1_all.deb"
+        )
         package_name = fmt % {
             "rocm_major": rv.major,
             "rocm_minor": rv.minor,
@@ -243,7 +283,10 @@ def _build_installer_url(rocm_version, metadata):
 
         url = "%s/amdgpu-deb/%s" % (base_url, package_name)
     elif md.get("PLATFORM_ID") == "platform:el8":
-        fmt = "amdgpu-install-internal-%(rocm_major)s.%(rocm_minor)s_%(os_version)s-1.noarch.rpm"
+        fmt = (
+            "amdgpu-install-internal-%(rocm_major)s.%(rocm_minor)s"
+            "_%(os_version)s-1.noarch.rpm"
+        )
         package_name = fmt % {
             "rocm_major": rv.major,
             "rocm_minor": rv.minor,
@@ -252,7 +295,7 @@ def _build_installer_url(rocm_version, metadata):
 
         url = "%s/amdgpu-rpm/rhel/%s" % (base_url, package_name)
     else:
-        raise Exception("Platform not supported: %r" % md)
+        raise RuntimeError("Platform not supported: %r" % md)
 
     return url, package_name
 
@@ -265,7 +308,7 @@ Pin-Priority: 600
 
 
 def setup_repos_ubuntu(rocm_version_str):
-
+    """Set up ROCm package repositories for Ubuntu."""
     rv = parse_version(rocm_version_str)
 
     # if X.Y.0 -> repo url version should be X.Y
@@ -283,13 +326,13 @@ def setup_repos_ubuntu(rocm_version_str):
     keyadd = "wget -qO - https://repo.radeon.com/rocm/rocm.gpg.key | sudo apt-key add -"
     subprocess.check_call(keyadd, shell=True)
 
-    with open("/etc/apt/sources.list.d/amdgpu.list", "w") as fd:
+    with open("/etc/apt/sources.list.d/amdgpu.list", "w", encoding="utf-8") as fd:
         fd.write(
             ("deb [arch=amd64] " "https://repo.radeon.com/amdgpu/%s/ubuntu %s main\n")
             % (rocm_version_str, codename)
         )
 
-    with open("/etc/apt/sources.list.d/rocm.list", "w") as fd:
+    with open("/etc/apt/sources.list.d/rocm.list", "w", encoding="utf-8") as fd:
         fd.write(
             ("deb [arch=amd64] " "https://repo.radeon.com/rocm/apt/%s %s main\n")
             % (rocm_version_str, codename)
@@ -297,7 +340,7 @@ def setup_repos_ubuntu(rocm_version_str):
 
     # on ubuntu 22 or greater, debian community rocm packages
     # conflict with repo.radeon.com packages
-    with open("/etc/apt/preferences.d/rocm-pin-600", "w") as fd:
+    with open("/etc/apt/preferences.d/rocm-pin-600", "w", encoding="utf-8") as fd:
         fd.write(APT_RADEON_PIN_CONTENT)
 
     # update indexes
@@ -305,35 +348,30 @@ def setup_repos_ubuntu(rocm_version_str):
 
 
 def setup_repos_el8(rocm_version_str):
-
-    with open("/etc/yum.repos.d/rocm.repo", "w") as rfd:
-        rfd.write(
-            """
+    """Set up ROCm package repositories for RHEL/AlmaLinux 8."""
+    with open("/etc/yum.repos.d/rocm.repo", "w", encoding="utf-8") as rfd:
+        rfd.write("""
 [ROCm]
 name=ROCm
 baseurl=http://repo.radeon.com/rocm/rhel8/%s/main
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
-"""
-            % rocm_version_str
-        )
+""" % rocm_version_str)
 
-    with open("/etc/yum.repos.d/amdgpu.repo", "w") as afd:
-        afd.write(
-            """
+    with open("/etc/yum.repos.d/amdgpu.repo", "w", encoding="utf-8") as afd:
+        afd.write("""
 [amdgpu]
 name=amdgpu
 baseurl=https://repo.radeon.com/amdgpu/%s/rhel/8.8/main/x86_64/
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
-"""
-            % rocm_version_str
-        )
+""" % rocm_version_str)
 
 
 def parse_args():
+    """Parse command-line arguments."""
     p = argparse.ArgumentParser()
     p.add_argument("--rocm-version", help="ROCm version to install", default="latest")
     p.add_argument("--job-name", default=None)
@@ -342,14 +380,16 @@ def parse_args():
 
 
 def main():
+    """Main entry point for ROCm installation script."""
     args = parse_args()
     if args.rocm_version == "latest":
         try:
             rocm_version = latest_rocm()
             print("Latest ROCm release: %s" % rocm_version)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             print(
-                "Latest ROCm lookup failed. Please use '--rocm-version' to specify a version instead.",
+                "Latest ROCm lookup failed. "
+                "Please use '--rocm-version' to specify a version instead.",
                 file=sys.stderr,
             )
             sys.exit(-1)
