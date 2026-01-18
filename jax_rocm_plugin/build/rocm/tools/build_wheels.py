@@ -35,7 +35,6 @@ import shutil
 import subprocess
 import sys
 
-
 LOG = logging.getLogger(__name__)
 
 

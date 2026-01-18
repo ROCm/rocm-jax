@@ -33,7 +33,6 @@ import sys
 import subprocess
 import urllib.request
 
-
 LOG = logging.getLogger(__name__)
 
 
@@ -351,30 +350,24 @@ def setup_repos_ubuntu(rocm_version_str):
 def setup_repos_el8(rocm_version_str):
     """Set up ROCm package repositories for RHEL/AlmaLinux 8."""
     with open("/etc/yum.repos.d/rocm.repo", "w", encoding="utf-8") as rfd:
-        rfd.write(
-            """
+        rfd.write("""
 [ROCm]
 name=ROCm
 baseurl=http://repo.radeon.com/rocm/rhel8/%s/main
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
-"""
-            % rocm_version_str
-        )
+""" % rocm_version_str)
 
     with open("/etc/yum.repos.d/amdgpu.repo", "w", encoding="utf-8") as afd:
-        afd.write(
-            """
+        afd.write("""
 [amdgpu]
 name=amdgpu
 baseurl=https://repo.radeon.com/amdgpu/%s/rhel/8.8/main/x86_64/
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
-"""
-            % rocm_version_str
-        )
+""" % rocm_version_str)
 
 
 def parse_args():

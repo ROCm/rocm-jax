@@ -5,7 +5,6 @@ import argparse
 import os
 import subprocess
 
-
 TEST_JAX_REPO_REF = "rocm-jaxlib-v0.8.2"
 XLA_REPO_REF = "rocm-jaxlib-v0.8.2"
 

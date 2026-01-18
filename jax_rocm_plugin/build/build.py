@@ -30,7 +30,6 @@ import re
 
 from tools import command, utils
 
-
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
