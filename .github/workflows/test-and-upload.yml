@@ -19,6 +19,9 @@ on:
       github-run-id:
         required: true
         type: string
+      test-group:
+        required: false
+        type: string
       runner-label:
         required: false
         type: string
@@ -89,7 +92,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}_${{ inputs.test-group }}
           path: logs/
   upload-to-db:
     needs: run-tests
@@ -100,8 +103,8 @@ jobs:
       - name: Download logs from artifact (per-matrix)
         uses: actions/download-artifact@v4
         with:
-          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
-          path: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}_${{ inputs.test-group }}
+          path: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}_${{ inputs.test-group }}
       - name: Upload logs to MySQL database
         env:
           ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
@@ -110,7 +113,7 @@ jobs:
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
           ROCM_VERSION: ${{ inputs.rocm-version }}
           UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
-          LOGS_DIR: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          LOGS_DIR: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}_${{ inputs.test-group }}
           GITHUB_SHA: ${{ inputs.github-sha }}
           GITHUB_RUN_ID: ${{ inputs.github-run-id }}
           ROCM_BUILD_NUM: ${{ inputs.rocm-build-num }}
