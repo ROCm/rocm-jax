@@ -44,6 +44,7 @@ on:
 jobs:
   run-tests:
     runs-on: ${{ fromJSON(inputs.runner-label) }}
+    timeout-minutes: 1080
     steps:
       - name: Change owners for cleanup
         run: |
