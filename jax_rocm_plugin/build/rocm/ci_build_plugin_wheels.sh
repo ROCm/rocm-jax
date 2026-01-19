@@ -21,6 +21,7 @@ done
 
 WHEELHOUSE=${args['--wheelhouse']}
 ROCM_VERSION=${args['--rocm_version']}
+GIT_HASH=$(git rev-parse HEAD)
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
     --config=rocm \
