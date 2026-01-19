@@ -70,7 +70,7 @@ jobs:
           bash build/rocm/ci_run_jax_singlegpu_ut.sh \
             --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
             --rocm_version=7 \
-            --jax_version=0.8.0 \
+            --jax_version=0.8.2 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --curses=no \
             --color=yes \
@@ -82,7 +82,7 @@ jobs:
           bash build/rocm/ci_run_jax_multigpu_ut.sh \
             --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
             --rocm_version=7 \
-            --jax_version=0.8.0 \
+            --jax_version=0.8.2 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --curses=no \
             --color=yes \
