@@ -53,21 +53,10 @@ jobs:
           WHEELHOUSE_DIR=$(mktemp -d)
           echo "dir=$WHEELHOUSE_DIR" >> "$GITHUB_OUTPUT"
 
-      - name: Build rocm plugin wheels (Python ${{ matrix.python_version }})
-        run: |
-          bash build/rocm/ci_build_plugin_wheels.sh \
-            --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
-            --rocm_version=7 \
-            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
-            --config=rocm_rbe
-
       - name: Run single-GPU unit tests (Python ${{ matrix.python_version }})
         if: always()
         run: |
           bash build/rocm/ci_run_jax_singlegpu_ut.sh \
-            --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
-            --rocm_version=7 \
-            --jax_version=0.8.0 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --config=rocm_rbe
 
@@ -75,9 +64,6 @@ jobs:
         if: always()
         run: |
           bash build/rocm/ci_run_jax_multigpu_ut.sh \
-            --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
-            --rocm_version=7 \
-            --jax_version=0.8.0 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --config=rocm_rbe
 

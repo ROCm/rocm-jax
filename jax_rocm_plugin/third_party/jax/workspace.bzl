@@ -15,5 +15,6 @@ def repo():
             "//third_party/jax:0003-hipblas-typedef-fix.patch",
             "//third_party/jax:0005-Fix-HIP-availability-errors.patch",
             "//third_party/jax:0006-Enable-testing-with-ROCm-plugin-wheels.patch",
+            "//third_party/jax:0007-Add-built-in-wheels-option.patch",
         ],
     )

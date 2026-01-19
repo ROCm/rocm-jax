@@ -14,12 +14,30 @@
 
 licenses(["notice"])
 
+load(
+    "@jax//jaxlib:jax.bzl",
+    "py_library_providing_imports_info",
+    "pytype_library",
+)
+
 package(
     default_applicable_licenses = [],
-    default_visibility = ["//:__subpackages__"],
+    default_visibility = ["//visibility:public"],
 )
 
 exports_files([
     "plugin_pyproject.toml",
     "plugin_setup.py",
 ])
+
+py_library_providing_imports_info(
+    name = "rocm_plugin",
+    srcs = [
+        "//pjrt/python:__init__.py",
+        "//pjrt/python:version.py",
+    ],
+    data = [
+        "//pjrt:pjrt_c_api_gpu_plugin.so",
+    ],
+    lib_rule = pytype_library,
+)
