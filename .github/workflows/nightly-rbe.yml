@@ -57,6 +57,7 @@ jobs:
         run: |
           bash build/rocm/ci_build_plugin_wheels.sh \
             --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
+            --git_hash=${{ github.sha }} \
             --rocm_version=7 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --config=rocm_rbe
