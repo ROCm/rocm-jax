@@ -10,7 +10,7 @@ def repo():
         strip_prefix = "jax-{commit}".format(commit = COMMIT),
         urls = ["https://github.com/ROCm/jax/archive/{commit}.tar.gz".format(commit = COMMIT)],
         patch_file = [
-	        "//third_party/jax:0005-Fix-HIP-availability-errors.patch",
+            "//third_party/jax:0005-Fix-HIP-availability-errors.patch",
             "//third_party/jax:0006-Enable-testing-with-ROCm-plugin-wheels.patch",
         ],
     )
