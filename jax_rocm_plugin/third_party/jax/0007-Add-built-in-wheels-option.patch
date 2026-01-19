@@ -1,0 +1,89 @@
+diff --git a/jax/BUILD b/jax/BUILD
+index 8d6ec60..89bfcbf 100644
+--- a/jax/BUILD
++++ b/jax/BUILD
+@@ -44,6 +44,7 @@ string_flag(
+     build_setting_default = "true",
+     values = [
+         "true",
++        "built_in_wheels",
+         "false",
+         "wheel",
+     ],
+@@ -70,6 +71,14 @@ config_setting(
+     },
+ )
+ 
++config_setting(
++    name = "config_build_jaxlib_built_in_wheels",
++    flag_values = {
++        ":build_jaxlib": "built_in_wheels",
++    },
++    visibility = ["//visibility:public"],
++)
++
+ # The flag controls whether jax should be built by Bazel.
+ # If ":build_jax=true", then jax will be built.
+ # If ":build_jax=false", then jax is not built. It is assumed that the pre-built jax wheel
+diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
+index 5e0319b..32a1778 100644
+--- a/jaxlib/jax.bzl
++++ b/jaxlib/jax.bzl
+@@ -173,6 +173,7 @@ def if_building_jaxlib(
+     return select({
+         "//jax:config_build_jaxlib_true": if_building,
+         "//jax:config_build_jaxlib_false": if_not_building,
++        "//jax:config_build_jaxlib_built_in_wheels": if_building,
+         "//jax:config_build_jaxlib_wheel": [],
+     })
+ 
+@@ -181,6 +182,7 @@ def _cpu_test_deps():
+     return select({
+         "//jax:config_build_jaxlib_true": [],
+         "//jax:config_build_jaxlib_false": ["@pypi//jaxlib"],
++        "//jax:config_build_jaxlib_built_in_wheels": [],
+         "//jax:config_build_jaxlib_wheel": ["//jaxlib/tools:jaxlib_py_import"],
+     })
+ 
+@@ -192,6 +194,12 @@ def _gpu_test_deps():
+             "//jaxlib/rocm:gpu_only_test_deps",
+             "//jax_plugins:gpu_plugin_only_test_deps",
+         ],
++        "//jax:config_build_jaxlib_built_in_wheels": if_rocm_is_configured([
++            "//jaxlib/tools:jaxlib_editable",
++            "//jaxlib/tools:rocm_plugin_editable",
++            "//jaxlib/tools:rocm_pjrt_editable",
++        ]) + if_cuda_is_configured([
++        ]),
+         "//jax:config_build_jaxlib_false": if_rocm_is_configured([
+             "//jaxlib/tools:rocm_plugin_kernels_wheel",
+             "//jaxlib/tools:rocm_plugin_pjrt_wheel",
+diff --git a/jaxlib/tools/BUILD.bazel b/jaxlib/tools/BUILD.bazel
+index a1862ba..a6a6e52 100644
+--- a/jaxlib/tools/BUILD.bazel
++++ b/jaxlib/tools/BUILD.bazel
+@@ -510,6 +510,24 @@ py_import(
+     wheel_deps = [":rocm_wheel_deps"],
+ )
+ 
++# Editable target aliases for built_in_wheels mode.
++# These reference targets defined in the main workspace (jax_rocm_plugin).
++
++alias(
++    name = "jaxlib_editable",
++    actual = "@//:jaxlib_editable",
++)
++
++alias(
++    name = "rocm_plugin_editable",
++    actual = "@//:rocm_plugin_editable",
++)
++
++alias(
++    name = "rocm_pjrt_editable",
++    actual = "@//:rocm_pjrt_editable",
++)
++
+ # Mosaic GPU
+ 
+ py_binary(

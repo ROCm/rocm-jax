@@ -1,0 +1,57 @@
+# Copyright 2025 Advanced Micro Devices, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Root BUILD file for jax_rocm_plugin workspace.
+
+This defines editable targets for the built_in_wheels mode, which allows
+running JAX tests without pre-building wheels. The plugin and PJRT runtime
+are built from source as part of the bazel build.
+"""
+
+licenses(["notice"])
+
+package(default_visibility = ["//visibility:public"])
+
+# Editable target for jaxlib - from @jax repository
+py_library(
+    name = "jaxlib_editable",
+    deps = [
+        "@jax//jaxlib:jaxlib",
+    ],
+)
+
+# Editable target for the ROCm plugin kernels (jax-rocm7-plugin wheel equivalent)
+# Uses the same targets as the wheel builder:
+# - rocm_gpu_support: _linalg, _prng, _solver, _sparse, _hybrid, _rnn, _triton
+# - rocm_plugin_extension: main extension
+# - version: jaxlib version info
+py_library(
+    name = "rocm_plugin_editable",
+    deps = [
+        "//jaxlib_ext:rocm_gpu_support",
+        "//jaxlib_ext:rocm_plugin_extension",
+        "//jaxlib_ext:version",
+    ],
+)
+
+# Editable target for the PJRT runtime (jax-rocm7-pjrt wheel equivalent)
+# Built from jax_rocm_plugin workspace, provides:
+# - jax_plugins/xla_rocm7/__init__.py
+# - jax_plugins/xla_rocm7/xla_rocm_plugin.so
+py_library(
+    name = "rocm_pjrt_editable",
+    deps = [
+        "//jax_plugins/rocm:rocm_plugin",
+    ],
+)
