@@ -60,6 +60,8 @@ jobs:
             --git_hash=${{ github.sha }} \
             --rocm_version=7 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
+            --curses=no \
+            --color=yes \
             --config=rocm_rbe
 
       - name: Run single-GPU unit tests (Python ${{ matrix.python_version }})
@@ -70,6 +72,8 @@ jobs:
             --rocm_version=7 \
             --jax_version=0.8.0 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
+            --curses=no \
+            --color=yes \
             --config=rocm_rbe
 
       - name: Run multi-GPU unit tests (Python ${{ matrix.python_version }})
@@ -80,6 +84,8 @@ jobs:
             --rocm_version=7 \
             --jax_version=0.8.0 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
+            --curses=no \
+            --color=yes \
             --config=rocm_rbe
 
       - name: Upload logs to artifact
