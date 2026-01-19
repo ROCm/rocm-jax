@@ -9,7 +9,7 @@ build:rocm --config=mkl_open_source_only
 build:rocm --config=native_arch_posix
 build:rocm --action_env=CLANG_COMPILER_PATH="/lib/llvm-18/bin/clang-18"
 build:rocm --action_env=ROCM_PATH="/opt/rocm"
-build:rocm --repo_env=TF_ROCM_AMDGPU_TARGETS="gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
+build:rocm --repo_env=TF_ROCM_AMDGPU_TARGETS="gfx906,gfx908,gfx90a,gfx942,gfx950"
 build:rocm --repo_env=HERMETIC_PYTHON_VERSION=3.12
 
 test:rocm --test_timeout=920,2400,7200,9600
