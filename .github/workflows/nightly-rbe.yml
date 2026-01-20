@@ -67,25 +67,28 @@ jobs:
       - name: Run single-GPU unit tests (Python ${{ matrix.python_version }})
         if: always()
         run: |
-          bash build/rocm/ci_run_jax_singlegpu_ut.sh \
+          bash build/rocm/ci_run_jax_ut.sh \
             --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
             --rocm_version=7 \
             --jax_version=0.8.2 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --curses=no \
             --color=yes \
+            --config=rocm_sgpu \
             --config=rocm_rbe
 
       - name: Run multi-GPU unit tests (Python ${{ matrix.python_version }})
         if: always()
         run: |
-          bash build/rocm/ci_run_jax_multigpu_ut.sh \
+          bash build/rocm/ci_run_jax_ut.sh \
             --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
             --rocm_version=7 \
             --jax_version=0.8.2 \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --curses=no \
             --color=yes \
+            --config=rocm_mgpu \
+            --strategy=TestRunner=local \
             --config=rocm_rbe
 
       - name: Upload logs to artifact

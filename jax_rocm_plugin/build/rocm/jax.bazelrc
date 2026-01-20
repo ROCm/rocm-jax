@@ -14,6 +14,12 @@ build:rocm --repo_env=HERMETIC_PYTHON_VERSION=3.12
 
 test:rocm --test_timeout=920,2400,7200,9600
 
+build:rocm_mgpu --test_tag_filters=jax_test_gpu,multiaccelerator,-config-cuda-only,-manual
+build:rocm_mgpu --build_tag_filters=jax_test_gpu,multiaccelerator,-config-cuda-only,-manual
+
+build:rocm_sgpu --test_tag_filters=jax_test_gpu,-multiaccelerator,-config-cuda-only,-manual
+build:rocm_sgpu --build_tag_filters=jax_test_gpu,-multiaccelerator,-config-cuda-only,-manual
+
 # for @xla//build_tools/rocm:parallel_gpu_execute
 build:rocm --legacy_external_runfiles=true
 

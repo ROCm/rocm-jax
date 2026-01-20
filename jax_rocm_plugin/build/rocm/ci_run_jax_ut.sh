@@ -33,15 +33,10 @@ ROCM_VERSION=${args['--rocm_version']}
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
     --config=rocm \
-    "${BAZEL_ARGS[@]}" \
     //build:requirements.update
-
-TAG_FILTERS="jax_test_gpu,multiaccelerator,-config-cuda-only,-manual"
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc test \
     --config=rocm \
-    --build_tag_filters=$TAG_FILTERS \
-    --test_tag_filters=$TAG_FILTERS \
     --@jax//jax:build_jaxlib=false \
     --keep_going \
     --test_verbose_timeout_warnings \
