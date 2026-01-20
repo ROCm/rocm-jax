@@ -26,6 +26,7 @@ jobs:
       matrix:
         python_version: ["3.11", "3.12", "3.13", "3.14"]
     container:
+      # note this image shall match the one defined in platform/linux:tf_linux_gpu
       image: rocm/tensorflow-build@sha256:7fcfbd36b7ac8f6b0805b37c4248e929e31cf5ee3af766c8409dd70d5ab65faa
       options: >-
         -w ${{ github.workspace }}/jax_rocm_plugin
