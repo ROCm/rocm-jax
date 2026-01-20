@@ -1,0 +1,173 @@
+From 9dbc41198c16c0986a2df48e9d53ffebb6fefbe1 Mon Sep 17 00:00:00 2001
+From: tsrw2048 <239799652+tsrw2048@users.noreply.github.com>
+Date: Mon, 12 Jan 2026 09:06:20 -0600
+Subject: [PATCH] GESVDJ support for ROCm GPUs in JAX (#580)
+
+FFI support for the GESVDJ call is added to support the SVD unit tests.
+---
+ jaxlib/gpu/solver.cc             |  2 +-
+ jaxlib/gpu/solver_interface.cc   |  4 ++--
+ jaxlib/gpu/solver_interface.h    |  8 ++++----
+ jaxlib/gpu/solver_kernels_ffi.cc |  4 ++--
+ jaxlib/gpu/solver_kernels_ffi.h  |  2 +-
+ jaxlib/gpu/vendor.h              | 20 ++++++++++++++++++++
+ 6 files changed, 30 insertions(+), 10 deletions(-)
+
+diff --git a/jaxlib/gpu/solver.cc b/jaxlib/gpu/solver.cc
+index 6fcd3155c..ea95226ba 100644
+--- a/jaxlib/gpu/solver.cc
++++ b/jaxlib/gpu/solver.cc
+@@ -34,10 +34,10 @@ nb::dict Registrations() {
+   dict[JAX_GPU_PREFIX "solver_syevd_ffi"] = EncapsulateFfiHandler(SyevdFfi);
+   dict[JAX_GPU_PREFIX "solver_syrk_ffi"] = EncapsulateFfiHandler(SyrkFfi);
+   dict[JAX_GPU_PREFIX "solver_gesvd_ffi"] = EncapsulateFfiHandler(GesvdFfi);
++  dict[JAX_GPU_PREFIX "solver_gesvdj_ffi"] = EncapsulateFfiHandler(GesvdjFfi);
+   dict[JAX_GPU_PREFIX "solver_sytrd_ffi"] = EncapsulateFfiHandler(SytrdFfi);
+ 
+ #ifdef JAX_GPU_CUDA
+-  dict[JAX_GPU_PREFIX "solver_gesvdj_ffi"] = EncapsulateFfiHandler(GesvdjFfi);
+   dict[JAX_GPU_PREFIX "solver_csrlsvqr_ffi"] =
+       EncapsulateFfiHandler(CsrlsvqrFfi);
+ #endif  // JAX_GPU_CUDA
+diff --git a/jaxlib/gpu/solver_interface.cc b/jaxlib/gpu/solver_interface.cc
+index f6fc5bba1..8866c7bea 100644
+--- a/jaxlib/gpu/solver_interface.cc
++++ b/jaxlib/gpu/solver_interface.cc
+@@ -302,8 +302,6 @@ JAX_GPU_DEFINE_GESVD(gpuComplex, gpusolverDnCgesvd);
+ JAX_GPU_DEFINE_GESVD(gpuDoubleComplex, gpusolverDnZgesvd);
+ #undef JAX_GPU_DEFINE_GESVD
+ 
+-#ifdef JAX_GPU_CUDA
+-
+ #define JAX_GPU_DEFINE_GESVDJ(Type, Name)                                      \
+   template <>                                                                  \
+   absl::StatusOr<int> GesvdjBufferSize<Type>(                                  \
+@@ -359,6 +357,8 @@ JAX_GPU_DEFINE_GESVDJ_BATCHED(gpuComplex, gpusolverDnCgesvdjBatched);
+ JAX_GPU_DEFINE_GESVDJ_BATCHED(gpuDoubleComplex, gpusolverDnZgesvdjBatched);
+ #undef JAX_GPU_DEFINE_GESVDJ_BATCHED
+ 
++#ifdef JAX_GPU_CUDA
++
+ #define JAX_GPU_DEFINE_CSRLSVQR(Type, Scalar, Name)                          \
+   template <>                                                                \
+   absl::Status Csrlsvqr<Type>(                                               \
+diff --git a/jaxlib/gpu/solver_interface.h b/jaxlib/gpu/solver_interface.h
+index e0a44b875..fb284ec98 100644
+--- a/jaxlib/gpu/solver_interface.h
++++ b/jaxlib/gpu/solver_interface.h
+@@ -201,18 +201,16 @@ JAX_GPU_SOLVER_EXPAND_DEFINITION(absl::StatusOr<int>, GesvdBufferSize);
+ JAX_GPU_SOLVER_EXPAND_DEFINITION(absl::Status, Gesvd);
+ #undef JAX_GPU_SOLVER_Gesvd_ARGS
+ 
+-#ifdef JAX_GPU_CUDA
+-
+ #define JAX_GPU_SOLVER_GesvdjBufferSize_ARGS(Type, ...)                       \
+   gpusolverDnHandle_t handle, gpusolverEigMode_t job, int econ, int m, int n, \
+-      gesvdjInfo_t params
++      gpuGesvdjInfo_t params
+ JAX_GPU_SOLVER_EXPAND_DEFINITION(absl::StatusOr<int>, GesvdjBufferSize);
+ #undef JAX_GPU_SOLVER_GesvdjBufferSize_ARGS
+ 
+ #define JAX_GPU_SOLVER_Gesvdj_ARGS(Type, Real)                                \
+   gpusolverDnHandle_t handle, gpusolverEigMode_t job, int econ, int m, int n, \
+       Type *a, Real *s, Type *u, Type *v, Type *workspace, int lwork,         \
+-      int *info, gesvdjInfo_t params
++      int *info, gpuGesvdjInfo_t params
+ JAX_GPU_SOLVER_EXPAND_DEFINITION(absl::Status, Gesvdj);
+ #undef JAX_GPU_SOLVER_Gesvdj_ARGS
+ 
+@@ -229,6 +227,8 @@ JAX_GPU_SOLVER_EXPAND_DEFINITION(absl::StatusOr<int>, GesvdjBatchedBufferSize);
+ JAX_GPU_SOLVER_EXPAND_DEFINITION(absl::Status, GesvdjBatched);
+ #undef JAX_GPU_SOLVER_GesvdjBatched_ARGS
+ 
++#ifdef JAX_GPU_CUDA
++
+ #define JAX_GPU_SOLVER_Csrlsvqr_ARGS(Type, ...)                          \
+   cusolverSpHandle_t handle, int n, int nnz, cusparseMatDescr_t matdesc, \
+       const Type *csrValA, const int *csrRowPtrA, const int *csrColIndA, \
+diff --git a/jaxlib/gpu/solver_kernels_ffi.cc b/jaxlib/gpu/solver_kernels_ffi.cc
+index 4e3954505..758597b7d 100644
+--- a/jaxlib/gpu/solver_kernels_ffi.cc
++++ b/jaxlib/gpu/solver_kernels_ffi.cc
+@@ -1024,8 +1024,6 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(GesvdFfi, GesvdDispatch,
+                                   .Ret<ffi::Buffer<ffi::S32>>()  // info
+ );
+ 
+-#ifdef JAX_GPU_CUDA
+-
+ template <typename T>
+ ffi::Error GesvdjImpl(int64_t batch, int64_t rows, int64_t cols,
+                       gpuStream_t stream, ffi::ScratchAllocator& scratch,
+@@ -1148,6 +1146,8 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(GesvdjFfi, GesvdjDispatch,
+                                   .Ret<ffi::Buffer<ffi::S32>>()  // info
+ );
+ 
++#ifdef JAX_GPU_CUDA
++
+ // csrlsvqr: Linear system solve via Sparse QR
+ 
+ template <typename T>
+diff --git a/jaxlib/gpu/solver_kernels_ffi.h b/jaxlib/gpu/solver_kernels_ffi.h
+index 668932a7b..c10a7af53 100644
+--- a/jaxlib/gpu/solver_kernels_ffi.h
++++ b/jaxlib/gpu/solver_kernels_ffi.h
+@@ -37,10 +37,10 @@ XLA_FFI_DECLARE_HANDLER_SYMBOL(PotrfFfi);
+ XLA_FFI_DECLARE_HANDLER_SYMBOL(SyevdFfi);
+ XLA_FFI_DECLARE_HANDLER_SYMBOL(SyrkFfi);
+ XLA_FFI_DECLARE_HANDLER_SYMBOL(GesvdFfi);
++XLA_FFI_DECLARE_HANDLER_SYMBOL(GesvdjFfi);
+ XLA_FFI_DECLARE_HANDLER_SYMBOL(SytrdFfi);
+ 
+ #ifdef JAX_GPU_CUDA
+-XLA_FFI_DECLARE_HANDLER_SYMBOL(GesvdjFfi);
+ XLA_FFI_DECLARE_HANDLER_SYMBOL(CsrlsvqrFfi);
+ #endif  // JAX_GPU_CUDA
+ 
+diff --git a/jaxlib/gpu/vendor.h b/jaxlib/gpu/vendor.h
+index 603ae3e5b..f1cea7f0c 100644
+--- a/jaxlib/gpu/vendor.h
++++ b/jaxlib/gpu/vendor.h
+@@ -503,6 +503,8 @@ typedef miopenRNNFWDMode_t gpudnnForwardMode_t;
+ typedef hipModule_t gpuModule_t;
+ typedef void gpuSyevjInfo;
+ typedef hipsolverSyevjInfo_t gpuSyevjInfo_t;
++typedef void gpuGesvdjInfo;
++typedef hipsolverGesvdjInfo_t gpuGesvdjInfo_t;
+ typedef hipsolverEigMode_t gpusolverEigMode_t;
+ typedef hipsolverStatus_t gpusolverStatus_t;
+ typedef hipsparseIndexType_t gpusparseIndexType_t;
+@@ -586,6 +588,8 @@ inline hipsolverStatus_t gpusolverDnCreate(gpusolverDnHandle_t* handle) {
+ #define gpusolverDnSetStream hipsolverSetStream
+ #define gpusolverDnCreateSyevjInfo hipsolverCreateSyevjInfo
+ #define gpusolverDnDestroySyevjInfo hipsolverDestroySyevjInfo
++#define gpusolverDnCreateGesvdjInfo hipsolverCreateGesvdjInfo
++#define gpusolverDnDestroyGesvdjInfo hipsolverDestroyGesvdjInfo
+ #define gpusolverDnSgeqrf hipsolverSgeqrf
+ #define gpusolverDnDgeqrf hipsolverDgeqrf
+ #define gpusolverDnCgeqrf hipsolverCgeqrf
+@@ -662,6 +666,22 @@ inline hipsolverStatus_t gpusolverDnCreate(gpusolverDnHandle_t* handle) {
+   hipsolverCgesvd_bufferSize(h, jobu, jobvt, m, n, lwork)
+ #define gpusolverDnZgesvd_bufferSize(h, jobu, jobvt, m, n, lwork) \
+   hipsolverZgesvd_bufferSize(h, jobu, jobvt, m, n, lwork)
++#define gpusolverDnSgesvdj hipsolverSgesvdj
++#define gpusolverDnDgesvdj hipsolverDgesvdj
++#define gpusolverDnCgesvdj hipsolverCgesvdj
++#define gpusolverDnZgesvdj hipsolverZgesvdj
++#define gpusolverDnSgesvdj_bufferSize hipsolverSgesvdj_bufferSize
++#define gpusolverDnDgesvdj_bufferSize hipsolverDgesvdj_bufferSize
++#define gpusolverDnCgesvdj_bufferSize hipsolverCgesvdj_bufferSize
++#define gpusolverDnZgesvdj_bufferSize hipsolverZgesvdj_bufferSize
++#define gpusolverDnSgesvdjBatched hipsolverSgesvdjBatched
++#define gpusolverDnDgesvdjBatched hipsolverDgesvdjBatched
++#define gpusolverDnCgesvdjBatched hipsolverCgesvdjBatched
++#define gpusolverDnZgesvdjBatched hipsolverZgesvdjBatched
++#define gpusolverDnSgesvdjBatched_bufferSize hipsolverSgesvdjBatched_bufferSize
++#define gpusolverDnDgesvdjBatched_bufferSize hipsolverDgesvdjBatched_bufferSize
++#define gpusolverDnCgesvdjBatched_bufferSize hipsolverCgesvdjBatched_bufferSize
++#define gpusolverDnZgesvdjBatched_bufferSize hipsolverZgesvdjBatched_bufferSize
+ #define gpusolverDnSsytrd_bufferSize hipsolverDnSsytrd_bufferSize
+ #define gpusolverDnDsytrd_bufferSize hipsolverDnDsytrd_bufferSize
+ #define gpusolverDnChetrd_bufferSize hipsolverDnChetrd_bufferSize
+-- 
+2.43.0
+

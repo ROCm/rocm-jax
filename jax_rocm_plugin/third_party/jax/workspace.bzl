@@ -12,5 +12,6 @@ def repo():
         urls = ["https://github.com/ROCm/jax/archive/{commit}.tar.gz".format(commit = COMMIT)],
         patch_file = [
 	    "//third_party/jax:0005-Fix-HIP-availability-errors.patch",
+	    "//third_party/jax:0006-GESVDJ-support-for-ROCm-GPUs-in-JAX.patch",
         ],
     )
