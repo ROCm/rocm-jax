@@ -72,8 +72,10 @@ jobs:
         include:
           - test-command: "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
             runner-label: '["linux-x86-64-1gpu-amd"]'
+            test-id: "single"
           - test-command: "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
             runner-label: '["linux-x86-64-4gpu-amd"]'
+            test-id: "multi"
     uses: ./.github/workflows/test-and-upload.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
@@ -83,6 +85,7 @@ jobs:
       github-run-id: ${{ github.run_id }}
       runner-label: ${{ matrix.runner-label }}
       test-command: ${{ matrix.test-command }}
+      test-id: ${{ matrix.test-id }}
     secrets:
       ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
       ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
