@@ -33,6 +33,9 @@ ROCM_VERSION=${args['--rocm_version']}
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
     --config=rocm \
+    "${BAZEL_ARGS[@]}" \
+    --test_tag_filters= \
+    --build_tag_filters= \
     //build:requirements.update
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc test \
