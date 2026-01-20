@@ -1,5 +1,5 @@
 diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
-index 28f236783..87dff699d 100644
+index 28f236783..8e961fbd0 100644
 --- a/jaxlib/jax.bzl
 +++ b/jaxlib/jax.bzl
 @@ -192,10 +192,13 @@ def _gpu_test_deps():
@@ -18,6 +18,14 @@ index 28f236783..87dff699d 100644
          "//jax:config_build_jaxlib_wheel": [
              "//jaxlib/tools:jax_cuda_plugin_py_import",
              "//jaxlib/tools:jax_cuda_pjrt_py_import",
+@@ -304,6 +307,7 @@ def jax_multiplatform_test(
+             tags = test_tags,
+             main = main,
+             exec_properties = tf_exec_properties({"tags": test_tags}),
++            legacy_create_init = 0,
+         )
+ 
+ def jax_generate_backend_suites(backends = []):
 diff --git a/jaxlib/tools/BUILD.bazel b/jaxlib/tools/BUILD.bazel
 index 3a1a48736..8618f5e74 100644
 --- a/jaxlib/tools/BUILD.bazel

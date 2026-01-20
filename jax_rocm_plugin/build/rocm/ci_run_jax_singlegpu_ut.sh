@@ -36,7 +36,7 @@ bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
     "${BAZEL_ARGS[@]}" \
     //build:requirements.update
 
-TAG_FILTERS="gpu,-multiaccelerator,-config-cuda-only"
+TAG_FILTERS="-multiaccelerator,-config-cuda-only"
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc test \
     --config=rocm \
