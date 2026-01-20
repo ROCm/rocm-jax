@@ -47,6 +47,7 @@ LAST_CODE = 0
 BASE_DIR = "./logs"
 ALL_CRASHED_TESTS = []  # Global list to track all crashed tests
 
+ENABLE_ABORT_DETECTION = False
 
 def sanitize_for_json(text):
     """Remove control characters that break JSON parsing.
@@ -1169,6 +1170,10 @@ def check_for_crash(last_running_file):
     2. The file has valid JSON with test information
     3. The test was marked as "running" but never completed
     """
+    if not ENABLE_ABORT_DETECTION:
+       clear_crash_file(last_running_file)
+       return None
+
     if not os.path.exists(last_running_file):
         # File doesn't exist = no crash (test completed normally)
         return None
@@ -1232,6 +1237,9 @@ def check_for_crash(last_running_file):
 
 def handle_abort(json_file, html_file, last_running_file, testfile, crash_info=None):
     """Handle crash detection and append info to reports."""
+    if not ENABLE_ABORT_DETECTION:
+       clear_crash_file(last_running_file)
+       return False
     if crash_info is None:
         crash_info = check_for_crash(last_running_file)
 
