@@ -105,8 +105,6 @@ build:rocm --action_env=TF_HIPCC_CLANG="1"
 #############################################################################
 common --experimental_repo_remote_exec
 
-try-import %workspace%/rbe.bazelrc
-
 #############################################################################
 # Some configs to make getting some forms of debug builds. In general, the
 # codebase is only regularly built with optimizations. Use 'debug_symbols' to

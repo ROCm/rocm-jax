@@ -41,7 +41,6 @@ python3 build/build.py requirements_update --python="${PYTHON}"
 python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_version="${PYTHON}"
 
 ./bazel-7.4.1-linux-x86_64 \
-    --bazelrc=.bazelrc \
     --bazelrc=../jax_rocm_plugin/rbe.bazelrc \
     test \
     --config=rocm \

@@ -100,8 +100,3 @@ jobs:
         with:
           name: logs-rbe-py${{ matrix.python_version }}
           path: jax_rocm_plugin/logs/
-      - name: Clean up
-        if: always()
-        run: |
-          bazel clean --expunge
-          rm -rf ${{ steps.wheelhouse.outputs.dir }}
