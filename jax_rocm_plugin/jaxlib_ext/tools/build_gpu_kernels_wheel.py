@@ -165,8 +165,9 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
             f"jax/jaxlib/rocm/_triton.{pyext}",
             f"jax/jaxlib/rocm/rocm_plugin_extension.{pyext}",
             "__main__/pjrt/python/version.py",
-            "jax/jaxlib/mosaic/gpu/libmosaic_gpu_runtime.so",
             "jax/jaxlib/version.py",
+            f"jax/jaxlib/mosaic/gpu/_mosaic_gpu_ext.{pyext}",
+            "jax/jaxlib/mosaic/gpu/libmosaic_gpu_runtime.so",
         ],
     )
 
