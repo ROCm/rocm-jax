@@ -1,0 +1,10 @@
+# WORKSPACE for jax_rocm_pjrt
+# This workspace provides the ROCm PJRT wheel by aliasing to jax_rocm_plugin
+
+workspace(name = "jax_rocm_pjrt")
+
+# Reference to jax_rocm_plugin - override via --override_repository if needed
+local_repository(
+    name = "jax_rocm_plugin",
+    path = "../..",
+)

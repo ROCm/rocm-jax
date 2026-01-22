@@ -1,0 +1,11 @@
+# WORKSPACE for pypi_jax_rocm7_plugin
+# This workspace provides the :whl target for the ROCm plugin wheel (GPU kernels)
+# by aliasing to jax_rocm_plugin
+
+workspace(name = "pypi_jax_rocm7_plugin")
+
+# Reference to jax_rocm_plugin - override via --override_repository if needed
+local_repository(
+    name = "jax_rocm_plugin",
+    path = "../..",
+)
