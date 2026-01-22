@@ -130,24 +130,31 @@ def set_rocm_paths(path):  # pylint: disable=too-many-branches
     os.environ["JAX_ROCM_PLUGIN_INTERNAL_LLD_PATH"] = lld_path
 
 
-def is_amd_gpu_available() -> bool:
-    """Checks if any AMD GPU is available to safeguard loading of the ROCm pjrt.
+def count_amd_gpus(stop_at: int = None) -> int:
+    """Count AMD GPUs available via KFD kernel driver.
 
-    Different approaches to this are possible. We chose testing for existence
-    of KFD kernel driver entities as a proxy for the presence of AMD GPUs as
-    a good compromise between performance, reliability and simplicity.
-    Presence of such entities doesn't guarantee that the GPUs are usable through
-    HIP and PJRT, however, we can't do much much better without spawning an
-    additional process with a potentially complicated setup to run actual HIP
-    code. And we don't want to initialize HIP right now inside the current
-    process, because doing so might spoil a proper initialization of the
-    rocprofiler-sdk later during PJRT startup."""
+    This function checks for the presence of AMD GPUs by examining KFD kernel
+    driver entities as a proxy. This approach provides a good compromise between
+    performance, reliability and simplicity. Presence of such entities doesn't
+    guarantee that the GPUs are usable through HIP and PJRT, however, we can't
+    do much better without spawning an additional process with a potentially
+    complicated setup to run actual HIP code. And we don't want to initialize
+    HIP right now inside the current process, because doing so might spoil a
+    proper initialization of the rocprofiler-sdk later during PJRT startup.
 
+    Args:
+        stop_at: If provided, stop counting once this many GPUs are found.
+                 This allows early exit when only checking for thresholds.
+
+    Returns:
+        The number of AMD GPUs detected (up to stop_at if provided).
+    """
     try:
         kfd_nodes_path = "/sys/class/kfd/kfd/topology/nodes/"
         if not os.path.exists(kfd_nodes_path):
-            return False
+            return 0
 
+        gpu_count = 0
         # the RE matches strings like "simd_count ##" and extracts the number ##
         r_simd_count = re.compile(r"\bsimd_count\s+(\d+)\b", re.MULTILINE)
         # we're using a non-zero simd_count as a trait of a GPU following the
@@ -170,7 +177,9 @@ def is_amd_gpu_available() -> bool:
                     if match:
                         simd_count = int(match.group(1))
                         if simd_count > 0:
-                            return True  # one is enough
+                            gpu_count += 1
+                            if stop_at is not None and gpu_count >= stop_at:
+                                return gpu_count
             except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.debug(
                     "Failed to read KFD node file '%s': %s", node_props_path, e
@@ -178,8 +187,43 @@ def is_amd_gpu_available() -> bool:
                 continue
 
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.warning("Failed to check for AMD KFD presence: %s", e)
-    return False
+        logger.warning("Failed to count AMD GPUs: %s", e)
+    return gpu_count
+
+
+def check_shm_size(gpu_count: int = None):
+    """Check /dev/shm size and warn if it's too small for multi-GPU setups.
+
+    Args:
+        gpu_count: Number of GPUs detected. If None, will call count_amd_gpus().
+    """
+    try:
+        if gpu_count is None:
+            # Only check if we have 2+ GPUs (stop counting at 2 for efficiency)
+            gpu_count = count_amd_gpus(stop_at=2)
+
+        if gpu_count < 2:
+            return
+
+        shm_path = "/dev/shm"
+        if not os.path.exists(shm_path):
+            return
+
+        stat = os.statvfs(shm_path)
+        # Total size in bytes
+        shm_size_bytes = stat.f_blocks * stat.f_frsize
+        shm_size_mb = shm_size_bytes / (1024 * 1024)
+
+        if shm_size_mb <= 64:
+            logger.warning(
+                "Detected multiple GPUs but /dev/shm size is only %.1f MB. "
+                "RCCL may exhaust shared memory during multi-GPU operations, "
+                "causing runtime failures. Consider increasing /dev/shm size. "
+                "For example in Docker, use: --shm-size=64g",
+                shm_size_mb,
+            )
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.debug("Failed to check /dev/shm size: %s", e)
 
 
 def initialize():
@@ -194,8 +238,13 @@ def initialize():
         logger.warning("rocm_plugin_extension not found")
         return
 
-    if not is_amd_gpu_available():
+    # Count GPUs (stop at 2 since that's all we need to know)
+    gpu_count = count_amd_gpus(stop_at=2)
+
+    if gpu_count == 0:
         raise ValueError("No AMD GPUs were found, skipping ROCm plugin initialization")
+
+    check_shm_size(gpu_count)
 
     options = xla_client.generate_pjrt_gpu_plugin_options()
     options["platform_name"] = "ROCM"
