@@ -88,7 +88,8 @@ jobs:
           # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "ulimit -c 0 && ${{ inputs.test-command }}"
+            --test-cmd "export XLA_FLAGS="--xla_gpu_enable_command_buffer="; \
+                        ulimit -c 0 && ${{ inputs.test-command }}"
       - name: Upload logs to artifact (per-matrix)
         if: always()
         uses: actions/upload-artifact@v4
