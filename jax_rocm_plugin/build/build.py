@@ -399,6 +399,9 @@ async def main():
 
     args = parser.parse_args()
 
+    if args.rbe:
+        args.bazel_startup_options.append("--bazelrc=/jax_rocm_plugin/rbe.bazelrc")
+
     logger.info("%s", BANNER)
 
     if args.verbose:
