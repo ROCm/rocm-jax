@@ -40,6 +40,11 @@ wheel_sources(
 jax_wheel(
     name = "jax_rocm7_plugin_wheel",
     enable_rocm = True,
+    extra_args = [
+        "--xla-commit=",
+        "--jax-commit=",
+        "--rocm_jax_git_hash=",
+    ],
     platform_version = "7",
     source_files = [":rocm_plugin_sources"],
     wheel_binary = "//jaxlib_ext/tools:build_gpu_kernels_wheel",
@@ -65,6 +70,11 @@ wheel_sources(
 jax_wheel(
     name = "jax_rocm7_pjrt_wheel",
     enable_rocm = True,
+    extra_args = [
+        "--xla-commit=",
+        "--jax-commit=",
+        "--rocm_jax_git_hash=",
+    ],
     no_abi = True,
     platform_version = "7",
     source_files = [":rocm_pjrt_sources"],
