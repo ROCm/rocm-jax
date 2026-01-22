@@ -172,8 +172,6 @@ def build_plugin_wheel(
         "--use_clang=%s" % use_clang,
         "--verbose",
         "--output_path=%s" % output_dir,
-        # Use roctracer (v1) instead of rocprofiler-sdk (v3) for profiling.
-        "--bazel_options=--define=xla_rocm_profiler=v1",
     ]
 
     # Add clang path if clang is used.
