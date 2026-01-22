@@ -25,7 +25,7 @@ jobs:
             runner-label: "linux-x86-64-1gpu-amd"
           - rocm-version: "7.2.0"
             rocm-build-job: "compute-rocm-dkms-no-npi-hipclang"
-            # rocm-build-num auto-fetched from Jenkins (latest successful build)
+            rocm-build-num: "16885"
             runner-label: "internal"
     steps:
       - name: Clean up old runs
