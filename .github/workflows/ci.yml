@@ -42,7 +42,6 @@ jobs:
   run-python-unit-tests:
     needs: call-build-docker
     runs-on: "linux-x86-64-1gpu-amd"
-    timeout-minutes: 60
     strategy:
       matrix:
         rocm-version: ["7.1.0"]
