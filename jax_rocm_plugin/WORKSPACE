@@ -160,22 +160,3 @@ load(
 )
 
 nccl_configure(name = "local_config_nccl")
-
-# ROCm PJRT wheel repository - aliases to the pjrt wheel built in this workspace
-local_repository(
-    name = "jax_rocm_pjrt",
-    path = "third_party/jax_rocm_plugin",
-)
-
-# ROCm plugin wheel repositories for on-the-fly wheel builds
-# These provide :whl targets expected by @jax//jaxlib/tools:rocm_plugin_kernels_wheel
-# and @jax//jaxlib/tools:rocm_plugin_pjrt_wheel
-local_repository(
-    name = "pypi_jax_rocm7_plugin",
-    path = "third_party/pypi_jax_rocm7_plugin",
-)
-
-local_repository(
-    name = "pypi_jax_rocm7_pjrt",
-    path = "third_party/pypi_jax_rocm7_pjrt",
-)

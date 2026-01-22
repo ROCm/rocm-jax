@@ -72,17 +72,6 @@ jax_wheel(
     wheel_name = "jax_rocm7_pjrt",
 )
 
-# Alias for convenience (raw wheel targets)
-alias(
-    name = "pjrt_whl",
-    actual = ":jax_rocm7_pjrt_wheel",
-)
-
-alias(
-    name = "plugin_whl",
-    actual = ":jax_rocm7_plugin_wheel",
-)
-
 # py_import wrappers to provide PyInfo for test dependencies
 py_import(
     name = "jax_rocm7_pjrt_py",
