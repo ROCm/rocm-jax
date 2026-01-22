@@ -22,6 +22,7 @@ import argparse
 import functools
 import os
 import pathlib
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -30,7 +31,7 @@ import tempfile
 from bazel_tools.tools.python.runfiles import runfiles
 from jaxlib_ext.tools import build_utils
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(fromfile_prefix_chars="@")
 parser.add_argument(
     "--output_path",
     default=None,
@@ -38,10 +39,15 @@ parser.add_argument(
     help="Path to which the output wheel should be written. Required.",
 )
 parser.add_argument(
-    "--rocm_jax_git_hash",
+    "--jaxlib_git_hash",
     default="",
-    required=True,
-    help="Git hash. Empty if unknown. Optional.",
+    help="Git hash passed by jax_wheel macro. Empty if unknown.",
+)
+parser.add_argument(
+    "--rocm_jax_git_hash", default="", help="Git hash. Empty if unknown."
+)
+parser.add_argument(
+    "--srcs", action="append", help="Source files (passed by jax_wheel macro, unused)."
 )
 parser.add_argument(
     "--cpu", default=None, required=True, help="Target CPU architecture. Required."
@@ -67,10 +73,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--xla-commit",
-    default="",
-    required=True,
-    help="rocm/xla Git hash. Empty if unknown. Optional.",
+    "--xla-commit", default="", help="rocm/xla Git hash. Empty if unknown."
 )
 
 parser.add_argument(
@@ -88,13 +91,16 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--jax-commit",
-    default="",
-    required=True,
-    help="rocm/jax Git hash. Empty if unknown. Optional.",
+    "--jax-commit", default="", help="rocm/jax Git hash. Empty if unknown."
 )
 
 args = parser.parse_args()
+
+
+def get_rocm_jax_git_hash():
+    """Get git hash, preferring rocm_jax_git_hash, falling back to jaxlib_git_hash."""
+    return args.rocm_jax_git_hash or args.jaxlib_git_hash or ""
+
 
 r = runfiles.Create()
 pyext = "pyd" if build_utils.is_windows() else "so"
@@ -106,11 +112,10 @@ def write_setup_cfg(setup_sources_path, cpu):
     cfg_path = setup_sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
         f.write(f"""[metadata]
-license_files = LICENSE.txt
-
-[bdist_wheel]
-plat_name={tag}
-""")
+                    license_files = LICENSE.txt
+                    [bdist_wheel]
+                    plat_name={tag}
+                 """)
 
 
 def get_xla_commit_hash():
@@ -131,42 +136,82 @@ def get_jax_commit_hash():
     return args.jax_commit
 
 
-def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
+def build_source_map(srcs):
+    """Build a map from basename to full path for source files."""
+    source_map = {}
+    if srcs:
+        for src in srcs:
+            basename = os.path.basename(src)
+            source_map[basename] = src
+    return source_map
+
+
+def copy_from_srcs_or_runfiles(source_map, src_basename, dst_dir, dst_filename=None):
+    """Copy a file from --srcs or fall back to runfiles."""
+    dst_filename = dst_filename or src_basename
+    dst_path = os.path.join(dst_dir, dst_filename)
+    os.makedirs(dst_dir, exist_ok=True)
+
+    # Try --srcs first
+    if src_basename in source_map:
+        shutil.copy(source_map[src_basename], dst_path)
+        return
+
+    # Fall back to runfiles with various prefixes
+    for prefix in ["__main__/", "jax_rocm_plugin/", "jax/", ""]:
+        runfile_path = r.Rlocation(f"{prefix}{src_basename}")
+        if runfile_path and os.path.exists(runfile_path):
+            shutil.copy(runfile_path, dst_path)
+            return
+
+    raise FileNotFoundError(f"Unable to find source file: {src_basename}")
+
+
+# pylint: disable=too-many-locals
+def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, cpu, rocm_version, srcs):
     """Assembles a source tree for the rocm kernel wheel in `sources_path`."""
+    source_map = build_source_map(srcs)
     copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
 
-    copy_runfiles(
-        "__main__/jax_plugins/rocm/plugin_pyproject.toml",
-        dst_dir=wheel_sources_path,
-        dst_filename="pyproject.toml",
+    # Copy pyproject.toml and setup.py
+    copy_from_srcs_or_runfiles(
+        source_map, "plugin_pyproject.toml", wheel_sources_path, "pyproject.toml"
     )
-    copy_runfiles(
-        "__main__/jax_plugins/rocm/plugin_setup.py",
-        dst_dir=wheel_sources_path,
-        dst_filename="setup.py",
+    copy_from_srcs_or_runfiles(
+        source_map, "plugin_setup.py", wheel_sources_path, "setup.py"
     )
+
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
     write_setup_cfg(wheel_sources_path, cpu)
     plugin_dir = wheel_sources_path / f"jax_rocm{rocm_version}_plugin"
+    os.makedirs(plugin_dir, exist_ok=True)
+
     xla_commit_hash = get_xla_commit_hash()
     jax_commit_hash = get_jax_commit_hash()
     build_utils.write_commit_info(
-        plugin_dir, xla_commit_hash, jax_commit_hash, args.rocm_jax_git_hash
+        plugin_dir, xla_commit_hash, jax_commit_hash, get_rocm_jax_git_hash()
     )
-    copy_runfiles(
-        dst_dir=plugin_dir,
-        src_files=[
-            f"jax/jaxlib/rocm/_linalg.{pyext}",
-            f"jax/jaxlib/rocm/_prng.{pyext}",
-            f"jax/jaxlib/rocm/_solver.{pyext}",
-            f"jax/jaxlib/rocm/_sparse.{pyext}",
-            f"jax/jaxlib/rocm/_hybrid.{pyext}",
-            f"jax/jaxlib/rocm/_rnn.{pyext}",
-            f"jax/jaxlib/rocm/_triton.{pyext}",
-            f"jax/jaxlib/rocm/rocm_plugin_extension.{pyext}",
-            "__main__/pjrt/python/version.py",
-        ],
-    )
+
+    # Copy version.py
+    copy_from_srcs_or_runfiles(source_map, "version.py", plugin_dir)
+
+    # Copy shared libraries - these come from @jax//jaxlib/rocm via runfiles
+    so_files = [
+        f"_linalg.{pyext}",
+        f"_prng.{pyext}",
+        f"_solver.{pyext}",
+        f"_sparse.{pyext}",
+        f"_hybrid.{pyext}",
+        f"_rnn.{pyext}",
+        f"_triton.{pyext}",
+        f"rocm_plugin_extension.{pyext}",
+    ]
+    for so_file in so_files:
+        # Try source map first, then runfiles with jax/jaxlib/rocm prefix
+        if so_file in source_map:
+            copy_from_srcs_or_runfiles(source_map, so_file, plugin_dir)
+        else:
+            copy_runfiles(f"jax/jaxlib/rocm/{so_file}", dst_dir=plugin_dir)
 
     # NOTE(mrodden): this is a hack to change/set rpath values
     # in the shared objects that are produced by the bazel build
@@ -214,18 +259,18 @@ sources_path = tmpdir.name
 try:
     os.makedirs(args.output_path, exist_ok=True)
     prepare_wheel_rocm(
-        pathlib.Path(sources_path), cpu=args.cpu, rocm_version=args.platform_version
+        pathlib.Path(sources_path),
+        cpu=args.cpu,
+        rocm_version=args.platform_version,
+        srcs=args.srcs,
     )
     package_name = f"jax rocm{args.platform_version} plugin"
     if args.editable:
         build_utils.build_editable(sources_path, args.output_path, package_name)
     else:
-        git_hash = build_utils.get_githash(args.rocm_jax_git_hash)
+        git_hash = build_utils.get_githash(get_rocm_jax_git_hash())
         build_utils.build_wheel(
-            sources_path,
-            args.output_path,
-            package_name,
-            git_hash=git_hash,
+            sources_path, args.output_path, package_name, git_hash=git_hash
         )
 finally:
     tmpdir.cleanup()

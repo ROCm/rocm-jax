@@ -57,10 +57,10 @@ def copy_file(
 def platform_tag(cpu: str) -> str:
     """Generate platform-specific wheel tag based on CPU architecture."""
     platform_name, cpu_name = {
-        ("Linux", "x86_64"): ("manylinux2014", "x86_64"),
-        ("Linux", "aarch64"): ("manylinux2014", "aarch64"),
+        ("Linux", "x86_64"): ("manylinux_2_27", "x86_64"),
+        ("Linux", "aarch64"): ("manylinux_2_27", "aarch64"),
         ("Linux", "ppc64le"): ("manylinux2014", "ppc64le"),
-        ("Darwin", "x86_64"): ("macosx_10_14", "x86_64"),
+        ("Darwin", "x86_64"): ("macosx_11_0", "x86_64"),
         ("Darwin", "arm64"): ("macosx_11_0", "arm64"),
         ("Windows", "AMD64"): ("win", "amd64"),
     }[(platform.system(), cpu)]
@@ -147,8 +147,7 @@ def update_setup_with_rocm_version(file_dir: pathlib.Path, rocm_version: str):
 def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
     """Write commit hash information into commit_info.py inside `plugin_dir`."""
     os.makedirs(plugin_dir, exist_ok=True)
-    commit_info_content = textwrap.dedent(
-        f"""
+    commit_info_content = textwrap.dedent(f"""
       # auto-generated; do not edit
 
       commits = {{
@@ -156,8 +155,7 @@ def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
           "ROCm/rocm-jax": "{rocm_jax_commit}",
           "jax": "{jax_commit}",
       }}
-  """
-    )
+    """)
 
     commit_info_path = plugin_dir / "commit_info.py"
 
