@@ -7,7 +7,7 @@ name: Llama Performance Benchmarks
 # For JAX 0.8.2: uses wheels and Docker image
 # built from the latest nightly results.
 
-# PS: Ubuntu 24 & ROCm 7.0.2/7.1.0 respectively.
+# PS: Ubuntu 24 & ROCm 7.0.2/7.1.1 respectively.
 
 on:
   schedule:
@@ -43,7 +43,7 @@ jobs:
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
           - jax-version: "0.8.2"
             jaxlib-version: "0.8.2"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm710:nightly"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
     env:
       NVTE_FRAMEWORK: jax
       NVTE_USE_ROCM: 1
@@ -140,11 +140,11 @@ jobs:
           - jax-version: "0.8.2"
             jaxlib-version: "0.8.2"
             model-name: "train_moe"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm710:nightly"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
           - jax-version: "0.8.2"
             jaxlib-version: "0.8.2"
             model-name: "train_dense"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm710:nightly"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v4
@@ -175,7 +175,7 @@ jobs:
                   | max_by(.createdAt)
                   | .databaseId') \
               -R ROCm/rocm-jax \
-              -n plugin_wheels_r7.1.0 \
+              -n plugin_wheels_r7.1.1 \
               -D wheelhouse
             rm -v wheelhouse/*311*
           fi
