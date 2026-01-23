@@ -62,7 +62,7 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     pip3 install \
         "numpy<2" \
         build \
-        wheel \
+        wheel==0.45.1 \
         six \
         auditwheel \
         scipy \
