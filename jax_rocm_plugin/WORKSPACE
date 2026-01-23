@@ -54,6 +54,10 @@ load("//third_party/jax:workspace.bzl", jaxlib_workspace = "repo")
 
 jaxlib_workspace()
 
+load("@jax//third_party/plugins:workspace.bzl", "plugin_wheel_deps_repository")
+
+plugin_wheel_deps_repository(name = "plugin_wheel_deps")
+
 load("@xla//third_party/py:python_init_toolchains.bzl", "python_init_toolchains")
 
 python_init_toolchains()
