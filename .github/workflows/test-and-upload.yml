@@ -31,7 +31,7 @@ on:
 
 jobs:
   run-tests-single:
-    runs-on: ["linux-x86-64-1gpu-amd-gfx942"]
+    runs-on: ["linux-x86-64-1gpu-amd"]
     steps:
       - name: Change owners for cleanup
         run: |
@@ -75,7 +75,7 @@ jobs:
           # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
+            --test-cmd "ulimit -c 0 && python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
       - name: Upload logs to artifact (single)
         if: always()
         uses: actions/upload-artifact@v4
@@ -83,7 +83,7 @@ jobs:
           name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}_single
           path: logs/
   run-tests-multi:
-    runs-on: ["linux-x86-64-4gpu-amd-gfx942"]
+    runs-on: ["linux-x86-64-4gpu-amd"]
     steps:
       - name: Change owners for cleanup
         run: |
@@ -98,7 +98,7 @@ jobs:
           # TODO: Change the repo and ref once we figure out how exactly we're going to
           #       manage tests
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.8.0
+          ref: rocm-jaxlib-v0.8.2
           path: jax
       - name: Apply patches to rocm/jax test repo
         run: |
@@ -127,7 +127,7 @@ jobs:
           # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
+            --test-cmd "ulimit -c 0 && python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
       - name: Upload logs to artifact (multi)
         if: always()
         uses: actions/upload-artifact@v4
