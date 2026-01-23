@@ -67,7 +67,7 @@ jobs:
           docker pull "$IMAGE"
       - name: Run single GPU tests
         env:
-          GPU_COUNT: "8"
+          GPU_COUNT: "1"
           ROCM_VERSION: ${{ inputs.rocm-version }}
           UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
           GITHUB_SHA: ${{ inputs.github-sha }}
@@ -119,7 +119,7 @@ jobs:
           docker pull "$IMAGE"
       - name: Run multi GPU tests
         env:
-          GPU_COUNT: "8"
+          GPU_COUNT: "4"
           ROCM_VERSION: ${{ inputs.rocm-version }}
           UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
           GITHUB_SHA: ${{ inputs.github-sha }}
