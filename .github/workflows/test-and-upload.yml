@@ -159,7 +159,7 @@ jobs:
           ROCM_VERSION: ${{ inputs.rocm-version }}
           UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
           LOGS_DIR: >-
-            logs-${{ inputs.test-id }}_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+            logs-_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
           GITHUB_SHA: ${{ inputs.github-sha }}
           GITHUB_RUN_ID: ${{ inputs.github-run-id }}
           ROCM_BUILD_NUM: ${{ inputs.rocm-build-num }}
