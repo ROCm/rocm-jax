@@ -34,7 +34,6 @@ import select
 import subprocess
 import sys
 
-
 LOG = logging.getLogger(__name__)
 
 
