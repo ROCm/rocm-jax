@@ -1,24 +1,74 @@
+diff --git a/jax/BUILD b/jax/BUILD
+index 0aaed7b61..2a7a368ed 100644
+--- a/jax/BUILD
++++ b/jax/BUILD
+@@ -47,6 +47,7 @@ string_flag(
+         "true",
+         "false",
+         "wheel",
++        "plugin_wheels",
+     ],
+ )
+ 
+@@ -71,6 +72,13 @@ config_setting(
+     },
+ )
+ 
++config_setting(
++    name = "config_build_jaxlib_plugin_wheels",
++    flag_values = {
++        ":build_jaxlib": "plugin_wheels",
++    },
++)
++
+ # The flag controls whether jax should be built by Bazel.
+ # If ":build_jax=true", then jax will be built.
+ # If ":build_jax=false", then jax is not built. It is assumed that the pre-built jax wheel
 diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
-index 28f236783..fac64974a 100644
+index 28f236783..5673146d6 100644
 --- a/jaxlib/jax.bzl
 +++ b/jaxlib/jax.bzl
-@@ -192,10 +192,13 @@ def _gpu_test_deps():
+@@ -173,6 +173,7 @@ def if_building_jaxlib(
+     return select({
+         "//jax:config_build_jaxlib_true": if_building,
+         "//jax:config_build_jaxlib_false": if_not_building,
++        "//jax:config_build_jaxlib_plugin_wheels": [],
+         "//jax:config_build_jaxlib_wheel": [],
+     })
+ 
+@@ -181,6 +182,7 @@ def _cpu_test_deps():
+     return select({
+         "//jax:config_build_jaxlib_true": [],
+         "//jax:config_build_jaxlib_false": ["@pypi//jaxlib"],
++        "//jax:config_build_jaxlib_plugin_wheels": [],
+         "//jax:config_build_jaxlib_wheel": ["//jaxlib/tools:jaxlib_py_import"],
+     })
+ 
+@@ -192,10 +194,21 @@ def _gpu_test_deps():
              "//jaxlib/rocm:gpu_only_test_deps",
              "//jax_plugins:gpu_plugin_only_test_deps",
          ],
 -        "//jax:config_build_jaxlib_false": [
-+        "//jax:config_build_jaxlib_false": if_rocm_is_configured([
++        "//jax:config_build_jaxlib_plugin_wheels": if_rocm_is_configured([
 +            "@jax_rocm_plugin//:pjrt.whl",
 +            "@jax_rocm_plugin//:plugin.whl",
++            "@jax_rocm_plugin//:jaxlib.whl",
 +        ]) + if_cuda_is_configured([
              "//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
              "//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
 -        ],
 +        ]),
++        "//jax:config_build_jaxlib_false": if_rocm_is_configured([
++            "//jaxlib/tools:rocm_plugin_kernels_wheel",
++            "//jaxlib/tools:rocm_plugin_pjrt_wheel",
++        ]) + if_cuda_is_configured([
++            "//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
++            "//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
++        ]),
          "//jax:config_build_jaxlib_wheel": [
              "//jaxlib/tools:jax_cuda_plugin_py_import",
              "//jaxlib/tools:jax_cuda_pjrt_py_import",
-@@ -304,6 +307,7 @@ def jax_multiplatform_test(
+@@ -304,6 +317,7 @@ def jax_multiplatform_test(
              tags = test_tags,
              main = main,
              exec_properties = tf_exec_properties({"tags": test_tags}),
@@ -26,7 +76,7 @@ index 28f236783..fac64974a 100644
          )
  
  def jax_generate_backend_suites(backends = []):
-@@ -438,6 +442,9 @@ def _jax_wheel_impl(ctx):
+@@ -438,6 +452,9 @@ def _jax_wheel_impl(ctx):
      if ctx.attr.skip_gpu_kernels:
          args.add("--skip_gpu_kernels")
  
@@ -36,7 +86,7 @@ index 28f236783..fac64974a 100644
      srcs = []
      for src in ctx.attr.source_files:
          for f in src.files.to_list():
-@@ -483,6 +490,7 @@ _jax_wheel = rule(
+@@ -483,6 +500,7 @@ _jax_wheel = rule(
          "include_cuda_libs": attr.label(default = Label("@local_config_cuda//cuda:include_cuda_libs")),
          "override_include_cuda_libs": attr.label(default = Label("@local_config_cuda//cuda:override_include_cuda_libs")),
          "py_freethreaded": attr.label(default = Label("@rules_python//python/config_settings:py_freethreaded")),
@@ -44,7 +94,7 @@ index 28f236783..fac64974a 100644
      },
      implementation = _jax_wheel_impl,
      executable = False,
-@@ -498,7 +506,8 @@ def jax_wheel(
+@@ -498,7 +516,8 @@ def jax_wheel(
          enable_cuda = False,
          enable_rocm = False,
          platform_version = "",
@@ -54,7 +104,7 @@ index 28f236783..fac64974a 100644
      """Create jax artifact wheels.
  
      Common artifact attributes are grouped within a single macro.
-@@ -514,6 +523,7 @@ def jax_wheel(
+@@ -514,6 +533,7 @@ def jax_wheel(
        enable_rocm: whether to build a rocm wheel
        platform_version: the cuda version to use for the wheel
        source_files: the source files to include in the wheel
@@ -62,7 +112,7 @@ index 28f236783..fac64974a 100644
  
      Returns:
        A wheel file or a wheel directory.
-@@ -540,13 +550,14 @@ def jax_wheel(
+@@ -540,13 +560,14 @@ def jax_wheel(
          }),
          # TODO(kanglan) Add @platforms//cpu:ppc64le once JAX Bazel is upgraded > 6.5.0.
          cpu = select({

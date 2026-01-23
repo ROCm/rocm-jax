@@ -84,22 +84,16 @@ jax_wheel(
 
 # py_import wrappers to provide PyInfo for test dependencies
 py_import(
-    name = "jax_rocm7_pjrt_py",
+    name = "pjrt.whl",
     wheel = ":jax_rocm7_pjrt_wheel",
 )
 
 py_import(
-    name = "jax_rocm7_plugin_py",
+    name = "plugin.whl",
     wheel = ":jax_rocm7_plugin_wheel",
 )
 
-# Wheel aliases expected by @jax//tests (uses dot notation, must provide PyInfo)
-alias(
-    name = "pjrt.whl",
-    actual = ":jax_rocm7_pjrt_py",
-)
-
-alias(
-    name = "plugin.whl",
-    actual = ":jax_rocm7_plugin_py",
+py_import(
+    name = "jaxlib.whl",
+    wheel = "@jax//jaxlib/tools:jaxlib_wheel",
 )
