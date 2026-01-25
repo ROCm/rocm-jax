@@ -15,4 +15,4 @@ WORKDIR /maxtext
 # Explicitly install jax,jaxlib to avoid pip pulling a newer version (e.g. 0.8.1)
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     pip install -r requirements.txt && \
-    pip install jax==0.8.2 && pip freeze
+    pip install jax==0.8.2 jaxlib==0.8.2 && pip freeze
