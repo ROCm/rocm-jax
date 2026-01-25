@@ -42,12 +42,20 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Checkout JAX repo for jaxlib build
+        uses: actions/checkout@v4
+        with:
+          repository: ROCm/jax
+          ref: rocm-jaxlib-v0.8.2
+          path: jax
+
       - name: Build plugin wheels
         run: |
           python3 build/ci_build \
             --compiler clang \
             --python-versions $PYTHON_VERSION \
             --rocm-version $ROCM_VERSION \
+            --jax-source-dir="./jax" \
             dist_wheels
 
       - name: Copy wheels for Docker build context
