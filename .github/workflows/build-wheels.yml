@@ -31,7 +31,7 @@ on:
         description: 'JAX git ref (branch, tag, or commit) to checkout for jaxlib build'
         required: false
         type: string
-        default: 'rocm-jaxlib-v0.8.2'
+        default: 'rocm-jaxlib-v0.9.0'
     secrets:
       rbe_ci_key:
         required: true

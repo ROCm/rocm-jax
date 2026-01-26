@@ -19,7 +19,7 @@ jobs:
   build-and-test:
     env:
       ROCM_VERSION: '7'
-      JAX_VERSION: '0.8.2'
+      JAX_VERSION: '0.9.0'
     runs-on: linux-x86-64-4gpu-amd-gfx942
     strategy:
       fail-fast: false

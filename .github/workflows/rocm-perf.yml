@@ -110,6 +110,8 @@ jobs:
 
       - name: Analyze logs to compute median step time
         run: |
+          python3 -m venv venv
+          source venv/bin/activate
           pip install numpy
           python3 build/analyze_maxtext_logs.py
           cat summary.json
@@ -170,4 +172,4 @@ jobs:
             --python-version "${{ needs.build-and-test-jax-perf.outputs.python_version }}" \
             --rocm-version "${{ needs.build-and-test-jax-perf.outputs.rocm_version }}" \
             --gfx-version gfx942 \
-            --jax-version 0.8.2
+            --jax-version 0.9.0

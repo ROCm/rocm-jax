@@ -1,10 +1,10 @@
 name: Llama Performance Benchmarks
 
 # This workflow runs Llama performance benchmarks
-# using two different JAX versions: 0.6.0 & 0.8.2
+# using two different JAX versions: 0.6.0 & 0.9.0
 # For JAX 0.6.0: uses official released wheels
 # and Docker image.
-# For JAX 0.8.2: uses wheels and Docker image
+# For JAX 0.9.0: uses wheels and Docker image
 # built from the latest nightly results.
 
 # PS: Ubuntu 24 & ROCm 7.0.2/7.1.1 respectively.
@@ -36,13 +36,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        jax-version: ["0.6.0", "0.8.2"]
+        jax-version: ["0.6.0", "0.9.0"]
         include:
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
-          - jax-version: "0.8.2"
-            jaxlib-version: "0.8.2"
+          - jax-version: "0.9.0"
+            jaxlib-version: "0.9.0"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
     env:
       NVTE_FRAMEWORK: jax
@@ -126,7 +126,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        jax-version: ["0.6.0", "0.8.2"]
+        jax-version: ["0.6.0", "0.9.0"]
         model-name: ["train_moe", "train_dense"]
         include:
           - jax-version: "0.6.0"
@@ -137,12 +137,12 @@ jobs:
             jaxlib-version: "0.6.0"
             model-name: "train_dense"
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
-          - jax-version: "0.8.2"
-            jaxlib-version: "0.8.2"
+          - jax-version: "0.9.0"
+            jaxlib-version: "0.9.0"
             model-name: "train_moe"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
-          - jax-version: "0.8.2"
-            jaxlib-version: "0.8.2"
+          - jax-version: "0.9.0"
+            jaxlib-version: "0.9.0"
             model-name: "train_dense"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
     steps:
@@ -269,7 +269,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        jax-version: ["0.6.0", "0.8.2"]
+        jax-version: ["0.6.0", "0.9.0"]
         model-name: ["train_moe", "train_dense"]
     steps:
       - name: Checkout plugin repo

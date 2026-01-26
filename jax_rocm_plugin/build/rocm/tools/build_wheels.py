@@ -361,8 +361,8 @@ def fix_wheel(path, jax_path):
 
 def is_release_jaxlib(filename):
     """Check if wheel is a release jaxlib wheel (not selfbuilt)."""
-    # e.g. jaxlib-0.8.2-cp312-....whl (release)
-    # reject jaxlib-0.8.2.dev0+selfbuilt-cp312-....whl
+    # e.g. jaxlib-0.9.0-cp312-....whl (release)
+    # reject jaxlib-0.9.0.dev0+selfbuilt-cp312-....whl
     return filename.startswith("jaxlib-") and "+selfbuilt" not in filename
 
 

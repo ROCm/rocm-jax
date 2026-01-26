@@ -59,7 +59,7 @@ jobs:
           # TODO: Change the repo and ref once we figure out how exactly we're going to
           #       manage tests
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.8.2
+          ref: rocm-jaxlib-v0.9.0
           path: jax
       - name: Apply patches to rocm/jax test repo
         run: |

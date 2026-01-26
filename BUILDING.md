@@ -136,7 +136,7 @@ python3 build/ci_build test $TEST_IMAGE --test-cmd "pytest jax_rocm_plugin/tests
 We keep unit tests in the `rocm/jax` repository, and you'll need to clone it
 to run the regular JAX unit tests with ROCm,
 ```shell
-git clone --depth 1 --branch rocm-jaxlib-v0.8.2 git@github.com:ROCm/jax.git
+git clone --depth 1 --branch rocm-jaxlib-v0.9.0 git@github.com:ROCm/jax.git
 # Each release of the ROCm plugin has a corresponding branch. You can find
 # more at https://github.com/ROCm/rocm-jax/branches/all?query=rocm-jaxlib
 
