@@ -37,9 +37,9 @@ py_binary(
     deps = [
         "build_utils",
         "@bazel_tools//tools/python/runfiles",
-        "@pypi_build//:pkg",
-        "@pypi_setuptools//:pkg",
-        "@pypi_wheel//:pkg",
+        "@pypi//build:pkg",
+        "@pypi//setuptools:pkg",
+        "@pypi//wheel:pkg",
     ],
 )
 

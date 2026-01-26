@@ -34,8 +34,7 @@ bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
     -- \
     --jaxlib_git_hash="this lib is built as a part of jax_rocm_plugin build using commit [${GIT_HASH}], please check third_party jax dependency" \
     --output_path="${WHEELHOUSE}" \
-    --cpu=x86_64 \
-    --build_from_external_workspace
+    --cpu=x86_64
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
     --config=rocm \
