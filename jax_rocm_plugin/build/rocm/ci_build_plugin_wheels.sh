@@ -28,6 +28,7 @@ ROCM_VERSION=${args['--rocm_version']}
 GIT_HASH=${args['--git_hash']}
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
+    --config=bzlmod \
     --config=rocm \
     "${BAZEL_ARGS[@]}" \
     @jax//jaxlib/tools:build_wheel_tool \
@@ -37,6 +38,7 @@ bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
     --cpu=x86_64
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
+    --config=bzlmod \
     --config=rocm \
     "${BAZEL_ARGS[@]}" \
     //pjrt/tools:build_gpu_plugin_wheel \
@@ -48,6 +50,7 @@ bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
     --rocm_jax_git_hash=${GIT_HASH}
 
 bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
+    --config=bzlmod \
     --config=rocm \
     "${BAZEL_ARGS[@]}" \
     //jaxlib_ext/tools:build_gpu_kernels_wheel \

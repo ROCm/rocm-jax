@@ -101,6 +101,9 @@ build:rocm --copt=-Qunused-arguments
 build:rocm --action_env=TF_HIPCC_CLANG="1"
 
 
+common:bzlmod --enable_bzlmod --noenable_workspace
+common:bzlmod --check_direct_dependencies=error
+
 #############################################################################
 # Configuration for running RBE builds and tests
 #############################################################################
