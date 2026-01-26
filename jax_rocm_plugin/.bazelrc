@@ -4,6 +4,10 @@
 # Bzlmod enabled - JAX and XLA from upstream via MODULE.bazel
 common --enable_bzlmod
 
+common:bzlmod --enable_bzlmod 
+common:bzlmod --noenable_workspace
+common:bzlmod --check_direct_dependencies=error
+
 # Make Bazel print out all options from rc files.
 common --announce_rc
 
@@ -99,10 +103,6 @@ build:rocm --action_env=CLANG_COMPILER_PATH="/usr/lib/llvm-18/bin/clang"
 build:rocm --copt=-Wno-gnu-offsetof-extensions
 build:rocm --copt=-Qunused-arguments
 build:rocm --action_env=TF_HIPCC_CLANG="1"
-
-
-common:bzlmod --enable_bzlmod --noenable_workspace
-common:bzlmod --check_direct_dependencies=error
 
 #############################################################################
 # Configuration for running RBE builds and tests
