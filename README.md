@@ -16,7 +16,7 @@ Nightly Docker images are kept in the Github Container Registry
 
 ```shell
 echo <MY_GITHUB_ACCESS_TOKEN> | docker login ghcr.io -u <USERNAME> --password-stdin
-docker pull ghcr.io/rocm/jax-ubu24.rocm70:nightly
+docker pull ghcr.io/rocm/jax-ubu24.rocm700:nightly
 ```
 
 You can also find nightly images for other Ubuntu versions and ROCm version as well as older nightly images on the [packages page](https://github.com/orgs/ROCm/packages?repo_name=rocm-jax). Images get tagged with the git commit hash of the commit that the image was built from.
