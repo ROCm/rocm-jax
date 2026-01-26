@@ -21,39 +21,48 @@ ARG ROCM_JAX_COMMIT
 ARG PLUGIN_NAMESPACE
 
 
+# Install common dependencies for all Python versions
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
-    pip3 install --break-system-packages \
-        "numpy<2" \
-        build \
-        wheel \
-        six \
-        auditwheel \
-        scipy \
-        pytest \
-        pytest-html \
-        pytest_html_merger \
-        pytest-reportlog \
-        pytest-rerunfailures \
-        pytest-json-report \
-        cloudpickle \
-        portpicker \
-        matplotlib \
-        absl-py \
-        flatbuffers \
-        hypothesis
+    for py in python3.11 python3.12 python3.13 python3.14; do \
+        $py -m pip install --break-system-packages \
+            "numpy<2" \
+            build \
+            wheel \
+            six \
+            auditwheel \
+            scipy \
+            pytest \
+            pytest-html \
+            pytest_html_merger \
+            pytest-reportlog \
+            pytest-rerunfailures \
+            pytest-json-report \
+            cloudpickle \
+            portpicker \
+            matplotlib \
+            absl-py \
+            flatbuffers \
+            hypothesis; \
+    done
 
-# install jax and jaxlib from requirements file
+# Install jax and jaxlib from requirements file for all Python versions
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=build/requirements.txt,target=requirements.txt \
-    pip3 install --break-system-packages -r requirements.txt
+    for py in python3.11 python3.12 python3.13 python3.14; do \
+        $py -m pip install --break-system-packages -r requirements.txt; \
+    done
 
 LABEL com.amdgpu.jax_version="$JAX_VERSION" \
       com.amdgpu.jax_commit="$JAX_COMMIT" \
       com.amdgpu.xla_commit="$XLA_COMMIT" \
-      com.amdgpu.rocm_jax_commit="$ROCM_JAX_COMMIT"
+      com.amdgpu.rocm_jax_commit="$ROCM_JAX_COMMIT" \
+      com.amdgpu.python_versions="3.11,3.12,3.13,3.14"
 
+# Install ROCm JAX wheels for all Python versions
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=wheelhouse,target=/wheelhouse \
     ls -lah /wheelhouse && \
-    pip3 install -f /wheelhouse --no-deps --no-index "jax_rocm${PLUGIN_NAMESPACE}_plugin" "jax_rocm${PLUGIN_NAMESPACE}_pjrt" && \
-    pip3 install -f /wheelhouse --no-deps --no-index --force-reinstall "jaxlib"
+    for py in python3.11 python3.12 python3.13 python3.14; do \
+        $py -m pip install -f /wheelhouse --no-deps --no-index "jax_rocm${PLUGIN_NAMESPACE}_plugin" "jax_rocm${PLUGIN_NAMESPACE}_pjrt" && \
+        $py -m pip install -f /wheelhouse --no-deps --no-index --force-reinstall "jaxlib"; \
+    done
