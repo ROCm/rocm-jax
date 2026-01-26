@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-test-jax-perf:
-    runs-on: "linux-x86-64-4gpu-amd"
+    runs-on: "linux-x86-64-8gpu-amd"
     strategy:
       matrix:
         python-version: ["3.12"]
@@ -118,7 +118,7 @@ jobs:
 
       - name: Analyze logs to compute median step time
         run: |
-          pip install numpy
+          pip install numpy --break-system-packages
           python3 build/analyze_maxtext_logs.py
           cat summary.json
 
