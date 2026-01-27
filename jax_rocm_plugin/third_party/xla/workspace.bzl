@@ -1,3 +1,8 @@
+# Copyright 2024 The JAX Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #     https://www.apache.org/licenses/LICENSE-2.0
 #
@@ -7,36 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# XLA commit info - synced from upstream JAX's MODULE.bazel
+# When using bzlmod (default), XLA is loaded via MODULE.bazel
+# This file provides commit info for build scripts and WORKSPACE fallback
+
 # buildifier: disable=module-docstring
-load("//third_party:repo.bzl", "amd_http_archive")
+load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
 
-# To update XLA to a new revision,
-# a) update XLA_COMMIT to the new git commit hash
-# b) get the sha256 hash of the commit by running:
-#    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
-#    and update XLA_SHA256 with the result.
-
-XLA_COMMIT = "24c5f10ae8fc24aefd20b43c501ade7f66fd0cfd"
-XLA_SHA256 = "f00db8761e86bcb51b52e64bc983717181050c8752c040e33ecb1429d861c30b"
+# Synced from upstream JAX MODULE.bazel
+XLA_COMMIT = "ed953c01bb51f95a36abd907d1a64295feef16fc"
+XLA_SHA256 = "16699cad982783cdcb68e1e7b98a539a8baa7107428798dbb74b6751041d8fd8"
 
 def repo():
-    amd_http_archive(
+    """Define the XLA repository for WORKSPACE builds (legacy --noenable_bzlmod)."""
+    tf_http_archive(
         name = "xla",
         sha256 = XLA_SHA256,
         strip_prefix = "xla-{commit}".format(commit = XLA_COMMIT),
-        urls = ["https://github.com/ROCm/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)],
-        patch_file = [],
+        urls = tf_mirror_urls("https://github.com/openxla/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
     )
-
-    # For development, one often wants to make changes to the TF repository as well
-    # as the JAX repository. You can override the pinned repository above with a
-    # local checkout by either:
-    # a) overriding the TF repository on the build.py command line by passing a flag
-    #    like:
-    #    python build/build.py build --local_xla_path=/path/to/xla
-    #    or
-    # b) by commenting out the http_archive above and uncommenting the following:
-    # local_repository(
-    #    name = "xla",
-    #    path = "/path/to/xla",
-    # )
