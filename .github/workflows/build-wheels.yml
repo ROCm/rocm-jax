@@ -87,8 +87,7 @@ jobs:
             --rocm-build-job="${{ inputs.rocm-build-job }}" \
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
             --jax-source-dir="./jax" \
-            dist_wheels \
-            --rbe
+            dist_wheels
       - name: Archive plugin wheels
         uses: actions/upload-artifact@v4
         with:
