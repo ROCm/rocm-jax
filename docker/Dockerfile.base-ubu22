@@ -8,7 +8,7 @@ ARG GPU_DEVICE_TARGETS="gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1
 # The ROCm version to be used inside the container.
 ARG ROCM_VERSION
 # The installation path for ROCm.
-ARG ROCM_PATH=/opt/rocm-${ROCM_VERSION}
+ARG ROCM_PATH=/opt/rocm
 # The ROCm build job ID for pre-release installations.
 ARG ROCM_BUILD_JOB
 # The ROCm build number for pre-release installations.
@@ -74,8 +74,8 @@ RUN --mount=type=cache,target=/var/cache/apt   \
 ENV GPU_DEVICE_TARGETS=${GPU_DEVICE_TARGETS}
 ENV ROCM_PATH=${ROCM_PATH}
 ENV PATH="$PATH:/opt/rocm/bin:/opt/rocm/llvm/bin"
-ENV LD_LIBRARY_PATH="/opt/rocm-${ROCM_VERSION}/lib:${LD_LIBRARY_PATH}"
-ENV LLVM_PATH="/opt/rocm-${ROCM_VERSION}/llvm"
+ENV LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH}"
+ENV LLVM_PATH="/opt/rocm/llvm"
 
 ENV HCC_HOME="$ROCM_PATH/hcc"
 ENV HIP_PATH="$ROCM_PATH/"
