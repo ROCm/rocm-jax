@@ -118,10 +118,13 @@ jobs:
             echo "Running $model_name"
             if [[ "$model_name" == "mixtral_8x1b" ]]; then
               docker exec maxtext_container bash -c \
-                "export XLA_PYTHON_CLIENT_MEM_FRACTION=0.95 && \
+                "export XLA_FLAGS='--xla_gpu_enable_nccl_comm_splitting=false' && \
+                export XLA_PYTHON_CLIENT_MEM_FRACTION=0.95 && \
                 python3 -m MaxText.train $config" | tee logs_${model_name}.log
             else
-              docker exec maxtext_container bash -c "python3 -m MaxText.train $config" \
+              docker exec maxtext_container bash -c \
+                "export XLA_FLAGS='--xla_gpu_enable_nccl_comm_splitting=false' && \
+                python3 -m MaxText.train $config" \
                 | tee logs_${model_name}.log
             fi
           done
