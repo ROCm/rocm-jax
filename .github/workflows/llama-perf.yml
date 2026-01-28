@@ -208,7 +208,7 @@ jobs:
           echo "jax_rocm7_plugin @ file:///workspace/wheelhouse/$PLUGIN_BASE"
           echo "transformer_engine @ file:///workspace/wheelhouse/$TE_BASE"
           } >> kylix/third_party/requirements.lock
-          sed -i '11,35s/^/#/' bazel_run_anynode.sh
+          sed -i '11,36s/^/#/' bazel_run_anynode.sh
           sed -i '/^TRAIN_SETTING/s/^/# /' bazel_run_anynode.sh
           sed -i '/pip/s/^/#/' kylix/third_party/requirements.lock
           sed -i '/orbax-checkpoint/ s/^/# /' kylix/third_party/requirements.lock
@@ -246,11 +246,13 @@ jobs:
             BIN_URL="https://github.com/bazelbuild/bazelisk/releases/download/"
             wget -O /usr/local/bin/bazel "$BIN_URL/v1.26.0/bazelisk-linux-amd64"
             chmod +x /usr/local/bin/bazel
+            echo "8.5.0" > /workspace/.bazelversion
+            cd /workspace
             bazel version
             apt update && apt install -y libglib2.0-0
             export EXECUTOR="base_executor_config"
             export TRAIN_SETTING="${{ matrix.model-name }}"
-            cd /workspace && bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
+            bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
             tail -n 25 logs.log > training_summary.txt'
       - name: Upload training summary
         uses: actions/upload-artifact@v4
