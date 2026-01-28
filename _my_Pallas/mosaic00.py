@@ -43,7 +43,7 @@ class OpsTest(PallasBaseTest):
         x_shape_dtype: jax.ShapeDtypeStruct = jax.ShapeDtypeStruct((128,), jnp.float32),
         y_dtype: jnp.dtype = jnp.bool_,
         atol=0,
-        rtol=0
+        rtol=0,
     ):
         def kernel(x_ref, y_ref):
             y_ref[...] = func(x_ref[...])
@@ -72,16 +72,19 @@ class OpsTest(PallasBaseTest):
 
 if __name__ == "__main__":
     test = OpsTest()
-    shape = (256,)
+    shape = (256 * 2,)
+    # note, when shape is WARPGROUP_SIZE*3, there'll be an assertion failure in fragmented_array.py's
+    # WGStridedFragLayout initialization, which most likely would happen on NVIDIA also. Likely
+    # an upstream bug, that I'm not going to touch.
 
-    do_profile = False
+    do_profile = False # profiling works with Mosaic also, at least on the surphase.
     if do_profile:
         out_dir = os.getcwd() + f"/results/mosaic00"
         print(f"Profiling to {out_dir}")
         jax.profiler.start_trace(out_dir)
 
     # test.test_func(lambda x: 1+x, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32)
-    # test.test_func(jnp.exp2, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32)
+    #test.test_func(jnp.exp2, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32)
     test.test_func(jnp.tanh, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32, atol=1e-6)
 
     if do_profile:
