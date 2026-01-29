@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   build-te-wheels:
-    runs-on: linux-mi355-1
+    runs-on: linux-mi355-8
     outputs:
       runner_label: ${{ steps.arch.outputs.label }}
       te_commit_sha: ${{ steps.tsha.outputs.hash }}
