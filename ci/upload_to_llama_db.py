@@ -19,6 +19,18 @@ def connect_to_db():
     )
 
 
+def detect_dataset(metrics: dict) -> str:
+    """
+    Detect dataset name from metric keys.
+    Example key: 'mnist/ar_softmax_cross_entropy/text/loss'
+    """
+    for k in metrics.keys():
+        k = str(k)
+        if "/" in k:
+            return k.split("/", 1)[0]
+    raise ValueError("Dataset name could not be detected from metrics keys")
+
+
 # pylint: disable=too-many-locals
 def upload_llama_results():
     """Load training summary results results to MySQL."""
@@ -46,19 +58,13 @@ def upload_llama_results():
                     dict_str = line[colon_idx + 1 :].strip()
                     metrics = ast.literal_eval(dict_str)
 
-                    loss_text = metrics.get("mnist/ar_softmax_cross_entropy/text/loss")
-                    loss_token = metrics.get(
-                        "mnist/ar_softmax_cross_entropy/text/token_id/loss"
-                    )
-                    total_loss = metrics.get(
-                        "mnist/ar_softmax_cross_entropy/total_loss"
-                    )
-                    acc_top1 = (
-                        metrics.get(
-                            "mnist/ar_softmax_cross_entropy/text/token_id/accuracy"
-                        )
-                        or {}
-                    ).get("top_1", 0.0)
+                    dataset = detect_dataset(metrics)
+                    base = f"{dataset}/ar_softmax_cross_entropy"
+                    loss_text = metrics.get(f"{base}/text/loss")
+                    loss_token = metrics.get(f"{base}/text/token_id/loss")
+                    total_loss = metrics.get(f"{base}/total_loss")
+                    acc = metrics.get(f"{base}/text/token_id/accuracy", {})
+                    acc_top1 = acc.get("top_1", 0.0)
                     learning_rate = metrics.get("learning_rate", 0.0)
 
                     row = (
