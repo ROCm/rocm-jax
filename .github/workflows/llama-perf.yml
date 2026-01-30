@@ -258,6 +258,9 @@ jobs:
             apt update && apt install -y libglib2.0-0
             export EXECUTOR="base_executor_config"
             export TRAIN_SETTING="${{ matrix.model-name }}"
+            export XLA_FLAGS="--xla_gpu_enable_latency_hiding_scheduler=True \
+                              --xla_gpu_enable_triton_gemm=False --xla_gpu_enable_cublaslt=True \
+                              --xla_gpu_enable_command_buffer='' --xla_gpu_autotune_level=4"
             bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
             tail -n 25 logs.log > training_summary.txt'
       - name: Upload training summary
