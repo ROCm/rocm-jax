@@ -11,7 +11,7 @@ die() {
 
 python3 build/ci_build \
     --rocm-version 7.2.0 \
-    --python-versions 3.12 \
+    --python-versions 3.11,3.12,3.13,3.14 \
     --compiler clang dist_wheels \
     || die "jax_rocm_plugin wheel build failed"
 
@@ -28,7 +28,7 @@ python3 build/ci_build \
 
 
 python3 build/ci_build \
-    test jax-ubu22.rocm7100 \
+    test jax-ubu24.rocm720 \
     || die "failure during integration tests"
 
 
