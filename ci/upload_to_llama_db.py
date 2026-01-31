@@ -169,5 +169,5 @@ def parse_args():
 
 
 if __name__ == "__main__":
-    cli_args = parse_args()
-    upload_llama_results(cli_args)
+    args = parse_args()
+    upload_llama_results(args)
