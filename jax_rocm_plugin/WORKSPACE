@@ -1,3 +1,5 @@
+workspace(name = "jax_rocm_plugin")
+
 # The XLA commit is determined by third_party/xla/workspace.bzl.
 load("//third_party/xla:workspace.bzl", jax_xla_workspace = "repo")
 
@@ -39,18 +41,22 @@ python_init_repositories(
     ],
     local_wheel_workspaces = ["@jax//jaxlib:jax.bzl"],
     requirements = {
-        "3.11": "//build:requirements_lock_3_11.txt",
-        "3.12": "//build:requirements_lock_3_12.txt",
-        "3.13": "//build:requirements_lock_3_13.txt",
-        "3.14": "//build:requirements_lock_3_14.txt",
-        "3.13-ft": "//build:requirements_lock_3_13_ft.txt",
-        "3.14-ft": "//build:requirements_lock_3_14_ft.txt",
+        "3.11": "@jax//build:requirements_lock_3_11.txt",
+        "3.12": "@jax//build:requirements_lock_3_12.txt",
+        "3.13": "@jax//build:requirements_lock_3_13.txt",
+        "3.14": "@jax//build:requirements_lock_3_14.txt",
+        "3.13-ft": "@jax//build:requirements_lock_3_13_ft.txt",
+        "3.14-ft": "@jax//build:requirements_lock_3_14_ft.txt",
     },
 )
 
 load("//third_party/jax:workspace.bzl", jaxlib_workspace = "repo")
 
 jaxlib_workspace()
+
+load("@jax//third_party/plugins:workspace.bzl", "plugin_wheel_deps_repository")
+
+plugin_wheel_deps_repository(name = "plugin_wheel_deps")
 
 load("@xla//third_party/py:python_init_toolchains.bzl", "python_init_toolchains")
 

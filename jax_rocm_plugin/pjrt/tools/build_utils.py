@@ -57,10 +57,10 @@ def copy_file(
 def platform_tag(cpu: str) -> str:
     """Generate platform-specific wheel tag based on CPU architecture."""
     platform_name, cpu_name = {
-        ("Linux", "x86_64"): ("manylinux2014", "x86_64"),
-        ("Linux", "aarch64"): ("manylinux2014", "aarch64"),
+        ("Linux", "x86_64"): ("manylinux_2_27", "x86_64"),
+        ("Linux", "aarch64"): ("manylinux_2_27", "aarch64"),
         ("Linux", "ppc64le"): ("manylinux2014", "ppc64le"),
-        ("Darwin", "x86_64"): ("macosx_10_14", "x86_64"),
+        ("Darwin", "x86_64"): ("macosx_11_0", "x86_64"),
         ("Darwin", "arm64"): ("macosx_11_0", "arm64"),
         ("Windows", "AMD64"): ("win", "amd64"),
     }[(platform.system(), cpu)]
