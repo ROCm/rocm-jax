@@ -34,7 +34,7 @@ def detect_dataset(metrics: dict) -> str:
 
 # pylint: disable=too-many-statements, too-many-locals
 def upload_llama_results(cli_args):
-    """Load training summary results results to MySQL."""
+    """Load training summary results to MySQL."""
     rows = []
     year = date.today().year
 
@@ -105,17 +105,17 @@ def upload_llama_results(cli_args):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
-                args.github_run_id,
-                args.run_tag,
-                args.model_name,
-                args.te_commit,
-                args.jax_version,
-                args.rocm_version,
-                args.python_version,
-                args.runner_label,
-                args.github_ref,
-                args.trig_event,
-                args.actor_name,
+                cli_args.github_run_id,
+                cli_args.run_tag,
+                cli_args.model_name,
+                cli_args.te_commit,
+                cli_args.jax_version,
+                cli_args.rocm_version,
+                cli_args.python_version,
+                cli_args.runner_label,
+                cli_args.github_ref,
+                cli_args.trig_event,
+                cli_args.actor_name,
             ),
         )
 
