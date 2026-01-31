@@ -33,7 +33,7 @@ def detect_dataset(metrics: dict) -> str:
 
 
 # pylint: disable=too-many-statements, too-many-locals
-def upload_llama_results(args):
+def upload_llama_results(cli_args):
     """Load training summary results results to MySQL."""
     rows = []
     year = date.today().year
@@ -143,7 +143,8 @@ def upload_llama_results(args):
             cnx.close()
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args():
+    """Parse CLI arguments."""
     p = argparse.ArgumentParser(
         description="Upload LLAMA training summary metrics to MySQL"
     )
@@ -168,5 +169,5 @@ def parse_args() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    upload_llama_results(args)
+    cli_args = parse_args()
+    upload_llama_results(cli_args)
