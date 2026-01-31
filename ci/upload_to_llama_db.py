@@ -1,8 +1,9 @@
 """Upload Llama training summary results to MySQL database."""
 
-import os
+import argparse
 import ast
 import json
+import os
 from datetime import date
 
 # pylint: disable=import-error
@@ -31,8 +32,8 @@ def detect_dataset(metrics: dict) -> str:
     raise ValueError("Dataset name could not be detected from metrics keys")
 
 
-# pylint: disable=too-many-locals
-def upload_llama_results():
+# pylint: disable=too-many-statements, too-many-locals
+def upload_llama_results(args):
     """Load training summary results results to MySQL."""
     rows = []
     year = date.today().year
@@ -104,17 +105,17 @@ def upload_llama_results():
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
-                int(os.environ["GITHUB_RUN"]),
-                "ci-run",
-                os.environ["MODEL_NAME"],
-                os.environ["TE_COMMIT_SHA"],
-                os.environ["JAX_VERSION"],
-                "702",
-                "312",
-                os.environ["RUNNER_LABEL"],
-                os.environ["GITHUB_REF"],
-                os.environ["TRIG_EVENT"],
-                os.environ["ACTOR_NAME"],
+                args.github_run_id,
+                args.run_tag,
+                args.model_name,
+                args.te_commit,
+                args.jax_version,
+                args.rocm_version,
+                args.python_version,
+                args.runner_label,
+                args.github_ref,
+                args.trig_event,
+                args.actor_name,
             ),
         )
 
@@ -142,5 +143,30 @@ def upload_llama_results():
             cnx.close()
 
 
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        description="Upload LLAMA training summary metrics to MySQL"
+    )
+
+    p.add_argument("--run-tag", required=True, help="Run tag, e.g. ci-run")
+    p.add_argument("--model-name", required=True, help="Model/workload, e.g. train_moe")
+    p.add_argument("--te-commit", required=True, help="TE commit SHA, e.g. abc1234")
+    p.add_argument("--jax-version", required=True, help="JAX version, e.g. 060")
+    p.add_argument("--rocm-version", required=True, help="ROCm version, e.g. 720")
+    p.add_argument("--python-version", required=True, help="Python version, e.g. 312")
+    p.add_argument(
+        "--github-run-id",
+        required=True,
+        type=int,
+        help="Actions run id, e.g. 123456789",
+    )
+    p.add_argument("--github-ref", required=True, help="Git ref, e.g. master")
+    p.add_argument("--trig-event", required=True, help="Trigger, e.g. schedule")
+    p.add_argument("--actor-name", required=True, help="Actor, e.g. user_a")
+    p.add_argument("--runner-label", required=True, help="Runner label, e.g. MI355")
+    return p.parse_args()
+
+
 if __name__ == "__main__":
-    upload_llama_results()
+    args = parse_args()
+    upload_llama_results(args)
