@@ -1,9 +1,9 @@
 """Upload Llama training summary results to MySQL database."""
 
+import os
 import argparse
 import ast
 import json
-import os
 from datetime import date
 
 # pylint: disable=import-error
