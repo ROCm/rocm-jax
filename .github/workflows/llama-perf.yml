@@ -133,20 +133,12 @@ jobs:
       max-parallel: 1
       matrix:
         jax-version: ["0.6.0", "0.8.2"]
-        model-name: ["train_moe", "train_dense"]
+        model-name: ["train_dense"]
         include:
-          - jax-version: "0.6.0"
-            model-name: "train_moe"
-            jaxlib-version: "0.6.0"
-            docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
           - jax-version: "0.6.0"
             model-name: "train_dense"
             jaxlib-version: "0.6.0"
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
-          - jax-version: "0.8.2"
-            model-name: "train_moe"
-            jaxlib-version: "0.8.2"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
           - jax-version: "0.8.2"
             model-name: "train_dense"
             jaxlib-version: "0.8.2"
@@ -282,16 +274,8 @@ jobs:
       matrix:
         include:
           - jax-version: "0.6.0"
-            model-name: "train_moe"
-            rocm-version: "7.0.2"
-            python-version: "3.12"
-          - jax-version: "0.6.0"
             model-name: "train_dense"
             rocm-version: "7.0.2"
-            python-version: "3.12"
-          - jax-version: "0.8.2"
-            model-name: "train_moe"
-            rocm-version: "7.1.1"
             python-version: "3.12"
           - jax-version: "0.8.2"
             model-name: "train_dense"

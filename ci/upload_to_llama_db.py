@@ -20,23 +20,14 @@ def connect_to_db():
     )
 
 
-def detect_dataset(metrics: dict) -> str:
-    """
-    Detect dataset name from metric keys.
-    Example key: 'mnist/ar_softmax_cross_entropy/text/loss'
-    """
-    for k in metrics.keys():
-        k = str(k)
-        if "/" in k:
-            return k.split("/", 1)[0]
-    raise ValueError("Dataset name could not be detected from metrics keys")
-
-
 # pylint: disable=too-many-statements, too-many-locals
 def upload_llama_results(cli_args):
     """Load training summary results to MySQL."""
     rows = []
     year = date.today().year
+
+    dataset = None
+    base = None
 
     try:
         with open("training_summary.txt", "r", encoding="utf-8", errors="ignore") as f:
@@ -59,8 +50,11 @@ def upload_llama_results(cli_args):
                     dict_str = line[colon_idx + 1 :].strip()
                     metrics = ast.literal_eval(dict_str)
 
-                    dataset = detect_dataset(metrics)
-                    base = f"{dataset}/ar_softmax_cross_entropy"
+                    if base is None:
+                        first_key = list(metrics.keys())[0]
+                        dataset = first_key.split("/", 1)[0]
+                        base = f"{dataset}/ar_softmax_cross_entropy"
+
                     loss_text = metrics.get(f"{base}/text/loss")
                     loss_token = metrics.get(f"{base}/text/token_id/loss")
                     total_loss = metrics.get(f"{base}/total_loss")
