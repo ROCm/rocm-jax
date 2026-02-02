@@ -133,23 +133,15 @@ jobs:
       max-parallel: 1
       matrix:
         jax-version: ["0.6.0", "0.8.2"]
-        model-name: ["train_moe", "train_dense"]
+        model-name: ["train_dense"]
         include:
           - jax-version: "0.6.0"
-            jaxlib-version: "0.6.0"
-            model-name: "train_moe"
-            docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
-          - jax-version: "0.6.0"
-            jaxlib-version: "0.6.0"
             model-name: "train_dense"
+            jaxlib-version: "0.6.0"
             docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
           - jax-version: "0.8.2"
-            jaxlib-version: "0.8.2"
-            model-name: "train_moe"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
-          - jax-version: "0.8.2"
-            jaxlib-version: "0.8.2"
             model-name: "train_dense"
+            jaxlib-version: "0.8.2"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
     steps:
       - name: Checkout source repo
@@ -280,8 +272,15 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        jax-version: ["0.6.0", "0.8.2"]
-        model-name: ["train_moe", "train_dense"]
+        include:
+          - jax-version: "0.6.0"
+            model-name: "train_dense"
+            rocm-version: "7.0.2"
+            python-version: "3.12"
+          - jax-version: "0.8.2"
+            model-name: "train_dense"
+            rocm-version: "7.1.1"
+            python-version: "3.12"
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
@@ -296,18 +295,23 @@ jobs:
           ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
           ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
-          RUNNER_LABEL: ${{ needs.build-te-wheels.outputs.runner_label }}
-          TE_COMMIT_SHA: ${{ needs.build-te-wheels.outputs.te_commit_sha }}
-          GITHUB_RUN: ${{ github.run_id }}
-          GITHUB_REF: ${{ github.ref_name }}
-          TRIG_EVENT: ${{ github.event_name }}
-          ACTOR_NAME: ${{ github.actor }}
-          MODEL_NAME: ${{ matrix.model-name }}
-          JAX_VERSION: ${{ matrix.jax-version }}
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
           pip install mysql-connector-python
 
-          python3 ci/upload_to_llama_db.py
+          python3 ci/upload_to_llama_db.py \
+            --github-run-id "${{ github.run_id }}" \
+            --run-tag "ci-run" \
+            --model-name "${{ matrix.model-name }}" \
+            --te-commit "${{ needs.build-te-wheels.outputs.te_commit_sha }}" \
+            --jax-version "${{ matrix.jax-version }}" \
+            --rocm-version "${ROCM_VERSION//.}" \
+            --python-version "${PYTHON_VERSION//.}" \
+            --runner-label "${{ needs.build-te-wheels.outputs.runner_label }}" \
+            --github-ref "${{ github.ref_name }}" \
+            --trig-event "${{ github.event_name }}" \
+            --actor-name "${{ github.actor }}"
