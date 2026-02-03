@@ -40,7 +40,7 @@ class OpsTest(PallasBaseTest):
     def test_func(
         self,
         func,
-        x_shape_dtype: jax.ShapeDtypeStruct = jax.ShapeDtypeStruct((128,), jnp.float32),
+        x_shape_dtype,
         y_dtype: jnp.dtype = jnp.bool_,
         atol=0,
         rtol=0,
@@ -83,8 +83,8 @@ if __name__ == "__main__":
         print(f"Profiling to {out_dir}")
         jax.profiler.start_trace(out_dir)
 
-    # test.test_func(lambda x: 1+x, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32)
-    #test.test_func(jnp.exp2, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32)
+    test.test_func(lambda x: 1+x, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32)
+    test.test_func(jnp.exp2, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32)
     test.test_func(jnp.tanh, jax.ShapeDtypeStruct(shape, jnp.float32), jnp.float32, atol=1e-6)
 
     if do_profile:
