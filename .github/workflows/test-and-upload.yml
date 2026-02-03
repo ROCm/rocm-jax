@@ -19,19 +19,6 @@ on:
       github-run-id:
         required: true
         type: string
-      runner-label:
-        required: false
-        type: string
-      test-id:
-        description: 'Unique identifier for the test (e.g., single_gpu, multi_gpu)'
-        required: true
-        type: string
-      test-command:
-        required: false
-        type: string
-        default: >
-          python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s
-          && python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s
     secrets:
       ROCM_JAX_DB_HOSTNAME:
         required: true
@@ -43,8 +30,8 @@ on:
         required: true
 
 jobs:
-  run-tests:
-    runs-on: ${{ fromJSON(inputs.runner-label) }}
+  run-tests-single:
+    runs-on: ["linux-x86-64-1gpu-amd"]
     steps:
       - name: Change owners for cleanup
         run: |
@@ -78,9 +65,9 @@ jobs:
         run: |
           IMAGE="ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
           docker pull "$IMAGE"
-      - name: Run tests
+      - name: Run single GPU tests
         env:
-          GPU_COUNT: "8"
+          GPU_COUNT: "1"
           ROCM_VERSION: ${{ inputs.rocm-version }}
           UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
           GITHUB_SHA: ${{ inputs.github-sha }}
@@ -88,24 +75,81 @@ jobs:
           # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
           python3 build/ci_build test \
             "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "ulimit -c 0 && ${{ inputs.test-command }}"
-      - name: Upload logs to artifact (per-matrix)
+            --test-cmd "ulimit -c 0 && python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
+      - name: Upload logs to artifact (single)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: logs-${{ inputs.test-id }}_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}_single
+          path: logs/
+  run-tests-multi:
+    runs-on: ["linux-x86-64-4gpu-amd"]
+    steps:
+      - name: Change owners for cleanup
+        run: |
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
+      - name: Checkout JAX repo
+        uses: actions/checkout@v4
+        with:
+          # TODO: Load the ref from a file that sets the min and max JAX version
+          # TODO: Change the repo and ref once we figure out how exactly we're going to
+          #       manage tests
+          repository: rocm/jax
+          ref: rocm-jaxlib-v0.8.2
+          path: jax
+      - name: Apply patches to rocm/jax test repo
+        run: |
+          pushd jax
+          git apply ../ci/patches/*
+          popd
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Pull images
+        env:
+          ROCM_VERSION: ${{ inputs.rocm-version }}
+          UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
+          GITHUB_SHA: ${{ inputs.github-sha }}
+        run: |
+          IMAGE="ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
+          docker pull "$IMAGE"
+      - name: Run multi GPU tests
+        env:
+          GPU_COUNT: "4"
+          ROCM_VERSION: ${{ inputs.rocm-version }}
+          UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
+          GITHUB_SHA: ${{ inputs.github-sha }}
+        run: |
+          # (charleshofer) TODO: Switch to RBE once we're able to process the test log information
+          python3 build/ci_build test \
+            "ghcr.io/rocm/jax-ubu${UBUNTU_VERSION}.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
+            --test-cmd "ulimit -c 0 && python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
+      - name: Upload logs to artifact (multi)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}_multi
           path: logs/
   upload-to-db:
-    needs: run-tests
+    needs: [run-tests-single, run-tests-multi]
     runs-on: mysqldb
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      - name: Download logs from artifact (per-matrix)
+      - name: Download logs from artifact (single)
         uses: actions/download-artifact@v4
         with:
-          name: logs-${{ inputs.test-id }}_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
-          path: logs-${{ inputs.test-id }}_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}_single
+          path: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+      - name: Download logs from artifact (multi)
+        uses: actions/download-artifact@v4
+        with:
+          name: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}_multi
+          path: logs-${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
       - name: Upload logs to MySQL database
         env:
           ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
@@ -115,7 +159,7 @@ jobs:
           ROCM_VERSION: ${{ inputs.rocm-version }}
           UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
           LOGS_DIR: >-
-            logs-${{ inputs.test-id }}_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
+            logs-_${{ inputs.ubuntu-version }}_${{ inputs.rocm-version }}
           GITHUB_SHA: ${{ inputs.github-sha }}
           GITHUB_RUN_ID: ${{ inputs.github-run-id }}
           ROCM_BUILD_NUM: ${{ inputs.rocm-build-num }}
@@ -128,7 +172,7 @@ jobs:
           python ci/upload_test_to_db.py \
           --logs_dir "$LOGS_DIR" \
           --run-tag "ci-run" \
-          --runner-label "linux-x86-64-1gpu-amd" \
+          --runner-label "MI300" \
           --ubuntu-version "${UBUNTU_VERSION}" \
           --rocm-version "${ROCM_VERSION//.}" \
           --commit-sha "$GITHUB_SHA" \
