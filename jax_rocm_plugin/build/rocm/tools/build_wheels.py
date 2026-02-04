@@ -344,7 +344,7 @@ def fix_wheel(path, jax_path):
         # NOTE(mrodden): auditwheel 6.0 added lddtree module, but 6.3.0 changed
         # the fuction to ldd and also changed its behavior
         # constrain range to 6.0 to 6.2.x
-        cmd = ["pip", "install", "auditwheel>=6,<6.3", "wheel<0.46"]
+        cmd = ["pip", "install", "auditwheel>=6,<6.3", "wheel>=0.46.3"]
         subprocess.run(cmd, check=True, env=env)
 
         fixwheel_path = os.path.join(jax_path, "build/rocm/tools/fixwheel.py")
