@@ -113,40 +113,12 @@ def get_rocm_jax_git_hash():
 r = runfiles.Create()
 
 
-def build_source_map(srcs):
-    """Build a map from basename to full path for --srcs files."""
-    if not srcs:
-        return None
-    source_map = {}
+def find_src(srcs, basename):
+    """Find a file in srcs by basename."""
     for src in srcs:
-        basename = os.path.basename(src)
-        if basename in source_map:
-            raise ValueError(f"Duplicate basename '{basename}' in --srcs")
-        source_map[basename] = src
-    return source_map
-
-
-def copy_from_srcs(source_map, src_basename, dst_dir, dst_filename=None):
-    """Copy a file from --srcs by basename."""
-    dst_filename = dst_filename or src_basename
-    dst_path = os.path.join(dst_dir, dst_filename)
-    os.makedirs(dst_dir, exist_ok=True)
-    if src_basename not in source_map:
-        raise FileNotFoundError(
-            f"'{src_basename}' not found in --srcs. Available: {list(source_map.keys())}"
-        )
-    shutil.copy(source_map[src_basename], dst_path)
-
-
-def copy_from_runfiles(src_path, dst_dir, dst_filename=None):
-    """Copy a file from Bazel runfiles."""
-    dst_filename = dst_filename or os.path.basename(src_path)
-    dst_path = os.path.join(dst_dir, dst_filename)
-    os.makedirs(dst_dir, exist_ok=True)
-    runfile_path = r.Rlocation(src_path)
-    if runfile_path is None:
-        raise FileNotFoundError(f"Unable to find in runfiles: {src_path}")
-    shutil.copy(runfile_path, dst_path)
+        if os.path.basename(src) == basename:
+            return src
+    raise FileNotFoundError(f"'{basename}' not found in --srcs")
 
 
 def write_setup_cfg(setup_sources_path, cpu):
@@ -189,22 +161,22 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
     plugin_dir = wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
 
     if srcs:
-        source_map = build_source_map(srcs)
-        copy_from_srcs(source_map, "pyproject.toml", wheel_sources_path)
-        copy_from_srcs(source_map, "setup.py", wheel_sources_path)
-        copy_from_srcs(source_map, "LICENSE.txt", wheel_sources_path)
-        copy_from_srcs(source_map, "__init__.py", plugin_dir)
-        copy_from_srcs(source_map, "version.py", plugin_dir)
-        copy_from_srcs(source_map, "pjrt_c_api_gpu_plugin.so", plugin_dir, "xla_rocm_plugin.so")
+        os.makedirs(plugin_dir, exist_ok=True)
+        shutil.copy(find_src(srcs, "pyproject.toml"), wheel_sources_path)
+        shutil.copy(find_src(srcs, "setup.py"), wheel_sources_path)
+        shutil.copy(find_src(srcs, "LICENSE.txt"), wheel_sources_path)
+        shutil.copy(find_src(srcs, "__init__.py"), plugin_dir)
+        shutil.copy(find_src(srcs, "version.py"), plugin_dir)
+        shutil.copy(find_src(srcs, "pjrt_c_api_gpu_plugin.so"), plugin_dir / "xla_rocm_plugin.so")
     else:
         copy_runfiles(
             dst_dir=wheel_sources_path,
             src_files=[
                 "__main__/pjrt/python/pyproject.toml",
                 "__main__/pjrt/python/setup.py",
+                "__main__/pjrt/tools/LICENSE.txt",
             ],
         )
-        copy_from_runfiles("__main__/pjrt/tools/LICENSE.txt", wheel_sources_path)
         copy_runfiles(
             dst_dir=plugin_dir,
             src_files=[
