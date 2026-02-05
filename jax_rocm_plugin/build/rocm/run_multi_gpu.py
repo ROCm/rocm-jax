@@ -258,7 +258,10 @@ def run_multi_gpu_test(
                 print("STDERR:", result.stderr[-500:])
 
             # Check for crash
-            crash_info = check_for_crash_file(abs_last_running_file)
+            # Use min_duration=0.0 here: if the marker exists with status=running
+            # after pytest returns, we want to attribute it as a hard crash even
+            # when the crash happened very quickly.
+            crash_info = check_for_crash_file(abs_last_running_file, min_duration=0.0)
 
             if not crash_info:
                 # No crash - all remaining tests completed
@@ -341,6 +344,15 @@ def main():
         "--test-filter", type=str, help="Run only tests containing this string"
     )
     parser.add_argument(
+        "--only-test-files",
+        default="",
+        help=(
+            "Comma-separated list of test files to run instead of the default MULTI_GPU_TESTS set. "
+            "Paths are interpreted relative to the repo root. "
+            "Example: 'jax/tests/shard_map_test.py,jax/tests/pjit_test.py'."
+        ),
+    )
+    parser.add_argument(
         "-c", "--continue_on_fail", action="store_true", help="continue on failure"
     )
     parser.add_argument(
@@ -359,13 +371,24 @@ def main():
     # Ensure log directory exists
     os.makedirs(LOG_DIR, exist_ok=True)
 
-    # Filter tests if requested
-    tests_to_run = MULTI_GPU_TESTS
+    # Select which test files to run.
+    if args.only_test_files:
+        tests_to_run = set()
+        for raw in (args.only_test_files or "").split(","):
+            p = raw.strip()
+            if not p:
+                continue
+            if p.startswith("./"):
+                p = p[2:]
+            tests_to_run.add(p)
+        print(f"only_test_files set; running {len(tests_to_run)} test files")
+    else:
+        tests_to_run = MULTI_GPU_TESTS
+
+    # Optional filter (applies to either list).
     if args.test_filter:
-        tests_to_run = {test for test in MULTI_GPU_TESTS if args.test_filter in test}
-        print(
-            f"Filtered to {len(tests_to_run)} tests containing " f"'{args.test_filter}'"
-        )
+        tests_to_run = {test for test in tests_to_run if args.test_filter in test}
+        print(f"Filtered to {len(tests_to_run)} tests containing '{args.test_filter}'")
 
     print(
         f"Running {len(tests_to_run)} multi-GPU tests with up to "

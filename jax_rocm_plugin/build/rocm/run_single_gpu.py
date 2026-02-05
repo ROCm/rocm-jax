@@ -163,6 +163,31 @@ def extract_test_name(path: str) -> str:
     return os.path.splitext(os.path.basename(path.split("::")[0]))[0]
 
 
+def _tests_dict_from_only_test_files(only_test_files: str):
+    """Build a minimal tests_dict from a comma-separated list of test files.
+
+    Each entry is run as a single pytest invocation (per GPU token), which is
+    compatible with the existing crash retry logic (it will re-run the same file
+    with `--deselect <crashed-nodeid>` when a hard crash is detected).
+    """
+    tests_dict = {}
+    for raw in (only_test_files or "").split(","):
+        p = raw.strip()
+        if not p:
+            continue
+        if p.startswith("./"):
+            p = p[2:]
+        # Allow shorthand "tests/foo_test.py" -> "jax/tests/foo_test.py"
+        if p.startswith("tests/"):
+            p = f"jax/{p}"
+        # Allow shorthand "foo_test.py" -> "jax/tests/foo_test.py"
+        if "/" not in p and p.endswith(".py"):
+            p = f"jax/tests/{p}"
+        log_name = os.path.splitext(os.path.basename(p))[0]
+        tests_dict[log_name] = [p]
+    return tests_dict
+
+
 def run_shell_command(cmd, shell=False, env_vars=None, timeout=3600):
     """Run a shell command and return the result.
 
@@ -311,7 +336,10 @@ def run_test(log_name, tests_list, gpu_tokens, continue_on_fail):
             _, _, _ = run_shell_command(cmd, env_vars=env_vars)
 
             # Check for crash
-            crash_info = check_for_crash_file(last_running_file)
+            # Use min_duration=0.0 here: if the marker exists with status=running
+            # after pytest returns, we want to attribute it as a hard crash even
+            # when the crash happened very quickly.
+            crash_info = check_for_crash_file(last_running_file, min_duration=0.0)
 
             if not crash_info:
                 # No crash - all remaining tests completed
@@ -786,7 +814,13 @@ def run_parallel(tests_dict, p, c):
 
 def main(args):
     """Main function to run all test modules."""
-    tests_dict = collect_testmodules(args.ignore_skipfile)
+    if getattr(args, "only_test_files", None):
+        tests_dict = _tests_dict_from_only_test_files(args.only_test_files)
+        print(f"only_test_files set; running {len(tests_dict)} test files:")
+        for k, v in tests_dict.items():
+            print(f"  - {k}: {v[0]}")
+    else:
+        tests_dict = collect_testmodules(args.ignore_skipfile)
     run_parallel(tests_dict, args.parallel, args.continue_on_fail)
     generate_final_report_plugin(BASE_DIR)
 
@@ -921,6 +955,15 @@ if __name__ == "__main__":
         "--ignore_skipfile",
         action="store_true",
         help="Ignore the test skip file and run all single GPU tests",
+    )
+    parser.add_argument(
+        "--only-test-files",
+        default="",
+        help=(
+            "Comma-separated list of test files to run instead of collecting all tests. "
+            "Examples: 'jax/tests/linalg_test.py,jax/tests/crash_abort_test.py' or "
+            "'linalg_test.py,crash_abort_test.py' (shorthand expands under jax/tests/)."
+        ),
     )
     parsed_args = parser.parse_args()
     if parsed_args.continue_on_fail:
