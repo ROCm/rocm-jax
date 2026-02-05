@@ -218,14 +218,18 @@ def _install_therock(rocm_version, therock_path):
         LOG.info("Running %r", cmd)
         subprocess.check_call(cmd)
 
-    os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
+    if not os.path.exists(rocm_sym_path):
+        os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
 
     # Make a symlink to amdgcn to fix LLVM not being able to find binaries
-    os.symlink(
-        rocm_real_path + "/lib/llvm/amdgcn/",
-        rocm_real_path + "/amdgcn",
-        target_is_directory=True,
-    )
+    # Only create if it doesn't already exist (newer TheRock tarballs include it)
+    amdgcn_symlink = rocm_real_path + "/amdgcn"
+    if not os.path.exists(amdgcn_symlink):
+        os.symlink(
+            rocm_real_path + "/lib/llvm/amdgcn/",
+            amdgcn_symlink,
+            target_is_directory=True,
+        )
 
 
 def _setup_internal_repo(system, rocm_version, job_name, build_num):
