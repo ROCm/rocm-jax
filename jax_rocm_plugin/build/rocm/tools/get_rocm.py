@@ -29,6 +29,7 @@ import shutil
 import ssl
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 
 
@@ -207,7 +208,9 @@ def _install_therock(rocm_version, therock_path):
     else:
         os.makedirs(rocm_real_path)
         tar_path = "/tmp/therock.tar.gz"
-        with urllib.request.urlopen(therock_path) as response:
+        # URL-encode the '+' character as '%2B' (required for HTTP requests)
+        encoded_url = therock_path.replace("+", "%2B")
+        with urllib.request.urlopen(encoded_url) as response:
             if response.status == 200:
                 with open(tar_path, "wb") as tar_file:
                     tar_file.write(response.read())
