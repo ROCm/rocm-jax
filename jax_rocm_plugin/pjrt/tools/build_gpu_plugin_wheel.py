@@ -19,7 +19,6 @@ build process. Most users should not run this script directly; use build.py inst
 """
 
 import argparse
-import functools
 import os
 import pathlib
 import shutil
@@ -113,6 +112,15 @@ def get_rocm_jax_git_hash():
 r = runfiles.Create()
 
 
+def rloc(path):
+    """Get runfiles location, trying multiple workspace prefixes."""
+    for prefix in ["__main__", "jax_rocm_plugin"]:
+        loc = r.Rlocation(f"{prefix}/{path}")
+        if loc is not None:
+            return loc
+    raise FileNotFoundError(f"Unable to find in runfiles: {path}")
+
+
 def find_src(srcs, basename):
     """Find a file in srcs by basename."""
     for src in srcs:
@@ -126,14 +134,11 @@ def write_setup_cfg(setup_sources_path, cpu):
     tag = build_utils.platform_tag(cpu)
     cfg_path = setup_sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
-        f.write(
-            f"""[metadata]
-license_files = LICENSE.txt
-
-[bdist_wheel]
-plat_name={tag}
-"""
-        )
+        f.write(f"""[metadata]
+                    license_files = LICENSE.txt
+                    [bdist_wheel]
+                    plat_name={tag}
+                """)
 
 
 def get_xla_commit_hash():
@@ -156,12 +161,10 @@ def get_jax_commit_hash():
 
 def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs):
     """Assembles a source tree for the ROCm wheel in `sources_path`."""
-    copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
-
     plugin_dir = wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
+    os.makedirs(plugin_dir, exist_ok=True)
 
     if srcs:
-        os.makedirs(plugin_dir, exist_ok=True)
         shutil.copy(find_src(srcs, "pyproject.toml"), wheel_sources_path)
         shutil.copy(find_src(srcs, "setup.py"), wheel_sources_path)
         shutil.copy(find_src(srcs, "LICENSE.txt"), wheel_sources_path)
@@ -169,26 +172,12 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
         shutil.copy(find_src(srcs, "version.py"), plugin_dir)
         shutil.copy(find_src(srcs, "pjrt_c_api_gpu_plugin.so"), plugin_dir / "xla_rocm_plugin.so")
     else:
-        copy_runfiles(
-            dst_dir=wheel_sources_path,
-            src_files=[
-                "__main__/pjrt/python/pyproject.toml",
-                "__main__/pjrt/python/setup.py",
-                "__main__/pjrt/tools/LICENSE.txt",
-            ],
-        )
-        copy_runfiles(
-            dst_dir=plugin_dir,
-            src_files=[
-                "__main__/pjrt/python/__init__.py",
-                "__main__/pjrt/python/version.py",
-            ],
-        )
-        copy_runfiles(
-            "__main__/pjrt/pjrt_c_api_gpu_plugin.so",
-            dst_dir=plugin_dir,
-            dst_filename="xla_rocm_plugin.so",
-        )
+        shutil.copy(rloc("pjrt/python/pyproject.toml"), wheel_sources_path)
+        shutil.copy(rloc("pjrt/python/setup.py"), wheel_sources_path)
+        shutil.copy(rloc("pjrt/tools/LICENSE.txt"), wheel_sources_path)
+        shutil.copy(rloc("pjrt/python/__init__.py"), plugin_dir)
+        shutil.copy(rloc("pjrt/python/version.py"), plugin_dir)
+        shutil.copy(rloc("pjrt/pjrt_c_api_gpu_plugin.so"), plugin_dir / "xla_rocm_plugin.so")
 
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
     write_setup_cfg(wheel_sources_path, cpu)

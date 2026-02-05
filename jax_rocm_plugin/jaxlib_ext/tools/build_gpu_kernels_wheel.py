@@ -19,7 +19,6 @@ build process. Most users should not run this script directly; use build.py inst
 """
 
 import argparse
-import functools
 import os
 import pathlib
 import shutil
@@ -115,6 +114,15 @@ r = runfiles.Create()
 pyext = "pyd" if build_utils.is_windows() else "so"
 
 
+def rloc(path):
+    """Get runfiles location, trying multiple workspace prefixes."""
+    for prefix in ["__main__", "jax_rocm_plugin"]:
+        loc = r.Rlocation(f"{prefix}/{path}")
+        if loc is not None:
+            return loc
+    raise FileNotFoundError(f"Unable to find in runfiles: {path}")
+
+
 def find_src(srcs, basename):
     """Find a file in srcs by basename."""
     for src in srcs:
@@ -156,36 +164,20 @@ def get_jax_commit_hash():
 
 def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs):
     """Assembles a source tree for the rocm kernel wheel in `sources_path`."""
-    copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
-
     plugin_dir = wheel_sources_path / f"jax_rocm{rocm_version}_plugin"
+    os.makedirs(plugin_dir, exist_ok=True)
 
     # Copy config files: from --srcs if provided, else from runfiles
     if srcs:
-        os.makedirs(plugin_dir, exist_ok=True)
         shutil.copy(find_src(srcs, "plugin_pyproject.toml"), wheel_sources_path / "pyproject.toml")
         shutil.copy(find_src(srcs, "plugin_setup.py"), wheel_sources_path / "setup.py")
         shutil.copy(find_src(srcs, "LICENSE.txt"), wheel_sources_path)
         shutil.copy(find_src(srcs, "version.py"), plugin_dir)
     else:
-        copy_runfiles(
-            "__main__/jax_plugins/rocm/plugin_pyproject.toml",
-            dst_dir=wheel_sources_path,
-            dst_filename="pyproject.toml",
-        )
-        copy_runfiles(
-            "__main__/jax_plugins/rocm/plugin_setup.py",
-            dst_dir=wheel_sources_path,
-            dst_filename="setup.py",
-        )
-        copy_runfiles(
-            "__main__/jaxlib_ext/tools/LICENSE.txt",
-            dst_dir=wheel_sources_path,
-        )
-        copy_runfiles(
-            "__main__/pjrt/python/version.py",
-            dst_dir=plugin_dir,
-        )
+        shutil.copy(rloc("jax_plugins/rocm/plugin_pyproject.toml"), wheel_sources_path / "pyproject.toml")
+        shutil.copy(rloc("jax_plugins/rocm/plugin_setup.py"), wheel_sources_path / "setup.py")
+        shutil.copy(rloc("jaxlib_ext/tools/LICENSE.txt"), wheel_sources_path)
+        shutil.copy(rloc("pjrt/python/version.py"), plugin_dir)
 
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
     write_setup_cfg(wheel_sources_path, cpu)
@@ -196,19 +188,17 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
     )
 
     # Copy .so files: always from jax runfiles
-    copy_runfiles(
-        dst_dir=plugin_dir,
-        src_files=[
-            f"jax/jaxlib/rocm/_linalg.{pyext}",
-            f"jax/jaxlib/rocm/_prng.{pyext}",
-            f"jax/jaxlib/rocm/_solver.{pyext}",
-            f"jax/jaxlib/rocm/_sparse.{pyext}",
-            f"jax/jaxlib/rocm/_hybrid.{pyext}",
-            f"jax/jaxlib/rocm/_rnn.{pyext}",
-            f"jax/jaxlib/rocm/_triton.{pyext}",
-            f"jax/jaxlib/rocm/rocm_plugin_extension.{pyext}",
-        ],
-    )
+    for so_file in [
+        f"_linalg.{pyext}",
+        f"_prng.{pyext}",
+        f"_solver.{pyext}",
+        f"_sparse.{pyext}",
+        f"_hybrid.{pyext}",
+        f"_rnn.{pyext}",
+        f"_triton.{pyext}",
+        f"rocm_plugin_extension.{pyext}",
+    ]:
+        shutil.copy(r.Rlocation(f"jax/jaxlib/rocm/{so_file}"), plugin_dir)
 
     # NOTE(mrodden): this is a hack to change/set rpath values
     # in the shared objects that are produced by the bazel build

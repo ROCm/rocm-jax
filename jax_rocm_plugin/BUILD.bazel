@@ -19,22 +19,6 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
-# ============================================================================
-# ROCm Plugin Wheels - defined in tools packages with unified source lists
-# ============================================================================
-
-# Aliases for convenience
-alias(
-    name = "jax_rocm7_plugin_wheel",
-    actual = "//jaxlib_ext/tools:jax_rocm7_plugin_wheel",
-)
-
-alias(
-    name = "jax_rocm7_pjrt_wheel",
-    actual = "//pjrt/tools:jax_rocm7_pjrt_wheel",
-)
-
-# py_import wrappers to provide PyInfo for test dependencies
 py_import(
     name = "pjrt.whl",
     wheel = "//pjrt/tools:jax_rocm7_pjrt_wheel",
