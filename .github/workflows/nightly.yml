@@ -44,11 +44,9 @@ on:
         required: true
 
 jobs:
-  upload-to-db:
-    runs-on: mysqldb
+  fetch-logs:
+    runs-on: linux-mi355-1
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
       - name: Download logs artifact from source run
         env:
           GH_TOKEN: ${{ secrets.SECRET_TOKEN }}
@@ -57,6 +55,22 @@ jobs:
             -R "${{ inputs.source-repo }}" \
             -n "${{ inputs.source-artifact-name }}" \
             -D "logs-${{ inputs.source-github-run-id }}"
+      - name: Upload logs for DB job
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ inputs.source-github-run-id }}
+          path: logs-${{ inputs.source-github-run-id }}/
+  upload-to-db:
+    needs: fetch-logs
+    runs-on: mysqldb
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Download logs from workflow artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: logs-${{ inputs.source-github-run-id }}
+          path: logs-${{ inputs.source-github-run-id }}
       - name: Upload logs to MySQL database
         env:
           ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
