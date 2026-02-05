@@ -30,10 +30,10 @@ from pathlib import Path
 sys.path.insert(0, "jax_rocm_plugin/build/rocm")
 
 def _external_abort_plugin_dir() -> str:
-    """Return absolute path to external /pytest-abort-plugin directory."""
+    """Return absolute path to external /pytest-abort directory."""
     rocm_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.abspath(os.path.join(rocm_dir, "..", "..", ".."))
-    return os.path.abspath(os.path.join(repo_root, "..", "pytest-abort-plugin"))
+    return os.path.abspath(os.path.join(repo_root, "..", "pytest-abort"))
 
 
 _EXT_ABORT_PLUGIN_DIR = _external_abort_plugin_dir()  # pylint: disable=invalid-name
@@ -47,16 +47,16 @@ try:
         clear_crash_file,
         build_pytest_command,
     )
-    from pytest_abort_plugin.abort_handling import (  # type: ignore  # pylint: disable=wrong-import-position
+    from pytest_abort.abort_handling import (  # type: ignore  # pylint: disable=wrong-import-position
         handle_abort,
     )
-    from pytest_abort_plugin.crash_file import (  # type: ignore  # pylint: disable=wrong-import-position
+    from pytest_abort.crash_file import (  # type: ignore  # pylint: disable=wrong-import-position
         check_for_crash_file,
     )
-    from pytest_abort_plugin.logs import (  # type: ignore  # pylint: disable=wrong-import-position
+    from pytest_abort.logs import (  # type: ignore  # pylint: disable=wrong-import-position
         ensure_logs_dir,
     )
-    from pytest_abort_plugin.report_utils import (  # type: ignore  # pylint: disable=wrong-import-position
+    from pytest_abort.report_utils import (  # type: ignore  # pylint: disable=wrong-import-position
         generate_final_report as generate_final_report_plugin,
     )
 except ImportError as e:

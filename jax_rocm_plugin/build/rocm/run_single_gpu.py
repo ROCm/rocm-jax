@@ -46,7 +46,7 @@ BASE_DIR = "./logs"
 ALL_CRASHED_TESTS = []  # Global list to track all crashed tests
 
 def _external_abort_plugin_dir() -> str:
-    """Return absolute path to external /pytest-abort-plugin directory.
+    """Return absolute path to external /pytest-abort directory.
 
     We compute it relative to this repo root so it works regardless of cwd.
     Repo root is three levels up from this file:
@@ -54,7 +54,7 @@ def _external_abort_plugin_dir() -> str:
     """
     rocm_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.abspath(os.path.join(rocm_dir, "..", "..", ".."))
-    return os.path.abspath(os.path.join(repo_root, "..", "pytest-abort-plugin"))
+    return os.path.abspath(os.path.join(repo_root, "..", "pytest-abort"))
 
 
 # Make external plugin importable in this process (for helpers).
@@ -63,17 +63,17 @@ if os.path.isdir(_EXT_ABORT_PLUGIN_DIR):
     sys.path.insert(0, _EXT_ABORT_PLUGIN_DIR)
 
 # Shared abort/report + sanitization logic lives in external plugin package.
-from pytest_abort_plugin.abort_handling import (  # type: ignore  # pylint: disable=wrong-import-position
+from pytest_abort.abort_handling import (  # type: ignore  # pylint: disable=wrong-import-position
     handle_abort,
     sanitize_for_json,
 )
-from pytest_abort_plugin.crash_file import (  # type: ignore  # pylint: disable=wrong-import-position
+from pytest_abort.crash_file import (  # type: ignore  # pylint: disable=wrong-import-position
     check_for_crash_file,
 )
-from pytest_abort_plugin.logs import (  # type: ignore  # pylint: disable=wrong-import-position
+from pytest_abort.logs import (  # type: ignore  # pylint: disable=wrong-import-position
     ensure_logs_dir,
 )
-from pytest_abort_plugin.report_utils import (  # type: ignore  # pylint: disable=wrong-import-position
+from pytest_abort.report_utils import (  # type: ignore  # pylint: disable=wrong-import-position
     generate_final_report as generate_final_report_plugin,
 )
 
