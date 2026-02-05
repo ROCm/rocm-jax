@@ -51,8 +51,8 @@ parser.add_argument(
 parser.add_argument(
     "--srcs",
     action="append",
-    help="Source files passed by jax_wheel macro. If provided, these files "
-    "are used exclusively. If not provided, falls back to runfiles.",
+    help="Source files passed by jax_wheel macro. If provided, these are used "
+    "for config files. .so files always come from runfiles.",
 )
 parser.add_argument(
     "--cpu", default=None, required=True, help="Target CPU architecture. Required."
@@ -116,75 +116,35 @@ pyext = "pyd" if build_utils.is_windows() else "so"
 
 
 def build_source_map(srcs):
-    """Build a map from basename to full path for --srcs files.
-
-    Args:
-        srcs: List of source file paths from --srcs argument.
-
-    Returns:
-        Dictionary mapping basename to full path, or None if srcs is empty.
-
-    Raises:
-        ValueError: If duplicate basenames are detected.
-    """
+    """Build a map from basename to full path for --srcs files."""
     if not srcs:
         return None
-
     source_map = {}
     for src in srcs:
         basename = os.path.basename(src)
         if basename in source_map:
-            raise ValueError(
-                f"Duplicate basename '{basename}' in --srcs: "
-                f"'{source_map[basename]}' and '{src}'"
-            )
+            raise ValueError(f"Duplicate basename '{basename}' in --srcs")
         source_map[basename] = src
     return source_map
 
 
-def copy_file(src_path, dst_dir, dst_filename=None, *, source_map=None):
-    """Copy a file using --srcs (if provided) or runfiles.
-
-    Args:
-        src_path: Source file path (e.g., "jax_plugins/rocm/plugin_setup.py").
-        dst_dir: Destination directory.
-        dst_filename: Output filename (defaults to basename of src_path).
-        source_map: If provided, use --srcs exclusively. If None, use runfiles.
-    """
-    src_basename = os.path.basename(src_path)
+def copy_from_srcs(source_map, src_basename, dst_dir, dst_filename=None):
+    """Copy a file from --srcs by basename."""
     dst_filename = dst_filename or src_basename
     dst_path = os.path.join(dst_dir, dst_filename)
     os.makedirs(dst_dir, exist_ok=True)
-
-    if source_map is not None:
-        # Use --srcs exclusively
-        if src_basename not in source_map:
-            raise FileNotFoundError(
-                f"'{src_basename}' not found in --srcs. "
-                f"Available: {list(source_map.keys())}"
-            )
-        shutil.copy(source_map[src_basename], dst_path)
-    else:
-        # Use runfiles (original master logic)
-        runfile_path = r.Rlocation(src_path)
-        if runfile_path is None:
-            raise FileNotFoundError(f"Unable to find in runfiles: {src_path}")
-        shutil.copy(runfile_path, dst_path)
+    if src_basename not in source_map:
+        raise FileNotFoundError(
+            f"'{src_basename}' not found in --srcs. Available: {list(source_map.keys())}"
+        )
+    shutil.copy(source_map[src_basename], dst_path)
 
 
 def copy_from_runfiles(src_path, dst_dir, dst_filename=None):
-    """Copy a file from runfiles (for files that always come from runfiles).
-
-    Args:
-        src_path: Source file path in runfiles (e.g., "jax/jaxlib/rocm/_linalg.so").
-        dst_dir: Destination directory.
-        dst_filename: Output filename (defaults to basename of src_path).
-    """
-    src_basename = os.path.basename(src_path)
-    dst_filename = dst_filename or src_basename
+    """Copy a file from Bazel runfiles."""
+    dst_filename = dst_filename or os.path.basename(src_path)
     dst_path = os.path.join(dst_dir, dst_filename)
     os.makedirs(dst_dir, exist_ok=True)
-
     runfile_path = r.Rlocation(src_path)
     if runfile_path is None:
         raise FileNotFoundError(f"Unable to find in runfiles: {src_path}")
@@ -196,14 +156,12 @@ def write_setup_cfg(setup_sources_path, cpu):
     tag = build_utils.platform_tag(cpu)
     cfg_path = setup_sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
-        f.write(
-            f"""[metadata]
+        f.write(f"""[metadata]
 license_files = LICENSE.txt
 
 [bdist_wheel]
 plat_name={tag}
-"""
-        )
+""")
 
 
 def get_xla_commit_hash():
@@ -226,55 +184,53 @@ def get_jax_commit_hash():
 
 def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs):
     """Assembles a source tree for the rocm kernel wheel in `sources_path`."""
-    source_map = build_source_map(srcs)
+    copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
 
     plugin_dir = wheel_sources_path / f"jax_rocm{rocm_version}_plugin"
-    os.makedirs(plugin_dir, exist_ok=True)
 
-    # Copy build files
-    copy_file(
-        "__main__/jax_plugins/rocm/plugin_pyproject.toml",
-        wheel_sources_path,
-        "pyproject.toml",
-        source_map=source_map,
-    )
-    copy_file(
-        "__main__/jax_plugins/rocm/plugin_setup.py",
-        wheel_sources_path,
-        "setup.py",
-        source_map=source_map,
-    )
-    copy_file(
-        "__main__/jaxlib_ext/tools/LICENSE.txt",
-        wheel_sources_path,
-        source_map=source_map,
-    )
+    # Copy config files: from --srcs if provided, else from runfiles
+    if srcs:
+        source_map = build_source_map(srcs)
+        copy_from_srcs(source_map, "plugin_pyproject.toml", wheel_sources_path, "pyproject.toml")
+        copy_from_srcs(source_map, "plugin_setup.py", wheel_sources_path, "setup.py")
+        copy_from_srcs(source_map, "LICENSE.txt", wheel_sources_path)
+        copy_from_srcs(source_map, "version.py", plugin_dir)
+    else:
+        copy_runfiles(
+            "__main__/jax_plugins/rocm/plugin_pyproject.toml",
+            dst_dir=wheel_sources_path,
+            dst_filename="pyproject.toml",
+        )
+        copy_runfiles(
+            "__main__/jax_plugins/rocm/plugin_setup.py",
+            dst_dir=wheel_sources_path,
+            dst_filename="setup.py",
+        )
+        copy_from_runfiles("__main__/jaxlib_ext/tools/LICENSE.txt", wheel_sources_path)
+        copy_from_runfiles("__main__/pjrt/python/version.py", plugin_dir)
 
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
     write_setup_cfg(wheel_sources_path, cpu)
-
     xla_commit_hash = get_xla_commit_hash()
     jax_commit_hash = get_jax_commit_hash()
     build_utils.write_commit_info(
         plugin_dir, xla_commit_hash, jax_commit_hash, get_rocm_jax_git_hash()
     )
 
-    # Copy version.py
-    copy_file("__main__/pjrt/python/version.py", plugin_dir, source_map=source_map)
-
-    # Copy shared libraries - these always come from jax runfiles, not --srcs
-    so_files = [
-        f"_linalg.{pyext}",
-        f"_prng.{pyext}",
-        f"_solver.{pyext}",
-        f"_sparse.{pyext}",
-        f"_hybrid.{pyext}",
-        f"_rnn.{pyext}",
-        f"_triton.{pyext}",
-        f"rocm_plugin_extension.{pyext}",
-    ]
-    for so_file in so_files:
-        copy_from_runfiles(f"jax/jaxlib/rocm/{so_file}", plugin_dir)
+    # Copy .so files: always from jax runfiles
+    copy_runfiles(
+        dst_dir=plugin_dir,
+        src_files=[
+            f"jax/jaxlib/rocm/_linalg.{pyext}",
+            f"jax/jaxlib/rocm/_prng.{pyext}",
+            f"jax/jaxlib/rocm/_solver.{pyext}",
+            f"jax/jaxlib/rocm/_sparse.{pyext}",
+            f"jax/jaxlib/rocm/_hybrid.{pyext}",
+            f"jax/jaxlib/rocm/_rnn.{pyext}",
+            f"jax/jaxlib/rocm/_triton.{pyext}",
+            f"jax/jaxlib/rocm/rocm_plugin_extension.{pyext}",
+        ],
+    )
 
     # NOTE(mrodden): this is a hack to change/set rpath values
     # in the shared objects that are produced by the bazel build
@@ -293,10 +249,20 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         )
         raise RuntimeError(mesg) from ex
 
+    files = [
+        f"_linalg.{pyext}",
+        f"_prng.{pyext}",
+        f"_solver.{pyext}",
+        f"_sparse.{pyext}",
+        f"_hybrid.{pyext}",
+        f"_rnn.{pyext}",
+        f"_triton.{pyext}",
+        f"rocm_plugin_extension.{pyext}",
+    ]
     runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
     # patchelf --set-rpath $RUNPATH $so
-    for so_file in so_files:
-        so_path = os.path.join(plugin_dir, so_file)
+    for f in files:
+        so_path = os.path.join(plugin_dir, f)
         fix_perms = False
         perms = os.stat(so_path).st_mode
         if not perms & stat.S_IWUSR:

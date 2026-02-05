@@ -58,8 +58,8 @@ parser.add_argument(
 parser.add_argument(
     "--srcs",
     action="append",
-    help="Source files passed by jax_wheel macro. If provided, these files "
-    "are used exclusively. If not provided, falls back to runfiles.",
+    help="Source files passed by jax_wheel macro. If provided, these are used. "
+    "Otherwise falls back to runfiles.",
 )
 parser.add_argument(
     "--cpu", default=None, required=True, help="Target CPU architecture. Required."
@@ -114,60 +114,39 @@ r = runfiles.Create()
 
 
 def build_source_map(srcs):
-    """Build a map from basename to full path for --srcs files.
-
-    Args:
-        srcs: List of source file paths from --srcs argument.
-
-    Returns:
-        Dictionary mapping basename to full path, or None if srcs is empty.
-
-    Raises:
-        ValueError: If duplicate basenames are detected.
-    """
+    """Build a map from basename to full path for --srcs files."""
     if not srcs:
         return None
-
     source_map = {}
     for src in srcs:
         basename = os.path.basename(src)
         if basename in source_map:
-            raise ValueError(
-                f"Duplicate basename '{basename}' in --srcs: "
-                f"'{source_map[basename]}' and '{src}'"
-            )
+            raise ValueError(f"Duplicate basename '{basename}' in --srcs")
         source_map[basename] = src
     return source_map
 
 
-def copy_file(src_path, dst_dir, dst_filename=None, *, source_map=None):
-    """Copy a file using --srcs (if provided) or runfiles.
-
-    Args:
-        src_path: Source file path (e.g., "pjrt/python/version.py").
-        dst_dir: Destination directory.
-        dst_filename: Output filename (defaults to basename of src_path).
-        source_map: If provided, use --srcs exclusively. If None, use runfiles.
-    """
-    src_basename = os.path.basename(src_path)
+def copy_from_srcs(source_map, src_basename, dst_dir, dst_filename=None):
+    """Copy a file from --srcs by basename."""
     dst_filename = dst_filename or src_basename
     dst_path = os.path.join(dst_dir, dst_filename)
     os.makedirs(dst_dir, exist_ok=True)
+    if src_basename not in source_map:
+        raise FileNotFoundError(
+            f"'{src_basename}' not found in --srcs. Available: {list(source_map.keys())}"
+        )
+    shutil.copy(source_map[src_basename], dst_path)
 
-    if source_map is not None:
-        # Use --srcs exclusively
-        if src_basename not in source_map:
-            raise FileNotFoundError(
-                f"'{src_basename}' not found in --srcs. "
-                f"Available: {list(source_map.keys())}"
-            )
-        shutil.copy(source_map[src_basename], dst_path)
-    else:
-        # Use runfiles (original master logic)
-        runfile_path = r.Rlocation(f"__main__/{src_path}")
-        if runfile_path is None:
-            raise FileNotFoundError(f"Unable to find in runfiles: __main__/{src_path}")
-        shutil.copy(runfile_path, dst_path)
+
+def copy_from_runfiles(src_path, dst_dir, dst_filename=None):
+    """Copy a file from Bazel runfiles."""
+    dst_filename = dst_filename or os.path.basename(src_path)
+    dst_path = os.path.join(dst_dir, dst_filename)
+    os.makedirs(dst_dir, exist_ok=True)
+    runfile_path = r.Rlocation(src_path)
+    if runfile_path is None:
+        raise FileNotFoundError(f"Unable to find in runfiles: {src_path}")
+    shutil.copy(runfile_path, dst_path)
 
 
 def write_setup_cfg(setup_sources_path, cpu):
@@ -175,11 +154,14 @@ def write_setup_cfg(setup_sources_path, cpu):
     tag = build_utils.platform_tag(cpu)
     cfg_path = setup_sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
-        f.write(f"""[metadata]
-                    license_files = LICENSE.txt
-                    [bdist_wheel]
-                    plat_name={tag}
-                """)
+        f.write(
+            f"""[metadata]
+license_files = LICENSE.txt
+
+[bdist_wheel]
+plat_name={tag}
+"""
+        )
 
 
 def get_xla_commit_hash():
@@ -200,18 +182,41 @@ def get_jax_commit_hash():
     return args.jax_commit
 
 
-def prepare_rocm_plugin_wheel(
-    wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs
-):
+def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs):
     """Assembles a source tree for the ROCm wheel in `sources_path`."""
-    source_map = build_source_map(srcs)
+    copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
 
     plugin_dir = wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
 
-    # Copy build files
-    copy_file("pjrt/python/pyproject.toml", wheel_sources_path, source_map=source_map)
-    copy_file("pjrt/python/setup.py", wheel_sources_path, source_map=source_map)
-    copy_file("pjrt/tools/LICENSE.txt", wheel_sources_path, source_map=source_map)
+    if srcs:
+        source_map = build_source_map(srcs)
+        copy_from_srcs(source_map, "pyproject.toml", wheel_sources_path)
+        copy_from_srcs(source_map, "setup.py", wheel_sources_path)
+        copy_from_srcs(source_map, "LICENSE.txt", wheel_sources_path)
+        copy_from_srcs(source_map, "__init__.py", plugin_dir)
+        copy_from_srcs(source_map, "version.py", plugin_dir)
+        copy_from_srcs(source_map, "pjrt_c_api_gpu_plugin.so", plugin_dir, "xla_rocm_plugin.so")
+    else:
+        copy_runfiles(
+            dst_dir=wheel_sources_path,
+            src_files=[
+                "__main__/pjrt/python/pyproject.toml",
+                "__main__/pjrt/python/setup.py",
+            ],
+        )
+        copy_from_runfiles("__main__/pjrt/tools/LICENSE.txt", wheel_sources_path)
+        copy_runfiles(
+            dst_dir=plugin_dir,
+            src_files=[
+                "__main__/pjrt/python/__init__.py",
+                "__main__/pjrt/python/version.py",
+            ],
+        )
+        copy_runfiles(
+            "__main__/pjrt/pjrt_c_api_gpu_plugin.so",
+            dst_dir=plugin_dir,
+            dst_filename="xla_rocm_plugin.so",
+        )
 
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
     write_setup_cfg(wheel_sources_path, cpu)
@@ -219,16 +224,6 @@ def prepare_rocm_plugin_wheel(
     jax_commit_hash = get_jax_commit_hash()
     build_utils.write_commit_info(
         plugin_dir, xla_commit_hash, jax_commit_hash, get_rocm_jax_git_hash()
-    )
-
-    # Copy plugin files
-    copy_file("pjrt/python/__init__.py", plugin_dir, source_map=source_map)
-    copy_file("pjrt/python/version.py", plugin_dir, source_map=source_map)
-    copy_file(
-        "pjrt/pjrt_c_api_gpu_plugin.so",
-        plugin_dir,
-        "xla_rocm_plugin.so",
-        source_map=source_map,
     )
 
     # NOTE(mrodden): this is a hack to change/set rpath values
