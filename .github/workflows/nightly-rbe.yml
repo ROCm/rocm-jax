@@ -78,6 +78,7 @@ jobs:
             --rocm_version=$ROCM_VERSION \
             --jax_version=$JAX_VERSION \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
+            --cache_test_results=no \
             --curses=no \
             --color=yes
 
