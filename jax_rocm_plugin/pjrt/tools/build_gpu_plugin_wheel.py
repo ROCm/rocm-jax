@@ -19,6 +19,7 @@ build process. Most users should not run this script directly; use build.py inst
 """
 
 import argparse
+import functools
 import os
 import pathlib
 import shutil
@@ -29,6 +30,7 @@ import tempfile
 # pylint: disable=import-error,invalid-name,consider-using-with
 from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
+
 
 parser = argparse.ArgumentParser(fromfile_prefix_chars="@")
 parser.add_argument(
@@ -49,10 +51,15 @@ parser.add_argument(
     help="Git hash passed by jax_wheel macro. Empty if unknown.",
 )
 parser.add_argument(
-    "--rocm_jax_git_hash", default="", help="rocm-jax Git hash. Empty if unknown."
+    "--rocm_jax_git_hash",
+    default="",
+    help="rocm-jax Git hash. Empty if unknown.",
 )
 parser.add_argument(
-    "--srcs", action="append", help="Source files (passed by jax_wheel macro, unused)."
+    "--srcs",
+    action="append",
+    help="Source files passed by jax_wheel macro. If provided, these files "
+    "are used exclusively. If not provided, falls back to runfiles.",
 )
 parser.add_argument(
     "--cpu", default=None, required=True, help="Target CPU architecture. Required."
@@ -72,7 +79,9 @@ parser.add_argument(
     "--enable-rocm", default=False, help="Should we build with ROCM enabled?"
 )
 parser.add_argument(
-    "--xla-commit", default="", help="rocm/xla Git hash. Empty if unknown."
+    "--xla-commit",
+    default="",
+    help="rocm/xla Git hash. Empty if unknown.",
 )
 parser.add_argument(
     "--use_local_xla",
@@ -89,7 +98,9 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--jax-commit", default="", help="rocm/jax Git hash. Empty if unknown."
+    "--jax-commit",
+    default="",
+    help="rocm/jax Git hash. Empty if unknown.",
 )
 args = parser.parse_args()
 
@@ -103,51 +114,60 @@ r = runfiles.Create()
 
 
 def build_source_map(srcs):
-    """Build a map from basename to full path for source files."""
+    """Build a map from basename to full path for --srcs files.
+
+    Args:
+        srcs: List of source file paths from --srcs argument.
+
+    Returns:
+        Dictionary mapping basename to full path, or None if srcs is empty.
+
+    Raises:
+        ValueError: If duplicate basenames are detected.
+    """
+    if not srcs:
+        return None
+
     source_map = {}
-    if srcs:
-        for src in srcs:
-            basename = os.path.basename(src)
-            source_map[basename] = src
+    for src in srcs:
+        basename = os.path.basename(src)
+        if basename in source_map:
+            raise ValueError(
+                f"Duplicate basename '{basename}' in --srcs: "
+                f"'{source_map[basename]}' and '{src}'"
+            )
+        source_map[basename] = src
     return source_map
 
 
-def copy_from_srcs_or_runfiles(source_map, src_path, dst_dir, dst_filename=None):
-    """Copy a file from --srcs or fall back to runfiles.
+def copy_file(src_path, dst_dir, dst_filename=None, *, source_map=None):
+    """Copy a file using --srcs (if provided) or runfiles.
 
     Args:
-        source_map: Map from basename to full path for --srcs files
-        src_path: Path or basename of the source file (e.g., "pjrt/python/version.py")
-        dst_dir: Destination directory
-        dst_filename: Filename to use in destination (defaults to basename of src_path)
+        src_path: Source file path (e.g., "pjrt/python/version.py").
+        dst_dir: Destination directory.
+        dst_filename: Output filename (defaults to basename of src_path).
+        source_map: If provided, use --srcs exclusively. If None, use runfiles.
     """
     src_basename = os.path.basename(src_path)
     dst_filename = dst_filename or src_basename
     dst_path = os.path.join(dst_dir, dst_filename)
     os.makedirs(dst_dir, exist_ok=True)
 
-    # Try --srcs first (by basename)
-    if src_basename in source_map:
+    if source_map is not None:
+        # Use --srcs exclusively
+        if src_basename not in source_map:
+            raise FileNotFoundError(
+                f"'{src_basename}' not found in --srcs. "
+                f"Available: {list(source_map.keys())}"
+            )
         shutil.copy(source_map[src_basename], dst_path)
-        return
-
-    # Fall back to runfiles with various prefixes
-    # Try the full path first, then with workspace prefixes
-    paths_to_try = [
-        src_path,  # As provided (e.g., "pjrt/python/version.py")
-        f"jax_rocm_plugin/{src_path}",
-        f"__main__/{src_path}",
-        src_basename,  # Just basename
-        f"jax_rocm_plugin/{src_basename}",
-        f"__main__/{src_basename}",
-    ]
-    for path in paths_to_try:
-        runfile_path = r.Rlocation(path)
-        if runfile_path and os.path.exists(runfile_path):
-            shutil.copy(runfile_path, dst_path)
-            return
-
-    raise FileNotFoundError(f"Unable to find source file: {src_path}")
+    else:
+        # Use runfiles (original master logic)
+        runfile_path = r.Rlocation(f"__main__/{src_path}")
+        if runfile_path is None:
+            raise FileNotFoundError(f"Unable to find in runfiles: __main__/{src_path}")
+        shutil.copy(runfile_path, dst_path)
 
 
 def write_setup_cfg(setup_sources_path, cpu):
@@ -188,12 +208,11 @@ def prepare_rocm_plugin_wheel(
 
     plugin_dir = wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
 
-    # Copy pyproject.toml, setup.py, and LICENSE.txt
-    copy_from_srcs_or_runfiles(
-        source_map, "pjrt/python/pyproject.toml", wheel_sources_path
-    )
-    copy_from_srcs_or_runfiles(source_map, "pjrt/python/setup.py", wheel_sources_path)
-    copy_from_srcs_or_runfiles(source_map, "pjrt/tools/LICENSE.txt", wheel_sources_path)
+    # Copy build files
+    copy_file("pjrt/python/pyproject.toml", wheel_sources_path, source_map=source_map)
+    copy_file("pjrt/python/setup.py", wheel_sources_path, source_map=source_map)
+    copy_file("pjrt/tools/LICENSE.txt", wheel_sources_path, source_map=source_map)
+
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
     write_setup_cfg(wheel_sources_path, cpu)
     xla_commit_hash = get_xla_commit_hash()
@@ -203,12 +222,13 @@ def prepare_rocm_plugin_wheel(
     )
 
     # Copy plugin files
-    copy_from_srcs_or_runfiles(source_map, "pjrt/python/__init__.py", plugin_dir)
-    copy_from_srcs_or_runfiles(source_map, "pjrt/python/version.py", plugin_dir)
-
-    # Copy the PJRT plugin .so file
-    copy_from_srcs_or_runfiles(
-        source_map, "pjrt/pjrt_c_api_gpu_plugin.so", plugin_dir, "xla_rocm_plugin.so"
+    copy_file("pjrt/python/__init__.py", plugin_dir, source_map=source_map)
+    copy_file("pjrt/python/version.py", plugin_dir, source_map=source_map)
+    copy_file(
+        "pjrt/pjrt_c_api_gpu_plugin.so",
+        plugin_dir,
+        "xla_rocm_plugin.so",
+        source_map=source_map,
     )
 
     # NOTE(mrodden): this is a hack to change/set rpath values
@@ -266,7 +286,10 @@ try:
     else:
         git_hash = build_utils.get_githash(get_rocm_jax_git_hash())
         build_utils.build_wheel(
-            sources_path, args.output_path, package_name, git_hash=git_hash
+            sources_path,
+            args.output_path,
+            package_name,
+            git_hash=git_hash,
         )
 finally:
     if tmpdir:
