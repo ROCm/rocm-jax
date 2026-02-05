@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@jax//jaxlib:jax.bzl", "jax_wheel", "wheel_sources")
 load(
     "@xla//third_party/py:py_import.bzl",
     "py_import",
@@ -21,64 +20,27 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 # ============================================================================
-# ROCm Plugin Wheel (jax_rocm7_plugin) - contains GPU kernels
+# ROCm Plugin Wheels - defined in tools packages with unified source lists
 # ============================================================================
 
-wheel_sources(
-    name = "rocm_plugin_sources",
-    static_srcs = [
-        "//jaxlib_ext/tools:LICENSE.txt",
-        "//pjrt/python:version.py",
-        "//jax_plugins/rocm:plugin_pyproject.toml",
-        "//jax_plugins/rocm:plugin_setup.py",
-        "@jax//jaxlib:version",
-        "@jax//jaxlib/rocm:rocm_plugin_extension",
-        "@jax//jaxlib/rocm:rocm_gpu_support",
-    ],
-)
-
-jax_wheel(
+# Aliases for convenience
+alias(
     name = "jax_rocm7_plugin_wheel",
-    enable_rocm = True,
-    platform_version = "7",
-    source_files = [":rocm_plugin_sources"],
-    wheel_binary = "//jaxlib_ext/tools:build_gpu_kernels_wheel",
-    wheel_name = "jax_rocm7_plugin",
+    actual = "//jaxlib_ext/tools:jax_rocm7_plugin_wheel",
 )
 
-# ============================================================================
-# ROCm PJRT Wheel (jax_rocm7_pjrt) - contains PJRT plugin
-# ============================================================================
-
-wheel_sources(
-    name = "rocm_pjrt_sources",
-    static_srcs = [
-        "//pjrt/tools:LICENSE.txt",
-        "//pjrt:pjrt_c_api_gpu_plugin.so",
-        "//pjrt/python:version.py",
-        "//pjrt/python:pyproject.toml",
-        "//pjrt/python:setup.py",
-        "//pjrt/python:__init__.py",
-    ],
-)
-
-jax_wheel(
+alias(
     name = "jax_rocm7_pjrt_wheel",
-    enable_rocm = True,
-    no_abi = True,
-    platform_version = "7",
-    source_files = [":rocm_pjrt_sources"],
-    wheel_binary = "//pjrt/tools:build_gpu_plugin_wheel",
-    wheel_name = "jax_rocm7_pjrt",
+    actual = "//pjrt/tools:jax_rocm7_pjrt_wheel",
 )
 
 # py_import wrappers to provide PyInfo for test dependencies
 py_import(
     name = "pjrt.whl",
-    wheel = ":jax_rocm7_pjrt_wheel",
+    wheel = "//pjrt/tools:jax_rocm7_pjrt_wheel",
 )
 
 py_import(
     name = "plugin.whl",
-    wheel = ":jax_rocm7_plugin_wheel",
+    wheel = "//jaxlib_ext/tools:jax_rocm7_plugin_wheel",
 )
