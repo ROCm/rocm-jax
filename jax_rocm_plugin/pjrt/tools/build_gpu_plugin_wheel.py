@@ -93,6 +93,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+
 def get_rocm_jax_git_hash():
     """Get git hash, preferring rocm_jax_git_hash, falling back to jaxlib_git_hash."""
     return args.rocm_jax_git_hash or args.jaxlib_git_hash or ""
@@ -113,7 +114,7 @@ def build_source_map(srcs):
 
 def copy_from_srcs_or_runfiles(source_map, src_path, dst_dir, dst_filename=None):
     """Copy a file from --srcs or fall back to runfiles.
-    
+
     Args:
         source_map: Map from basename to full path for --srcs files
         src_path: Path or basename of the source file (e.g., "pjrt/python/version.py")

@@ -147,14 +147,16 @@ def build_source_map(srcs):
 
 
 def copy_from_srcs_or_runfiles(source_map, src_path, dst_dir, dst_filename=None):
+    # pylint: disable=line-too-long
     """Copy a file from --srcs or fall back to runfiles.
- 
+
     Args:
         source_map: Map from basename to full path for --srcs files
         src_path: Path or basename of the source file (e.g., "jax_plugins/rocm/plugin_pyproject.toml")
         dst_dir: Destination directory
         dst_filename: Filename to use in destination (defaults to basename of src_path)
     """
+    # pylint: enable=line-too-long
     src_basename = os.path.basename(src_path)
     dst_filename = dst_filename or src_basename
     dst_path = os.path.join(dst_dir, dst_filename)
@@ -192,10 +194,10 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, cpu, rocm_version, srcs
 
     # Copy pyproject.toml, setup.py, and LICENSE.txt
     copy_from_srcs_or_runfiles(
-        source_map, 
+        source_map,
         "jax_plugins/rocm/plugin_pyproject.toml",
         wheel_sources_path,
-        "pyproject.toml"
+        "pyproject.toml",
     )
     copy_from_srcs_or_runfiles(
         source_map, "jax_plugins/rocm/plugin_setup.py", wheel_sources_path, "setup.py"
