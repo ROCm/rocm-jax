@@ -29,7 +29,7 @@ jobs:
             runner-label: '["linux-x86-64-1gpu-amd"]'
     uses: ./.github/workflows/build-wheels.yml
     with:
-      python-versions: "3.11,3.12"
+      python-versions: "3.11,3.12,3.13,3.14"
       rocm-version: ${{ matrix.rocm-version }}
       rocm-build-job: ${{ matrix.rocm-build-job }}
       rocm-build-num: ${{ matrix.rocm-build-num }}
@@ -64,7 +64,6 @@ jobs:
           - "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
           - "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
         rocm-version: ["7.1.1", "7.2.0"]
-        ubuntu-version: ["22", "24"]
         include:
           - test-command: "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
             runner-label: '["linux-x86-64-1gpu-amd"]'
@@ -75,7 +74,7 @@ jobs:
     uses: ./.github/workflows/test-and-upload.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
-      ubuntu-version: ${{ matrix.ubuntu-version }}
+      ubuntu-version: "24"
       rocm-build-num: ${{ matrix.rocm-build-num || '0' }}
       github-sha: ${{ github.sha }}
       github-run-id: ${{ github.run_id }}

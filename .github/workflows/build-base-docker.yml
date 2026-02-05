@@ -17,7 +17,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ubuntu-version: ["22", "24"]
         rocm-version: ["7.1.1", "7.2.0"]
         install-llvm: [true, false]
         include:
@@ -64,7 +63,7 @@ jobs:
             --rocm-version="${{ matrix.rocm-version }}" \
             $BUILD_ARGS \
             build_base_dockers \
-            --filter="ubu${{ matrix.ubuntu-version }}" \
+            --filter="ubu24" \
             ${{ matrix.install-llvm && '--install-llvm --llvm-version 18' || '' }}
       - name: Authenticate to GitHub Container Registry
         run: |
@@ -73,16 +72,15 @@ jobs:
       - name: Push docker images
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
-          UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
           INSTALL_LLVM: ${{ matrix.install-llvm }}
         run: |
           # Construct image tag based on matrix values
           # ROCm version tag removes dots (7.1.1 -> 711, 7.2.0 -> 720)
           rocm_tag="rocm${ROCM_VERSION//.}"
           if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="jax-dev-ubu${UBUNTU_VERSION}.${rocm_tag}"
+            image_tag="jax-dev-ubu24.${rocm_tag}"
           else
-            image_tag="jax-base-ubu${UBUNTU_VERSION}.${rocm_tag}"
+            image_tag="jax-base-ubu24.${rocm_tag}"
           fi
 
           # Push with commit SHA tag

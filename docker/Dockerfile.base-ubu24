@@ -22,9 +22,25 @@ ARG LLVM_VERSION="none"
 ARG DEBIAN_FRONTEND=noninteractive
 
 ### Build Steps:
-# Install python3 packages and solution for breaking system package:
+# Install all Python versions from deadsnakes PPA:
 RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y python3 python-is-python3 python3-pip && \
+    apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y \
+        python3.11 python3.11-dev python3.11-venv \
+        python3.12 python3.12-dev python3.12-venv \
+        python3.13 python3.13-dev python3.13-venv \
+        python3.13-nogil \
+        python3.14 python3.14-dev python3.14-venv \
+        python3.14-nogil \
+        python3-pip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Set default Python to 3.12 (most stable):
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 100 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.12 100 && \
     mv /usr/lib/python3.12/EXTERNALLY-MANAGED /usr/lib/python3.12/EXTERNALLY-MANAGED.old
 
 # Install bzip2 and sqlite3 packages:
@@ -36,6 +52,40 @@ RUN apt-get update && \
     # Remove once issue is fixed.
     libdw1t64 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install GitHub CLI (gh):
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        gpg && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | gpg --dearmor -o /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y gh && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Google Cloud CLI (gcloud):
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        apt-transport-https \
+        ca-certificates \
+        gnupg \
+        curl && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+        | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+        | tee /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    apt-get update && \
+    apt-get install -y google-cloud-cli && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    # Disable credentials to enable access to public GCS buckets from upstream without requiring login
+    gcloud config set auth/disable_credentials True
 
 # Install ROCm:
 RUN --mount=type=bind,source=jax_rocm_plugin/build/rocm/tools/get_rocm.py,target=get_rocm.py \
@@ -75,6 +125,6 @@ ENV PATH="$OPENCL_ROOT/bin:${PATH}"
 ENV PATH="/root/bin:/root/.local/bin:$PATH"
 
 LABEL com.amdgpu.rocm_version="$ROCM_VERSION" \
-      com.amdgpu.python_version="3.12" \
+      com.amdgpu.python_versions="3.11,3.12,3.13,3.13-nogil,3.14,3.14-nogil" \
       com.amdgpu.install_llvm="$INSTALL_LLVM" \
       com.amdgpu.llvm_version="$LLVM_VERSION"
