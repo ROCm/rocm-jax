@@ -93,7 +93,6 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-
 def get_rocm_jax_git_hash():
     """Get git hash, preferring rocm_jax_git_hash, falling back to jaxlib_git_hash."""
     return args.rocm_jax_git_hash or args.jaxlib_git_hash or ""
@@ -189,7 +188,9 @@ def prepare_rocm_plugin_wheel(
     plugin_dir = wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
 
     # Copy pyproject.toml, setup.py, and LICENSE.txt
-    copy_from_srcs_or_runfiles(source_map, "pjrt/python/pyproject.toml", wheel_sources_path)
+    copy_from_srcs_or_runfiles(
+        source_map, "pjrt/python/pyproject.toml", wheel_sources_path
+    )
     copy_from_srcs_or_runfiles(source_map, "pjrt/python/setup.py", wheel_sources_path)
     copy_from_srcs_or_runfiles(source_map, "pjrt/tools/LICENSE.txt", wheel_sources_path)
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
