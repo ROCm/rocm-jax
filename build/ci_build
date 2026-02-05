@@ -141,8 +141,8 @@ def build_dockers(
             else:
                 dockerfiles.append(path)
 
-    # Docker tags cannot contain '+', so replace it with '_'
-    rocm_ver_tag = "rocm%s" % "".join(rocm_version.split(".")).replace("+", "_")
+    # Docker tags cannot contain '+', so replace it with '.' for consistency with wheel versions
+    rocm_ver_tag = "rocm%s" % "".join(rocm_version.split(".")).replace("+", ".")
     plugin_namespace = rocm_version[0]
     if plugin_namespace == "6":
         plugin_namespace = "60"
