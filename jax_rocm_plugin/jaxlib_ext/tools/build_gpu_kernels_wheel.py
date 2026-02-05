@@ -146,25 +146,42 @@ def build_source_map(srcs):
     return source_map
 
 
-def copy_from_srcs_or_runfiles(source_map, src_basename, dst_dir, dst_filename=None):
-    """Copy a file from --srcs or fall back to runfiles."""
+def copy_from_srcs_or_runfiles(source_map, src_path, dst_dir, dst_filename=None):
+    """Copy a file from --srcs or fall back to runfiles.
+    
+    Args:
+        source_map: Map from basename to full path for --srcs files
+        src_path: Path or basename of the source file (e.g., "jax_plugins/rocm/plugin_pyproject.toml")
+        dst_dir: Destination directory
+        dst_filename: Filename to use in destination (defaults to basename of src_path)
+    """
+    src_basename = os.path.basename(src_path)
     dst_filename = dst_filename or src_basename
     dst_path = os.path.join(dst_dir, dst_filename)
     os.makedirs(dst_dir, exist_ok=True)
 
-    # Try --srcs first
+    # Try --srcs first (by basename)
     if src_basename in source_map:
         shutil.copy(source_map[src_basename], dst_path)
         return
 
     # Fall back to runfiles with various prefixes
-    for prefix in ["__main__/", "jax_rocm_plugin/", "jax/", ""]:
-        runfile_path = r.Rlocation(f"{prefix}{src_basename}")
+    # Try the full path first, then with workspace prefixes
+    paths_to_try = [
+        src_path,  # As provided (e.g., "jax_plugins/rocm/plugin_pyproject.toml")
+        f"jax_rocm_plugin/{src_path}",
+        f"__main__/{src_path}",
+        src_basename,  # Just basename
+        f"jax_rocm_plugin/{src_basename}",
+        f"__main__/{src_basename}",
+    ]
+    for path in paths_to_try:
+        runfile_path = r.Rlocation(path)
         if runfile_path and os.path.exists(runfile_path):
             shutil.copy(runfile_path, dst_path)
             return
 
-    raise FileNotFoundError(f"Unable to find source file: {src_basename}")
+    raise FileNotFoundError(f"Unable to find source file: {src_path}")
 
 
 # pylint: disable=too-many-locals
@@ -173,12 +190,15 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, cpu, rocm_version, srcs
     source_map = build_source_map(srcs)
     copy_runfiles = functools.partial(build_utils.copy_file, runfiles=r)
 
-    # Copy pyproject.toml and setup.py
+    # Copy pyproject.toml, setup.py, and LICENSE.txt
     copy_from_srcs_or_runfiles(
-        source_map, "plugin_pyproject.toml", wheel_sources_path, "pyproject.toml"
+        source_map, "jax_plugins/rocm/plugin_pyproject.toml", wheel_sources_path, "pyproject.toml"
     )
     copy_from_srcs_or_runfiles(
-        source_map, "plugin_setup.py", wheel_sources_path, "setup.py"
+        source_map, "jax_plugins/rocm/plugin_setup.py", wheel_sources_path, "setup.py"
+    )
+    copy_from_srcs_or_runfiles(
+        source_map, "jaxlib_ext/tools/LICENSE.txt", wheel_sources_path
     )
 
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
@@ -193,7 +213,7 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, cpu, rocm_version, srcs
     )
 
     # Copy version.py
-    copy_from_srcs_or_runfiles(source_map, "version.py", plugin_dir)
+    copy_from_srcs_or_runfiles(source_map, "pjrt/python/version.py", plugin_dir)
 
     # Copy shared libraries - these come from @jax//jaxlib/rocm via runfiles
     so_files = [

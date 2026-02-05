@@ -112,25 +112,42 @@ def build_source_map(srcs):
     return source_map
 
 
-def copy_from_srcs_or_runfiles(source_map, src_basename, dst_dir, dst_filename=None):
-    """Copy a file from --srcs or fall back to runfiles."""
+def copy_from_srcs_or_runfiles(source_map, src_path, dst_dir, dst_filename=None):
+    """Copy a file from --srcs or fall back to runfiles.
+    
+    Args:
+        source_map: Map from basename to full path for --srcs files
+        src_path: Path or basename of the source file (e.g., "pjrt/python/version.py")
+        dst_dir: Destination directory
+        dst_filename: Filename to use in destination (defaults to basename of src_path)
+    """
+    src_basename = os.path.basename(src_path)
     dst_filename = dst_filename or src_basename
     dst_path = os.path.join(dst_dir, dst_filename)
     os.makedirs(dst_dir, exist_ok=True)
 
-    # Try --srcs first
+    # Try --srcs first (by basename)
     if src_basename in source_map:
         shutil.copy(source_map[src_basename], dst_path)
         return
 
     # Fall back to runfiles with various prefixes
-    for prefix in ["__main__/", "jax_rocm_plugin/", "jax/", ""]:
-        runfile_path = r.Rlocation(f"{prefix}{src_basename}")
+    # Try the full path first, then with workspace prefixes
+    paths_to_try = [
+        src_path,  # As provided (e.g., "pjrt/python/version.py")
+        f"jax_rocm_plugin/{src_path}",
+        f"__main__/{src_path}",
+        src_basename,  # Just basename
+        f"jax_rocm_plugin/{src_basename}",
+        f"__main__/{src_basename}",
+    ]
+    for path in paths_to_try:
+        runfile_path = r.Rlocation(path)
         if runfile_path and os.path.exists(runfile_path):
             shutil.copy(runfile_path, dst_path)
             return
 
-    raise FileNotFoundError(f"Unable to find source file: {src_basename}")
+    raise FileNotFoundError(f"Unable to find source file: {src_path}")
 
 
 def write_setup_cfg(setup_sources_path, cpu):
@@ -172,9 +189,9 @@ def prepare_rocm_plugin_wheel(
     plugin_dir = wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
 
     # Copy pyproject.toml, setup.py, and LICENSE.txt
-    copy_from_srcs_or_runfiles(source_map, "pyproject.toml", wheel_sources_path)
-    copy_from_srcs_or_runfiles(source_map, "setup.py", wheel_sources_path)
-    copy_from_srcs_or_runfiles(source_map, "LICENSE.txt", wheel_sources_path)
+    copy_from_srcs_or_runfiles(source_map, "pjrt/python/pyproject.toml", wheel_sources_path)
+    copy_from_srcs_or_runfiles(source_map, "pjrt/python/setup.py", wheel_sources_path)
+    copy_from_srcs_or_runfiles(source_map, "pjrt/tools/LICENSE.txt", wheel_sources_path)
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
     write_setup_cfg(wheel_sources_path, cpu)
     xla_commit_hash = get_xla_commit_hash()
@@ -184,12 +201,12 @@ def prepare_rocm_plugin_wheel(
     )
 
     # Copy plugin files
-    copy_from_srcs_or_runfiles(source_map, "__init__.py", plugin_dir)
-    copy_from_srcs_or_runfiles(source_map, "version.py", plugin_dir)
+    copy_from_srcs_or_runfiles(source_map, "pjrt/python/__init__.py", plugin_dir)
+    copy_from_srcs_or_runfiles(source_map, "pjrt/python/version.py", plugin_dir)
 
     # Copy the PJRT plugin .so file
     copy_from_srcs_or_runfiles(
-        source_map, "pjrt_c_api_gpu_plugin.so", plugin_dir, "xla_rocm_plugin.so"
+        source_map, "pjrt/pjrt_c_api_gpu_plugin.so", plugin_dir, "xla_rocm_plugin.so"
     )
 
     # NOTE(mrodden): this is a hack to change/set rpath values
