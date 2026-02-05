@@ -53,7 +53,10 @@ __version__ = (
     _version_module._get_version_for_build()  # pylint: disable=protected-access
 )
 if rocm_tag:
-    __version__ = __version__ + "+rocm" + rocm_tag
+    # Replace '+' with '.' in rocm_tag to comply with PEP 440
+    # (local version label can only contain alphanumerics and periods)
+    sanitized_rocm_tag = rocm_tag.replace("+", ".")
+    __version__ = __version__ + "+rocm" + sanitized_rocm_tag
 _cmdclass = _version_module._get_cmdclass(  # pylint: disable=protected-access
     package_name
 )
