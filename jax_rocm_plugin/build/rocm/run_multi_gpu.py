@@ -67,6 +67,30 @@ LOG_DIR = "./logs"
 MAX_GPUS_PER_TEST = 8  # Limit for stability
 
 
+def _normalize_only_test_file(p: str) -> str:
+    """Normalize user-supplied test file path to the MULTI_GPU_TESTS format.
+
+    The multi-GPU config expects paths like: "tests/foo_test.py" (no leading "jax/").
+    We accept:
+      - "jax/tests/foo_test.py"
+      - "./jax/tests/foo_test.py"
+      - "tests/foo_test.py"
+      - "foo_test.py"  (shorthand -> "tests/foo_test.py")
+    """
+    p = (p or "").strip()
+    if not p:
+        return ""
+    if p.startswith("./"):
+        p = p[2:]
+    if p.startswith("jax/"):
+        p = p[len("jax/") :]
+    if p.startswith("tests/") or p.startswith("examples/"):
+        return p
+    if p.endswith(".py") and "/" not in p:
+        return f"tests/{p}"
+    return p
+
+
 def cleanup_system():
     """Clean up system resources between tests."""
     print("Cleaning up system resources...")
@@ -348,8 +372,8 @@ def main():
         default="",
         help=(
             "Comma-separated list of test files to run instead of the default MULTI_GPU_TESTS set. "
-            "Paths are interpreted relative to the repo root. "
-            "Example: 'jax/tests/shard_map_test.py,jax/tests/pjit_test.py'."
+            "Examples: 'tests/shard_map_test.py,tests/pjit_test.py' or "
+            "'jax/tests/shard_map_test.py,shard_map_test.py'."
         ),
     )
     parser.add_argument(
@@ -373,14 +397,12 @@ def main():
 
     # Select which test files to run.
     if args.only_test_files:
-        tests_to_run = set()
-        for raw in (args.only_test_files or "").split(","):
-            p = raw.strip()
-            if not p:
-                continue
-            if p.startswith("./"):
-                p = p[2:]
-            tests_to_run.add(p)
+        requested = {
+            _normalize_only_test_file(x)
+            for x in args.only_test_files.split(",")
+            if _normalize_only_test_file(x)
+        }
+        tests_to_run = requested
         print(f"only_test_files set; running {len(tests_to_run)} test files")
     else:
         tests_to_run = MULTI_GPU_TESTS
@@ -399,6 +421,7 @@ def main():
     failed_tests = []
     passed_tests = []
     all_crashed_tests = []  # Collect all crashed tests
+    crashed_test_files = []
 
     for i, test_file in enumerate(sorted(tests_to_run), 1):
         print(f"\n[{i}/{len(tests_to_run)}] Running {test_file}")
@@ -414,11 +437,16 @@ def main():
 
             # Collect crashed tests
             all_crashed_tests.extend(crashed_tests)
+            if crashed_tests:
+                crashed_test_files.append(test_file)
 
             if exit_code == 0:
                 passed_tests.append(test_file)
             else:
-                failed_tests.append((test_file, exit_code))
+                # If this file only "failed" because we detected a hard crash,
+                # keep it out of FAILED TEST FILES (we list it separately as crashed).
+                if not crashed_tests:
+                    failed_tests.append((test_file, exit_code))
                 if not args.continue_on_fail:
                     print("fail-fast: stopping after first failure")
                     break
@@ -546,6 +574,14 @@ def main():
         print("-" * 70)
         for crash in crashes_to_use:
             print(f"  - {crash['nodeid']} ({crash['duration']:.1f}s)")
+
+    # Print crashed test files (file-level invocations that experienced a crash)
+    if crashed_test_files:
+        print("\n" + "-" * 70)
+        print(f"CRASHED TEST FILES ({len(crashed_test_files)}):")
+        print("-" * 70)
+        for test_file in crashed_test_files:
+            print(f"  - {test_file}")
 
     # Print failed test files
     if failed_tests:
