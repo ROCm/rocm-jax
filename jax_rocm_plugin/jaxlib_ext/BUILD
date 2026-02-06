@@ -28,11 +28,11 @@ nanobind_extension(
     srcs = ["rocm_plugin_extension.cc"],
     module_name = "rocm_plugin_extension",
     deps = [
-        ":py_client_gpu",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@jax//jaxlib:kernel_nanobind_helpers",
         "@jax//jaxlib/gpu:gpu_plugin_extension",
+        "@jax//jaxlib/rocm:py_client_gpu",
         "@local_config_rocm//rocm:hip_runtime",
         "@local_config_rocm//rocm:rocm_headers",
         "@nanobind",
