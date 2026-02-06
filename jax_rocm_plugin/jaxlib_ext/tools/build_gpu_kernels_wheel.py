@@ -163,6 +163,7 @@ def get_jax_commit_hash():
 
 
 def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs):
+    # pylint: disable=too-many-locals
     """Assembles a source tree for the rocm kernel wheel in `sources_path`."""
     plugin_dir = wheel_sources_path / f"jax_rocm{rocm_version}_plugin"
     os.makedirs(plugin_dir, exist_ok=True)
