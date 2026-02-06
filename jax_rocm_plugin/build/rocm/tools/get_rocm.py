@@ -29,6 +29,7 @@ import shutil
 import ssl
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 
 
@@ -207,7 +208,10 @@ def _install_therock(rocm_version, therock_path):
     else:
         os.makedirs(rocm_real_path)
         tar_path = "/tmp/therock.tar.gz"
-        with urllib.request.urlopen(therock_path) as response:
+        # URL-encode special characters (e.g., '+' becomes '%2B')
+        # Include '%' in safe to avoid double-encoding already-encoded URLs
+        encoded_url = urllib.parse.quote(therock_path, safe=":/?&=%")
+        with urllib.request.urlopen(encoded_url) as response:
             if response.status == 200:
                 with open(tar_path, "wb") as tar_file:
                     tar_file.write(response.read())
@@ -215,14 +219,18 @@ def _install_therock(rocm_version, therock_path):
         LOG.info("Running %r", cmd)
         subprocess.check_call(cmd)
 
-    os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
+    if not os.path.exists(rocm_sym_path):
+        os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
 
     # Make a symlink to amdgcn to fix LLVM not being able to find binaries
-    os.symlink(
-        rocm_real_path + "/lib/llvm/amdgcn/",
-        rocm_real_path + "/amdgcn",
-        target_is_directory=True,
-    )
+    # Only create if it doesn't already exist (newer TheRock tarballs include it)
+    amdgcn_symlink = rocm_real_path + "/amdgcn"
+    if not os.path.exists(amdgcn_symlink):
+        os.symlink(
+            rocm_real_path + "/lib/llvm/amdgcn/",
+            amdgcn_symlink,
+            target_is_directory=True,
+        )
 
 
 def _setup_internal_repo(system, rocm_version, job_name, build_num):
