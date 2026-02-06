@@ -29,7 +29,7 @@ py_binary(
         "LICENSE.txt",
         "@jax//jaxlib:version",
         "//pjrt/python:version.py",
-        "@jax//jaxlib/rocm:rocm_plugin_extension",
+        "//jaxlib_ext:rocm_plugin_extension",
         "@jax//jaxlib/rocm:rocm_gpu_support",
         "//jax_plugins/rocm:plugin_pyproject.toml",
         "//jax_plugins/rocm:plugin_setup.py",
