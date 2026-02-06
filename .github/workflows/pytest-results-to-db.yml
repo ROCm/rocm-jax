@@ -1,4 +1,4 @@
-name: Nightly
+name: Pytest Results to DB
 
 on:
   workflow_dispatch:

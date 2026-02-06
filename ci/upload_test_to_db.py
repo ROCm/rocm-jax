@@ -72,37 +72,42 @@ def nodeid_parts(nodeid: str) -> Tuple[str, str, str]:
     return f, c, t
 
 
-def list_test_jsons(logs_dir: Path) -> List[Path]:
-    """Return per-test JSON files under logs_dir; skip aux files."""
-    return sorted(
+def find_single_report_json(logs_dir: Path) -> Path:
+    jsons = [
         p
         for p in logs_dir.iterdir()
         if p.is_file()
         and p.suffix.lower() == ".json"
-        and p.name not in SKIP_FILES
+        and p.name not in {"metadata.json"}
         and not p.name.endswith("last_running.json")
-    )
+    ]
+    if not jsons:
+        print(f"No JSON report found in {logs_dir}")
+        raise SystemExit(2)
+    if len(jsons) != 1:
+        print(
+            f"Expected exactly ONE JSON report, found {len(jsons)}: "
+            + ", ".join(p.name for p in jsons)
+        )
+        raise SystemExit(2)
+    return jsons[0]
 
 
-def load_from_per_test_jsons(files: Iterable[Path]) -> Tuple[datetime, List[dict]]:
-    """Load tests and set run created_at to the latest per-file 'created'.
-
-    Each per-test JSON file must have a 'created' timestamp. We use the maximum
-    of these values as the run's created_at (i.e., when the run finished).
-    """
-    tests: List[dict] = []
-    created_values: List[float] = []
-
-    for path in files:
-        with path.open("r", encoding="utf-8") as fh:
-            data = json.load(fh)
-        if "created" not in data:
-            raise ValueError(f"Missing 'created' in {path.name}")
-        created_values.append(float(data["created"]))
-        tests.extend(data.get("tests", []))
-
-    created_at = datetime.fromtimestamp(max(created_values))
-    return created_at, tests
+def load_from_single_json(path: Path) -> Tuple[datetime, List[dict]]:
+    with path.open("r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    if isinstance(data, dict):
+        tests = data.get("tests", [])
+        created = data.get("created")
+        if created is not None:
+            created_at = datetime.fromtimestamp(float(created))
+        else:
+            created_at = datetime.fromtimestamp(path.stat().st_mtime)
+        return created_at, tests
+    if isinstance(data, list):
+        created_at = datetime.fromtimestamp(path.stat().st_mtime)
+        return created_at, data
+    raise ValueError(f"Unexpected JSON structure in {path.name}")
 
 
 def extract_result_fields(
@@ -392,12 +397,9 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
       3) Ensure all tests exist; get (file,class,test) -> test_id map.
       4) Bulk insert/update ci_results for this run.
     """
-    files = list_test_jsons(logs_dir)
-    if not files:
-        print(f"No JSON files under {logs_dir}")
-        raise SystemExit(2)  # input error
-
-    created_at, tests = load_from_per_test_jsons(files)
+    report = find_single_report_json(logs_dir)
+    created_at, tests = load_from_single_json(report)
+    
     if not tests:
         print("No tests found in JSONs")
         raise SystemExit(2)  # input error
