@@ -17,9 +17,6 @@ permissions:
 
 jobs:
   build-and-test:
-    env:
-      ROCM_VERSION: '7'
-      JAX_VERSION: '0.8.2'
     runs-on: linux-x86-64-4gpu-amd-gfx942
     strategy:
       fail-fast: false
@@ -51,32 +48,12 @@ jobs:
           echo "$RBE_CI_CERT" >> ci-cert.crt
           echo "$RBE_CI_KEY" >> ci-cert.key
 
-      - name: Create temporary wheelhouse directory
-        id: wheelhouse
-        run: |
-          WHEELHOUSE_DIR=$(mktemp -d)
-          echo "dir=$WHEELHOUSE_DIR" >> "$GITHUB_OUTPUT"
-
-      - name: Build rocm plugin wheels (Python ${{ matrix.python_version }})
-        run: |
-          bash build/rocm/ci_build_plugin_wheels.sh \
-            --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
-            --git_hash=${{ github.sha }} \
-            --rocm_version=$ROCM_VERSION \
-            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
-            --curses=no \
-            --color=yes \
-            --config=rocm_rbe
-
       - name: Run single-GPU unit tests (Python ${{ matrix.python_version }})
         if: always()
         run: |
           bash build/rocm/ci_run_jax_ut.sh \
             --config=rocm_sgpu \
             --config=rocm_rbe \
-            --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
-            --rocm_version=$ROCM_VERSION \
-            --jax_version=$JAX_VERSION \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --curses=no \
             --color=yes
@@ -87,9 +64,6 @@ jobs:
           bash build/rocm/ci_run_jax_ut.sh \
             --config=rocm_mgpu \
             --config=rocm_rbe \
-            --wheelhouse=${{ steps.wheelhouse.outputs.dir }} \
-            --rocm_version=$ROCM_VERSION \
-            --jax_version=$JAX_VERSION \
             --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
             --curses=no \
             --color=yes \
