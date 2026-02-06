@@ -30,7 +30,6 @@ import tempfile
 from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
 
-
 parser = argparse.ArgumentParser(fromfile_prefix_chars="@")
 parser.add_argument(
     "--sources_path",
@@ -159,7 +158,9 @@ def get_jax_commit_hash():
     return args.jax_commit
 
 
-def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs):
+def prepare_rocm_plugin_wheel(
+    wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs
+):
     """Assembles a source tree for the ROCm wheel in `sources_path`."""
     plugin_dir = wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
     os.makedirs(plugin_dir, exist_ok=True)
@@ -170,14 +171,19 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
         shutil.copy(find_src(srcs, "LICENSE.txt"), wheel_sources_path)
         shutil.copy(find_src(srcs, "__init__.py"), plugin_dir)
         shutil.copy(find_src(srcs, "version.py"), plugin_dir)
-        shutil.copy(find_src(srcs, "pjrt_c_api_gpu_plugin.so"), plugin_dir / "xla_rocm_plugin.so")
+        shutil.copy(
+            find_src(srcs, "pjrt_c_api_gpu_plugin.so"),
+            plugin_dir / "xla_rocm_plugin.so",
+        )
     else:
         shutil.copy(rloc("pjrt/python/pyproject.toml"), wheel_sources_path)
         shutil.copy(rloc("pjrt/python/setup.py"), wheel_sources_path)
         shutil.copy(rloc("pjrt/tools/LICENSE.txt"), wheel_sources_path)
         shutil.copy(rloc("pjrt/python/__init__.py"), plugin_dir)
         shutil.copy(rloc("pjrt/python/version.py"), plugin_dir)
-        shutil.copy(rloc("pjrt/pjrt_c_api_gpu_plugin.so"), plugin_dir / "xla_rocm_plugin.so")
+        shutil.copy(
+            rloc("pjrt/pjrt_c_api_gpu_plugin.so"), plugin_dir / "xla_rocm_plugin.so"
+        )
 
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
     write_setup_cfg(wheel_sources_path, cpu)

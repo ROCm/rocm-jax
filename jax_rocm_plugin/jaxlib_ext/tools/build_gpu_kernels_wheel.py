@@ -169,13 +169,21 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
 
     # Copy config files: from --srcs if provided, else from runfiles
     if srcs:
-        shutil.copy(find_src(srcs, "plugin_pyproject.toml"), wheel_sources_path / "pyproject.toml")
+        shutil.copy(
+            find_src(srcs, "plugin_pyproject.toml"),
+            wheel_sources_path / "pyproject.toml",
+        )
         shutil.copy(find_src(srcs, "plugin_setup.py"), wheel_sources_path / "setup.py")
         shutil.copy(find_src(srcs, "LICENSE.txt"), wheel_sources_path)
         shutil.copy(find_src(srcs, "version.py"), plugin_dir)
     else:
-        shutil.copy(rloc("jax_plugins/rocm/plugin_pyproject.toml"), wheel_sources_path / "pyproject.toml")
-        shutil.copy(rloc("jax_plugins/rocm/plugin_setup.py"), wheel_sources_path / "setup.py")
+        shutil.copy(
+            rloc("jax_plugins/rocm/plugin_pyproject.toml"),
+            wheel_sources_path / "pyproject.toml",
+        )
+        shutil.copy(
+            rloc("jax_plugins/rocm/plugin_setup.py"), wheel_sources_path / "setup.py"
+        )
         shutil.copy(rloc("jaxlib_ext/tools/LICENSE.txt"), wheel_sources_path)
         shutil.copy(rloc("pjrt/python/version.py"), plugin_dir)
 
