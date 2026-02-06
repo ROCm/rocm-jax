@@ -240,7 +240,8 @@ def build_jaxlib_wheel(
         "--verbose",
         "--bazel_options=--action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress",
         "--bazel_options=--repo_env=ML_WHEEL_TYPE=release",
-        f"--bazel_options=--repo_env=ML_WHEEL_VERSION_SUFFIX=+rocm{version_string}",
+        # Replace '+' with '.' for PEP 440 compliance (local version label)
+        f"--bazel_options=--repo_env=ML_WHEEL_VERSION_SUFFIX=+rocm{rocm_version.replace('+', '.')}",
     ]
 
     # Add clang path if clang is used.

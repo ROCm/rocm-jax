@@ -295,8 +295,9 @@ def build_dockers(
     commit_info = _get_commit_info_from_wheel()
     dockerfiles = _apply_filters(docker_filters, "Dockerfile.jax")
 
-    rocm_ver_tag = "rocm%s" % "".join(rocm_version.split("."))
-    rocm_version_tag = "".join(rocm_version.split("."))
+    # Docker tags cannot contain '+', so replace it with '.' for consistency with wheel versions
+    rocm_ver_tag = "rocm%s" % "".join(rocm_version.split(".")).replace("+", ".")
+    rocm_version_tag = "".join(rocm_version.split(".")).replace("+", ".")
     plugin_namespace = rocm_version[0]
     if plugin_namespace == "6":
         plugin_namespace = "60"
@@ -373,7 +374,8 @@ def build_base_dockers(
     push_latest=False,
 ):
     dockerfiles = _apply_filters(docker_filters, "Dockerfile.base")
-    rocm_ver_tag = "rocm%s" % "".join(rocm_version.split("."))
+    # Docker tags cannot contain '+', so replace it with '.' for consistency with wheel versions
+    rocm_ver_tag = "rocm%s" % "".join(rocm_version.split(".")).replace("+", ".")
 
     extra_args = []
     if add_llvm:
