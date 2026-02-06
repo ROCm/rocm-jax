@@ -32,6 +32,10 @@ on:
         required: false
         type: string
         default: 'rocm-jaxlib-v0.8.2'
+      builder-image:
+        required: false
+        type: string
+        default: ''
     secrets:
       rbe_ci_key:
         required: true
@@ -89,6 +93,7 @@ jobs:
             --jax-source-dir="./jax" \
             dist_wheels \
             --rbe
+            --builder-image="${{ inputs.builder-image }}"
       - name: Archive plugin wheels
         uses: actions/upload-artifact@v4
         with:

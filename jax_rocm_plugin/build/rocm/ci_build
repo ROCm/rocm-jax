@@ -26,13 +26,6 @@ import subprocess
 import sys
 
 
-def image_by_name(name):
-    cmd = ["docker", "images", "-q", "-f", "reference=%s" % name]
-    out = subprocess.check_output(cmd)
-    image_id = out.decode("utf8").strip().split("\n")[0] or None
-    return image_id
-
-
 def dist_wheels(
     rocm_version,
     python_versions,
@@ -43,50 +36,14 @@ def dist_wheels(
     therock_path,
     rbe,
     compiler,
+    builder_image,
 ):
     if xla_path:
         xla_path = os.path.abspath(xla_path)
 
-    # create manylinux image with requested ROCm installed
-    image = "jax-manylinux_2_28_x86_64_rocm%s" % rocm_version.replace(".", "")
-
-    # Try removing the Docker image.
-    try:
-        subprocess.run(["docker", "rmi", image], check=True)
-        print(f"Image {image} removed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to remove Docker image {image}: {e}")
-
-    cmd = [
-        "docker",
-        "build",
-        "-f",
-        "build/rocm/build_wheels/Dockerfile.manylinux_2_28_x86_64.rocm",
-        "--build-arg=ROCM_VERSION=%s" % rocm_version,
-        "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
-        "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
-        "--tag=%s" % image,
-    ]
-
-    if os.path.isdir(therock_path):
-        cmd.append("--build-arg=THEROCK_PATH=/tmp/therock/")
-        cmd.append("--build-context=therock=%s" % therock_path)
-    else:
-        if therock_path:
-            cmd.append("--build-arg=THEROCK_PATH=%s" % therock_path)
-        os.makedirs("tmp_therock", exist_ok=True)
-        cmd.append("--build-context=therock=tmp_therock")
-
-    cmd.append(".")
-
-    if not image_by_name(image):
-        _ = subprocess.run(cmd, check=True)
-
-    # use image to build JAX/jaxlib wheels
+    # Use the manylinux image to build JAX/jaxlib wheels
     os.makedirs("wheelhouse", exist_ok=True)
-
     pyver_string = ",".join(python_versions)
-
     container_xla_path = "/xla"
     container_jax_path = "/jax"
     container_plugin_path = "/jax_rocm_plugin"
@@ -113,11 +70,10 @@ def dist_wheels(
         bw_cmd.append("--rbe")
 
     bw_cmd.append(container_plugin_path)
-
+    bw_cmd.append("/jax")
     container_cmd = " ".join(bw_cmd)
 
     cmd = ["docker", "run"]
-
     mounts = [
         "-v",
         os.path.abspath("../") + ":/repo",
@@ -151,7 +107,7 @@ def dist_wheels(
             "GIT_WORK_TREE=/repo",
             "-e",
             "ROCM_VERSION_EXTRA=" + rocm_version,
-            image,
+            builder_image,
             "bash",
             "-c",
             container_cmd,
@@ -224,24 +180,6 @@ def parse_args():
     )
 
     p.add_argument(
-        "--rocm-build-job",
-        default="",
-        help="ROCm build job for development ROCm builds",
-    )
-
-    p.add_argument(
-        "--rocm-build-num",
-        default="",
-        help="ROCm build number for development ROCm builds",
-    )
-
-    p.add_argument(
-        "--therock-path",
-        default=None,
-        help="Either a URL that points to a tarball containing TheRock or a path to a local directory containing TheRock",
-    )
-
-    p.add_argument(
         "--xla-source-dir",
         help="Path to XLA source to use during plugin and jaxlib build, instead of builtin XLA",
     )
@@ -261,6 +199,11 @@ def parse_args():
         "--compiler",
         choices=["gcc", "clang"],
         help="Compiler backend to use when compiling jax/jaxlib",
+    )
+
+    p.add_argument(
+        "--builder-image",
+        default=None,
     )
 
     subp = p.add_subparsers(dest="action", required=True)
@@ -287,6 +230,7 @@ def main():
             args.therock_path,
             args.rbe,
             args.compiler,
+            args.builder_image,
         )
 
     elif args.action == "test":

@@ -16,6 +16,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  call-build-base-dockers:
+    if: ${{ contains(github.event.commits.*.modified, 'build/ci_build')
+            || contains(github.event.commits.*.modified, 'docker/manylinux/Dockerfile.jax-manylinux_2_28-rocm'
+            || contains(github.event.commits.*.modified, 'docker/manylinux/Dockerfile.jax-manylinux_2_28_x86_64-therock')
+            || contains(github.event.commits.*.modified, 'docker/manylinux/clang.cfg')
+            || contains(github.event.commits.*.modified, 'tools/get_rocm.py')
+        }}
+    strategy:
+      matrix:
+        rocm-version: ["7.1.0"]
+    uses: ./.github/workflows/build-base-dockers.yml
+    with:
+      rocm-version: ${{ matrix.rocm-version }}
   call-build-wheels:
     strategy:
       matrix:
@@ -23,13 +36,14 @@ jobs:
     uses: ./.github/workflows/build-wheels.yml
     with:
       # TODO: Add back Python 3.13 when we're ready to move to a more recent version of XLA. 3.13
-      #       fails with a complaint abou the pipes module.
+      #       fails with a complaint about the pipes module.
       python-versions: "3.11,3.12"
       rocm-version: ${{ matrix.rocm-version }}
       runner-label: '["linux-x86-64-1gpu-amd"]'
     secrets:
       rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
       rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
+      builder-image: "search"
   call-build-docker:
     needs: call-build-wheels
     strategy:
