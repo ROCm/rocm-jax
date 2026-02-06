@@ -5,34 +5,14 @@ on:
     inputs:
       source-repo:
         description: "ORG/REPO"
-        required: true
+        required: false
+        default: "rocm/jax"
         type: string
       source-github-run-id:
         description: "Repo GitHub Run ID"
-        required: true                    #TODO
-        type: string
-      source-artifact-name:
-        description: "Run Artifact Name"
-        required: true                    #TODO
-        type: string
-      rocm-version:
-        required: true
-        type: string
-      ubuntu-version:
-        required: true
-        type: string
-      rocm-build-num:
         required: false
+        default: ""
         type: string
-        default: "0"
-      github-sha:
-        required: false
-        type: string
-        default: ToT
-      runner-label:
-        required: false
-        type: string
-        default: "MI300"
     secrets:
       ROCM_JAX_DB_HOSTNAME:
         required: true
@@ -44,7 +24,7 @@ on:
         required: true
 
 jobs:
-  fetch-logs:
+  download-logs:
     runs-on: linux-mi355-1
     steps:
       - name: Download logs artifact from source run
@@ -53,7 +33,6 @@ jobs:
         run: |
           gh run download "${{ inputs.source-github-run-id }}" \
             -R "${{ inputs.source-repo }}" \
-            -n "${{ inputs.source-artifact-name }}" \
             -D "logs-${{ inputs.source-github-run-id }}"
       - name: Upload logs for DB job
         uses: actions/upload-artifact@v4
@@ -61,7 +40,7 @@ jobs:
           name: logs-${{ inputs.source-github-run-id }}
           path: logs-${{ inputs.source-github-run-id }}/
   upload-to-db:
-    needs: fetch-logs
+    needs: download-logs
     runs-on: mysqldb
     steps:
       - name: Checkout source
@@ -89,12 +68,21 @@ jobs:
           pip install --upgrade pip
           pip install mysql-connector-python
 
-          python ci/upload_test_to_db.py \
-          --logs_dir "$LOGS_DIR" \
-          --run-tag "ci-run" \
-          --runner-label "MI300" \
-          --ubuntu-version "${UBUNTU_VERSION}" \
-          --rocm-version "${ROCM_VERSION//.}" \
-          --commit-sha "$GITHUB_SHA" \
-          --build-num "$ROCM_BUILD_NUM" \
-          --github-run-id "$GITHUB_RUN_ID"
+          for artifact_dir in "$LOGS_DIR"/*; do
+            [ -d "$artifact_dir" ] || continue
+            meta="$artifact_dir/metadata.json"
+            [ -f "$meta" ] || continue
+            RUNNER_LABEL=$(python -c "import json;print(json.load(open('$meta'))['runner_label'])")
+            UBUNTU_VERSION=$(python -c "import json;print(json.load(open('$meta'))['ubuntu_version'])")
+            ROCM_VERSION=$(python -c "import json;print(json.load(open('$meta'))['rocm_version'])")
+            GITHUB_SHA=$(python -c "import json;print(json.load(open('$meta'))['github_sha'])")
+            GITHUB_RUN_ID=$(python -c "import json;print(json.load(open('$meta'))['github_run_id'])")
+            python ci/upload_test_to_db.py \
+              --logs_dir "$artifact_dir" \
+              --run-tag "ci-run" \
+              --runner-label "$RUNNER_LABEL" \
+              --ubuntu-version "$UBUNTU_VERSION" \
+              --rocm-version "${ROCM_VERSION//.}" \
+              --commit-sha "$GITHUB_SHA" \
+              --github-run-id "$GITHUB_RUN_ID"
+          done
