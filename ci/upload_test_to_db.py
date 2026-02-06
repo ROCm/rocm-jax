@@ -2,9 +2,9 @@
 """
 Upload pytest results to MySQL.
 Tables:
- - ci_runs_dup:    one row per run
- - ci_tests_dup:   one row per unique test
- - ci_results_dup: one row per test per run
+ - ci_runs:    one row per run
+ - ci_tests:   one row per unique test
+ - ci_results: one row per test per run
 """
 
 from __future__ import annotations
@@ -78,6 +78,7 @@ def find_single_report_json(logs_dir: Path) -> Path:
         for p in logs_dir.iterdir()
         if p.is_file()
         and p.suffix.lower() == ".json"
+        and p.name not in {"metadata.json"}
         and not p.name.endswith("last_running.json")
     ]
     if not jsons:
@@ -267,10 +268,10 @@ def connect():
 
 
 def insert_run(cur, created_at: datetime, meta: dict) -> int:
-    """Insert one row into ci_runs_dup and return run_id. Idempotence is not enforced here."""
+    """Insert one row into ci_runs and return run_id. Idempotence is not enforced here."""
     cur.execute(
         """
-       INSERT INTO ci_runs_dup (
+       INSERT INTO ci_runs (
            created_at, commit_sha, runner_label, ubuntu_version,
            rocm_version, build_num, github_run_id, run_tag, logs_path
        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
@@ -291,11 +292,11 @@ def insert_run(cur, created_at: datetime, meta: dict) -> int:
 
 
 def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str], int]:
-    """Ensure all tests exist in ci_tests_dup and return an ID mapping.
+    """Ensure all tests exist in ci_tests and return an ID mapping.
 
     Uses a TEMPORARY TABLE for efficiency with large runs:
       1) Bulk insert unique (filename, classname, test_name) into a temp table.
-      2) INSERT any missing rows into ci_tests_dup in one set operation.
+      2) INSERT any missing rows into ci_tests in one set operation.
       3) SELECT back (file, class, test) -> id mapping in one query.
     """
     uniq = {nodeid_parts(t["nodeid"]) for t in tests}
@@ -319,10 +320,10 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
 
     cur.execute(
         """
-       INSERT INTO ci_tests_dup (filename, classname, test_name)
+       INSERT INTO ci_tests (filename, classname, test_name)
        SELECT s.filename, s.classname, s.test_name
        FROM tmp_tests s
-       LEFT JOIN ci_tests_dup t
+       LEFT JOIN ci_tests t
          ON t.filename = s.filename
         AND t.classname = s.classname
         AND t.test_name = s.test_name
@@ -334,7 +335,7 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
         """
        SELECT t.id, s.filename, s.classname, s.test_name
        FROM tmp_tests s
-       JOIN ci_tests_dup t
+       JOIN ci_tests t
          ON t.filename = s.filename
         AND t.classname = s.classname
         AND t.test_name = s.test_name
@@ -360,7 +361,7 @@ def batch_insert_results(
         return
 
     sql = """
-       INSERT INTO ci_results_dup
+       INSERT INTO ci_results
            (run_id, test_id, outcome, duration, longrepr, message, skip_label)
        VALUES (%s,%s,%s,%s,%s,%s,%s)
        ON DUPLICATE KEY UPDATE
@@ -392,9 +393,9 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
 
     Flow:
       1) Parse JSONs and gather tests.
-      2) Insert a ci_runs_dup row and get run_id.
+      2) Insert a ci_runs row and get run_id.
       3) Ensure all tests exist; get (file,class,test) -> test_id map.
-      4) Bulk insert/update ci_results_dup for this run.
+      4) Bulk insert/update ci_results for this run.
     """
     report = find_single_report_json(logs_dir)
     created_at, tests = load_from_single_json(report)
