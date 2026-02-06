@@ -209,7 +209,8 @@ def _install_therock(rocm_version, therock_path):
         os.makedirs(rocm_real_path)
         tar_path = "/tmp/therock.tar.gz"
         # URL-encode special characters (e.g., '+' becomes '%2B')
-        encoded_url = urllib.parse.quote(therock_path, safe=":/?&=")
+        # Include '%' in safe to avoid double-encoding already-encoded URLs
+        encoded_url = urllib.parse.quote(therock_path, safe=":/?&=%")
         with urllib.request.urlopen(encoded_url) as response:
             if response.status == 200:
                 with open(tar_path, "wb") as tar_file:
