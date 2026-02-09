@@ -11,31 +11,9 @@ index 6169c882a..72f403038 100644
          "//jaxlib:kernel_nanobind_helpers",
          "@com_google_absl//absl/status",
 diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
-index 1b8e8dd1e..4e5dc2dbe 100644
+index 1b8e8dd1e..ffcbb664e 100644
 --- a/jaxlib/rocm/BUILD
 +++ b/jaxlib/rocm/BUILD
-@@ -391,6 +391,10 @@ nanobind_extension(
-         "-fno-strict-aliasing",
-     ],
-     features = ["-use_header_modules"],
-+    linkopts = [
-+        "-L/opt/rocm/lib",
-+        "-lamdhip64",
-+    ],
-     module_name = "_hybrid",
-     deps = [
-         ":hip_gpu_kernel_helpers",
-@@ -404,10 +408,6 @@ nanobind_extension(
-         "@nanobind",
-         "@xla//xla/ffi/api:ffi",
-     ],
--    linkopts = [
--        "-L/opt/rocm/lib",
--        "-lamdhip64",
--    ],
- )
- 
- cc_library(
 @@ -498,6 +498,7 @@ cc_library(
          "-fno-strict-aliasing",
      ],

@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("//build:rpath.bzl", "patched_rpath_binary")
+
 licenses(["notice"])  # Apache 2
 
 package(default_visibility = ["//visibility:public"])
 
 cc_binary(
-    name = "pjrt_c_api_gpu_plugin.so",
+    name = "pjrt_c_api_gpu_plugin_raw.so",
     linkopts = [
         "-Wl,--version-script,$(location :gpu_version_script.lds)",
         "-Wl,--no-undefined",
@@ -30,4 +32,9 @@ cc_binary(
         "@xla//xla/service:gpu_plugin",
         "@xla//xla/stream_executor:rocm_platform",
     ],
+)
+
+patched_rpath_binary(
+    name = "pjrt_c_api_gpu_plugin.so",
+    src = ":pjrt_c_api_gpu_plugin_raw.so",
 )

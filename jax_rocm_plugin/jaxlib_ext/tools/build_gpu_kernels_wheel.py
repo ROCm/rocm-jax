@@ -22,8 +22,6 @@ import argparse
 import functools
 import os
 import pathlib
-import stat
-import subprocess
 import tempfile
 
 # pylint: disable=import-error,invalid-name,consider-using-with
@@ -153,60 +151,22 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
     build_utils.write_commit_info(
         plugin_dir, xla_commit_hash, jax_commit_hash, args.rocm_jax_git_hash
     )
+    # RPATH patching is handled by patched_rpath_binary genrules in
+    # //jaxlib_ext:BUILD — the .so files below already have clean RPATHs.
     copy_runfiles(
         dst_dir=plugin_dir,
         src_files=[
-            f"jax/jaxlib/rocm/_linalg.{pyext}",
-            f"jax/jaxlib/rocm/_prng.{pyext}",
-            f"jax/jaxlib/rocm/_solver.{pyext}",
-            f"jax/jaxlib/rocm/_sparse.{pyext}",
-            f"jax/jaxlib/rocm/_hybrid.{pyext}",
-            f"jax/jaxlib/rocm/_rnn.{pyext}",
-            f"jax/jaxlib/rocm/_triton.{pyext}",
-            f"jax/jaxlib/rocm/rocm_plugin_extension.{pyext}",
+            f"__main__/jaxlib_ext/_linalg.{pyext}",
+            f"__main__/jaxlib_ext/_prng.{pyext}",
+            f"__main__/jaxlib_ext/_solver.{pyext}",
+            f"__main__/jaxlib_ext/_sparse.{pyext}",
+            f"__main__/jaxlib_ext/_hybrid.{pyext}",
+            f"__main__/jaxlib_ext/_rnn.{pyext}",
+            f"__main__/jaxlib_ext/_triton.{pyext}",
+            f"__main__/jaxlib_ext/rocm_plugin_extension.{pyext}",
             "__main__/pjrt/python/version.py",
         ],
     )
-
-    # NOTE(mrodden): this is a hack to change/set rpath values
-    # in the shared objects that are produced by the bazel build
-    # before they get pulled into the wheel build process.
-    # we have to do this change here because setting rpath
-    # using bazel requires the rpath to be valid during the build
-    # which won't be correct until we make changes to
-    # the xla/tsl/jax plugin build
-
-    try:
-        subprocess.check_output(["which", "patchelf"])
-    except subprocess.CalledProcessError as ex:
-        mesg = (
-            "rocm plugin and kernel wheel builds require patchelf. "
-            "please install 'patchelf' and run again"
-        )
-        raise RuntimeError(mesg) from ex
-
-    files = [
-        f"_linalg.{pyext}",
-        f"_prng.{pyext}",
-        f"_solver.{pyext}",
-        f"_sparse.{pyext}",
-        f"_hybrid.{pyext}",
-        f"_rnn.{pyext}",
-        f"_triton.{pyext}",
-        f"rocm_plugin_extension.{pyext}",
-    ]
-    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
-    # patchelf --set-rpath $RUNPATH $so
-    for f in files:
-        so_path = os.path.join(plugin_dir, f)
-        fix_perms = False
-        perms = os.stat(so_path).st_mode
-        if not perms & stat.S_IWUSR:
-            fix_perms = True
-            os.chmod(so_path, perms | stat.S_IWUSR)
-        subprocess.check_call(["patchelf", "--set-rpath", runpath, so_path])
-        if fix_perms:
-            os.chmod(so_path, perms)
 
 
 tmpdir = tempfile.TemporaryDirectory(prefix="jax_rocm_plugin")

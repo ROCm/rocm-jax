@@ -15,6 +15,7 @@
 # AMD HIP kernels
 
 load("@jax//jaxlib:jax.bzl", "nanobind_extension")
+load("//build:rpath.bzl", "patched_rpath_binary")
 
 licenses(["notice"])
 
@@ -24,7 +25,7 @@ package(
 )
 
 nanobind_extension(
-    name = "rocm_plugin_extension",
+    name = "rocm_plugin_extension_raw",
     srcs = ["rocm_plugin_extension.cc"],
     module_name = "rocm_plugin_extension",
     deps = [
@@ -38,3 +39,27 @@ nanobind_extension(
         "@nanobind",
     ],
 )
+
+patched_rpath_binary(
+    name = "rocm_plugin_extension.so",
+    src = ":rocm_plugin_extension_raw.so",
+)
+
+# Patched copies of JAX ROCm kernel extensions with clean RPATHs.
+# The nanobind_extension macro creates a cc_binary named "<ext>.so"
+# and a py_library named "<ext>". We reference the .so target directly.
+[
+    patched_rpath_binary(
+        name = ext + ".so",
+        src = "@jax//jaxlib/rocm:" + ext + ".so",
+    )
+    for ext in [
+        "_linalg",
+        "_prng",
+        "_solver",
+        "_sparse",
+        "_hybrid",
+        "_rnn",
+        "_triton",
+    ]
+]

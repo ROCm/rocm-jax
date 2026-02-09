@@ -22,14 +22,11 @@ import argparse
 import functools
 import os
 import pathlib
-import stat
-import subprocess
 import tempfile
 
 # pylint: disable=import-error,invalid-name,consider-using-with
 from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -104,14 +101,11 @@ def write_setup_cfg(setup_sources_path, cpu):
     tag = build_utils.platform_tag(cpu)
     cfg_path = setup_sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
-        f.write(
-            f"""[metadata]
-license_files = LICENSE.txt
-
-[bdist_wheel]
-plat_name={tag}
-"""
-        )
+        f.write(f"""[metadata]
+                    license_files = LICENSE.txt
+                    [bdist_wheel]
+                    plat_name={tag}
+                """)
 
 
 def get_xla_commit_hash():
@@ -158,40 +152,13 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
             "__main__/pjrt/python/version.py",
         ],
     )
+    # RPATH patching is handled by patched_rpath_binary genrule in
+    # //pjrt:BUILD — the .so file below already has a clean RPATH.
     copy_runfiles(
         "__main__/pjrt/pjrt_c_api_gpu_plugin.so",
         dst_dir=plugin_dir,
         dst_filename="xla_rocm_plugin.so",
     )
-
-    # NOTE(mrodden): this is a hack to change/set rpath values
-    # in the shared objects that are produced by the bazel build
-    # before they get pulled into the wheel build process.
-    # we have to do this change here because setting rpath
-    # using bazel requires the rpath to be valid during the build
-    # which won't be correct until we make changes to
-    # the xla/tsl/jax plugin build
-
-    try:
-        subprocess.check_output(["which", "patchelf"])
-    except subprocess.CalledProcessError as ex:
-        mesg = (
-            "rocm plugin and kernel wheel builds require patchelf. "
-            "please install 'patchelf' and run again"
-        )
-        raise RuntimeError(mesg) from ex
-
-    shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
-    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
-    # patchelf --set-rpath $RUNPATH $so
-    fix_perms = False
-    perms = os.stat(shared_obj_path).st_mode
-    if not perms & stat.S_IWUSR:
-        fix_perms = True
-        os.chmod(shared_obj_path, perms | stat.S_IWUSR)
-    subprocess.check_call(["patchelf", "--set-rpath", runpath, shared_obj_path])
-    if fix_perms:
-        os.chmod(shared_obj_path, perms)
 
 
 tmpdir = None
