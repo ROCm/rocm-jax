@@ -23,7 +23,6 @@ import shutil
 import sys
 import subprocess
 import glob
-from collections.abc import Sequence
 import textwrap
 
 
