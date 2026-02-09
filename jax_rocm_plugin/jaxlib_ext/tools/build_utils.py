@@ -23,7 +23,6 @@ import shutil
 import sys
 import subprocess
 import glob
-from collections.abc import Sequence
 import textwrap
 
 
@@ -32,35 +31,14 @@ def is_windows() -> bool:
     return sys.platform.startswith("win32")
 
 
-def copy_file(
-    src_files: str | Sequence[str],
-    dst_dir: pathlib.Path,
-    dst_filename=None,
-    runfiles=None,
-) -> None:
-    """Copy source files to destination directory using runfiles."""
-    dst_dir.mkdir(parents=True, exist_ok=True)
-    if isinstance(src_files, str):
-        src_files = [src_files]
-    for src_file in src_files:
-        src_file_rloc = runfiles.Rlocation(src_file)
-        if src_file_rloc is None:
-            raise ValueError(f"Unable to find wheel source file {src_file}")
-        src_filename = os.path.basename(src_file_rloc)
-        dst_file = os.path.join(dst_dir, dst_filename or src_filename)
-        if is_windows():
-            shutil.copyfile(src_file_rloc, dst_file)
-        else:
-            shutil.copy(src_file_rloc, dst_file)
-
-
 def platform_tag(cpu: str) -> str:
     """Generate platform-specific wheel tag based on CPU architecture."""
+    # Match the platform tags from @jax//jaxlib:jax.bzl PLATFORM_TAGS_DICT
     platform_name, cpu_name = {
-        ("Linux", "x86_64"): ("manylinux2014", "x86_64"),
-        ("Linux", "aarch64"): ("manylinux2014", "aarch64"),
-        ("Linux", "ppc64le"): ("manylinux2014", "ppc64le"),
-        ("Darwin", "x86_64"): ("macosx_10_14", "x86_64"),
+        ("Linux", "x86_64"): ("manylinux_2_27", "x86_64"),
+        ("Linux", "aarch64"): ("manylinux_2_27", "aarch64"),
+        ("Linux", "ppc64le"): ("manylinux_2_27", "ppc64le"),
+        ("Darwin", "x86_64"): ("macosx_11_0", "x86_64"),
         ("Darwin", "arm64"): ("macosx_11_0", "arm64"),
         ("Windows", "AMD64"): ("win", "amd64"),
     }[(platform.system(), cpu)]
@@ -147,17 +125,15 @@ def update_setup_with_rocm_version(file_dir: pathlib.Path, rocm_version: str):
 def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
     """Write commit hash information into commit_info.py inside `plugin_dir`."""
     os.makedirs(plugin_dir, exist_ok=True)
-    commit_info_content = textwrap.dedent(
-        f"""
-      # auto-generated; do not edit
+    commit_info_content = textwrap.dedent(f"""
+        # auto-generated; do not edit
 
-      commits = {{
-          "ROCm/xla": "{xla_commit}",
-          "ROCm/rocm-jax": "{rocm_jax_commit}",
-          "jax": "{jax_commit}",
-      }}
-  """
-    )
+        commits = {{
+            "ROCm/xla": "{xla_commit}",
+            "ROCm/rocm-jax": "{rocm_jax_commit}",
+            "jax": "{jax_commit}",
+        }}
+    """)
 
     commit_info_path = plugin_dir / "commit_info.py"
 
