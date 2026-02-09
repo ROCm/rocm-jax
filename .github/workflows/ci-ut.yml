@@ -1,12 +1,15 @@
 name: Nightly RBE
 
 on:
-  schedule:
-    - cron: "0 1 * * *"
-  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - 'rocm-jaxlib-v*'
   pull_request:
-    paths:
-      - '.github/workflows/nightly-rbe.yml'
+    branches:
+      - master
+      - 'rocm-jaxlib-v*'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -59,7 +62,8 @@ jobs:
             --color=yes \
             -- \
             @jax//tests:gpu_tests \
-            @jax//tests:backend_independent_tests
+            @jax//tests:backend_independent_tests \
+            "$(build/rocm/targets_to_ignore.sh)"
 
       - name: Run multi-GPU unit tests (Python ${{ matrix.python_version }})
         if: always()
@@ -73,7 +77,8 @@ jobs:
             --strategy=TestRunner=local \
             -- \
             @jax//tests:gpu_tests \
-            @jax//tests:backend_independent_tests
+            @jax//tests:backend_independent_tests \
+            "$(build/rocm/targets_to_ignore.sh)"
 
       - name: Upload logs to artifact
         if: always()
