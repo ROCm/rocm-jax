@@ -22,9 +22,7 @@ jobs:
         rocm-version: ["7.1.1"]
     uses: ./.github/workflows/build-wheels.yml
     with:
-      # TODO: Add back Python 3.13 when we're ready to move to a more recent version of XLA. 3.13
-      #       fails with a complaint abou the pipes module.
-      python-versions: "3.11,3.12"
+      python-versions: "3.11,3.12,3.13,3.14"
       rocm-version: ${{ matrix.rocm-version }}
       runner-label: '["linux-x86-64-1gpu-amd"]'
     secrets:

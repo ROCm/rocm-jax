@@ -1,4 +1,4 @@
-name: Nightly RBE
+name: CI Unit Tests
 
 on:
   push:
@@ -63,7 +63,7 @@ jobs:
             -- \
             @jax//tests:gpu_tests \
             @jax//tests:backend_independent_tests \
-            "$(build/rocm/targets_to_ignore.sh)"
+            $(build/rocm/targets_to_ignore.sh)
 
       - name: Run multi-GPU unit tests (Python ${{ matrix.python_version }})
         if: always()
@@ -78,7 +78,7 @@ jobs:
             -- \
             @jax//tests:gpu_tests \
             @jax//tests:backend_independent_tests \
-            "$(build/rocm/targets_to_ignore.sh)"
+            $(build/rocm/targets_to_ignore.sh)
 
       - name: Upload logs to artifact
         if: always()
