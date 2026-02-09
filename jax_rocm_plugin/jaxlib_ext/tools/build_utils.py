@@ -32,28 +32,6 @@ def is_windows() -> bool:
     return sys.platform.startswith("win32")
 
 
-def copy_file(
-    src_files: str | Sequence[str],
-    dst_dir: pathlib.Path,
-    dst_filename=None,
-    runfiles=None,
-) -> None:
-    """Copy source files to destination directory using runfiles."""
-    dst_dir.mkdir(parents=True, exist_ok=True)
-    if isinstance(src_files, str):
-        src_files = [src_files]
-    for src_file in src_files:
-        src_file_rloc = runfiles.Rlocation(src_file)
-        if src_file_rloc is None:
-            raise ValueError(f"Unable to find wheel source file {src_file}")
-        src_filename = os.path.basename(src_file_rloc)
-        dst_file = os.path.join(dst_dir, dst_filename or src_filename)
-        if is_windows():
-            shutil.copyfile(src_file_rloc, dst_file)
-        else:
-            shutil.copy(src_file_rloc, dst_file)
-
-
 def platform_tag(cpu: str) -> str:
     """Generate platform-specific wheel tag based on CPU architecture."""
     # Match the platform tags from @jax//jaxlib:jax.bzl PLATFORM_TAGS_DICT
