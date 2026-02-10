@@ -22,8 +22,6 @@ import argparse
 import os
 import pathlib
 import shutil
-import stat
-import subprocess
 import tempfile
 
 # pylint: disable=import-error,invalid-name,consider-using-with
@@ -196,7 +194,9 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         plugin_dir, xla_commit_hash, jax_commit_hash, get_rocm_jax_git_hash()
     )
 
-    # Copy .so files: always from jax runfiles
+    # Copy .so files from local wrapper targets (//jaxlib_ext/rocm).
+    # RPATHs are set at build time via Bazel features/linkopts when
+    # --config=rocm_wheel is used (rocm_path_type=link_only).
     for so_file in [
         f"_linalg.{pyext}",
         f"_prng.{pyext}",
@@ -207,47 +207,7 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         f"_triton.{pyext}",
         f"rocm_plugin_extension.{pyext}",
     ]:
-        shutil.copy(r.Rlocation(f"jax/jaxlib/rocm/{so_file}"), plugin_dir)
-
-    # NOTE(mrodden): this is a hack to change/set rpath values
-    # in the shared objects that are produced by the bazel build
-    # before they get pulled into the wheel build process.
-    # we have to do this change here because setting rpath
-    # using bazel requires the rpath to be valid during the build
-    # which won't be correct until we make changes to
-    # the xla/tsl/jax plugin build
-
-    try:
-        subprocess.check_output(["which", "patchelf"])
-    except subprocess.CalledProcessError as ex:
-        mesg = (
-            "rocm plugin and kernel wheel builds require patchelf. "
-            "please install 'patchelf' and run again"
-        )
-        raise RuntimeError(mesg) from ex
-
-    files = [
-        f"_linalg.{pyext}",
-        f"_prng.{pyext}",
-        f"_solver.{pyext}",
-        f"_sparse.{pyext}",
-        f"_hybrid.{pyext}",
-        f"_rnn.{pyext}",
-        f"_triton.{pyext}",
-        f"rocm_plugin_extension.{pyext}",
-    ]
-    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
-    # patchelf --set-rpath $RUNPATH $so
-    for f in files:
-        so_path = os.path.join(plugin_dir, f)
-        fix_perms = False
-        perms = os.stat(so_path).st_mode
-        if not perms & stat.S_IWUSR:
-            fix_perms = True
-            os.chmod(so_path, perms | stat.S_IWUSR)
-        subprocess.check_call(["patchelf", "--set-rpath", runpath, so_path])
-        if fix_perms:
-            os.chmod(so_path, perms)
+        shutil.copy(rloc(f"jaxlib_ext/rocm/{so_file}"), plugin_dir)
 
 
 tmpdir = tempfile.TemporaryDirectory(prefix="jax_rocm_plugin")

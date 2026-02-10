@@ -99,6 +99,10 @@ build:rocm --copt=-Wno-gnu-offsetof-extensions
 build:rocm --copt=-Qunused-arguments
 build:rocm --action_env=TF_HIPCC_CLANG="1"
 
+# Strip Bazel sandbox rpaths and embed wheel-specific rpaths instead.
+# Use this config when building wheels to avoid post-build patchelf usage.
+build:rocm_wheel --@local_config_rocm//rocm:rocm_path_type=link_only
+
 
 #############################################################################
 # Configuration for running RBE builds and tests

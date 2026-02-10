@@ -13,5 +13,6 @@ def repo():
             "//third_party/jax:0005-Fix-HIP-availability-errors.patch",
             "//third_party/jax:0006-Enable-testing-with-ROCm-plugin-wheels.patch",  # TODO: remove due to: https://github.com/jax-ml/jax/pull/34641
             "//third_party/jax:0007-Fix-legacy-create-init.patch",  # TODO: remove due to: https://github.com/jax-ml/jax/pull/34770
+            "//third_party/jax:0008-Add-rpath-control-for-wheel-builds.patch",
         ],
     )

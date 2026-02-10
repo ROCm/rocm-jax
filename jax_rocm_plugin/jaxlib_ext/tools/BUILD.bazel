@@ -26,8 +26,8 @@ ROCM_PLUGIN_SOURCES = [
     "//jax_plugins/rocm:plugin_pyproject.toml",
     "//jax_plugins/rocm:plugin_setup.py",
     "//pjrt/python:version.py",
-    "@jax//jaxlib/rocm:rocm_gpu_support",
-    "@jax//jaxlib/rocm:rocm_plugin_extension",
+    "//jaxlib_ext/rocm:rocm_gpu_support",
+    "//jaxlib_ext/rocm:rocm_plugin_extension",
 ]
 
 py_binary(

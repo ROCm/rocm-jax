@@ -611,6 +611,7 @@ async def main():
 
     if "rocm" in args.wheels:
         wheel_build_command_base.append("--config=rocm_base")
+        wheel_build_command_base.append("--config=rocm_wheel")
         if args.use_clang:
             wheel_build_command_base.append("--config=rocm")
             wheel_build_command_base.append(
