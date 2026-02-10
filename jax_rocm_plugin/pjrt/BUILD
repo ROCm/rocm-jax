@@ -18,6 +18,7 @@ package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "pjrt_c_api_gpu_plugin.so",
+    features = ["no_solib_rpaths"],
     linkopts = [
         "-Wl,--version-script,$(location :gpu_version_script.lds)",
         "-Wl,--no-undefined",
