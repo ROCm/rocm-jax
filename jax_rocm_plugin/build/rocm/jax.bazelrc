@@ -21,20 +21,21 @@ build:rocm_sgpu --build_tag_filters=jax_test_gpu,-multiaccelerator,-config-cuda-
 # for @xla//build_tools/rocm:parallel_gpu_execute
 build:rocm --legacy_external_runfiles=true
 
+build:rocm_rbe --tls_client_certificate="ci-cert.crt"
+build:rocm_rbe --tls_client_key="ci-cert.key"
 build:rocm_rbe --bes_backend="grpcs://wardite.cluster.engflow.com"
 build:rocm_rbe --bes_results_url="https://wardite.cluster.engflow.com/invocation/"
+build:rocm_rbe --remote_executor="grpcs://wardite.cluster.engflow.com"
+build:rocm_rbe --remote_cache="grpcs://wardite.cluster.engflow.com"
+build:rocm_rbe --bes_timeout=600s
+build:rocm_rbe --spawn_strategy=local
+build:rocm_rbe --grpc_keepalive_time=30s
+build:rocm_rbe --repo_env=REMOTE_GPU_TESTING=1
 build:rocm_rbe --host_platform="//platform/linux:tf_linux_gpu"
 build:rocm_rbe --extra_execution_platforms="//platform/linux:tf_linux_gpu"
 build:rocm_rbe --platforms="//platform/linux:tf_linux_gpu"
-build:rocm_rbe --bes_timeout=600s
-build:rocm_rbe --tls_client_certificate="ci-cert.crt"
-build:rocm_rbe --tls_client_key="ci-cert.key"
-build:rocm_rbe --spawn_strategy=local
-build:rocm_rbe --grpc_keepalive_time=30s
-build:rocm_rbe --test_sharding_strategy=disabled
-build:rocm_rbe --action_env=REMOTE_GPU_TESTING=1
 
 test:rocm_rbe --jobs=200
-test:rocm_rbe --remote_executor=grpcs://wardite.cluster.engflow.com
 test:rocm_rbe --remote_timeout=3600
+test:rocm_rbe --test_sharding_strategy=disabled
 test:rocm_rbe --strategy=TestRunner=remote,local
