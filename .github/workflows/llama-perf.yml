@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   build-te-wheels:
-    runs-on: build-only-jax
+    runs-on: linux-jax-mi355-1
     outputs:
       runner_label: ${{ steps.arch.outputs.label }}
       te_commit_sha: ${{ steps.tsha.outputs.hash }}
