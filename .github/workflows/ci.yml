@@ -37,3 +37,72 @@ jobs:
     with:
       rocm-version: ${{ matrix.rocm-version }}
       runner-label: '["linux-x86-64-1gpu-amd"]'
+  run-python-unit-tests:
+    needs: call-build-docker
+    runs-on: "linux-x86-64-1gpu-amd"
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        rocm-version: ["7.1.1"]
+    steps:
+      - name: Change owners for cleanup
+        run: |
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Checkout JAX repo
+        uses: actions/checkout@v4
+        with:
+          # TODO: Load the ref from a file that sets the min and max JAX version
+          # TODO: Change the repo and ref once we figure out how exactly we're going to
+          #       manage tests
+          clean: false
+          repository: rocm/jax
+          ref: rocm-jaxlib-v0.8.2
+          path: jax
+      - name: Apply patches to rocm/jax test repo
+        run: |
+          pushd jax
+          git apply ../ci/patches/*
+          popd
+      - name: Get RBE cluster keys
+        env:
+          RBE_CI_CERT: ${{ secrets.RBE_CI_CERT }}
+          RBE_CI_KEY: ${{ secrets.RBE_CI_KEY }}
+        run: |
+          echo "$RBE_CI_CERT" >> ./jax/ci-cert.crt
+          echo "$RBE_CI_KEY" >> ./jax/ci-cert.key
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Check ROCm GPUs with rocm-smi
+        env:
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+        run: |
+          docker run --rm --device=/dev/kfd --device=/dev/dri --group-add video \
+            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
+            rocm-smi -a || true
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin_wheels_r${{ matrix.rocm-version }}
+          path: ./wheelhouse
+      - name: List files in the wheelhouse
+        run: |
+          ls -alth ./wheelhouse || true
+      - name: Run tests
+        env:
+          GPU_COUNT: "8"
+          GFX: "gfx90a"
+          JAX_SKIP_SLOW_TESTS: "1"
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+        # TODO: Add the tests/linalg_test.py test back once we fix the XLAClient thing.
+        run: |
+          python3 build/ci_build test \
+            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
+            --test-cmd "bash ci/jax_rbe/pr_setup.sh && ci/jax_rbe/pr_test.sh 0.8.2 3.12"
+
