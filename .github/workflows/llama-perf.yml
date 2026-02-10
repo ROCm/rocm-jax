@@ -22,9 +22,9 @@ on:
         required: false
         type: choice
         options:
-          - linux-mi325-8
-          - linux-mi355-8
-        default: "linux-mi355-8"
+          - linux-jax-mi325-8
+          - linux-jax-mi355-8
+        default: "linux-jax-mi355-8"
       te-ref:
         required: false
         type: string
@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   build-te-wheels:
-    runs-on: linux-mi355-1
+    runs-on: build-only-jax
     outputs:
       runner_label: ${{ steps.arch.outputs.label }}
       te_commit_sha: ${{ steps.tsha.outputs.hash }}
@@ -74,7 +74,7 @@ jobs:
       - name: Define ROCm arch & runner-label
         id: arch
         run: |
-          if [ "${{ inputs.runner-label }}" == "linux-mi325-8" ]; then
+          if [ "${{ inputs.runner-label }}" == "linux-jax-mi325-8" ]; then
             echo "ROCM_ARCH=gfx942" >> $GITHUB_ENV
             echo "label=MI325" >> $GITHUB_OUTPUT
           else
@@ -127,7 +127,7 @@ jobs:
           docker rm te-build-jax${{ matrix.jax-version }} || true
   run-llama-perf-model:
     needs: build-te-wheels
-    runs-on: ${{ inputs.runner-label || 'linux-mi355-8' }}
+    runs-on: ${{ inputs.runner-label || 'linux-jax-mi355-8' }}
     strategy:
       fail-fast: false
       max-parallel: 1
