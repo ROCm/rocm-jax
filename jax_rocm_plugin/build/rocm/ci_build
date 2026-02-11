@@ -48,7 +48,8 @@ def dist_wheels(
         xla_path = os.path.abspath(xla_path)
 
     # create manylinux image with requested ROCm installed
-    image = "jax-manylinux_2_28_x86_64_rocm%s" % rocm_version.replace(".", "")
+    # Docker tags cannot contain '+', so replace it with '.' for consistency with wheel versions
+    image = "jax-manylinux_2_28_x86_64_rocm%s" % rocm_version.replace(".", "").replace("+", ".")
 
     # Try removing the Docker image.
     try:
@@ -150,7 +151,7 @@ def dist_wheels(
             "-e",
             "GIT_WORK_TREE=/repo",
             "-e",
-            "ROCM_VERSION_EXTRA=" + rocm_version,
+            "ROCM_VERSION_EXTRA=" + rocm_version.replace("+", "."),
             image,
             "bash",
             "-c",
