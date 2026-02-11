@@ -68,6 +68,7 @@ jobs:
 
             python ci/upload_pytest_to_db.py \
               --logs_dir "$artifact_dir" \
-              --run-tag "ci-run"
+              --run-tag "ci-run" \
+              || continue
 
           done
