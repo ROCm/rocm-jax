@@ -35,29 +35,25 @@ DEFAULT_LABEL = "Skipped Upstream"
 # -----------------------------
 
 
-def extract_skip_reason(longrepr: str) -> str:
-    """Parse pytest skip longrepr into its reason text.
-    Example input:
-      "[gw0] linux -- Python 3.11\n"
-      "('/path/test_x.py', 42, 'Skipped: some reason')"
-    Returns:
-      "Skipped: some reason"
+def extract_skip_reason(reason: str) -> str:
+    """Parse pytest skip longrepr tuple-string into its reason text.
+
+    Example input: "('/path/test_x.py', 42, 'Skipped: some reason')"
+    Also works for xdist header:
+      "[gw0] ... \\n('/path/test_x.py', 42, 'Skipped: some reason')"
     """
-    if not longrepr:
-        return ""
 
-    # If xdist header exists,
-    line = str(longrepr).strip().splitlines()[-1].strip()
+    # strip outer parentheses,
+    # then split into 3 parts
+    parts = reason[1:-1].split(",", 2)
+    if len(parts) != 3:
+        return reason
 
-    # Expected tuple format: ('file', 42, 'Skipped: reason')
-    if line.startswith("(") and line.endswith(")"):
-        parts = line[1:-1].split(",", 2)
-        if len(parts) == 3:
-            msg = parts[2].strip()
-            if msg[:1] in {"'", '"'} and msg[-1:] == msg[:1]:
-                msg = msg[1:-1]
-            return msg
-    return longrepr
+    msg = parts[2].strip()
+    # drop matching quotes if any
+    if msg[:1] in {"'", '"'} and msg[-1:] == msg[:1]:
+        msg = msg[1:-1]
+    return msg
 
 
 def nodeid_parts(nodeid: str) -> Tuple[str, str, str]:
@@ -142,11 +138,7 @@ def extract_result_fields(
     duration = float(call.get("duration", 0.0))
 
     longrepr_raw = call.get("longrepr")
-    if (
-        isinstance(longrepr_raw, str)
-        and longrepr_raw.startswith("(")
-        and longrepr_raw.endswith(")")
-    ):
+    if isinstance(longrepr_raw, str) and longrepr_raw:
         longrepr_raw = extract_skip_reason(longrepr_raw)
     longrepr = str(longrepr_raw)[:TEXT_LIMIT] if longrepr_raw is not None else None
 
