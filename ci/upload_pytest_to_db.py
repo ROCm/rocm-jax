@@ -16,7 +16,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 from datetime import datetime
-from typing import Iterable, List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict
 
 # pylint: disable=import-error
 import mysql.connector
@@ -27,12 +27,6 @@ from mysql.connector import Error as MySQLError
 # -----------------------------
 TEXT_LIMIT = 250
 BATCH_SIZE = 2000
-SKIP_FILES = {
-    "final_compiled_report.json",
-    "final_compiled_report.csv",
-    "final_compiled_report.html",
-    "collect_module_log.jsonl",
-}
 DEFAULT_LABEL = "Skipped Upstream"
 
 
@@ -72,12 +66,23 @@ def nodeid_parts(nodeid: str) -> Tuple[str, str, str]:
     return f, c, t
 
 
+def load_metadata(logs_dir: Path) -> dict:
+    """Load metadata.json from logs_dir, which should contain run-level info like commit, runner, etc."""
+    meta_path = logs_dir / "metadata.json"
+    if not meta_path.exists():
+        raise FileNotFoundError(f"metadata.json not found in {logs_dir}")
+    with meta_path.open("r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
 def find_single_report_json(logs_dir: Path) -> Path:
+    """Return the single pytest JSON report in logs_dir (ignores metadata.json)."""
     jsons = [
         p
         for p in logs_dir.iterdir()
         if p.is_file()
         and p.suffix.lower() == ".json"
+        and p.name not in {"metadata.json"}
         and not p.name.endswith("last_running.json")
     ]
     if not jsons:
@@ -93,6 +98,7 @@ def find_single_report_json(logs_dir: Path) -> Path:
 
 
 def load_from_single_json(path: Path) -> Tuple[datetime, List[dict]]:
+    """Load a pytest JSON report and return (created_at, tests)."""
     with path.open("r", encoding="utf-8") as fh:
         data = json.load(fh)
     if isinstance(data, dict):
@@ -271,18 +277,20 @@ def insert_run(cur, created_at: datetime, meta: dict) -> int:
     cur.execute(
         """
        INSERT INTO pytest_ci_runs (
-           created_at, commit_sha, runner_label, ubuntu_version,
-           rocm_version, build_num, github_run_id, run_tag, logs_path
-       ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+           created_at, commit_sha, runner_label, python_version, rocm_version,
+           build_num, github_run_id, branch_name, repo_name, run_tag, logs_path
+       ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
        """,
         (
             created_at,
             meta["commit_sha"],
             meta["runner_label"],
-            meta["ubuntu_version"],
+            meta["python_version"],
             meta["rocm_version"],
             meta["build_num"],
             meta["github_run_id"],
+            meta["branch_name"],
+            meta["repo_name"],
             meta["run_tag"],
             meta["logs_dir"],
         ),
@@ -304,7 +312,7 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
 
     cur.execute(
         """
-       CREATE TEMPORARY TABLE tmp_tests (
+       CREATE TEMPORARY TABLE tmp_pytest_tests (
          filename  VARCHAR(100) NOT NULL,
          classname VARCHAR(100) NOT NULL,
          test_name VARCHAR(500) NOT NULL,
@@ -313,7 +321,7 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
        """
     )
     cur.executemany(
-        "INSERT IGNORE INTO tmp_tests (filename, classname, test_name) VALUES (%s,%s,%s)",
+        "INSERT IGNORE INTO tmp_pytest_tests (filename, classname, test_name) VALUES (%s,%s,%s)",
         list(uniq),
     )
 
@@ -321,7 +329,7 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
         """
        INSERT INTO pytest_ci_tests (filename, classname, test_name)
        SELECT s.filename, s.classname, s.test_name
-       FROM tmp_tests s
+       FROM tmp_pytest_tests s
        LEFT JOIN pytest_ci_tests t
          ON t.filename = s.filename
         AND t.classname = s.classname
@@ -333,7 +341,7 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
     cur.execute(
         """
        SELECT t.id, s.filename, s.classname, s.test_name
-       FROM tmp_tests s
+       FROM tmp_pytest_tests s
        JOIN pytest_ci_tests t
          ON t.filename = s.filename
         AND t.classname = s.classname
@@ -380,12 +388,6 @@ def batch_insert_results(
 def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-locals
     logs_dir: Path,
     *,
-    runner_label: str,
-    ubuntu_version: str,
-    rocm_version: str,
-    commit_sha: str,
-    build_num: Optional[int],
-    github_run_id: int,
     run_tag: str,
 ) -> None:
     """Load per-test JSON reports and upload results to MySQL.
@@ -398,7 +400,21 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
     """
     report = find_single_report_json(logs_dir)
     created_at, tests = load_from_single_json(report)
-    
+
+    metadata = load_metadata(logs_dir)
+    repo_name = metadata["repo_name"]
+    branch_name = metadata["branch_name"]
+    runner_label = metadata["runner_label"]
+    python_version = str(metadata["python_version"]).replace(
+        ".", ""
+    )  # bash ${Py_version//.}
+    rocm_version = str(metadata["rocm_version"]).replace(
+        ".", ""
+    )  # bash ${ROCM_VERSION//.}
+    commit_sha = metadata["github_sha"] or metadata.get("commit_sha")
+    github_run_id = int(metadata["github_run_id"])
+    build_num = metadata.get("build_num")
+
     if not tests:
         print("No tests found in JSONs")
         raise SystemExit(2)  # input error
@@ -411,11 +427,13 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
             created_at,
             {
                 "runner_label": runner_label,
-                "ubuntu_version": ubuntu_version,
+                "python_version": python_version,
                 "rocm_version": rocm_version,
                 "commit_sha": commit_sha,
                 "build_num": build_num,
                 "github_run_id": github_run_id,
+                "branch_name": branch_name,
+                "repo_name": repo_name,
                 "run_tag": run_tag,
                 "logs_dir": str(logs_dir),
             },
@@ -477,22 +495,9 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments for pytest DB uploader."""
-
     p = argparse.ArgumentParser(description="Upload pytest JSON reports to MySQL")
-
     p.add_argument("--logs_dir", required=True, help="Directory with JSON files")
     p.add_argument("--run-tag", required=True, help="Run label, e.g. ci-run")
-    p.add_argument("--runner-label", required=True, help="Runner label e.g. MI250")
-    p.add_argument("--ubuntu-version", required=True, help="Ubuntu ver, e.g. 22")
-    p.add_argument("--rocm-version", required=True, help="ROCm version, e.g. 641")
-    p.add_argument("--commit-sha", required=True, help="Git commit SHA under test")
-    p.add_argument(
-        "--build-num", required=False, type=int, help="Build number (int, opt)"
-    )
-    p.add_argument(
-        "--github-run-id", required=True, type=int, help="Actions run id (int)"
-    )
-
     return p.parse_args()
 
 
@@ -501,10 +506,4 @@ if __name__ == "__main__":
     upload_pytest_results(
         Path(args.logs_dir),
         run_tag=args.run_tag,
-        runner_label=args.runner_label,
-        ubuntu_version=args.ubuntu_version,
-        rocm_version=args.rocm_version,
-        commit_sha=args.commit_sha,
-        build_num=args.build_num,
-        github_run_id=args.github_run_id,
     )

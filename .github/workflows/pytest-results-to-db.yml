@@ -3,8 +3,15 @@ name: Pytest Results to DB
 on:
   workflow_dispatch:
     inputs:
-      run-id:
-        required: true
+      source-repo:
+        description: "ORG/REPO"
+        required: false
+        default: "rocm/jax"
+        type: string
+      source-github-run-id:
+        description: "Repo GitHub Run ID"
+        required: false
+        default: ""
         type: string
     secrets:
       ROCM_JAX_DB_HOSTNAME:
@@ -17,8 +24,50 @@ on:
         required: true
 
 jobs:
+  download-logs:
+    runs-on: linux-jax-mi355-1
+    steps:
+      - name: Download logs artifact from source run
+        env:
+          GH_TOKEN: ${{ secrets.SECRET_TOKEN }}
+        run: |
+          gh run download "${{ inputs.source-github-run-id }}" \
+            -R "${{ inputs.source-repo }}" \
+            -D "logs-${{ inputs.source-github-run-id }}"
+      - name: Upload logs for DB job
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ inputs.source-github-run-id }}
+          path: logs-${{ inputs.source-github-run-id }}/
   upload-to-db:
+    needs: download-logs
     runs-on: mysqldb
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+      - name: Download logs from workflow artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: logs-${{ inputs.source-github-run-id }}
+          path: logs-${{ inputs.source-github-run-id }}
+      - name: Upload logs to MySQL database
+        env:
+          ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
+          ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
+          ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
+          ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
+          LOGS_DIR: logs-${{ inputs.source-github-run-id }}
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install mysql-connector-python
+
+          for artifact_dir in "$LOGS_DIR"/*; do
+            [ -d "$artifact_dir" ] || continue
+
+            python ci/upload_test_to_db.py \
+              --logs_dir "$artifact_dir" \
+              --run-tag "ci-run"
+
+          done
