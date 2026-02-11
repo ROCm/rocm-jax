@@ -13,6 +13,3 @@ bazel --bazelrc="${SCRIPT_DIR}/jax.bazelrc" test \
     --test_output=errors \
     --run_under=@xla//build_tools/rocm:parallel_gpu_execute \
     "$@" \
-    -- \
-    @jax//tests:gpu_tests \
-    @jax//tests:backend_independent_tests
