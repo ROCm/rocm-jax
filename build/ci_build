@@ -70,7 +70,7 @@ def _tag_and_push_latest(local_tag, registry="ghcr.io/rocm"):
     When running locally, the image is tagged but not pushed.
 
     Args:
-        local_tag (str): Local Docker image tag (e.g., "jax-base-ubu22.rocm711")
+        local_tag (str): Local Docker image tag (e.g., "jax-base-ubu24.rocm711")
         registry (str): Container registry prefix (default: "ghcr.io/rocm")
 
     Raises:
@@ -313,9 +313,9 @@ def build_dockers(
     for dockerfile in dockerfiles:
         _, tag_suffix = dockerfile.split(".", 1)
 
-        # Extract ubuntu version from tag_suffix (e.g., "jax-ubu22" -> "ubu22")
+        # Extract ubuntu version from tag_suffix (e.g., "jax-ubu24" -> "ubu24")
         # tag_suffix format is "jax-ubu<version>"
-        ubuntu_version = tag_suffix.split("-")[-1]  # "jax-ubu22" -> "ubu22"
+        ubuntu_version = tag_suffix.split("-")[-1]  # "jax-ubu24" -> "ubu24"
 
         # Construct base image name
         base_image_name = "ghcr.io/rocm/jax-base-%s.rocm%s" % (
@@ -493,7 +493,7 @@ def parse_args():
     p.add_argument(
         "--python-versions",
         type=lambda x: x.split(","),
-        default="3.12",
+        default="3.11,3.12,3.13,3.14",
         help="Comma separated list of CPython versions to build wheels for",
     )
 

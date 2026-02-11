@@ -79,15 +79,21 @@ def _version_from_git_tree(base_version: str) -> str | None:
 
 
 def _get_version_for_build() -> str:
+    # pylint: disable=line-too-long
     """Determine the version at build time.
 
     The returned version string depends on which environment variables are set:
+    - if WHEEL_VERSION_SUFFIX is set: version looks like "0.4.16" + suffix (e.g., "0.4.16.dev0+selfbuilt")
     - if JAX_RELEASE or JAXLIB_RELEASE are set: version looks like "0.4.16"
     - if JAX_NIGHTLY or JAXLIB_NIGHTLY are set: version looks like "0.4.16.dev20230906"
     - if none are set: version looks like "0.4.16.dev20230906+ge58560fdc
     """
     if _release_version is not None:
         return _release_version
+    # Check for WHEEL_VERSION_SUFFIX first (used by Bazel jax_wheel rule)
+    wheel_version_suffix = os.environ.get("WHEEL_VERSION_SUFFIX")
+    if wheel_version_suffix is not None:
+        return _version + wheel_version_suffix
     if os.environ.get("JAX_NIGHTLY") or os.environ.get("JAXLIB_NIGHTLY"):
         return _version_from_todays_date(_version)
     if os.environ.get("JAX_RELEASE") or os.environ.get("JAXLIB_RELEASE"):
