@@ -66,7 +66,7 @@ jobs:
           for artifact_dir in "$LOGS_DIR"/*; do
             [ -d "$artifact_dir" ] || continue
 
-            python ci/upload_test_to_db.py \
+            python ci/upload_pytest_to_db.py \
               --logs_dir "$artifact_dir" \
               --run-tag "ci-run"
 
