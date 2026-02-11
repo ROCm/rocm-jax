@@ -1,88 +1,88 @@
 name: Nightly
 
 on:
+  schedule:
+    - cron: "0 1 * * *"
   workflow_dispatch:
-    inputs:
-      source-repo:
-        description: "ORG/REPO"
-        required: false
-        default: "rocm/jax"
-        type: string
-      source-github-run-id:
-        description: "Repo GitHub Run ID"
-        required: false
-        default: ""
-        type: string
-    secrets:
-      ROCM_JAX_DB_HOSTNAME:
-        required: true
-      ROCM_JAX_DB_USERNAME:
-        required: true
-      ROCM_JAX_DB_PASSWORD:
-        required: true
-      ROCM_JAX_DB_NAME:
-        required: true
+  pull_request:
+    paths:
+      - '.github/workflows/nightly.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  download-logs:
-    runs-on: linux-mi355-1
-    steps:
-      - name: Download logs artifact from source run
-        env:
-          GH_TOKEN: ${{ secrets.SECRET_TOKEN }}
-        run: |
-          gh run download "${{ inputs.source-github-run-id }}" \
-            -R "${{ inputs.source-repo }}" \
-            -D "logs-${{ inputs.source-github-run-id }}"
-      - name: Upload logs for DB job
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-${{ inputs.source-github-run-id }}
-          path: logs-${{ inputs.source-github-run-id }}/
-  upload-to-db:
-    needs: download-logs
-    runs-on: mysqldb
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-      - name: Download logs from workflow artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: logs-${{ inputs.source-github-run-id }}
-          path: logs-${{ inputs.source-github-run-id }}
-      - name: Upload logs to MySQL database
-        env:
-          ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
-          ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
-          ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
-          ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
-          ROCM_VERSION: ${{ inputs.rocm-version }}
-          UBUNTU_VERSION: ${{ inputs.ubuntu-version }}
-          LOGS_DIR: logs-${{ inputs.source-github-run-id }}
-          GITHUB_SHA: ${{ inputs.github-sha }}
-          GITHUB_RUN_ID: ${{ inputs.github-run-id }}
-          ROCM_BUILD_NUM: ${{ inputs.rocm-build-num }}
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
-          pip install mysql-connector-python
-
-          for artifact_dir in "$LOGS_DIR"/*; do
-            [ -d "$artifact_dir" ] || continue
-            meta="$artifact_dir/metadata.json"
-            [ -f "$meta" ] || continue
-            RUNNER_LABEL=$(python -c "import json;print(json.load(open('$meta'))['runner_label'])")
-            UBUNTU_VERSION=$(python -c "import json;print(json.load(open('$meta'))['ubuntu_version'])")
-            ROCM_VERSION=$(python -c "import json;print(json.load(open('$meta'))['rocm_version'])")
-            GITHUB_SHA=$(python -c "import json;print(json.load(open('$meta'))['github_sha'])")
-            GITHUB_RUN_ID=$(python -c "import json;print(json.load(open('$meta'))['github_run_id'])")
-            python ci/upload_test_to_db.py \
-              --logs_dir "$artifact_dir" \
-              --run-tag "ci-run" \
-              --runner-label "$RUNNER_LABEL" \
-              --ubuntu-version "$UBUNTU_VERSION" \
-              --rocm-version "${ROCM_VERSION//.}" \
-              --commit-sha "$GITHUB_SHA" \
-              --github-run-id "$GITHUB_RUN_ID"
-          done
+  call-build-wheels:
+    strategy:
+      fail-fast: false
+      matrix:
+        rocm-version: ["7.1.1", "7.2.0"]
+        include:
+          - rocm-version: "7.1.1"
+            runner-label: '["linux-x86-64-1gpu-amd"]'
+          - rocm-version: "7.2.0"
+            runner-label: '["linux-x86-64-1gpu-amd"]'
+    uses: ./.github/workflows/build-wheels.yml
+    with:
+      python-versions: "3.11,3.12,3.13,3.14"
+      rocm-version: ${{ matrix.rocm-version }}
+      rocm-build-job: ${{ matrix.rocm-build-job }}
+      rocm-build-num: ${{ matrix.rocm-build-num }}
+      runner-label: ${{ matrix.runner-label }}
+    secrets:
+      rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
+      rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
+  call-build-docker:
+    needs: call-build-wheels
+    strategy:
+      fail-fast: false
+      matrix:
+        rocm-version: ["7.1.1", "7.2.0"]
+        include:
+          - rocm-version: "7.1.1"
+            runner-label: '["linux-x86-64-1gpu-amd"]'
+          - rocm-version: "7.2.0"
+            runner-label: '["linux-x86-64-1gpu-amd"]'
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      rocm-version: ${{ matrix.rocm-version }}
+      rocm-build-job: ${{ matrix.rocm-build-job }}
+      rocm-build-num: ${{ matrix.rocm-build-num }}
+      runner-label: ${{ matrix.runner-label }}
+      extra-cr-tag: "nightly"
+  call-test-and-upload:
+    needs: call-build-docker
+    strategy:
+      fail-fast: false
+      matrix:
+        test-command:
+          - "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
+          - "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
+        rocm-version: ["7.1.1", "7.2.0"]
+        include:
+          - test-command: "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
+            runner-label: '["linux-x86-64-1gpu-amd"]'
+            test-id: "single"
+          - test-command: "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
+            runner-label: '["linux-x86-64-4gpu-amd"]'
+            test-id: "multi"
+    uses: ./.github/workflows/test-and-upload.yml
+    with:
+      rocm-version: ${{ matrix.rocm-version }}
+      ubuntu-version: "24"
+      rocm-build-num: ${{ matrix.rocm-build-num || '0' }}
+      github-sha: ${{ github.sha }}
+      github-run-id: ${{ github.run_id }}
+      runner-label: ${{ matrix.runner-label }}
+      test-command: ${{ matrix.test-command }}
+      test-id: ${{ matrix.test-id }}
+    secrets:
+      ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
+      ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
+      ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
+      ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
