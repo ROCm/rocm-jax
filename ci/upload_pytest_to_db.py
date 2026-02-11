@@ -67,7 +67,7 @@ def nodeid_parts(nodeid: str) -> Tuple[str, str, str]:
 
 
 def load_metadata(logs_dir: Path) -> dict:
-    """Load metadata.json from logs_dir, which should contain run-level info like commit, runner, etc."""
+    """Load metadata.json from logs_dir, which should contain run-level info like commit, runner"""
     meta_path = logs_dir / "metadata.json"
     if not meta_path.exists():
         raise FileNotFoundError(f"metadata.json not found in {logs_dir}")
@@ -309,7 +309,7 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
     uniq = {nodeid_parts(t["nodeid"]) for t in tests}
     if not uniq:
         return {}
-
+    # fmt: off
     cur.execute(
         """
        CREATE TEMPORARY TABLE tmp_pytest_tests (
@@ -348,6 +348,7 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
         AND t.test_name = s.test_name
        """
     )
+    # fmt: on
     mapping: Dict[Tuple[str, str, str], int] = {}
     for test_id, f, c, n in cur.fetchall():
         mapping[(f, c, n)] = test_id
