@@ -22,6 +22,8 @@ build --repo_env USE_HERMETIC_CC_TOOLCHAIN=1
 # TODO: Migrate for https://github.com/bazelbuild/bazel/issues/7260
 build:clang_local --noincompatible_enable_cc_toolchain_resolution
 build:clang_local --repo_env USE_HERMETIC_CC_TOOLCHAIN=0
+build:clang_local --linkopt="-fuse-ld=lld"
+build:clang_local --host_linkopt="-fuse-ld=lld"
 
 # Do not use C-Ares when building gRPC.
 build --define=grpc_no_ares=true
@@ -99,6 +101,23 @@ build:rocm --copt=-Wno-gnu-offsetof-extensions
 build:rocm --copt=-Qunused-arguments
 build:rocm --action_env=TF_HIPCC_CLANG="1"
 
+build:asan --strip=never
+build:asan --copt -fsanitize=address
+build:asan --copt -DADDRESS_SANITIZER
+build:asan --copt -O1
+build:asan --copt -g
+build:asan --copt -gsplit-dwarf
+build:asan --copt -fno-omit-frame-pointer
+build:asan --linkopt -fsanitize=address
+build:asan --linkopt -g1
+
+build:asan --linkopt="-L/usr/lib/llvm-18/lib/clang/18/lib/linux"
+build:asan --linkopt="-Wl,-rpath,/usr/lib/llvm-18/lib/clang/18/lib/linux"
+build:asan --linkopt="-lclang_rt.asan-x86_64"
+build:asan --linkopt="-lclang_rt.asan_cxx-x86_64"
+build:asan --@xla//build_tools/rocm:sanitizer=asan
+build:asan --run_under=//build/rocm:asan_wrapper
+build:asan --action_env TF_ROCM_AMDGPU_TARGETS="gfx908,gfx90a,gfx942"
 
 #############################################################################
 # Configuration for running RBE builds and tests
