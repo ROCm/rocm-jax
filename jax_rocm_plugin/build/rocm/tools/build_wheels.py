@@ -146,8 +146,14 @@ def build_plugin_wheel(
     xla_path=None,
     rbe=False,
     compiler="gcc",
+    wheels="jax-rocm-plugin,jax-rocm-pjrt",
 ):
-    """Build ROCm plugin and PJRT wheels via jax_rocm_plugin/build/build.py."""
+    """Build ROCm plugin and/or PJRT wheels via jax_rocm_plugin/build/build.py.
+
+    Args:
+        wheels: Comma-separated list of wheels to build. Valid options are
+                'jax-rocm-plugin', 'jax-rocm-pjrt', or both.
+    """
     use_clang = compiler == "clang"
 
     # Avoid git warning by setting safe.directory.
@@ -166,7 +172,7 @@ def build_plugin_wheel(
         "python",
         "build/build.py",
         "build",
-        "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
+        "--wheels=%s" % wheels,
         "--rocm_path=%s" % rocm_path,
         "--rocm_version=%s" % version_string,
         "--use_clang=%s" % use_clang,
@@ -463,7 +469,28 @@ def main():
         print("Removing wheel=%r" % whl)
         os.remove(whl)
 
+    # Build PJRT wheel once (it's Python version agnostic).
+    print("Building PJRT wheel (Python version agnostic)...")
+    build_plugin_wheel(
+        args.plugin_path,
+        rocm_path,
+        rocm_version,
+        python_versions[0],  # Use first Python version for build environment
+        full_output_path,
+        args.xla_path,
+        args.rbe,
+        args.compiler,
+        wheels="jax-rocm-pjrt",
+    )
+    # Fix PJRT wheel.
+    wheel_paths = find_wheels(full_output_path)
+    for wheel_path in wheel_paths:
+        if "pjrt" in os.path.basename(wheel_path).lower():
+            fix_wheel(wheel_path, args.plugin_path)
+
+    # Build plugin wheel for each Python version.
     for py in python_versions:
+        print("Building plugin wheel for Python %s..." % py)
         build_plugin_wheel(
             args.plugin_path,
             rocm_path,
@@ -473,10 +500,15 @@ def main():
             args.xla_path,
             args.rbe,
             args.compiler,
+            wheels="jax-rocm-plugin",
         )
+        # Fix plugin wheels for this Python version.
         wheel_paths = find_wheels(full_output_path)
         for wheel_path in wheel_paths:
-            fix_wheel(wheel_path, args.plugin_path)
+            base = os.path.basename(wheel_path)
+            # Only fix plugin wheels, skip already-fixed PJRT wheel.
+            if "plugin" in base.lower():
+                fix_wheel(wheel_path, args.plugin_path)
 
     # Copy plugin + PJRT wheels to wheelhouse.
     wheel_paths = find_wheels(full_output_path)
