@@ -15,6 +15,9 @@ on:
       rocm-build-num:
         required: false
         type: string
+      therock-path:
+        required: false
+        type: string
       runner-label:
         required: false
         type: string
@@ -86,6 +89,7 @@ jobs:
             --rocm-version="${{ inputs.rocm-version }}" \
             --rocm-build-job="${{ inputs.rocm-build-job }}" \
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
+            --therock-path="${{ inputs.therock-path }}" \
             --jax-source-dir="./jax" \
             dist_wheels \
             --rbe
