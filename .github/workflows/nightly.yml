@@ -79,6 +79,7 @@ jobs:
       github-sha: ${{ github.sha }}
       github-run-id: ${{ github.run_id }}
       runner-label: ${{ matrix.runner-label }}
+      test-id: ${{ matrix.test-id }}
       test-command: ${{ matrix.test-command }}
       test-id: ${{ matrix.test-id }}
     secrets:
