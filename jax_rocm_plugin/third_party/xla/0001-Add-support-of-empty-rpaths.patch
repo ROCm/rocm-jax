@@ -1,0 +1,125 @@
+diff --git a/third_party/gpus/crosstool/hipcc_cc_toolchain_config.bzl.tpl b/third_party/gpus/crosstool/hipcc_cc_toolchain_config.bzl.tpl
+index a97202d8e9..26c6bcdff5 100644
+--- a/third_party/gpus/crosstool/hipcc_cc_toolchain_config.bzl.tpl
++++ b/third_party/gpus/crosstool/hipcc_cc_toolchain_config.bzl.tpl
+@@ -382,6 +382,10 @@ def _impl(ctx):
+         provides = ["profile"],
+     )
+ 
++    # Targets can set features = ["no_solib_rpaths"] to suppress the
++    # automatic solib RPATH entries and rely on their own linkopts instead.
++    no_solib_rpaths_feature = feature(name = "no_solib_rpaths")
++
+     runtime_library_search_directories_feature = feature(
+         name = "runtime_library_search_directories",
+         flag_sets = [
+@@ -409,7 +413,10 @@ def _impl(ctx):
+                     ),
+                 ],
+                 with_features = [
+-                    with_feature_set(features = ["static_link_cpp_runtimes"]),
++                    with_feature_set(
++                        features = ["static_link_cpp_runtimes"],
++                        not_features = ["no_solib_rpaths"],
++                    ),
+                 ],
+             ),
+             flag_set(
+@@ -430,7 +437,7 @@ def _impl(ctx):
+                 ],
+                 with_features = [
+                     with_feature_set(
+-                        not_features = ["static_link_cpp_runtimes"],
++                        not_features = ["static_link_cpp_runtimes", "no_solib_rpaths"],
+                     ),
+                 ],
+             ),
+@@ -1084,6 +1091,7 @@ def _impl(ctx):
+         shared_flag_feature,
+         linkstamps_feature,
+         output_execpath_flags_feature,
++        no_solib_rpaths_feature,
+         runtime_library_search_directories_feature,
+         library_search_directories_feature,
+         archiver_flags_feature,
+diff --git a/third_party/gpus/rocm/BUILD.tpl b/third_party/gpus/rocm/BUILD.tpl
+index b0f476883c..f1b4f36a84 100644
+--- a/third_party/gpus/rocm/BUILD.tpl
++++ b/third_party/gpus/rocm/BUILD.tpl
+@@ -13,6 +13,7 @@ string_flag(
+         "hermetic",
+         "multiple",
+         "system",
++        "link_only",
+     ],
+ )
+ 
+@@ -30,6 +31,13 @@ config_setting(
+     },
+ )
+ 
++config_setting(
++    name = "link_only",
++    flag_values = {
++        ":rocm_path_type": "link_only",
++    },
++)
++
+ config_setting(
+     name = "using_hipcc",
+     values = {
+@@ -133,9 +141,10 @@ cc_library(
+     deps = [":rocm_config"],
+ )
+ 
+-# workaround to bring data to the same fs layout as expected in the rocm libs
+-# rocblas assumes that miopen db files are located in ../share/miopen/db directory
+-# hibplatslt assumes that tensile files are located in ../hipblaslt/library directory
++# Provides -L and -Wl,-rpath flags for ROCm libraries.
++# These must live in a cc_library (not a toolchain feature) because
++# cc_library linkopts propagate transitively through CcInfo to the
++# final linking target, whereas toolchain features do not.
+ cc_library(
+     name = "rocm_rpath",
+     linkopts = select({
+@@ -144,6 +153,11 @@ cc_library(
+             "-Wl,-rpath,external/local_config_rocm/rocm/%{rocm_root}/lib/llvm/lib",
+             "-Lexternal/local_config_rocm/rocm/%{rocm_root}/lib",
+         ],
++        ":link_only": [
++            "-Wl,-rpath-link,external/local_config_rocm/rocm/%{rocm_root}/lib",
++            "-Wl,-rpath-link,external/local_config_rocm/rocm/%{rocm_root}/lib/llvm/lib",
++            "-Lexternal/local_config_rocm/rocm/%{rocm_root}/lib",
++        ],
+         ":multiple_rocm_paths": [
+             "-Wl,-rpath=%{rocm_lib_paths}",
+             "-Lexternal/local_config_rocm/rocm/%{rocm_root}/lib",
+@@ -254,7 +268,6 @@ cc_library(
+     includes = [
+         "%{rocm_root}/include",
+     ],
+-    linkopts = ["-Wl,-rpath,external/local_config_rocm/rocm/%{rocm_root}/lib"],
+     linkstatic = 1,
+     visibility = ["//visibility:public"],
+     deps = [
+@@ -270,7 +283,6 @@ cc_library(
+     includes = [
+         "%{rocm_root}/include",
+     ],
+-    linkopts = ["-Wl,-rpath,external/local_config_rocm/rocm/%{rocm_root}/lib"],
+     linkstatic = 1,
+     visibility = ["//visibility:public"],
+     deps = [
+@@ -301,11 +313,11 @@ cc_library(
+         "%{rocm_root}/lib/libMIOpen*.so*",
+         "%{rocm_root}/share/miopen/**",
+     ]),
+-    linkopts = ["-lMIOpen"],
+     include_prefix = "rocm",
+     includes = [
+         "%{rocm_root}/include",
+     ],
++    linkopts = ["-lMIOpen"],
+     strip_include_prefix = "%{rocm_root}",
+     visibility = ["//visibility:public"],
+     deps = [

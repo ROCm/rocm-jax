@@ -1,0 +1,128 @@
+diff --git a/jaxlib/gpu/BUILD b/jaxlib/gpu/BUILD
+--- a/jaxlib/gpu/BUILD
++++ b/jaxlib/gpu/BUILD
+@@ -31,48 +31,51 @@
+     default_visibility = ["//jax:internal"],
+ )
+ 
+-exports_files(srcs = [
+-    "blas_handle_pool.cc",
+-    "blas_handle_pool.h",
+-    "ffi_wrapper.h",
+-    "gpu_kernel_helpers.cc",
+-    "gpu_kernel_helpers.h",
+-    "gpu_kernels.cc",
+-    "hybrid.cc",
+-    "hybrid_kernels.cc",
+-    "hybrid_kernels.h",
+-    "linalg.cc",
+-    "linalg_kernels.cc",
+-    "linalg_kernels.cu.cc",
+-    "linalg_kernels.h",
+-    "make_batch_pointers.cu.cc",
+-    "make_batch_pointers.h",
+-    "prng.cc",
+-    "prng_kernels.cc",
+-    "prng_kernels.cu.cc",
+-    "prng_kernels.h",
+-    "py_client_gpu.cc",
+-    "py_client_gpu.h",
+-    "rnn.cc",
+-    "rnn_kernels.cc",
+-    "rnn_kernels.h",
+-    "solver.cc",
+-    "solver_handle_pool.cc",
+-    "solver_handle_pool.h",
+-    "solver_interface.cc",
+-    "solver_interface.h",
+-    "solver_kernels_ffi.cc",
+-    "solver_kernels_ffi.h",
+-    "sparse.cc",
+-    "sparse_kernels.cc",
+-    "sparse_kernels.h",
+-    "triton.cc",
+-    "triton_kernels.cc",
+-    "triton_kernels.h",
+-    "triton_utils.cc",
+-    "triton_utils.h",
+-    "vendor.h",
+-])
++exports_files(
++    srcs = [
++        "blas_handle_pool.cc",
++        "blas_handle_pool.h",
++        "ffi_wrapper.h",
++        "gpu_kernel_helpers.cc",
++        "gpu_kernel_helpers.h",
++        "gpu_kernels.cc",
++        "hybrid.cc",
++        "hybrid_kernels.cc",
++        "hybrid_kernels.h",
++        "linalg.cc",
++        "linalg_kernels.cc",
++        "linalg_kernels.cu.cc",
++        "linalg_kernels.h",
++        "make_batch_pointers.cu.cc",
++        "make_batch_pointers.h",
++        "prng.cc",
++        "prng_kernels.cc",
++        "prng_kernels.cu.cc",
++        "prng_kernels.h",
++        "py_client_gpu.cc",
++        "py_client_gpu.h",
++        "rnn.cc",
++        "rnn_kernels.cc",
++        "rnn_kernels.h",
++        "solver.cc",
++        "solver_handle_pool.cc",
++        "solver_handle_pool.h",
++        "solver_interface.cc",
++        "solver_interface.h",
++        "solver_kernels_ffi.cc",
++        "solver_kernels_ffi.h",
++        "sparse.cc",
++        "sparse_kernels.cc",
++        "sparse_kernels.h",
++        "triton.cc",
++        "triton_kernels.cc",
++        "triton_kernels.h",
++        "triton_utils.cc",
++        "triton_utils.h",
++        "vendor.h",
++    ],
++    visibility = ["//visibility:public"],
++)
+ 
+ proto_library(
+     name = "triton_proto",
+@@ -82,10 +85,7 @@
+ cc_proto_library(
+     name = "triton_cc_proto",
+     compatible_with = None,
+-    visibility = [
+-        "//jax:internal",
+-        "//third_party/py/enzyme_ad:__subpackages__",
+-    ],
++    visibility = ["//visibility:public"],
+     deps = [":triton_proto"],
+ )
+ 
+@@ -114,6 +114,7 @@
+     name = "gpu_plugin_extension",
+     srcs = ["gpu_plugin_extension.cc"],
+     hdrs = ["gpu_plugin_extension.h"],
++    visibility = ["//visibility:public"],
+     copts = [
+         "-fexceptions",
+         "-fno-strict-aliasing",
+diff --git a/jaxlib/cpu/BUILD b/jaxlib/cpu/BUILD
+--- a/jaxlib/cpu/BUILD
++++ b/jaxlib/cpu/BUILD
+@@ -33,6 +33,7 @@
+     name = "lapack_kernels",
+     srcs = ["lapack_kernels.cc"],
+     hdrs = ["lapack_kernels.h"],
++    visibility = ["//visibility:public"],
+     # compatible with libtpu
+     copts = ["-fexceptions"],
+     features = ["-use_header_modules"],

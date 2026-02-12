@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("//build:rpath.bzl", "rocm_cc_binary")
+
 licenses(["notice"])  # Apache 2
 
 package(default_visibility = ["//visibility:public"])
 
-cc_binary(
+rocm_cc_binary(
     name = "pjrt_c_api_gpu_plugin.so",
     linkopts = [
         "-Wl,--version-script,$(location :gpu_version_script.lds)",
