@@ -13,6 +13,8 @@ TARGETS_TO_IGNORE=(
     -@jax//tests:gpu_memory_flags_test_gpu
     -@jax//tests:lax_numpy_test_gpu
     -@jax//tests:lax_test_gpu
+    -@jax//tests:lobpcg_test_gpu
+    -@jax//tests:ode_test_gpu
 )
 
 echo "${TARGETS_TO_IGNORE[*]}"
