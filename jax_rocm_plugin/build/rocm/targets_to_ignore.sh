@@ -16,7 +16,4 @@ TARGETS_TO_IGNORE=(
     -@jax//tests:linalg_test_gpu
 )
 
-echo "$(
-    IFS=' '
-    echo "${TARGETS_TO_IGNORE[*]}"
-)"
+echo "${TARGETS_TO_IGNORE[*]}"
