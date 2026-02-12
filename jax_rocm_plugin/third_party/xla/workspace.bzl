@@ -17,7 +17,7 @@ load("//third_party:repo.bzl", "amd_http_archive")
 #    and update XLA_SHA256 with the result.
 
 XLA_COMMIT = "107e89fa589603c5c4a0c60ff333130f0ee1b5c8"
-XLA_SHA256 = "1ab102ec37151f8e70cef456a071c28f0a188953ab1bfbb8d9e357edaf6ab9e3"
+XLA_SHA256 = "23272afff525174d273170233aa0861fa66cd3041b1053da22b3477c28c6f827"
 
 def repo():
     amd_http_archive(
