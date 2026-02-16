@@ -104,6 +104,7 @@ build:rocm --action_env=TF_HIPCC_CLANG="1"
 build:asan --strip=never
 build:asan --copt -fsanitize=address
 build:asan --copt -DADDRESS_SANITIZER
+#O1 because we need to see the asans callstack
 build:asan --copt -O1
 build:asan --copt -g
 build:asan --copt -gsplit-dwarf
