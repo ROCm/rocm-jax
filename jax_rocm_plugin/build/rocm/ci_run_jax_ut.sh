@@ -11,7 +11,7 @@ TARGETS_TO_IGNORE=()
 for arg in "$@"; do
     if [[ "$arg" == "--config" ]]; then
         echo "Invalid config format, configs must be in a form --config=value"
-        exit -1
+        exit 255
     fi
     if [[ "$arg" == "--config=rocm_mgpu" ]]; then
         TAG_FILTERS="${TAG_FILTERS},multiaccelerator"
