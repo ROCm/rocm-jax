@@ -95,16 +95,14 @@ def dist_wheels(
         cmd.append("-it")
 
     # NOTE(mrodden): bazel times out without --init, probably blocking on a zombie PID
+    # NOTE: GIT_DIR and GIT_WORK_TREE are intentionally NOT set here because they
+    # interfere with Bazel's git_repository rule when cloning external dependencies.
     cmd.extend(
         [
             "--init",
             "--rm",
             "--shm-size",
             "64G",
-            "-e",
-            "GIT_DIR=/repo/.git",
-            "-e",
-            "GIT_WORK_TREE=/repo",
             "-e",
             "ROCM_VERSION_EXTRA=" + rocm_version,
             builder_image,

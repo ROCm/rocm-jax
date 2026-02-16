@@ -14,7 +14,7 @@
 # limitations under the License.
 
 load("@jax//jaxlib:jax.bzl", "jax_wheel", "wheel_sources")
-load("//third_party/jax:workspace.bzl", jax_commit = "COMMIT")
+load("//third_party/jax:workspace.bzl", jax_commit = "JAX_COMMIT")
 load("//third_party/xla:workspace.bzl", xla_commit = "XLA_COMMIT")
 
 licenses(["notice"])  # Apache 2
