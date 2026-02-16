@@ -37,6 +37,7 @@ jobs:
     secrets:
       rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
       rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
+      builder-image: "search"
   call-build-docker:
     needs: call-build-wheels
     strategy:

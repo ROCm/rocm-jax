@@ -10,6 +10,15 @@ on:
       - 'build/ci_build'
       - '.github/workflows/build-base-docker.yml'
       - 'docker/Dockerfile*'
+      - 'docker/manylinux/*'
+  push:
+    branches:
+      - 'master'
+    paths:
+      - 'build/ci_build'
+      - '.github/workflows/build-base-docker.yml'
+      - 'docker/Dockerfile*'
+      - 'docker/manylinux/*'
 
 jobs:
   build-base-images:
@@ -96,3 +105,68 @@ jobs:
             docker tag "${image_tag}" "${ghcr_image_latest}"
             docker push "${ghcr_image_latest}"
           fi
+
+  build-manylinux-builder-images:
+    runs-on: ${{ matrix.runner-label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        rocm-version: ["7.1.1", "7.2.0"]
+        include:
+          - rocm-version: "7.1.1"
+            runner-label: "linux-x86-64-1gpu-amd"
+          - rocm-version: "7.2.0"
+            runner-label: "linux-x86-64-1gpu-amd"
+    steps:
+      - name: Clean up old runs
+        run: |
+          ls -lah
+          # Make sure that we own all of the files so that we have permissions to delete them
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+          # Remove any old work directories from this machine
+          rm -rf * || true
+          ls -lah
+          # Clean up any docker stuff that's more than a week old
+          docker system prune -a --filter "until=168h"
+          # Stop any containers running for more than 12 hours. No CI job should take this long.
+          docker ps --format="{{.RunningFor}} {{.Names}}" | grep hours \
+            | awk -F: '{if($1>12)print$1}' | awk ' {print $4} ' | xargs docker stop || true
+      - uses: actions/checkout@v4
+      - name: Build docker images
+        run: |
+          python3 build/ci_build \
+            --rocm-version="${{ matrix.rocm-version }}" \
+            --rocm-build-job="${{ matrix.rocm-build-job }}" \
+            --rocm-build-num="${{ matrix.rocm-build-num }}" \
+            build_manylinux_dockers
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push docker images
+        env:
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+          ROCM_BUILD_JOB: >-
+            ${{ matrix.rocm-build-job && format('-{0}', inputs.rocm-build-job) || '' }}
+          ROCM_BUILD_NUM: >-
+            ${{ matrix.rocm-build-num && format('-{0}', inputs.rocm-build-num) || '' }}
+        run: |
+          image_tag="ghcr.io/rocm/jax-manylinux_2_28-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
+
+          # Push with commit SHA tag
+          sha_image_tag="${image_tag}:${GITHUB_SHA}"
+          echo "Image name (SHA): ${sha_image_tag}"
+          docker tag "${image_tag}" "${sha_image_tag}"
+          docker push "${sha_image_tag}"
+
+          # Push with latest tag (only for schedule and workflow_dispatch, not PRs)
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            latest_image_tag="${image_tag}:latest"
+            echo "Image Name (latest): ${latest_image_tag}"
+            docker tag "${image_tag}" "${latest_image_tag}"
+            docker push "${latest_image_tag}"
+          fi
+

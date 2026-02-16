@@ -28,6 +28,9 @@ import json
 import re
 
 
+MANYLINUX_IMAGE_BASE_NAME = "ghcr.io/rocm/jax-manylinux_2_28"
+
+
 def _get_labels(image_name):
     """Return image labels via docker inspect; print warning if image is missing."""
     try:
@@ -110,6 +113,68 @@ def _get_commit_info_from_wheel():
     }
 
 
+def _docker_image_exists(image):
+    """Check if a docker image exists locally or is able to be pulled"""
+    # Use docker inspect to see if the image exists
+    try:
+        subprocess.run(["docker", "inspect", image], check=True)
+    except subprocess.CalledProcessError:
+        # If we can't find the image with inspect, try pulling it
+        print(f"Could not find image '{image}' locally with docker inspect. Attempting to pull it.")
+        try:
+            subprocess.run(["docker", "pull", image], check=True)
+        except subprocess.CalledProcessError:
+            print(f"Could not find image '{image}' locally or pull it.")
+            return False
+    return True
+
+
+def _construct_manylinux_builder_image_name(rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None):
+    """Create an image name that includes the ROCm ersion, build job, build number, etc"""
+    return "{base_name}-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
+        base_name=MANYLINUX_IMAGE_BASE_NAME,
+        rocm_type="therock" if therock_path else "rocm",
+        rocm_version=rocm_version,
+        rocm_build_job="-%s" % rocm_build_job if rocm_build_job else "",
+        rocm_build_num="-%s" % rocm_build_num if rocm_build_num else "",
+    )
+
+
+def build_manylinux_dockers(
+    rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None, tag=None
+):
+    """Build a manylinux image that can be used for building release-ready JAX wheels"""
+    if tag:
+        constructed_tag = tag
+    else:
+        constructed_tag = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+
+    if therock_path:
+        cmd = [
+            "docker",
+            "build",
+            "-t=%s" % constructed_tag,
+            "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-therock",
+            "--build-arg=ROCM_VERSION=%s" % rocm_version,
+            "--build-arg=THEROCK_PATH=%s" % therock_path,
+            #"--build-context=%s" % therock_path,
+            ".",
+        ]
+    else:
+        cmd = [
+            "docker",
+            "build",
+            "-t=%s" % constructed_tag,
+            "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-rocm",
+            "--build-arg=ROCM_VERSION=%s" % rocm_version,
+            "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
+            "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
+            ".",
+        ]
+    subprocess.run(cmd, check=True)
+    return constructed_tag
+
+
 def dist_wheels(
     rocm_version,
     python_versions,
@@ -120,18 +185,36 @@ def dist_wheels(
     therock_path=None,
     rbe=False,
     compiler="gcc",
+    builder_image=None,
 ):
     jax_plugin_dir = "jax_rocm_plugin"
 
+    # If we weren't passed a builder image in the args, create an image
+    local_builder_image = builder_image
+    if not local_builder_image:
+        print("No manylinux builder image passed. Building a new builder image...")
+        local_builder_image = build_manylinux_dockers(
+            rocm_version=rocm_version,
+            rocm_build_job=rocm_build_job,
+            rocm_build_num=rocm_build_num,
+            therock_path=therock_path,
+        )
+    # If builder-image is set to 'search', try and find one based off of the passed ROCm info
+    elif local_builder_image == "search":
+        print("Searching for manylinux builder image...")
+        local_builder_image = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+        if not _docker_image_exists(local_builder_image):
+            print(f"ERROR: Builder image '{local_builder_image}' does not exist")
+            exit(1)
+
+    # Build the wheels
     cmd = [
         "python3",
         "build/rocm/ci_build",
         "--rocm-version=%s" % rocm_version,
         "--python-versions=%s" % ",".join(python_versions),
-        "--rocm-build-job=%s" % rocm_build_job,
-        "--rocm-build-num=%s" % rocm_build_num,
-        "--therock-path=%s" % therock_path,
         "--compiler=%s" % compiler,
+        "--builder-image=%s" % local_builder_image,
     ]
 
     if xla_source_dir:
@@ -539,8 +622,19 @@ def parse_args():
 
     subp = p.add_subparsers(dest="action", required=True)
 
+    ml_parser = subp.add_parser("build_manylinux_dockers")
+    ml_parser.add_argument(
+        "--tag", "-t", type=str, help="Override the default image name and tag"
+    )
+
     dwp = subp.add_parser("dist_wheels")
     dwp.add_argument("--rbe", action="store_true", help="Use Bazel RBE for building")
+    dwp.add_argument(
+        "--builder-image",
+        "-b",
+        type=str,
+        help="Name of the docker image to build with",
+    )
 
     dtestp = subp.add_parser("test_docker")
     dtestp.add_argument("--docker-build-only", action="store_true")
@@ -603,8 +697,16 @@ def parse_args():
 def main():
     args = parse_args()
 
-    if args.action == "dist_wheels":
+    if args.action == "build_manylinux_dockers":
+        build_manylinux_dockers(
+            rocm_version=args.rocm_version,
+            rocm_build_job=args.rocm_build_job,
+            rocm_build_num=args.rocm_build_num,
+            therock_path=args.therock_path,
+            tag=args.tag,
+        )
 
+    if args.action == "dist_wheels":
         dist_wheels(
             rocm_version=args.rocm_version,
             python_versions=args.python_versions,
@@ -615,6 +717,7 @@ def main():
             therock_path=args.therock_path,
             rbe=args.rbe,
             compiler=args.compiler,
+            builder_image=args.builder_image,
         )
 
     if args.action == "build_dockers":
