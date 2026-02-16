@@ -56,7 +56,7 @@ jobs:
           mkdir -p wheelhouse
           bash build/rocm/build_wheels.sh \
             --config=rocm_rbe \
-            --spawn_strategy=local \
+            --remote_upload_local_results \
             --wheelhouse=$(pwd)/wheelhouse \
             --rocm_version=${{ matrix.rocm-version }} \
             --git_hash=${GITHUB_SHA} \
