@@ -233,11 +233,17 @@ def _install_therock(rocm_version, therock_path):
     os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
 
     # Make a symlink to amdgcn to fix LLVM not being able to find binaries
-    os.symlink(
-        rocm_real_path + "/lib/llvm/amdgcn/",
-        rocm_real_path + "/amdgcn",
-        target_is_directory=True,
-    )
+    try:
+        os.symlink(
+            rocm_real_path + "/lib/llvm/amdgcn/",
+            rocm_real_path + "/amdgcn",
+            target_is_directory=True,
+        )
+    except FileExistsError:
+        LOG.info(
+            "%s/amdgc already exists. Not creating symlink",
+            rocm_real_path
+        )
 
 
 def _setup_internal_repo(system, rocm_version, job_name, build_num):

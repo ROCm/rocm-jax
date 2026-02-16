@@ -21,18 +21,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.12.0"]
         include:
-          - rocm-version: "7.1.1"
-            runner-label: '["linux-x86-64-1gpu-amd"]'
-          - rocm-version: "7.2.0"
+          - rocm-version: "7.12.0"
+            therock-path: "https://rocm.nightlies.amd.com/tarball/therock-dist-linux-gfx94X-dcgpu-7.12.0a20260210.tar.gz"
             runner-label: '["linux-x86-64-1gpu-amd"]'
     uses: ./.github/workflows/build-wheels.yml
     with:
       python-versions: "3.11,3.12,3.13,3.14"
       rocm-version: ${{ matrix.rocm-version }}
-      rocm-build-job: ${{ matrix.rocm-build-job }}
-      rocm-build-num: ${{ matrix.rocm-build-num }}
+      therock-path: ${{ matrix.therock-path }}
       runner-label: ${{ matrix.runner-label }}
     secrets:
       rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
@@ -42,17 +40,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.12.0"]
         include:
-          - rocm-version: "7.1.1"
-            runner-label: '["linux-x86-64-1gpu-amd"]'
-          - rocm-version: "7.2.0"
+          - rocm-version: "7.12.0"
+            therock-path: "https://rocm.nightlies.amd.com/tarball/therock-dist-linux-gfx94X-dcgpu-7.12.0a20260210.tar.gz"
             runner-label: '["linux-x86-64-1gpu-amd"]'
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
-      rocm-build-job: ${{ matrix.rocm-build-job }}
-      rocm-build-num: ${{ matrix.rocm-build-num }}
+      therock-path: ${{ matrix.therock-path }}
       runner-label: ${{ matrix.runner-label }}
       extra-cr-tag: "nightly"
   call-test-and-upload:
@@ -63,7 +59,7 @@ jobs:
         test-command:
           - "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
           - "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.12.0"]
         include:
           - test-command: "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
             runner-label: '["linux-x86-64-1gpu-amd"]'

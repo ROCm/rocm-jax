@@ -17,12 +17,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.1.1", "7.2.0", "7.12.0"]
         install-llvm: [true, false]
         include:
           - rocm-version: "7.1.1"
             runner-label: "linux-x86-64-1gpu-amd"
           - rocm-version: "7.2.0"
+            runner-label: "linux-x86-64-1gpu-amd"
+          - rocm-version: "7.12.0"
+            therock-path: "https://rocm.nightlies.amd.com/tarball/therock-dist-linux-gfx94X-dcgpu-7.12.0a20260210.tar.gz"
             runner-label: "linux-x86-64-1gpu-amd"
     steps:
       - name: Clean up old runs
@@ -51,6 +54,7 @@ jobs:
         env:
           ROCM_BUILD_JOB: ${{ matrix.rocm-build-job }}
           ROCM_BUILD_NUM: ${{ matrix.rocm-build-num }}
+          THEROCK_PATH: ${{ matrix.therock-path }}
         run: |
           BUILD_ARGS=""
           if [ -n "$ROCM_BUILD_JOB" ]; then
@@ -58,6 +62,9 @@ jobs:
           fi
           if [ -n "$ROCM_BUILD_NUM" ]; then
             BUILD_ARGS="$BUILD_ARGS --rocm-build-num=$ROCM_BUILD_NUM"
+          fi
+          if [ -n "$THEROCK_PATH" ]; then
+            BUILD_ARGS="$BUILD_ARGS --therock-path=$THEROCK_PATH"
           fi
           python3 build/ci_build \
             --rocm-version="${{ matrix.rocm-version }}" \
