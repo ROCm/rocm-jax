@@ -32,7 +32,3 @@ COPY ./build/rocm/build_wheels/clang.cfg /usr/lib/llvm-18/bin/clang++.cfg
 COPY ./build/rocm/build_wheels/clang.cfg /usr/lib/llvm-18/bin/clang.cfg
 COPY ./build/rocm/build_wheels/clang.cfg /opt/rocm/llvm/bin/clang++.cfg
 COPY ./build/rocm/build_wheels/clang.cfg /opt/rocm/llvm/bin/clang.cfg
-
-# Install Bazelisk as bazel
-RUN wget -qO /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 && \
-    chmod +x /usr/local/bin/bazel
