@@ -1,0 +1,178 @@
+diff --git a/WORKSPACE b/WORKSPACE
+index 1d2096fbe..9c5d8f0d5 100644
+--- a/WORKSPACE
++++ b/WORKSPACE
+@@ -100,6 +100,10 @@ load("//third_party/flatbuffers:workspace.bzl", flatbuffers = "repo")
+ 
+ flatbuffers()
+ 
++load("//third_party/external_deps:workspace.bzl", "external_deps_repository")
++
++external_deps_repository(name = "rocm_external_test_deps")
++
+ load("//:test_shard_count.bzl", "test_shard_count_repository")
+ 
+ test_shard_count_repository(
+diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
+index 304bab34f..34f760cd0 100644
+--- a/jaxlib/jax.bzl
++++ b/jaxlib/jax.bzl
+@@ -17,6 +17,7 @@
+ load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+ load("@com_github_google_flatbuffers//:build_defs.bzl", _flatbuffer_cc_library = "flatbuffer_cc_library")
+ load("@jax_wheel//:wheel.bzl", "WHEEL_VERSION")
++load("@rocm_external_test_deps//:external_deps.bzl", "EXTERNAL_DEPS")
+ load("@jax_wheel_version_suffix//:wheel_version_suffix.bzl", "WHEEL_VERSION_SUFFIX")
+ load("@local_config_cuda//cuda:build_defs.bzl", _cuda_library = "cuda_library", _if_cuda_is_configured = "if_cuda_is_configured")
+ load("@local_config_rocm//rocm:build_defs.bzl", _if_rocm_is_configured = "if_rocm_is_configured", _rocm_library = "rocm_library")
+@@ -198,14 +199,14 @@ def _gpu_test_deps():
+             "//jaxlib/rocm:gpu_only_test_deps",
+             "//jax_plugins:gpu_plugin_only_test_deps",
+         ],
+-        "//jax:config_build_jaxlib_false": [
++        "//jax:config_build_jaxlib_false": if_cuda_is_configured([
+             "//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
+             "//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
+-        ],
+-        "//jax:config_build_jaxlib_wheel": [
++        ]) + if_rocm_is_configured(EXTERNAL_DEPS),
++        "//jax:config_build_jaxlib_wheel": if_cuda_is_configured([
+             "//jaxlib/tools:jax_cuda_plugin_py_import",
+             "//jaxlib/tools:jax_cuda_pjrt_py_import",
+-        ],
++        ]) + if_rocm_is_configured(EXTERNAL_DEPS),
+     })
+ 
+ def _get_jax_test_deps(deps):
+@@ -569,11 +570,11 @@ def jax_wheel(
+         }),
+         # TODO(kanglan) Add @platforms//cpu:ppc64le once JAX Bazel is upgraded > 6.5.0.
+         cpu = select({
+-            "//jaxlib/tools:macos_arm64": "arm64",
+-            "//jaxlib/tools:macos_x86_64": "x86_64",
+-            "//jaxlib/tools:win_amd64": "AMD64",
+-            "//jaxlib/tools:linux_aarch64": "aarch64",
+-            "//jaxlib/tools:linux_x86_64": "x86_64",
++            Label("//jaxlib/tools:macos_arm64"): "arm64",
++            Label("//jaxlib/tools:macos_x86_64"): "x86_64",
++            Label("//jaxlib/tools:win_amd64"): "AMD64",
++            Label("//jaxlib/tools:linux_aarch64"): "aarch64",
++            Label("//jaxlib/tools:linux_x86_64"): "x86_64",
+         }),
+         source_files = source_files,
+     )
+diff --git a/third_party/external_deps/BUILD.bazel b/third_party/external_deps/BUILD.bazel
+new file mode 100644
+index 000000000..304acd3f3
+--- /dev/null
++++ b/third_party/external_deps/BUILD.bazel
+@@ -0,0 +1,17 @@
++# Copyright 2025 The JAX Authors.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     https://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++licenses(["notice"])  # Apache 2.0
++
++exports_files(["external_deps.bzl.tpl"])
+diff --git a/third_party/external_deps/external_deps.bzl.tpl b/third_party/external_deps/external_deps.bzl.tpl
+new file mode 100644
+index 000000000..2d42bc6f5
+--- /dev/null
++++ b/third_party/external_deps/external_deps.bzl.tpl
+@@ -0,0 +1,20 @@
++# Copyright 2025 The JAX Authors.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     https://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++# Auto-generated file. Do not edit.
++# Generated with fields: %{ENV_VARS}
++
++# Struct containing external dependency targets.
++# These targets can be used as dependencies in BUILD files.
++EXTERNAL_DEPS = %{EXTERNAL_DEPS}
+diff --git a/third_party/external_deps/workspace.bzl b/third_party/external_deps/workspace.bzl
+new file mode 100644
+index 000000000..75323ae25
+--- /dev/null
++++ b/third_party/external_deps/workspace.bzl
+@@ -0,0 +1,60 @@
++# Copyright 2025 The JAX Authors.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     https://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++"""Repository rule to configure external test dependencies.
++
++This module provides a repository rule that accepts a list of dependency targets
++and generates a .bzl file containing an EXTERNAL_DEPS variable.
++
++Usage:
++    init_external_deps_repo(deps = ["@jax_rocm_plugin//:plugin.whl", "@jax_rocm_plugin//:pjrt.whl"])
++
++    # In your BUILD files, access via:
++    # load("@rocm_external_test_deps//:external_deps.bzl", "EXTERNAL_DEPS")
++"""
++
++def _external_deps_repository_impl(repository_ctx):
++    """Implementation of the external_deps_repository rule.
++
++    Generates an external_deps.bzl file containing an EXTERNAL_DEPS variable.
++
++    Args:
++        repository_ctx: The repository context.
++    """
++    deps_list = repository_ctx.attr.deps
++
++    # Generate the external_deps.bzl file using the template
++    repository_ctx.template(
++        "external_deps.bzl",
++        repository_ctx.attr._build_tpl,
++        substitutions = {
++            "%{EXTERNAL_DEPS}": str(deps_list),
++        },
++    )
++
++    repository_ctx.file("BUILD.bazel", "# Auto-generated BUILD file\n")
++
++external_deps_repository = repository_rule(
++    implementation = _external_deps_repository_impl,
++    attrs = {
++        "deps": attr.string_list(
++            default = [],
++            doc = "List of dependency targets.",
++        ),
++        "_build_tpl": attr.label(
++            default = Label("//third_party/external_deps:external_deps.bzl.tpl"),
++        ),
++    },
++    doc = "Repository rule to configure external test dependencies.",
++)
