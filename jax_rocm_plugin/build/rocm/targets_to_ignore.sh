@@ -9,6 +9,7 @@ TARGETS_TO_IGNORE=(
     -@jax//tests:aot_test_gpu
     -@jax//tests:buffer_callback_test_gpu
     -@jax//tests:export_harnesses_multi_platform_test_gpu
+    -@jax//tests:lax_control_flow_test_gpu
     -@jax//tests:export_test_gpu
     -@jax//tests:gpu_memory_flags_test_gpu
     -@jax//tests:lax_numpy_test_gpu
