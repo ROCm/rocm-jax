@@ -92,7 +92,7 @@ jobs:
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
             --jax-source-dir="./jax" \
             dist_wheels \
-            --rbe
+            --rbe \
             --builder-image="${{ inputs.builder-image }}"
       - name: Archive plugin wheels
         uses: actions/upload-artifact@v4

@@ -31,9 +31,6 @@ def dist_wheels(
     python_versions,
     xla_path,
     jax_path,
-    rocm_build_job,
-    rocm_build_num,
-    therock_path,
     rbe,
     compiler,
     builder_image,
@@ -70,7 +67,6 @@ def dist_wheels(
         bw_cmd.append("--rbe")
 
     bw_cmd.append(container_plugin_path)
-    bw_cmd.append("/jax")
     container_cmd = " ".join(bw_cmd)
 
     cmd = ["docker", "run"]
@@ -225,9 +221,6 @@ def main():
             args.python_versions,
             args.xla_source_dir,
             args.jax_source_dir,
-            args.rocm_build_job,
-            args.rocm_build_num,
-            args.therock_path,
             args.rbe,
             args.compiler,
             args.builder_image,
