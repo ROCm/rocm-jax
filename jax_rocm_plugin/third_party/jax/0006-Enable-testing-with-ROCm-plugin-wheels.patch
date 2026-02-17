@@ -1,18 +1,3 @@
-diff --git a/WORKSPACE b/WORKSPACE
-index 1d2096fbe..9c5d8f0d5 100644
---- a/WORKSPACE
-+++ b/WORKSPACE
-@@ -100,6 +100,10 @@ load("//third_party/flatbuffers:workspace.bzl", flatbuffers = "repo")
- 
- flatbuffers()
- 
-+load("//third_party/external_deps:workspace.bzl", "external_deps_repository")
-+
-+external_deps_repository(name = "rocm_external_test_deps")
-+
- load("//:test_shard_count.bzl", "test_shard_count_repository")
- 
- test_shard_count_repository(
 diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
 index 304bab34f..34f760cd0 100644
 --- a/jaxlib/jax.bzl
