@@ -6,7 +6,7 @@ def repo():
     git_repository(
         name = "jax",
         remote = "https://github.com/ROCm/jax.git",
-        commit = JAX_COMMIT,
+        commit = COMMIT,
         patches = [
             "//third_party/jax:0005-Fix-HIP-availability-errors.patch",
             "//third_party/jax:0006-Enable-testing-with-ROCm-plugin-wheels.patch",  # TODO: remove due to: https://github.com/jax-ml/jax/pull/34641
