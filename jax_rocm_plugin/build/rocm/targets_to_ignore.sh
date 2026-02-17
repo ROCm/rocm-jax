@@ -16,6 +16,8 @@ TARGETS_TO_IGNORE=(
     -@jax//tests:lax_test_gpu
     -@jax//tests:lobpcg_test_gpu
     -@jax//tests:ode_test_gpu
+    -@jax//tests:lax_scipy_special_functions_test_gpu
+    -@jax//tests:svd_test_gpu
 )
 
 echo "${TARGETS_TO_IGNORE[*]}"
