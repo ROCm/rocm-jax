@@ -43,6 +43,9 @@ jobs:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
 
+      - name: ROCm Info
+        run: /opt/rocm/bin/rocminfo
+
       - name: Get RBE cluster keys
         env:
           RBE_CI_CERT: ${{ secrets.RBE_CI_CERT }}
