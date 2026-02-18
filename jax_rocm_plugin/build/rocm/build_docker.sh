@@ -10,10 +10,8 @@ REGISTRY="ghcr.io/rocm"
 BASE_TAG="jax-base-ubu24.rocm${ROCM_VERSION_TAG}"
 JAX_TAG="jax-ubu24.rocm${ROCM_VERSION_TAG}"
 
-# Extract commit hashes from workspace files
-XLA_COMMIT=$(grep -oP 'XLA_COMMIT = "\K[0-9a-f]+' jax_rocm_plugin/third_party/xla/workspace.bzl)
-JAX_COMMIT=$(grep -oP 'COMMIT = "\K[0-9a-f]+' jax_rocm_plugin/third_party/jax/workspace.bzl)
-ROCM_JAX_COMMIT=$(git rev-parse HEAD)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+eval "$(bash "${SCRIPT_DIR}/get_commits.sh")"
 
 # Build base image if not available in the registry
 if ! docker manifest inspect "${REGISTRY}/${BASE_TAG}:latest" >/dev/null 2>&1; then
