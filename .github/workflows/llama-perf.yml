@@ -114,6 +114,9 @@ jobs:
       - name: Build TE-wheel
         run: |
           docker exec te-build-jax${{ matrix.jax-version }} bash -lc '
+            apt install python3.12-venv
+            python3 -m venv .venv
+            source .venv/bin/activate
             pip install setuptools ninja pybind11
             pip install cmake==4.1.0
             if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
