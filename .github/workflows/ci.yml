@@ -90,3 +90,27 @@ jobs:
         with:
           name: plugin_wheels_r${{ matrix.rocm-version }}_py${{ matrix.python-version }}
           path: jax_rocm_plugin/wheelhouse/*.whl
+
+  build-docker:
+    needs: test-wheels
+    runs-on: linux-x86-64-1gpu-amd
+    strategy:
+      matrix:
+        rocm-version: ["7.1.1"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "plugin_wheels_*"
+          path: ./wheelhouse
+          merge-multiple: true
+
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build JAX docker image
+        run: bash jax_rocm_plugin/build/rocm/build_docker.sh ${{ matrix.rocm-version }}
