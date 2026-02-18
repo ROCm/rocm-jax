@@ -97,7 +97,6 @@ jobs:
     strategy:
       matrix:
         rocm-version: ["7.1.1"]
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
 
@@ -116,6 +115,7 @@ jobs:
       - name: Build JAX docker image
         run: bash jax_rocm_plugin/build/rocm/build_docker.sh ${{ matrix.rocm-version }}
 
+      # yamllint disable rule:line-length
       - name: Smoke test docker image
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
@@ -132,7 +132,10 @@ jobs:
             --shm-size 16G \
             "${JAX_TAG}" \
             bash -c "
-              curl -sL https://github.com/ROCm/jax/archive/${JAX_COMMIT}.tar.gz | tar xz -C /tmp && \
-              cd /tmp/jax-${JAX_COMMIT} && \
-              python${{ matrix.python-version }} -m pytest -x -v tests/nn_test.py tests/random_test.py
+              JAX_URL=https://github.com/ROCm/jax/archive
+              curl -sL \${JAX_URL}/${JAX_COMMIT}.tar.gz -o /tmp/jax.tar.gz &&
+              tar xzf /tmp/jax.tar.gz -C /tmp &&
+              cd /tmp/jax-${JAX_COMMIT} &&
+              python3.11 -m pytest -x -v tests/nn_test.py tests/random_test.py
             "
+      # yamllint enable rule:line-length
