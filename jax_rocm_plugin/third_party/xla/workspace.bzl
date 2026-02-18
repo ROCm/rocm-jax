@@ -12,10 +12,8 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 # To update XLA:
 #   1. Find the commit hash you want to pin to (e.g., from rocm-jaxlib-v0.8.2 branch)
 #   2. Update XLA_COMMIT below
-#
-# No SHA256 computation needed when using git_repository.
 
-XLA_COMMIT = "a15e41b80f82e4160ba78851d80eaa90cb7e8435"
+XLA_COMMIT = "24c5f10ae8fc24aefd20b43c501ade7f66fd0cfd"
 
 def repo():
     git_repository(
@@ -24,10 +22,10 @@ def repo():
         commit = XLA_COMMIT,
     )
 
-    # For development, one often wants to make changes to the TF repository as well
+    # For development, one often wants to make changes to the XLA repository as well
     # as the JAX repository. You can override the pinned repository above with a
     # local checkout by either:
-    # a) overriding the TF repository on the build.py command line by passing a flag
+    # a) overriding the XLA repository on the build.py command line by passing a flag
     #    like:
     #    python build/build.py build --local_xla_path=/path/to/xla
     #    or
