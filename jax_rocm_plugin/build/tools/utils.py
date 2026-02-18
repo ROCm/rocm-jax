@@ -238,7 +238,17 @@ def get_jax_configure_bazel_options(bazel_command: list[str]):
 
 
 def get_githash():
-    """dummy docstring"""
+    """Get the rocm-jax git commit hash.
+
+    First checks ROCM_JAX_COMMIT env var (set by ci_build when running in Docker),
+    then falls back to running git rev-parse HEAD.
+    """
+    # Check env var first (set by ci_build for Docker builds).
+    env_hash = os.environ.get("ROCM_JAX_COMMIT", "")
+    if env_hash:
+        return env_hash
+
+    # Fall back to git command.
     try:
         return subprocess.run(
             ["git", "rev-parse", "HEAD"],
