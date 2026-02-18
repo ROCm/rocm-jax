@@ -207,3 +207,81 @@ def amd_http_archive(name, sha256, urls, **kwargs):
         urls = urls,
         **kwargs
     )
+
+
+def _dynamic_git_repository_impl(ctx):
+    env_var = ctx.attr.commit_override_env_var
+    override = ctx.os.environ.get(env_var, "")
+
+    remote = ctx.attr.remote
+    commit = ctx.attr.commit
+
+    if override:
+        # Format: "url@commit" to override both, or just "commit" for commit only.
+        # Splits on the last "@" so URLs containing "@" (e.g. git@github.com:...)
+        # are handled correctly.
+        at_pos = override.rfind("@")
+        if at_pos > 0:
+            remote = override[:at_pos]
+            commit = override[at_pos + 1:]
+        else:
+            commit = override
+
+    ctx.execute(["git", "init"], timeout = 60)
+    ctx.execute(
+        ["git", "remote", "add", "origin", remote],
+        timeout = 60,
+    )
+
+    fetch_result = ctx.execute(
+        ["git", "fetch", "--depth=1", "origin", commit],
+        timeout = 600,
+    )
+    if fetch_result.return_code != 0:
+        fail("Failed to fetch commit %s from %s: %s" % (
+            commit,
+            remote,
+            fetch_result.stderr,
+        ))
+
+    checkout_result = ctx.execute(
+        ["git", "checkout", "FETCH_HEAD"],
+        timeout = 120,
+    )
+    if checkout_result.return_code != 0:
+        fail("Failed to checkout FETCH_HEAD: %s" % checkout_result.stderr)
+
+    ctx.delete(".git")
+
+    for patch_file in ctx.attr.patch_file:
+        if patch_file:
+            ctx.patch(ctx.path(Label(patch_file)), strip = 1)
+
+_dynamic_git_repository = repository_rule(
+    implementation = _dynamic_git_repository_impl,
+    attrs = {
+        "commit": attr.string(mandatory = True),
+        "remote": attr.string(mandatory = True),
+        "commit_override_env_var": attr.string(mandatory = True),
+        "patch_file": attr.string_list(),
+    },
+)
+
+def dynamic_git_repository(name, remote, commit, **kwargs):
+    """Git repository rule with <NAME>_COMMIT_OVERRIDE support via --repo_env.
+
+    The override env var is derived from the repo name, e.g. name="xla"
+    checks XLA_COMMIT_OVERRIDE, name="jax" checks JAX_COMMIT_OVERRIDE.
+
+    Override format:
+      - "commit_hash"               — overrides commit only, keeps default remote.
+      - "https://url.git@commit"    — overrides both remote and commit (split on last @).
+    """
+
+    _dynamic_git_repository(
+        name = name,
+        remote = remote,
+        commit = commit,
+        commit_override_env_var = name.upper() + "_COMMIT_OVERRIDE",
+        **kwargs
+    )
