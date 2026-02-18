@@ -1,5 +1,11 @@
 workspace(name = "jax_rocm_plugin")
 
+new_local_repository(
+    name = "nvidia_wheel_versions",
+    build_file_content = "",
+    path = "third_party/nvidia_wheel_versions",
+)
+
 # The XLA commit is determined by third_party/xla/workspace.bzl.
 load("//third_party/xla:workspace.bzl", jax_xla_workspace = "repo")
 
