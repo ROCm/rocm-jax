@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.12"]
-        rocm-version: ["7.2.0"]
+        rocm-version: ["7.1.1"]
 
     outputs:
       python_version: ${{ steps.meta.outputs.python }}
