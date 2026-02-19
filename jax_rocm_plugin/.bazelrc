@@ -101,24 +101,34 @@ build:rocm --copt=-Wno-gnu-offsetof-extensions
 build:rocm --copt=-Qunused-arguments
 build:rocm --action_env=TF_HIPCC_CLANG="1"
 
-build:asan --strip=never
+#############################################################################
+# Sanitizer configs
+#############################################################################
+build:sanitizer --linkopt="-L/usr/lib/llvm-18/lib/clang/18/lib/linux"
+build:sanitizer --linkopt="-Wl,-rpath,/usr/lib/llvm-18/lib/clang/18/lib/linux"
+build:sanitizer --run_under=//build/rocm:sanitizer_wrapper
+build:sanitizer --action_env TF_ROCM_AMDGPU_TARGETS="gfx908,gfx90a,gfx942"
+build:sanitizer --strip=never
+#O1 because we need to see the asans callstack
+build:sanitizer --copt -O1
+build:sanitizer --copt -g
+build:sanitizer --copt -fno-omit-frame-pointer
+build:sanitizer --linkopt -g
+
+build:asan --config=sanitizer
 build:asan --copt -fsanitize=address
 build:asan --copt -DADDRESS_SANITIZER
-#O1 because we need to see the asans callstack
-build:asan --copt -O1
-build:asan --copt -g
 build:asan --copt -gsplit-dwarf
-build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
-build:asan --linkopt -g1
-
-build:asan --linkopt="-L/usr/lib/llvm-18/lib/clang/18/lib/linux"
-build:asan --linkopt="-Wl,-rpath,/usr/lib/llvm-18/lib/clang/18/lib/linux"
 build:asan --linkopt="-lclang_rt.asan-x86_64"
 build:asan --linkopt="-lclang_rt.asan_cxx-x86_64"
 build:asan --//build/rocm:sanitizer=asan
-build:asan --run_under=//build/rocm:sanitizer_wrapper
-build:asan --action_env TF_ROCM_AMDGPU_TARGETS="gfx908,gfx90a,gfx942"
+
+build:tsan --config=sanitizer
+build:tsan --copt -fsanitize=thread
+build:tsan --linkopt -fsanitize=thread
+build:tsan --linkopt="-l:libclang_rt.tsan-x86_64.so"
+build:tsan --//build/rocm:sanitizer=tsan
 
 #############################################################################
 # Configuration for running RBE builds and tests
