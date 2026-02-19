@@ -123,6 +123,9 @@ RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
         nlohmann-json3-dev                     \
         build-essential                        \
         cmake &&                               \
+    # prevent apt and ldconf to override the symlinks
+    dpkg-divert --no-rename --remove /opt/rocm/lib/libMIOpen.so.1 && \
+    dpkg-divert --add --package local --divert /opt/rocm/lib/libMIOpen.bak.1.0.70200 --rename /opt/rocm/lib/libMIOpen.so.1.0.70200 && \
     cd /rocm-libraries/projects/miopen/ && mkdir build && cd build && \
     export CXX=amdclang++ &&                                          \
     cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DMIOPEN_BACKEND=HIP     \
