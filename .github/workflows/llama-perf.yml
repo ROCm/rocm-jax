@@ -119,6 +119,7 @@ jobs:
             source .venv/bin/activate
             pip install setuptools ninja pybind11
             pip install cmake==4.1.0
+            pip install packaging psutil
             if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
               apt update
               apt install libdw1 libglib2.0-0
