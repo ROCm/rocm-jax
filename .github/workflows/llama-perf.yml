@@ -292,11 +292,11 @@ jobs:
         include:
           - jax-version: "0.6.0"
             model-name: "train_dense"
-            rocm-version: "7.0.2"
+            rocm-version: "7.2.0"
             python-version: "3.12"
           - jax-version: "0.8.2"
             model-name: "train_dense"
-            rocm-version: "7.1.1"
+            rocm-version: "7.2.0"
             python-version: "3.12"
     steps:
       - name: Checkout plugin repo
