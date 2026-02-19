@@ -57,6 +57,9 @@ jobs:
           echo "$RBE_CI_CERT" >> ci-cert.crt
           echo "$RBE_CI_KEY" >> ci-cert.key
 
+      - name: ROCm Info
+        run: /opt/rocm/bin/rocminfo
+
       - name: Run single-GPU unit tests
         if: always()
         run: |

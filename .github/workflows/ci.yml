@@ -15,95 +15,127 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  call-build-wheels:
+  test-wheels:
+    runs-on: linux-x86-64-1gpu-amd
     strategy:
+      fail-fast: false
       matrix:
-        rocm-version: ["7.1.1"]
-    uses: ./.github/workflows/build-wheels.yml
-    with:
-      python-versions: "3.11,3.12,3.13,3.14"
-      rocm-version: ${{ matrix.rocm-version }}
-      runner-label: '["linux-x86-64-1gpu-amd"]'
-      builder-image: "search"
-    secrets:
-      rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
-      rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
-  call-build-docker:
-    needs: call-build-wheels
-    strategy:
-      matrix:
-        rocm-version: ["7.1.1"]
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      rocm-version: ${{ matrix.rocm-version }}
-      runner-label: '["linux-x86-64-1gpu-amd"]'
-  run-python-unit-tests:
-    needs: call-build-docker
-    runs-on: "linux-x86-64-1gpu-amd"
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        rocm-version: ["7.1.1"]
+        rocm-version: ["7"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    container:
+      image: rocm/tensorflow-build@sha256:7fcfbd36b7ac8f6b0805b37c4248e929e31cf5ee3af766c8409dd70d5ab65faa
+      options: >-
+        -w ${{ github.workspace }}/jax_rocm_plugin
+        --device=/dev/kfd
+        --device=/dev/dri
+        --group-add video
+        --cap-add=SYS_PTRACE
+        --security-opt seccomp=unconfined
+        --shm-size 16G
+    defaults:
+      run:
+        working-directory: jax_rocm_plugin
     steps:
-      - name: Change owners for cleanup
-        run: |
-          docker run --rm -v "./:/rocm-jax" ubuntu \
-            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
       - name: Checkout plugin repo
         uses: actions/checkout@v4
-        with:
-          clean: false
-      - name: Checkout JAX repo
-        uses: actions/checkout@v4
-        with:
-          # TODO: Load the ref from a file that sets the min and max JAX version
-          # TODO: Change the repo and ref once we figure out how exactly we're going to
-          #       manage tests
-          clean: false
-          repository: rocm/jax
-          ref: rocm-jaxlib-v0.8.2
-          path: jax
-      - name: Apply patches to rocm/jax test repo
-        run: |
-          pushd jax
-          git apply ../ci/patches/*
-          popd
+
+      - name: ROCm Info
+        run: /opt/rocm/bin/rocminfo
+
       - name: Get RBE cluster keys
         env:
           RBE_CI_CERT: ${{ secrets.RBE_CI_CERT }}
           RBE_CI_KEY: ${{ secrets.RBE_CI_KEY }}
         run: |
-          echo "$RBE_CI_CERT" >> ./jax/ci-cert.crt
-          echo "$RBE_CI_KEY" >> ./jax/ci-cert.key
+          echo "$RBE_CI_CERT" >> ci-cert.crt
+          echo "$RBE_CI_KEY" >> ci-cert.key
+
+      - name: Build wheels (Python ${{ matrix.python-version }})
+        run: |
+          mkdir -p wheelhouse
+          bash build/rocm/build_wheels.sh \
+            --config=rocm_rbe \
+            --remote_upload_local_results \
+            --wheelhouse=$(pwd)/wheelhouse \
+            --rocm_version=${{ matrix.rocm-version }} \
+            --git_hash=${GITHUB_SHA} \
+            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python-version }} \
+            --curses=no \
+            --color=yes
+
+      - name: Install wheels (Python ${{ matrix.python-version }})
+        shell: bash
+        run: |
+          JAX_DIR=bazel-jax_rocm_plugin/external/jax
+          python${{ matrix.python-version }} -m venv /tmp/testenv
+          source /tmp/testenv/bin/activate
+          pip install wheelhouse/*.whl
+          pip install "${JAX_DIR}"
+          pip install -r "${JAX_DIR}/build/test-requirements.txt"
+
+      - name: Smoke test wheels (Python ${{ matrix.python-version }})
+        shell: bash
+        run: |
+          source /tmp/testenv/bin/activate
+          JAX_DIR=bazel-jax_rocm_plugin/external/jax
+          cd "${JAX_DIR}"
+          pytest -x -v tests/nn_test.py tests/random_test.py
+
+      - name: Archive plugin wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin_wheels_r${{ matrix.rocm-version }}_py${{ matrix.python-version }}
+          path: jax_rocm_plugin/wheelhouse/*.whl
+
+  build-docker:
+    needs: test-wheels
+    runs-on: linux-x86-64-1gpu-amd
+    strategy:
+      matrix:
+        rocm-version: ["7.1.1"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "plugin_wheels_*"
+          path: ./wheelhouse
+          merge-multiple: true
+
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Check ROCm GPUs with rocm-smi
-        env:
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-        run: |
-          docker run --rm --device=/dev/kfd --device=/dev/dri --group-add video \
-            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            rocm-smi -a || true
-      - name: Download wheel artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: plugin_wheels_r${{ matrix.rocm-version }}
-          path: ./wheelhouse
-      - name: List files in the wheelhouse
-        run: |
-          ls -alth ./wheelhouse || true
-      - name: Run tests
-        env:
-          GPU_COUNT: "8"
-          GFX: "gfx90a"
-          JAX_SKIP_SLOW_TESTS: "1"
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-        # TODO: Add the tests/linalg_test.py test back once we fix the XLAClient thing.
-        run: |
-          python3 build/ci_build test \
-            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "bash ci/jax_rbe/pr_setup.sh && ci/jax_rbe/pr_test.sh 0.8.2 3.12"
 
+      - name: Build JAX docker image
+        run: bash jax_rocm_plugin/build/rocm/build_docker.sh ${{ matrix.rocm-version }}
+
+      # yamllint disable rule:line-length
+      - name: Smoke test docker image
+        env:
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+        run: |
+          ROCM_VERSION_TAG="${ROCM_VERSION//./}"
+          JAX_TAG="jax-ubu24.rocm${ROCM_VERSION_TAG}"
+          eval "$(bash jax_rocm_plugin/build/rocm/get_commits.sh)"
+          docker run --rm \
+            --device=/dev/kfd \
+            --device=/dev/dri \
+            --group-add video \
+            --cap-add=SYS_PTRACE \
+            --security-opt seccomp=unconfined \
+            --shm-size 16G \
+            "${JAX_TAG}" \
+            bash -c "
+              JAX_URL=https://github.com/ROCm/jax/archive
+              curl -sL \${JAX_URL}/${JAX_COMMIT}.tar.gz -o /tmp/jax.tar.gz &&
+              tar xzf /tmp/jax.tar.gz -C /tmp &&
+              cd /tmp/jax-${JAX_COMMIT} &&
+              python3.11 -m pytest -x -v tests/nn_test.py tests/random_test.py
+            "
+      # yamllint enable rule:line-length
