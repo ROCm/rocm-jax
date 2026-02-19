@@ -114,14 +114,14 @@ jobs:
       - name: Build TE-wheel
         run: |
           docker exec te-build-jax${{ matrix.jax-version }} bash -lc '
-            apt install python3.12-venv
-            python3 -m venv .venv
-            source .venv/bin/activate
             pip install setuptools ninja pybind11
             pip install cmake==4.1.0
             pip install packaging psutil
             if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
               apt update
+              apt install python3.12-venv
+              python3 -m venv .venv
+              source .venv/bin/activate
               apt install libdw1 libglib2.0-0
               pip install --force-reinstall jax==0.6.0 \
                 jaxlib==0.6.0 \
@@ -130,15 +130,8 @@ jobs:
             fi
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
-            ln -s /usr/bin/python3 /usr/bin/python
-            which python
-            which python3
-            head -n 2 3rdparty/hipify_torch/hipify_cli.py
-            sed -i "s/env python/env python3/g" 3rdparty/hipify_torch/hipify_cli.py
-            head -n 2 3rdparty/hipify_torch/hipify_cli.py
-            which python
-            which python3
-            python3 setup.py bdist_wheel'
+            python3 setup.py bdist_wheel
+            ls -lrth dist/'
       - name: Upload TE wheels artifacts
         uses: actions/upload-artifact@v4
         with:
