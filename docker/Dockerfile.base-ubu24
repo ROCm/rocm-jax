@@ -109,6 +109,35 @@ RUN --mount=type=cache,target=/var/cache/apt   \
     rm llvm.sh &&                              \
     apt-get clean && rm -rf /var/lib/apt/lists/* )
 
+# Temporarily include a custom built MIOpen. This should be removed
+# as soon as https://github.com/ROCm/rocm-libraries/pull/4472 lands
+# in a ROCm release that we can install as deb package or with therock.
+RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
+    git clone https://github.com/ROCm/rocm-libraries.git --branch fix/stack-overflow-kernel-init --depth 1 /rocm-libraries && \
+    apt update &&                              \
+    apt-get install -y --no-install-recommends \
+        libboost-dev                           \
+        libboost-system-dev                    \
+        libboost-filesystem-dev                \
+        libgtest-dev                           \
+        nlohmann-json3-dev                     \
+        build-essential                        \
+        cmake &&                               \
+    # prevent apt and ldconf to override the symlinks
+    dpkg-divert --no-rename --remove /opt/rocm/lib/libMIOpen.so.1 && \
+    dpkg-divert --add --package local --divert /opt/rocm/lib/libMIOpen.bak.1.0.70200 --rename /opt/rocm/lib/libMIOpen.so.1.0.70200 && \
+    cd /rocm-libraries/projects/miopen/ && mkdir build && cd build && \
+    export CXX=amdclang++ &&                                          \
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DMIOPEN_BACKEND=HIP     \
+          -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH="/opt/rocm"         \
+          -DMIOPEN_USE_MLIR=OFF -DMIOPEN_ENABLE_AI_KERNEL_TUNING=OFF  \
+          -DMIOPEN_ENABLE_AI_IMMED_MODE_FALLBACK=OFF .. &&            \
+    make -j10 && make install &&                                      \
+    apt-get clean && rm -rf /var/lib/apt/lists/* )
+
+# This mitigates crashes related to the kernel database.
+ENV MIOPEN_FIND_ENFORCE=SEARCH_DB_UPDATE
+
 ### Set Docker Environment
 ENV PATH="$PATH:/opt/rocm/bin:/opt/rocm/llvm/bin"
 # ENV ln -s "/opt/rocm-${ROCM_RELEASE}/lib/librocblas.so.5" "/opt/rocm-${ROCM_RELEASE}/lib/librocblas.so.4"
