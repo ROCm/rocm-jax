@@ -120,10 +120,13 @@ jobs:
             if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
               apt update
               apt install libdw1 libglib2.0-0
+              ROCM_JAX_BASE=https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0
+              PJRT_URL="$ROCM_JAX_BASE/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
+              PLUGIN_URL="$ROCM_JAX_BASE/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
               pip install --force-reinstall jax==0.6.0 \
                 jaxlib==0.6.0 \
-                https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl \
-                https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl
+                "$PJRT_URL" \
+                "$PLUGIN_URL"
             fi
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
