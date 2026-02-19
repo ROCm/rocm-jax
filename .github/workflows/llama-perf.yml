@@ -129,6 +129,7 @@ jobs:
             fi
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
+            ln -s /usr/bin/python3 /usr/bin/python
             which python
             which python3
             head -n 2 3rdparty/hipify_torch/hipify_cli.py
