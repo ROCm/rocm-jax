@@ -13,6 +13,10 @@ jobs:
         python-version: ["3.12"]
         rocm-version: ["7.1.1"]
 
+    outputs:
+      python_version: ${{ steps.meta.outputs.python }}
+      rocm_version: ${{ steps.meta.outputs.rocm }}
+
     env:
       WORKSPACE_DIR: ${{ format(
           'jax_rocm_perf_{0}_{1}_{2}',
@@ -24,6 +28,12 @@ jobs:
       ROCM_VERSION: ${{ matrix.rocm-version }}
 
     steps:
+      - name: Get job metadata
+        id: meta
+        run: |
+          echo "python=${{ matrix.python-version }}" >> "$GITHUB_OUTPUT"
+          echo "rocm=${{ matrix.rocm-version }}" >> "$GITHUB_OUTPUT"
+
       - name: Clean up old workdirs
         run: |
           ls -l
@@ -42,12 +52,20 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Checkout JAX repo for jaxlib build
+        uses: actions/checkout@v4
+        with:
+          repository: ROCm/jax
+          ref: rocm-jaxlib-v0.8.2
+          path: jax
+
       - name: Build plugin wheels
         run: |
           python3 build/ci_build \
             --compiler clang \
             --python-versions $PYTHON_VERSION \
             --rocm-version $ROCM_VERSION \
+            --jax-source-dir="./jax" \
             dist_wheels
 
       - name: Copy wheels for Docker build context
@@ -110,9 +128,7 @@ jobs:
 
       - name: Analyze logs to compute median step time
         run: |
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install numpy
+          pip install numpy --break-system-packages
           python3 build/analyze_maxtext_logs.py
           cat summary.json
 
@@ -161,6 +177,8 @@ jobs:
           ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
           ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
+          PYTHON_VERSION: ${{ needs.build-and-test-jax-perf.outputs.python_version }}
+          ROCM_VERSION: ${{ needs.build-and-test-jax-perf.outputs.rocm_version }}
         run: |
           python3 -m venv venv
           source venv/bin/activate
@@ -169,7 +187,7 @@ jobs:
 
           python3 ci/upload_to_db.py \
             --github-run-id "${{ github.run_id }}" \
-            --python-version "${{ needs.build-and-test-jax-perf.outputs.python_version }}" \
-            --rocm-version "${{ needs.build-and-test-jax-perf.outputs.rocm_version }}" \
+            --python-version "$PYTHON_VERSION" \
+            --rocm-version "$ROCM_VERSION" \
             --gfx-version gfx942 \
             --jax-version 0.9.0

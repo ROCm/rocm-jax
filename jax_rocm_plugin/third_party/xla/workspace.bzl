@@ -1,4 +1,3 @@
-#
 #     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -8,34 +7,29 @@
 # limitations under the License.
 
 # buildifier: disable=module-docstring
-load("//third_party:repo.bzl", "amd_http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-# To update XLA to a new revision,
-# a) update XLA_COMMIT to the new git commit hash
-# b) get the sha256 hash of the commit by running:
-#    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
-#    and update XLA_SHA256 with the result.
+# To update XLA:
+#   1. Find the commit hash you want to pin to (e.g., from rocm-jaxlib-v0.8.2 branch)
+#   2. Update XLA_COMMIT below
 
-XLA_COMMIT = "24c5f10ae8fc24aefd20b43c501ade7f66fd0cfd"
-XLA_SHA256 = "f00db8761e86bcb51b52e64bc983717181050c8752c040e33ecb1429d861c30b"
+XLA_COMMIT = "9cc32ad7f36b1bf2c2f82ceb6efc264a6ecbf93e"
 
 def repo():
-    amd_http_archive(
+    git_repository(
         name = "xla",
-        sha256 = XLA_SHA256,
-        strip_prefix = "xla-{commit}".format(commit = XLA_COMMIT),
-        urls = ["https://github.com/ROCm/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)],
-        patch_file = [],
+        remote = "https://github.com/ROCm/xla.git",
+        commit = XLA_COMMIT,
     )
 
-    # For development, one often wants to make changes to the TF repository as well
+    # For development, one often wants to make changes to the XLA repository as well
     # as the JAX repository. You can override the pinned repository above with a
     # local checkout by either:
-    # a) overriding the TF repository on the build.py command line by passing a flag
+    # a) overriding the XLA repository on the build.py command line by passing a flag
     #    like:
     #    python build/build.py build --local_xla_path=/path/to/xla
     #    or
-    # b) by commenting out the http_archive above and uncommenting the following:
+    # b) by commenting out the git_repository above and uncommenting the following:
     # local_repository(
     #    name = "xla",
     #    path = "/path/to/xla",

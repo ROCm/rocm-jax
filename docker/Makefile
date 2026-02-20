@@ -1,8 +1,8 @@
 .PHONY: all clean
 
-all: .docker-jax-ubu22 .docker-jax-ubu24
+all: .docker-jax-ubu24
 
-clean: clean-jax-ubu22 clean-jax-ubu24
+clean: clean-jax-ubu24
 
 ROCM_VERSION ?= 7.2.0
 

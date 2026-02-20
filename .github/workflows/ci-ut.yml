@@ -1,12 +1,15 @@
-name: Nightly RBE
+name: CI Unit Tests
 
 on:
-  schedule:
-    - cron: "0 1 * * *"
-  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - 'rocm-jaxlib-v*'
   pull_request:
-    paths:
-      - '.github/workflows/nightly-rbe.yml'
+    branches:
+      - master
+      - 'rocm-jaxlib-v*'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,11 +20,17 @@ permissions:
 
 jobs:
   build-and-test:
+    name: build-and-test (${{ matrix.mode.name }})
     runs-on: linux-x86-64-4gpu-amd-gfx942
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.11", "3.12", "3.13", "3.14"]
+        mode:
+          - {name: "py3.11", python_version: "3.11", config: ""}
+          - {name: "py3.12", python_version: "3.12", config: ""}
+          - {name: "py3.13", python_version: "3.13", config: ""}
+          - {name: "py3.14", python_version: "3.14", config: ""}
+          - {name: "asan", python_version: "3.11", config: "--config=asan"}
     container:
       # note this image shall match the one defined in platform/linux:tf_linux_gpu
       image: rocm/tensorflow-build@sha256:7fcfbd36b7ac8f6b0805b37c4248e929e31cf5ee3af766c8409dd70d5ab65faa
@@ -48,36 +57,40 @@ jobs:
           echo "$RBE_CI_CERT" >> ci-cert.crt
           echo "$RBE_CI_KEY" >> ci-cert.key
 
-      - name: Run single-GPU unit tests (Python ${{ matrix.python_version }})
+      - name: Run single-GPU unit tests
         if: always()
         run: |
           bash build/rocm/ci_run_jax_ut.sh \
             --config=rocm_sgpu \
             --config=rocm_rbe \
-            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
+            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.mode.python_version }} \
+            ${{ matrix.mode.config }} \
             --curses=no \
             --color=yes \
             -- \
             @jax//tests:gpu_tests \
-            @jax//tests:backend_independent_tests
+            @jax//tests:backend_independent_tests \
+            $(build/rocm/targets_to_ignore.sh)
 
-      - name: Run multi-GPU unit tests (Python ${{ matrix.python_version }})
+      - name: Run multi-GPU unit tests
         if: always()
         run: |
           bash build/rocm/ci_run_jax_ut.sh \
             --config=rocm_mgpu \
             --config=rocm_rbe \
-            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.python_version }} \
+            --repo_env=HERMETIC_PYTHON_VERSION=${{ matrix.mode.python_version }} \
+            ${{ matrix.mode.config }} \
             --curses=no \
             --color=yes \
             --strategy=TestRunner=local \
             -- \
             @jax//tests:gpu_tests \
-            @jax//tests:backend_independent_tests
+            @jax//tests:backend_independent_tests \
+            $(build/rocm/targets_to_ignore.sh)
 
       - name: Upload logs to artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: logs-rbe-py${{ matrix.python_version }}
+          name: logs-rbe-py${{ matrix.mode.name }}
           path: jax_rocm_plugin/logs/

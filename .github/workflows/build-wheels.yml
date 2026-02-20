@@ -32,6 +32,10 @@ on:
         required: false
         type: string
         default: 'rocm-jaxlib-v0.9.0'
+      builder-image:
+        required: false
+        type: string
+        default: ''
     secrets:
       rbe_ci_key:
         required: true
@@ -71,6 +75,10 @@ jobs:
           repository: ${{ inputs.jax-repo }}
           ref: ${{ inputs.jax-ref }}
           path: jax
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Get RBE cluster keys
         env:
           RBE_CI_CERT: ${{ secrets.rbe_ci_cert }}
@@ -88,7 +96,8 @@ jobs:
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
             --jax-source-dir="./jax" \
             dist_wheels \
-            --rbe
+            --rbe \
+            --builder-image="${{ inputs.builder-image }}"
       - name: Archive plugin wheels
         uses: actions/upload-artifact@v4
         with:
