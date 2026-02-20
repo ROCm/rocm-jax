@@ -7,7 +7,7 @@ ENV GPU_DEVICE_TARGETS="gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx11
 
 # Install patchelf and headers for numactl
 RUN --mount=type=cache,target=/var/cache/dnf \
-    dnf install -y patchelf numactl-devel
+    dnf install -y patchelf numactl-devel vim-common
 
 # Install ROCm
 RUN --mount=type=cache,target=/var/cache/dnf \
