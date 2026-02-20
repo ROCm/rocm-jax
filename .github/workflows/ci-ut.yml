@@ -82,7 +82,6 @@ jobs:
             ${{ matrix.mode.config }} \
             --curses=no \
             --color=yes \
-            --strategy=TestRunner=local \
             -- \
             @jax//tests:gpu_tests \
             @jax//tests:backend_independent_tests \
