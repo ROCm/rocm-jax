@@ -12,8 +12,6 @@ build:rocm --action_env=ROCM_PATH="/opt/rocm"
 build:rocm --repo_env=TF_ROCM_AMDGPU_TARGETS="gfx908,gfx90a,gfx942,gfx950"
 build:rocm --repo_env=HERMETIC_PYTHON_VERSION=3.12
 
-test:rocm --test_timeout=920,2400,7200,9600
-
 build:rocm_mgpu --test_tag_filters=jax_test_gpu,multiaccelerator,-config-cuda-only,-manual
 build:rocm_mgpu --build_tag_filters=jax_test_gpu,multiaccelerator,-config-cuda-only,-manual
 

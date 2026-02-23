@@ -7,7 +7,10 @@ name: Llama Performance Benchmarks
 # For JAX 0.9.0: uses wheels and Docker image
 # built from the latest nightly results.
 
-# PS: Ubuntu 24 & ROCm 7.0.2/7.1.1 respectively.
+# PS: Ubuntu 24 & ROCm 7.2.0.
+
+env:
+  TE_REF_DEFAULT: "0e7a1a9e1d997ea42f48028f652453e6f9390b42"
 
 on:
   schedule:
@@ -19,9 +22,12 @@ on:
         required: false
         type: choice
         options:
-          - linux-mi325-8
-          - linux-mi355-8
-        default: "linux-mi355-8"
+          - linux-jax-mi325-8
+          - linux-jax-mi355-8
+        default: "linux-jax-mi355-8"
+      te-ref:
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,7 +35,7 @@ concurrency:
 
 jobs:
   build-te-wheels:
-    runs-on: linux-mi355-1
+    runs-on: linux-jax-mi355-1
     outputs:
       runner_label: ${{ steps.arch.outputs.label }}
       te_commit_sha: ${{ steps.tsha.outputs.hash }}
@@ -40,10 +46,14 @@ jobs:
         include:
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
-            docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
+            # There is no docker image with ROCm 7.2.0 and Jax 0.6.0
+            # use a ROCm 7.2.0 / Jax 0.9.0 docker image and update Jax
+            # before building TE. For the application workload Bazel installs
+            # its own Jax
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
           - jax-version: "0.9.0"
             jaxlib-version: "0.9.0"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
     env:
       NVTE_FRAMEWORK: jax
       NVTE_USE_ROCM: 1
@@ -55,7 +65,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rocm/transformerengine
-          ref: dev
+          ref: ${{ inputs.te-ref || env.TE_REF_DEFAULT }}
           submodules: recursive
           fetch-depth: 0
           path: transformerengine
@@ -68,7 +78,7 @@ jobs:
       - name: Define ROCm arch & runner-label
         id: arch
         run: |
-          if [ "${{ inputs.runner-label }}" == "linux-mi325-8" ]; then
+          if [ "${{ inputs.runner-label }}" == "linux-jax-mi325-8" ]; then
             echo "ROCM_ARCH=gfx942" >> $GITHUB_ENV
             echo "label=MI325" >> $GITHUB_OUTPUT
           else
@@ -106,6 +116,18 @@ jobs:
           docker exec te-build-jax${{ matrix.jax-version }} bash -lc '
             pip install setuptools ninja pybind11
             pip install cmake==4.1.0
+            pip install packaging psutil
+            if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
+              apt update
+              apt install libdw1 libglib2.0-0
+              ROCM_JAX_BASE=https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0
+              PJRT_URL="$ROCM_JAX_BASE/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
+              PLUGIN_URL="$ROCM_JAX_BASE/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
+              pip install --force-reinstall jax==0.6.0 \
+                jaxlib==0.6.0 \
+                "$PJRT_URL" \
+                "$PLUGIN_URL"
+            fi
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
             python3 setup.py bdist_wheel'
@@ -121,30 +143,22 @@ jobs:
           docker rm te-build-jax${{ matrix.jax-version }} || true
   run-llama-perf-model:
     needs: build-te-wheels
-    runs-on: ${{ inputs.runner-label || 'linux-mi355-8' }}
+    runs-on: ${{ inputs.runner-label || 'linux-jax-mi355-8' }}
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
         jax-version: ["0.6.0", "0.9.0"]
-        model-name: ["train_moe", "train_dense"]
+        model-name: ["train_dense"]
         include:
           - jax-version: "0.6.0"
-            jaxlib-version: "0.6.0"
-            model-name: "train_moe"
-            docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
-          - jax-version: "0.6.0"
-            jaxlib-version: "0.6.0"
             model-name: "train_dense"
-            docker-image: "rocm/jax:rocm7.0.2-jax0.6.0-py3.12-ubu24"
+            jaxlib-version: "0.6.0"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
           - jax-version: "0.9.0"
-            jaxlib-version: "0.9.0"
-            model-name: "train_moe"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
-          - jax-version: "0.9.0"
-            jaxlib-version: "0.9.0"
             model-name: "train_dense"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm711:nightly"
+            jaxlib-version: "0.9.0"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v4
@@ -175,7 +189,7 @@ jobs:
                   | max_by(.createdAt)
                   | .databaseId') \
               -R ROCm/rocm-jax \
-              -n plugin_wheels_r7.1.1 \
+              -n plugin_wheels_r7.2.0 \
               -D wheelhouse
             rm -v wheelhouse/*311*
           fi
@@ -208,7 +222,7 @@ jobs:
           echo "jax_rocm7_plugin @ file:///workspace/wheelhouse/$PLUGIN_BASE"
           echo "transformer_engine @ file:///workspace/wheelhouse/$TE_BASE"
           } >> kylix/third_party/requirements.lock
-          sed -i '11,35s/^/#/' bazel_run_anynode.sh
+          sed -i '11,36s/^/#/' bazel_run_anynode.sh
           sed -i '/^TRAIN_SETTING/s/^/# /' bazel_run_anynode.sh
           sed -i '/pip/s/^/#/' kylix/third_party/requirements.lock
           sed -i '/orbax-checkpoint/ s/^/# /' kylix/third_party/requirements.lock
@@ -246,11 +260,17 @@ jobs:
             BIN_URL="https://github.com/bazelbuild/bazelisk/releases/download/"
             wget -O /usr/local/bin/bazel "$BIN_URL/v1.26.0/bazelisk-linux-amd64"
             chmod +x /usr/local/bin/bazel
+            echo "8.5.0" > /workspace/.bazelversion
+            cd /workspace
             bazel version
             apt update && apt install -y libglib2.0-0
             export EXECUTOR="base_executor_config"
             export TRAIN_SETTING="${{ matrix.model-name }}"
-            cd /workspace && bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
+            export XLA_FLAGS="--xla_gpu_enable_latency_hiding_scheduler=True \
+                                --xla_gpu_enable_triton_gemm=False --xla_gpu_enable_cublaslt=True \
+                                --xla_gpu_enable_command_buffer='' --xla_gpu_autotune_level=4"
+            export PROJECT=byllama
+            bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
             tail -n 25 logs.log > training_summary.txt'
       - name: Upload training summary
         uses: actions/upload-artifact@v4
@@ -269,8 +289,15 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        jax-version: ["0.6.0", "0.9.0"]
-        model-name: ["train_moe", "train_dense"]
+        include:
+          - jax-version: "0.6.0"
+            model-name: "train_dense"
+            rocm-version: "7.2.0"
+            python-version: "3.12"
+          - jax-version: "0.9.0"
+            model-name: "train_dense"
+            rocm-version: "7.2.0"
+            python-version: "3.12"
     steps:
       - name: Checkout plugin repo
         uses: actions/checkout@v4
@@ -285,18 +312,23 @@ jobs:
           ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
           ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
-          RUNNER_LABEL: ${{ needs.build-te-wheels.outputs.runner_label }}
-          TE_COMMIT_SHA: ${{ needs.build-te-wheels.outputs.te_commit_sha }}
-          GITHUB_RUN: ${{ github.run_id }}
-          GITHUB_REF: ${{ github.ref_name }}
-          TRIG_EVENT: ${{ github.event_name }}
-          ACTOR_NAME: ${{ github.actor }}
-          MODEL_NAME: ${{ matrix.model-name }}
-          JAX_VERSION: ${{ matrix.jax-version }}
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
           pip install mysql-connector-python
 
-          python3 ci/upload_to_llama_db.py
+          python3 ci/upload_to_llama_db.py \
+            --github-run-id "${{ github.run_id }}" \
+            --run-tag "ci-run" \
+            --model-name "${{ matrix.model-name }}" \
+            --te-commit "${{ needs.build-te-wheels.outputs.te_commit_sha }}" \
+            --jax-version "${{ matrix.jax-version }}" \
+            --rocm-version "${ROCM_VERSION//.}" \
+            --python-version "${PYTHON_VERSION//.}" \
+            --runner-label "${{ needs.build-te-wheels.outputs.runner_label }}" \
+            --github-ref "${{ github.ref_name }}" \
+            --trig-event "${{ github.event_name }}" \
+            --actor-name "${{ github.actor }}"

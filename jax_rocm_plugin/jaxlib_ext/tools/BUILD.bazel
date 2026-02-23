@@ -12,28 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@jax//jaxlib:jax.bzl", "jax_wheel", "wheel_sources")
+load("//third_party/jax:workspace.bzl", jax_commit = "JAX_COMMIT")
+load("//third_party/xla:workspace.bzl", xla_commit = "XLA_COMMIT")
 
 licenses(["notice"])  # Apache 2
 
 package(default_visibility = ["//visibility:public"])
 
-load("//third_party/xla:workspace.bzl", xla_commit = "XLA_COMMIT")
-load("//third_party/jax:workspace.bzl", jax_commit = "COMMIT")
+# Source files for the ROCm plugin wheel - used by both the tool and jax_wheel
+ROCM_PLUGIN_SOURCES = [
+    "LICENSE.txt",
+    "//jax_plugins/rocm:plugin_pyproject.toml",
+    "//jax_plugins/rocm:plugin_setup.py",
+    "//pjrt/python:version.py",
+    "@jax//jaxlib/rocm:rocm_gpu_support",
+    "@jax//jaxlib/rocm:rocm_plugin_extension",
+]
 
 py_binary(
     name = "build_gpu_kernels_wheel",
     srcs = ["build_gpu_kernels_wheel.py"],
-    args = ["--xla-commit", xla_commit , 
-            "--jax-commit", jax_commit ],
-    data = [
-        "LICENSE.txt",
-        "@jax//jaxlib:version",
-        "//pjrt/python:version.py",
-        "@jax//jaxlib/rocm:rocm_plugin_extension",
-        "@jax//jaxlib/rocm:rocm_gpu_support",
-        "//jax_plugins/rocm:plugin_pyproject.toml",
-        "//jax_plugins/rocm:plugin_setup.py",
+    args = [
+        "--xla-commit",
+        xla_commit,
+        "--jax-commit",
+        jax_commit,
     ],
+    data = ROCM_PLUGIN_SOURCES,
     deps = [
         "build_utils",
         "@bazel_tools//tools/python/runfiles",
@@ -46,4 +52,20 @@ py_binary(
 py_library(
     name = "build_utils",
     srcs = ["build_utils.py"],
+)
+
+# Wheel sources using the same list
+wheel_sources(
+    name = "rocm_plugin_sources",
+    static_srcs = ROCM_PLUGIN_SOURCES,
+)
+
+# ROCm Plugin Wheel (jax_rocm7_plugin) - contains GPU kernels
+jax_wheel(
+    name = "jax_rocm7_plugin_wheel",
+    enable_rocm = True,
+    platform_version = "7",
+    source_files = [":rocm_plugin_sources"],
+    wheel_binary = ":build_gpu_kernels_wheel",
+    wheel_name = "jax_rocm7_plugin",
 )

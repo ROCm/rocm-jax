@@ -233,11 +233,14 @@ def _install_therock(rocm_version, therock_path):
     os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
 
     # Make a symlink to amdgcn to fix LLVM not being able to find binaries
-    os.symlink(
-        rocm_real_path + "/lib/llvm/amdgcn/",
-        rocm_real_path + "/amdgcn",
-        target_is_directory=True,
-    )
+    try:
+        os.symlink(
+            rocm_real_path + "/lib/llvm/amdgcn/",
+            rocm_real_path + "/amdgcn",
+            target_is_directory=True,
+        )
+    except FileExistsError:
+        LOG.info("%s already exists", rocm_sym_path)
 
 
 def _setup_internal_repo(system, rocm_version, job_name, build_num):
@@ -431,10 +434,8 @@ minrate=1
     with open("/etc/yum.repos.d/amdgpu.repo", "w") as afd:
         if rocm_version_str.startswith("7"):
             repodir = "graphics"
-            rhel_minor = 10
         else:
             repodir = "amdgpu"
-            rhel_minor = 8
         afd.write("""
 [amdgpu]
 name=amdgpu

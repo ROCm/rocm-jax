@@ -1,151 +1,163 @@
 diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
-index 28f236783..8e961fbd0 100644
+index 304bab34f..34f760cd0 100644
 --- a/jaxlib/jax.bzl
 +++ b/jaxlib/jax.bzl
-@@ -192,10 +192,13 @@ def _gpu_test_deps():
+@@ -17,6 +17,7 @@
+ load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+ load("@com_github_google_flatbuffers//:build_defs.bzl", _flatbuffer_cc_library = "flatbuffer_cc_library")
+ load("@jax_wheel//:wheel.bzl", "WHEEL_VERSION")
++load("@rocm_external_test_deps//:external_deps.bzl", "EXTERNAL_DEPS")
+ load("@jax_wheel_version_suffix//:wheel_version_suffix.bzl", "WHEEL_VERSION_SUFFIX")
+ load("@local_config_cuda//cuda:build_defs.bzl", _cuda_library = "cuda_library", _if_cuda_is_configured = "if_cuda_is_configured")
+ load("@local_config_rocm//rocm:build_defs.bzl", _if_rocm_is_configured = "if_rocm_is_configured", _rocm_library = "rocm_library")
+@@ -198,14 +199,14 @@ def _gpu_test_deps():
              "//jaxlib/rocm:gpu_only_test_deps",
              "//jax_plugins:gpu_plugin_only_test_deps",
          ],
 -        "//jax:config_build_jaxlib_false": [
-+        "//jax:config_build_jaxlib_false": if_rocm_is_configured([
-+            "//jaxlib/tools:rocm_plugin_kernels_wheel",
-+            "//jaxlib/tools:rocm_plugin_pjrt_wheel",
-+        ]) + if_cuda_is_configured([
++        "//jax:config_build_jaxlib_false": if_cuda_is_configured([
              "//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
              "//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
 -        ],
-+        ]),
-         "//jax:config_build_jaxlib_wheel": [
+-        "//jax:config_build_jaxlib_wheel": [
++        ]) + if_rocm_is_configured(EXTERNAL_DEPS),
++        "//jax:config_build_jaxlib_wheel": if_cuda_is_configured([
              "//jaxlib/tools:jax_cuda_plugin_py_import",
              "//jaxlib/tools:jax_cuda_pjrt_py_import",
-@@ -304,6 +307,7 @@ def jax_multiplatform_test(
-             tags = test_tags,
-             main = main,
-             exec_properties = tf_exec_properties({"tags": test_tags}),
-+            legacy_create_init = 0,
-         )
+-        ],
++        ]) + if_rocm_is_configured(EXTERNAL_DEPS),
+     })
  
- def jax_generate_backend_suites(backends = []):
-diff --git a/jaxlib/tools/BUILD.bazel b/jaxlib/tools/BUILD.bazel
-index 3a1a48736..8618f5e74 100644
---- a/jaxlib/tools/BUILD.bazel
-+++ b/jaxlib/tools/BUILD.bazel
-@@ -137,9 +137,25 @@ string_flag(
- py_binary(
-     name = "build_wheel_tool",
-     srcs = ["build_wheel.py"],
-+    data = [
-+        "LICENSE.txt",
-+        "//jaxlib",
-+        "//jaxlib:README.md",
-+        "//jaxlib:_ifrt_proxy.pyi",
-+        "//jaxlib:_pathways.pyi",
-+        "//jaxlib:init.py",
-+        "//jaxlib:jaxlib_binaries",
-+        "//jaxlib:setup.py",
-+        "//jaxlib:weakref_lru_cache.pyi",
-+        "//jaxlib/mlir/_mlir_libs:_triton_ext.pyi",
-+        "//jaxlib/mosaic/dialect/gpu:_mosaic_gpu_gen_enums.py",
-+        "//jaxlib/mosaic/dialect/gpu:_mosaic_gpu_gen_ops.py",
-+        "@xla//xla/ffi/api:ffi",
-+    ],
-     main = "build_wheel.py",
-     deps = [
-         ":build_utils",
-+        "//jaxlib:jaxlib_files",
-         "@bazel_tools//tools/python/runfiles",
-         "@pypi//build",
-         "@pypi//setuptools",
-@@ -451,6 +467,16 @@ py_import(
-     wheel = ":jaxlib_wheel",
- )
- 
-+py_import(
-+    name = "rocm_plugin_kernels_wheel",
-+    wheel = "@pypi_jax_rocm7_plugin//:whl",
-+)
+ def _get_jax_test_deps(deps):
+@@ -569,11 +570,11 @@ def jax_wheel(
+         }),
+         # TODO(kanglan) Add @platforms//cpu:ppc64le once JAX Bazel is upgraded > 6.5.0.
+         cpu = select({
+-            "//jaxlib/tools:macos_arm64": "arm64",
+-            "//jaxlib/tools:macos_x86_64": "x86_64",
+-            "//jaxlib/tools:win_amd64": "AMD64",
+-            "//jaxlib/tools:linux_aarch64": "aarch64",
+-            "//jaxlib/tools:linux_x86_64": "x86_64",
++            Label("//jaxlib/tools:macos_arm64"): "arm64",
++            Label("//jaxlib/tools:macos_x86_64"): "x86_64",
++            Label("//jaxlib/tools:win_amd64"): "AMD64",
++            Label("//jaxlib/tools:linux_aarch64"): "aarch64",
++            Label("//jaxlib/tools:linux_x86_64"): "x86_64",
+         }),
+         source_files = source_files,
+     )
+diff --git a/third_party/external_deps/BUILD.bazel b/third_party/external_deps/BUILD.bazel
+new file mode 100644
+index 000000000..304acd3f3
+--- /dev/null
++++ b/third_party/external_deps/BUILD.bazel
+@@ -0,0 +1,17 @@
++# Copyright 2025 The JAX Authors.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     https://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
 +
-+py_import(
-+    name = "rocm_plugin_pjrt_wheel",
-+    wheel = "@pypi_jax_rocm7_pjrt//:whl",
-+)
++licenses(["notice"])  # Apache 2.0
 +
- py_import(
-     name = "jax_cuda_plugin_py_import",
-     wheel = ":jax_cuda{cuda}_plugin_wheel".format(cuda = cuda_major_version),
-diff --git a/jaxlib/tools/build_wheel.py b/jaxlib/tools/build_wheel.py
-index 593dfcdaa..a0d24d4f5 100644
---- a/jaxlib/tools/build_wheel.py
-+++ b/jaxlib/tools/build_wheel.py
-@@ -59,6 +59,12 @@ parser.add_argument(
- parser.add_argument(
-     "--srcs", help="source files for the wheel", action="append"
- )
-+parser.add_argument(
-+    "--build_from_external_workspace",
-+    action="store_true",
-+    help="Set when building from an external/umbrella workspace where jax is @jax. "
-+    "When true, source prefix is 'jax/' instead of '__main__/'.",
-+)
- args = parser.parse_args()
- 
- r = runfiles.Create()
-@@ -116,7 +122,7 @@ def verify_mac_libraries_dont_reference_chkstack(
-   if not _is_mac():
-     return
-   file_path = _get_file_path(
--      f"__main__/jaxlib/_jax.{pyext}", runfiles, wheel_sources_map
-+      f"{jax_source_prefix}jaxlib/_jax.{pyext}", runfiles, wheel_sources_map
-   )
-   nm = subprocess.run(
-       ["nm", "-g", file_path],
-@@ -147,8 +153,16 @@ plat_name={tag}
- 
- 
- def prepare_wheel(wheel_sources_path: pathlib.Path, *, cpu, wheel_sources):
--  """Assembles a source tree for the wheel in `wheel_sources_path`."""
--  source_file_prefix = build_utils.get_source_file_prefix(wheel_sources)
-+  """Assembles a source tree for the wheel in `wheel_sources_path`. In case of
-+  build under @jax strip the prefix"""
-+  # wheel_sources is a list of file paths, not a prefix. If provided, use empty prefix.
-+  # Otherwise, determine prefix based on build_from_external_workspace flag.
-+  if wheel_sources:
-+    source_file_prefix = ""
-+  elif args.build_from_external_workspace:
-+    source_file_prefix = "jax/"
-+  else:
-+    source_file_prefix = "__main__/"
-   # The wheel sources provided by the transitive rules might have different path
-   # prefixes, so we need to create a map of paths relative to the root package
-   # to the full paths.
-@@ -389,13 +403,25 @@ def prepare_wheel(wheel_sources_path: pathlib.Path, *, cpu, wheel_sources):
-       wheel_sources_map=wheel_sources_map,
-   )
- 
-+  # XLA FFI headers have different paths depending on build method:
-+  # - wheel_sources_map: "xla/ffi/api/..." (mapped from external/xla/xla/ffi/api/...)
-+  # - runfiles: "{source_file_prefix}jaxlib/include/xla/ffi/api/..." (copied to jaxlib/include/)
-+  if args.build_from_external_workspace:
-+    xla_ffi_files = [
-+        f"{source_file_prefix}jaxlib/include/xla/ffi/api/c_api.h",
-+        f"{source_file_prefix}jaxlib/include/xla/ffi/api/api.h",
-+        f"{source_file_prefix}jaxlib/include/xla/ffi/api/ffi.h",
-+    ]
-+  else:
-+    xla_ffi_files = [
-+        "xla/ffi/api/c_api.h",
-+        "xla/ffi/api/api.h",
-+        "xla/ffi/api/ffi.h",
-+    ]
++exports_files(["external_deps.bzl.tpl"])
+diff --git a/third_party/external_deps/external_deps.bzl.tpl b/third_party/external_deps/external_deps.bzl.tpl
+new file mode 100644
+index 000000000..2d42bc6f5
+--- /dev/null
++++ b/third_party/external_deps/external_deps.bzl.tpl
+@@ -0,0 +1,20 @@
++# Copyright 2025 The JAX Authors.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     https://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
 +
-   copy_files(
-       dst_dir=jaxlib_dir / "include" / "xla" / "ffi" / "api",
--      src_files=[
--          "xla/ffi/api/c_api.h",
--          "xla/ffi/api/api.h",
--          "xla/ffi/api/ffi.h",
--      ],
-+      src_files=xla_ffi_files,
-   )
- 
- tmpdir = None
++# Auto-generated file. Do not edit.
++# Generated with fields: %{ENV_VARS}
++
++# Struct containing external dependency targets.
++# These targets can be used as dependencies in BUILD files.
++EXTERNAL_DEPS = %{EXTERNAL_DEPS}
+diff --git a/third_party/external_deps/workspace.bzl b/third_party/external_deps/workspace.bzl
+new file mode 100644
+index 000000000..75323ae25
+--- /dev/null
++++ b/third_party/external_deps/workspace.bzl
+@@ -0,0 +1,60 @@
++# Copyright 2025 The JAX Authors.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     https://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++"""Repository rule to configure external test dependencies.
++
++This module provides a repository rule that accepts a list of dependency targets
++and generates a .bzl file containing an EXTERNAL_DEPS variable.
++
++Usage:
++    init_external_deps_repo(deps = ["@jax_rocm_plugin//:plugin.whl", "@jax_rocm_plugin//:pjrt.whl"])
++
++    # In your BUILD files, access via:
++    # load("@rocm_external_test_deps//:external_deps.bzl", "EXTERNAL_DEPS")
++"""
++
++def _external_deps_repository_impl(repository_ctx):
++    """Implementation of the external_deps_repository rule.
++
++    Generates an external_deps.bzl file containing an EXTERNAL_DEPS variable.
++
++    Args:
++        repository_ctx: The repository context.
++    """
++    deps_list = repository_ctx.attr.deps
++
++    # Generate the external_deps.bzl file using the template
++    repository_ctx.template(
++        "external_deps.bzl",
++        repository_ctx.attr._build_tpl,
++        substitutions = {
++            "%{EXTERNAL_DEPS}": str(deps_list),
++        },
++    )
++
++    repository_ctx.file("BUILD.bazel", "# Auto-generated BUILD file\n")
++
++external_deps_repository = repository_rule(
++    implementation = _external_deps_repository_impl,
++    attrs = {
++        "deps": attr.string_list(
++            default = [],
++            doc = "List of dependency targets.",
++        ),
++        "_build_tpl": attr.label(
++            default = Label("//third_party/external_deps:external_deps.bzl.tpl"),
++        ),
++    },
++    doc = "Repository rule to configure external test dependencies.",
++)

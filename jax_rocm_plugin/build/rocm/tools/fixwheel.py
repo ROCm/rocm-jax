@@ -18,63 +18,68 @@
 # NOTE(mrodden): This file is part of the ROCm build scripts, and
 # needs be compatible with Python 3.6. Please do not include these
 # in any "upgrade" scripts
-
+"""Ensure that wheels are manylinux compliant and that's reflected in their platform"""
 
 import argparse
 import logging
 import os
-from pprint import pprint
 import subprocess
 
+# auditwheel gets installed from the build_wheels.py script, so it's not in
+# pylint's environment. So, disable the warning.
+# pylint: disable=import-error
 from auditwheel.lddtree import lddtree
 from auditwheel.wheeltools import InWheelCtx
 from auditwheel.elfutils import elf_file_filter
 from auditwheel.policy import WheelPolicies
 from auditwheel.wheel_abi import analyze_wheel_abi
 
-
 LOG = logging.getLogger(__name__)
 
 
 def tree(path):
-
+    """Print out the tree of all .so files in a wheel"""
     with InWheelCtx(path) as ctx:
-        for sofile, fd in elf_file_filter(ctx.iter_files()):
-
-            LOG.info("found SO file: %s" % sofile)
+        for sofile, _ in elf_file_filter(ctx.iter_files()):
+            LOG.info("found SO file: %s", sofile)
             elftree = lddtree(sofile)
-
             print(elftree)
 
 
 def parse_args():
+    """Parse command line arguments and return them"""
     p = argparse.ArgumentParser()
     p.add_argument("wheel_path")
     return p.parse_args()
 
 
 def parse_wheel_name(path):
+    """Split up the base name of a wheel file into its components"""
     wheel_name = os.path.basename(path)
     return wheel_name[:-4].split("-")
 
 
 def fix_wheel(path):
+    """Fixes a wheel and attaches manylinux platform labels to it"""
     tup = parse_wheel_name(path)
     plat_tag = tup[4]
     if "manylinux2014" in plat_tag:
         # strip any manylinux tags from the current wheel first
-        from wheel.cli import tags
-
         plat_mod_str = "linux_x86_64"
-        new_wheel = tags.tags(
-            path,
-            python_tags=None,
-            abi_tags=None,
-            platform_tags=plat_mod_str,
-            build_tag=None,
+        output = subprocess.run(
+            [
+                "wheel",
+                "tags",
+                "--platform-tag=%s" % plat_mod_str,
+                path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
         )
+        new_wheel = output.stdout.strip()
         new_path = os.path.join(os.path.dirname(path), new_wheel)
-        LOG.info("Stripped broken tags and created new wheel at %r" % new_path)
+        LOG.info("Stripped broken tags and created new wheel at %r", new_path)
         path = new_path
 
     # build excludes, using auditwheels lddtree to find them
@@ -95,12 +100,13 @@ def fix_wheel(path):
 
     cmd.append(path)
 
-    LOG.info("running %r" % cmd)
+    LOG.info("running %r", cmd)
 
-    rc = subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True)
 
 
 def main():
+    """Parse arguments and fix the wheel pass in via command line arguments"""
     args = parse_args()
     path = args.wheel_path
     fix_wheel(path)

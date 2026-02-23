@@ -146,8 +146,14 @@ def build_plugin_wheel(
     xla_path=None,
     rbe=False,
     compiler="gcc",
+    wheels="jax-rocm-plugin,jax-rocm-pjrt",
 ):
-    """Build ROCm plugin and PJRT wheels via jax_rocm_plugin/build/build.py."""
+    """Build ROCm plugin and/or PJRT wheels via jax_rocm_plugin/build/build.py.
+
+    Args:
+        wheels: Comma-separated list of wheels to build. Valid options are
+                'jax-rocm-plugin', 'jax-rocm-pjrt', or both.
+    """
     use_clang = compiler == "clang"
 
     # Avoid git warning by setting safe.directory.
@@ -166,7 +172,7 @@ def build_plugin_wheel(
         "python",
         "build/build.py",
         "build",
-        "--wheels=jax-rocm-plugin,jax-rocm-pjrt",
+        "--wheels=%s" % wheels,
         "--rocm_path=%s" % rocm_path,
         "--rocm_version=%s" % version_string,
         "--use_clang=%s" % use_clang,
@@ -344,7 +350,7 @@ def fix_wheel(path, jax_path):
         # NOTE(mrodden): auditwheel 6.0 added lddtree module, but 6.3.0 changed
         # the fuction to ldd and also changed its behavior
         # constrain range to 6.0 to 6.2.x
-        cmd = ["pip", "install", "auditwheel>=6,<6.3", "wheel<0.46"]
+        cmd = ["pip", "install", "auditwheel>=6,<6.3", "wheel>=0.46.3"]
         subprocess.run(cmd, check=True, env=env)
 
         fixwheel_path = os.path.join(jax_path, "build/rocm/tools/fixwheel.py")
@@ -378,7 +384,7 @@ def parse_args():
     )
     p.add_argument(
         "--python-versions",
-        default=["3.11.13,3.12"],
+        default="3.11,3.12,3.13,3.14",
         help="Comma separated CPython versions that wheels will be built and output for",
     )
     p.add_argument(
@@ -463,7 +469,28 @@ def main():
         print("Removing wheel=%r" % whl)
         os.remove(whl)
 
+    # Build PJRT wheel once (it's Python version agnostic).
+    print("Building PJRT wheel (Python version agnostic)...")
+    build_plugin_wheel(
+        args.plugin_path,
+        rocm_path,
+        rocm_version,
+        python_versions[0],  # Use first Python version for build environment
+        full_output_path,
+        args.xla_path,
+        args.rbe,
+        args.compiler,
+        wheels="jax-rocm-pjrt",
+    )
+    # Fix PJRT wheel.
+    wheel_paths = find_wheels(full_output_path)
+    for wheel_path in wheel_paths:
+        if "pjrt" in os.path.basename(wheel_path).lower():
+            fix_wheel(wheel_path, args.plugin_path)
+
+    # Build plugin wheel for each Python version.
     for py in python_versions:
+        print("Building plugin wheel for Python %s..." % py)
         build_plugin_wheel(
             args.plugin_path,
             rocm_path,
@@ -473,10 +500,15 @@ def main():
             args.xla_path,
             args.rbe,
             args.compiler,
+            wheels="jax-rocm-plugin",
         )
+        # Fix plugin wheels for this Python version.
         wheel_paths = find_wheels(full_output_path)
         for wheel_path in wheel_paths:
-            fix_wheel(wheel_path, args.plugin_path)
+            base = os.path.basename(wheel_path)
+            # Only fix plugin wheels, skip already-fixed PJRT wheel.
+            if "plugin" in base.lower():
+                fix_wheel(wheel_path, args.plugin_path)
 
     # Copy plugin + PJRT wheels to wheelhouse.
     wheel_paths = find_wheels(full_output_path)

@@ -2,51 +2,62 @@
 
 set -ex
 
-SCRIPT_DIR=$(realpath $(dirname $0))
-declare -A args
-args['--jax_version']=""
-args['--wheelhouse']=""
-args['--rocm_version']=""
+SCRIPT_DIR=$(realpath "$(dirname "$0")")
 
-BAZEL_ARGS=()
-while [ $# -gt 0 ]; do
-    key=$(echo $1 | cut -d "=" -f 1)
-    value=$(echo $1 | cut -d "=" -f 2)
-    if [[ -v "args[$key]" ]]; then
-        args[$key]=$value
-    else
-        BAZEL_ARGS+=($1)
+TAG_FILTERS=jax_test_gpu,-config-cuda-only,-manual
+
+TARGETS_TO_IGNORE=()
+
+for arg in "$@"; do
+    if [[ "$arg" == "--config" ]]; then
+        echo "Invalid config format, configs must be in a form --config=value"
+        exit 255
     fi
-    shift
+    if [[ "$arg" == "--config=rocm_mgpu" ]]; then
+        TAG_FILTERS="${TAG_FILTERS},multiaccelerator"
+    fi
+    if [[ "$arg" == "--config=rocm_sgpu" ]]; then
+        TAG_FILTERS="${TAG_FILTERS},-multiaccelerator"
+    fi
+    if [[ "$arg" == "--config=asan" ]]; then
+        TAG_FILTERS="${TAG_FILTERS},-noasan"
+        TARGETS_TO_IGNORE+=(
+            -@jax//tests:memories_test_gpu
+            -@jax//tests:python_callback_test_gpu
+            -@jax//tests:shard_alike_test_gpu
+            -@jax//tests:linalg_sharding_test_gpu
+            -@jax//tests:pmap_without_shmap_test_gpu
+            -@jax//tests:array_test_gpu
+            -@jax//tests:custom_partitioning_test_gpu
+            -@jax//tests:pmap_test_gpu
+            -@jax//tests:ragged_collective_test_gpu
+            -@jax//tests:layout_test_gpu
+            -@jax//tests:profiler_test_gpu
+            -@jax//tests:ragged_collective_test_gpu
+            -@jax//tests:pmap_test_gpu
+            -@jax//tests:custom_partitioning_test_gpu
+            -@jax//tests:array_test_gpu
+            -@jax//tests:pmap_without_shmap_test_gpu
+            -@jax//tests:memories_test_gpu
+            -@jax//tests:pjit_test_gpu
+            -@jax//tests:debugging_primitives_test_gpu
+            -@jax//tests:shard_map_test_gpu
+        )
+    fi
 done
 
-WHEELHOUSE="${args['--wheelhouse']}"
-JAX_VERSION=${args['--jax_version']}
-ROCM_VERSION=${args['--rocm_version']}
-
-{
-    cat build/test-requirements.txt
-    ls "${WHEELHOUSE}"/jaxlib-${JAX_VERSION}*.whl
-    ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_pjrt*"${JAX_VERSION}"* 2>/dev/null
-    ls "${WHEELHOUSE}"/jax_rocm${ROCM_VERSION}_plugin*"${JAX_VERSION}"* 2>/dev/null
-} >build/requirements.in
-
-bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc run \
+bazel --bazelrc="${SCRIPT_DIR}/jax.bazelrc" test \
     --config=rocm \
-    "${BAZEL_ARGS[@]}" \
-    --test_tag_filters= \
-    --build_tag_filters= \
-    //build:requirements.update
-
-bazel --bazelrc=${SCRIPT_DIR}/jax.bazelrc test \
-    --config=rocm \
-    --@jax//jax:build_jaxlib=false \
+    --test_tag_filters="${TAG_FILTERS}" \
+    --build_tag_filters="${TAG_FILTERS}" \
+    --@jax//jax:build_jaxlib=wheel \
     --keep_going \
     --test_verbose_timeout_warnings \
     --local_test_jobs=4 \
+    --test_timeout=920,2400,7200,9600 \
+    --test_sharding_strategy=disabled \
+    --flaky_test_attempts=3 \
     --test_output=errors \
     --run_under=@xla//build_tools/rocm:parallel_gpu_execute \
-    "${BAZEL_ARGS[@]}" \
-    -- \
-    @jax//tests:gpu_tests \
-    @jax//tests:backend_independent_tests
+    "$@" \
+    "${TARGETS_TO_IGNORE[@]}"

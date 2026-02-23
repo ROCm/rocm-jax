@@ -73,13 +73,9 @@ jobs:
           EXTRA_CR_TAG: ${{ inputs.extra-cr-tag }}
           ROCM_VERSION: ${{ inputs.rocm-version }}
         run: |
-          ubu22_img="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
           ubu24_img="ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
-          echo "Ubuntu 22 image name: ${ubu22_img}"
           echo "Ubuntu 24 image name: ${ubu24_img}"
-          docker tag "jax-ubu22.rocm${ROCM_VERSION//.}" "${ubu22_img}"
           docker tag "jax-ubu24.rocm${ROCM_VERSION//.}" "${ubu24_img}"
-          docker push "${ubu22_img}"
           docker push "${ubu24_img}"
       - name: Push extra tags
         if: ${{ inputs.extra-cr-tag }}
@@ -87,12 +83,8 @@ jobs:
           EXTRA_CR_TAG: ${{ inputs.extra-cr-tag }}
           ROCM_VERSION: ${{ inputs.rocm-version }}
         run: |
-          ubu22_img="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${EXTRA_CR_TAG}"
           ubu24_img="ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${EXTRA_CR_TAG}"
-          echo "Ubuntu 22 image name: ${ubu22_img}"
           echo "Ubuntu 24 image name: ${ubu24_img}"
-          docker tag "jax-ubu22.rocm${ROCM_VERSION//.}" "${ubu22_img}"
           docker tag "jax-ubu24.rocm${ROCM_VERSION//.}" "${ubu24_img}"
-          docker push "${ubu22_img}"
           docker push "${ubu24_img}"
 
