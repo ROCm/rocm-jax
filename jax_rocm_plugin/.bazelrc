@@ -111,6 +111,8 @@ build:asan --copt -gsplit-dwarf
 build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
 build:asan --linkopt -g1
+build:asan --copt=-isystem/usr/lib/llvm-18/lib/clang/18/include
+build:asan --host_copt=-isystem/usr/lib/llvm-18/lib/clang/18/include
 
 build:asan --linkopt="-L/usr/lib/llvm-18/lib/clang/18/lib/linux"
 build:asan --linkopt="-Wl,-rpath,/usr/lib/llvm-18/lib/clang/18/lib/linux"
