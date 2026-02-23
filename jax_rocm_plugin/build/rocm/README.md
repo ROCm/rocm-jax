@@ -204,6 +204,3 @@ This will generate three wheels in the `dist/` directory:
 > python3 setup.py develop --user && pip3 -m pip install dist/*.whl
 ```
 
-### Simplified Build Script
-
-For a streamlined process, consider using the `jax/build/rocm/dev_build_rocm.py` script.
