@@ -52,7 +52,7 @@ diff --git a/jaxlib/tools/BUILD.bazel b/jaxlib/tools/BUILD.bazel
 index 58fbfd734..57cbd4252 100644
 --- a/jaxlib/tools/BUILD.bazel
 +++ b/jaxlib/tools/BUILD.bazel
-@@ -476,6 +476,25 @@ py_import(
+@@ -478,6 +478,25 @@ py_import(
      wheel_deps = if_pypi_cuda_wheel_deps([":nvidia_wheel_deps"]),
  )
  
