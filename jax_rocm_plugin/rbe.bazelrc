@@ -1,5 +1,8 @@
 # Build configuration for running with Bazel RBE
 
+# Fix for zstd assembly compilation with LLVM-18's cet.h header
+build:rocm_rbe --host_copt=-isystem/usr/lib/llvm-18/lib/clang/18/include
+
 # When building in a container, these need to be mounted
 build:rocm_rbe --tls_client_certificate="ci-cert.crt"
 build:rocm_rbe --tls_client_key="ci-cert.key"
@@ -25,4 +28,3 @@ test:rocm_rbe --test_sharding_strategy=disabled
 test:rocm_rbe --strategy=TestRunner=remote,local
 test:rocm_rbe --worker_sandboxing=true
 test:rocm_rbe --repo_env=REMOTE_GPU_TESTING=1
-
