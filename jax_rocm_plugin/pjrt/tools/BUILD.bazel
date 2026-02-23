@@ -13,27 +13,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@jax//jaxlib:jax.bzl", "jax_wheel", "wheel_sources")
+load("//third_party/jax:workspace.bzl", jax_commit = "JAX_COMMIT")
+load("//third_party/xla:workspace.bzl", xla_commit = "XLA_COMMIT")
 
 licenses(["notice"])  # Apache 2
 
-load("//third_party/xla:workspace.bzl", xla_commit = "XLA_COMMIT")
-load("//third_party/jax:workspace.bzl", jax_commit = "COMMIT")
-
 package(default_visibility = ["//visibility:public"])
+
+# Source files for the ROCm PJRT wheel - used by both the tool and jax_wheel
+ROCM_PJRT_SOURCES = [
+    "LICENSE.txt",
+    "//pjrt:pjrt_c_api_gpu_plugin.so",
+    "//pjrt/python:__init__.py",
+    "//pjrt/python:pyproject.toml",
+    "//pjrt/python:setup.py",
+    "//pjrt/python:version.py",
+]
 
 py_binary(
     name = "build_gpu_plugin_wheel",
     srcs = ["build_gpu_plugin_wheel.py"],
-    args = ["--xla-commit", xla_commit , 
-            "--jax-commit", jax_commit ],
-    data = [
-        "LICENSE.txt",
-        "//pjrt:pjrt_c_api_gpu_plugin.so",
-        "//pjrt/python:version.py",
-        "//pjrt/python:pyproject.toml",
-        "//pjrt/python:setup.py",
-        "//pjrt/python:__init__.py",
+    args = [
+        "--xla-commit",
+        xla_commit,
+        "--jax-commit",
+        jax_commit,
     ],
+    data = ROCM_PJRT_SOURCES,
     deps = [
         "build_utils",
         "@bazel_tools//tools/python/runfiles",
@@ -46,4 +53,21 @@ py_binary(
 py_library(
     name = "build_utils",
     srcs = ["build_utils.py"],
+)
+
+# Wheel sources using the same list
+wheel_sources(
+    name = "rocm_pjrt_sources",
+    static_srcs = ROCM_PJRT_SOURCES,
+)
+
+# ROCm PJRT Wheel (jax_rocm7_pjrt) - contains PJRT plugin
+jax_wheel(
+    name = "jax_rocm7_pjrt_wheel",
+    enable_rocm = True,
+    no_abi = True,
+    platform_version = "7",
+    source_files = [":rocm_pjrt_sources"],
+    wheel_binary = ":build_gpu_plugin_wheel",
+    wheel_name = "jax_rocm7_pjrt",
 )

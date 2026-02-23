@@ -1,6 +1,7 @@
 """Upload Llama training summary results to MySQL database."""
 
 import os
+import argparse
 import ast
 import json
 from datetime import date
@@ -19,11 +20,14 @@ def connect_to_db():
     )
 
 
-# pylint: disable=too-many-locals
-def upload_llama_results():
-    """Load training summary results results to MySQL."""
+# pylint: disable=too-many-statements, too-many-locals
+def upload_llama_results(cli_args):
+    """Load training summary results to MySQL."""
     rows = []
     year = date.today().year
+
+    dataset = None
+    base = None
 
     try:
         with open("training_summary.txt", "r", encoding="utf-8", errors="ignore") as f:
@@ -46,19 +50,16 @@ def upload_llama_results():
                     dict_str = line[colon_idx + 1 :].strip()
                     metrics = ast.literal_eval(dict_str)
 
-                    loss_text = metrics.get("mnist/ar_softmax_cross_entropy/text/loss")
-                    loss_token = metrics.get(
-                        "mnist/ar_softmax_cross_entropy/text/token_id/loss"
-                    )
-                    total_loss = metrics.get(
-                        "mnist/ar_softmax_cross_entropy/total_loss"
-                    )
-                    acc_top1 = (
-                        metrics.get(
-                            "mnist/ar_softmax_cross_entropy/text/token_id/accuracy"
-                        )
-                        or {}
-                    ).get("top_1", 0.0)
+                    if base is None:
+                        first_key = list(metrics.keys())[0]
+                        dataset = first_key.split("/", 1)[0]
+                        base = f"{dataset}/ar_softmax_cross_entropy"
+
+                    loss_text = metrics.get(f"{base}/text/loss")
+                    loss_token = metrics.get(f"{base}/text/token_id/loss")
+                    total_loss = metrics.get(f"{base}/total_loss")
+                    acc = metrics.get(f"{base}/text/token_id/accuracy", {})
+                    acc_top1 = acc.get("top_1", 0.0)
                     learning_rate = metrics.get("learning_rate", 0.0)
 
                     row = (
@@ -98,17 +99,17 @@ def upload_llama_results():
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
-                int(os.environ["GITHUB_RUN"]),
-                "ci-run",
-                os.environ["MODEL_NAME"],
-                os.environ["TE_COMMIT_SHA"],
-                os.environ["JAX_VERSION"],
-                "702",
-                "312",
-                os.environ["RUNNER_LABEL"],
-                os.environ["GITHUB_REF"],
-                os.environ["TRIG_EVENT"],
-                os.environ["ACTOR_NAME"],
+                cli_args.github_run_id,
+                cli_args.run_tag,
+                cli_args.model_name,
+                cli_args.te_commit,
+                cli_args.jax_version,
+                cli_args.rocm_version,
+                cli_args.python_version,
+                cli_args.runner_label,
+                cli_args.github_ref,
+                cli_args.trig_event,
+                cli_args.actor_name,
             ),
         )
 
@@ -136,5 +137,31 @@ def upload_llama_results():
             cnx.close()
 
 
+def parse_args():
+    """Parse CLI arguments."""
+    p = argparse.ArgumentParser(
+        description="Upload LLAMA training summary metrics to MySQL"
+    )
+
+    p.add_argument("--run-tag", required=True, help="Run tag, e.g. ci-run")
+    p.add_argument("--model-name", required=True, help="Model/workload, e.g. train_moe")
+    p.add_argument("--te-commit", required=True, help="TE commit SHA, e.g. abc1234")
+    p.add_argument("--jax-version", required=True, help="JAX version, e.g. 0.6.0")
+    p.add_argument("--rocm-version", required=True, help="ROCm version, e.g. 7.2.0")
+    p.add_argument("--python-version", required=True, help="Python version, e.g. 3.12")
+    p.add_argument(
+        "--github-run-id",
+        required=True,
+        type=int,
+        help="Actions run id, e.g. 123456789",
+    )
+    p.add_argument("--github-ref", required=True, help="Git ref, e.g. master")
+    p.add_argument("--trig-event", required=True, help="Trigger, e.g. schedule")
+    p.add_argument("--actor-name", required=True, help="Actor, e.g. user_a")
+    p.add_argument("--runner-label", required=True, help="Runner label, e.g. MI355")
+    return p.parse_args()
+
+
 if __name__ == "__main__":
-    upload_llama_results()
+    args = parse_args()
+    upload_llama_results(args)
