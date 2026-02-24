@@ -21,10 +21,6 @@ build:rocm_sgpu --build_tag_filters=jax_test_gpu,-multiaccelerator,-config-cuda-
 # for @xla//build_tools/rocm:parallel_gpu_execute
 build:rocm --legacy_external_runfiles=true
 
-# Fix for zstd assembly compilation with LLVM-18's cet.h header
-# The cet.h include issue is caused by strict include path checking
-build:rocm_rbe --features=-parse_headers
-
 build:rocm_rbe --bes_backend="grpcs://wardite.cluster.engflow.com"
 build:rocm_rbe --bes_results_url="https://wardite.cluster.engflow.com/invocation/"
 build:rocm_rbe --host_platform="//platform/linux:tf_linux_gpu"

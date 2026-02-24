@@ -20,6 +20,12 @@ def repo():
         name = "xla",
         remote = "https://github.com/ROCm/xla.git",
         commit = XLA_COMMIT,
+        patches = [
+            # Fix for zstd assembly compilation with LLVM-18's cet.h header
+            # The cet.h include path was not in cxx_builtin_include_directories
+            "//third_party/xla:0001-Add-clang-resource-dir-include-path.patch",
+        ],
+        patch_args = ["-p1"],
     )
 
     # For development, one often wants to make changes to the XLA repository as well
