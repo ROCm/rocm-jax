@@ -1,0 +1,8 @@
+# XLA third-party patches and configuration
+
+exports_files(
+    srcs = [
+        "0001-Add-clang-resource-dir-include-path.patch",
+    ],
+    visibility = ["//visibility:public"],
+)
