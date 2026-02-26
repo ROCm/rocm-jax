@@ -391,6 +391,7 @@ def build_dockers(
         "--build-arg=ROCM_JAX_COMMIT=%s" % commit_info["rocm_jax_commit"],
         "--build-arg=PLUGIN_NAMESPACE=%s" % plugin_namespace,
         "--build-arg=ROCM_VERSION_TAG=%s" % rocm_version_tag,
+        "--build-context=wheels=./wheelhouse",
     ]
     print(f"Extra args sent to docker: {extra_args}")
     for dockerfile in dockerfiles:

@@ -28,3 +28,18 @@ py_import(
     name = "plugin.whl",
     wheel = "//jaxlib_ext/tools:jax_rocm7_plugin_wheel",
 )
+
+py_import(
+    name = "jaxlib.whl",
+    wheel = "@jax//jaxlib/tools:jaxlib_wheel",
+)
+
+# Usage: bazel run //:build_jaxlib_wheel -- /path/to/output/dir
+genrule(
+    name = "build_jaxlib_wheel",
+    srcs = ["@jax//jaxlib/tools:jaxlib_wheel"],
+    outs = ["build_jaxlib_wheel.sh"],
+    cmd = "echo '#!/bin/bash\ncp $(location @jax//jaxlib/tools:jaxlib_wheel) $$1' > $@",
+    executable = True,
+    tags = ["local"],
+)
