@@ -1,12 +1,14 @@
-name: Pytest Results to DB
+name: Jax CI Test Results to DB
 
 on:
+  schedule:
+    - cron: "10 * * * *"
   workflow_dispatch:
     inputs:
       source-repo:
         description: "ORG/REPO"
         required: false
-        default: "rocm/jax"
+        default: "ROCm/jax"
         type: string
       source-github-run-id:
         description: "Repo GitHub Run ID"
@@ -23,52 +25,35 @@ on:
       ROCM_JAX_DB_NAME:
         required: true
 
+concurrency:
+  group: jax-ci-test-results-to-db
+  cancel-in-progress: false
+
 jobs:
-  download-logs:
-    runs-on: linux-jax-mi355-1
-    steps:
-      - name: Download logs artifact from source run
-        env:
-          GH_TOKEN: ${{ secrets.SECRET_TOKEN }}
-        run: |
-          gh run download "${{ inputs.source-github-run-id }}" \
-            -R "${{ inputs.source-repo }}" \
-            -D "logs-${{ inputs.source-github-run-id }}"
-      - name: Upload logs for DB job
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-${{ inputs.source-github-run-id }}
-          path: logs-${{ inputs.source-github-run-id }}/
-  upload-to-db:
-    needs: download-logs
+  process-test-results:
     runs-on: mysqldb
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      - name: Download logs from workflow artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: logs-${{ inputs.source-github-run-id }}
-          path: logs-${{ inputs.source-github-run-id }}
+      - name: Set up Python environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install mysql-connector-python
       - name: Upload logs to MySQL database
         env:
           ROCM_JAX_DB_HOSTNAME: ${{ secrets.ROCM_JAX_DB_HOSTNAME }}
           ROCM_JAX_DB_USERNAME: ${{ secrets.ROCM_JAX_DB_USERNAME }}
           ROCM_JAX_DB_PASSWORD: ${{ secrets.ROCM_JAX_DB_PASSWORD }}
           ROCM_JAX_DB_NAME: ${{ secrets.ROCM_JAX_DB_NAME }}
-          LOGS_DIR: logs-${{ inputs.source-github-run-id }}
+          BUCKET: ${{ secrets.AMD_S3_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AMD_S3_BUCKET_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AMD_S3_BUCKET_SECRET_KEY }}
+          FILTER_REPO: ${{ inputs.source-repo }}
+          FILTER_RUN_ID: ${{ inputs.source-github-run-id }}
+          INPUT_GPU_ARCH: "MI350"
         run: |
-          python3 -m venv venv
           source venv/bin/activate
-          pip install --upgrade pip
-          pip install mysql-connector-python
+          ./ci/ingest_jax_ci_logs.sh
 
-          for artifact_dir in "$LOGS_DIR"/*; do
-            [ -d "$artifact_dir" ] || continue
-
-            python ci/upload_pytest_to_db.py \
-              --logs_dir "$artifact_dir" \
-              --run-tag "ci-run" \
-              || continue
-
-          done

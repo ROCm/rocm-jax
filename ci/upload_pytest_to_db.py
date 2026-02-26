@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 """
-Upload pytest results to MySQL.
+Ingest JAX Pytest results from S3 into MySQL.
+
+Recursively locates one Pytest report under given log dir
+
 Tables:
- - pytest_ci_runs:    one row per run
- - pytest_ci_tests:   one row per unique test
- - pytest_ci_results: one row per test per run
+ - jax_ci_runs:    one row per run
+ - jax_ci_tests:   one row per unique test
+ - jax_ci_results: one row per test per run
+
+Run-level manifest (GitHub vars, etc.) is sourced from the CI.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
-import json
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
-from datetime import datetime
-from typing import List, Tuple, Optional, Dict
+from typing import Dict, List, Optional, Tuple
 
 # pylint: disable=import-error
 import mysql.connector
@@ -28,13 +33,12 @@ from mysql.connector import Error as MySQLError
 TEXT_LIMIT = 250
 BATCH_SIZE = 2000
 DEFAULT_LABEL = "Skipped Upstream"
+MANIFEST_FILENAME = "run-manifest.json"
 
 
 # -----------------------------
 # Helpers
 # -----------------------------
-
-
 def extract_skip_reason(reason: str) -> str:
     """Parse pytest skip longrepr tuple-string into its reason text.
 
@@ -70,53 +74,213 @@ def nodeid_parts(nodeid: str) -> Tuple[str, str, str]:
     return f, c, t
 
 
-def load_metadata(logs_dir: Path) -> dict:
-    """Load metadata.json from logs_dir, which should contain run-level info like commit, runner"""
-    meta_path = logs_dir / "metadata.json"
-    if not meta_path.exists():
-        raise FileNotFoundError(f"metadata.json not found in {logs_dir}")
-    with meta_path.open("r", encoding="utf-8") as fh:
-        return json.load(fh)
+def pipe_split(raw: Optional[str]) -> List[str]:
+    """Split a pipe-separated manifest field into a list of values."""
+    if not raw:
+        return []
+    return [p for p in (x.strip() for x in raw.split("|")) if p]
 
 
-def find_single_report_json(logs_dir: Path) -> Path:
-    """Return the single pytest JSON report in logs_dir (ignores metadata.json)."""
-    jsons = [
+def parse_iso_dt(s: Optional[str]) -> Optional[datetime]:
+    """Parse ISO8601 timestamp into UTC datetime."""
+    if not s:
+        return None
+    return datetime.fromisoformat(s.replace("Z", "+00:00")).replace(tzinfo=None)
+
+
+def parse_run_key_and_combo(artifact_uri: str) -> tuple[str, str]:
+    """Extract (run_key, combo) from the artifact URI path.
+
+    Expected format: .../<run_key>/<combo>
+    """
+    parts = [p for p in artifact_uri.split("/") if p]
+    if len(parts) < 2:
+        raise SystemExit(f"Invalid artifact_uri format: {artifact_uri}")
+    return parts[-2], parts[-1]  # run_key, combo
+
+
+# -----------------------------
+# Input/File Loading
+# -----------------------------
+def find_pytest_report_json(local_logs_dir: Path) -> Optional[Path]:
+    """Find the single Pytest JSON report under the given logs directory, if present"""
+    ignore = {MANIFEST_FILENAME, "last_running.json"}
+    reports = [
         p
-        for p in logs_dir.iterdir()
+        for p in local_logs_dir.rglob("*.json")
         if p.is_file()
-        and p.suffix.lower() == ".json"
-        and p.name not in {"metadata.json"}
+        and p.name not in ignore
         and not p.name.endswith("last_running.json")
     ]
-    if not jsons:
-        print(f"No JSON report found in {logs_dir}")
-        raise SystemExit(2)
-    if len(jsons) != 1:
-        print(
-            f"Expected exactly ONE JSON report, found {len(jsons)}: "
-            + ", ".join(p.name for p in jsons)
-        )
-        raise SystemExit(2)
-    return jsons[0]
+    if not reports:
+        None
+    else:
+        if len(reports) != 1:
+            listing = "\n  - " + "\n  - ".join(
+                str(p.relative_to(local_logs_dir)) for p in sorted(reports)
+            )
+            raise SystemExit(
+                f"Expected exactly ONE pytest JSON report; found {len(reports)}:{listing}"
+            )
+        return reports[0]
 
 
-def load_from_single_json(path: Path) -> Tuple[datetime, List[dict]]:
-    """Load a pytest JSON report and return (created_at, tests)."""
+def load_from_pytest_json(path: Path) -> Tuple[Optional[datetime], List[dict]]:
+    """Load pytest JSON report and return (report_created_at, tests), if present"""
     with path.open("r", encoding="utf-8") as fh:
         data = json.load(fh)
     if isinstance(data, dict):
         tests = data.get("tests", [])
         created = data.get("created")
-        if created is not None:
-            created_at = datetime.fromtimestamp(float(created))
-        else:
-            created_at = datetime.fromtimestamp(path.stat().st_mtime)
-        return created_at, tests
+        report_created_at = (
+            datetime.fromtimestamp(float(created), tz=timezone.utc).replace(tzinfo=None)
+            if created is not None
+            else None
+        )
+        return report_created_at, tests
     if isinstance(data, list):
-        created_at = datetime.fromtimestamp(path.stat().st_mtime)
-        return created_at, data
-    raise ValueError(f"Unexpected JSON structure in {path.name}")
+        return None, data
+    raise ValueError(f"Unexpected report JSON structure: {path}")
+
+
+def load_manifest(local_logs_dir: Path) -> dict:
+    """Load CI run metadata from run-manifest.json.
+
+    Schema Version_1 Fields:
+      run_started_at      CI run start time
+      run_completed_at    CI run completion time
+      github_run_url      URL of the GitHub Actions run
+      github_repository   Repository name (e.g. "ROCm/jax")
+      github_ref_name     Branch or tag name
+      github_ref          Full Git reference
+      github_sha          Commit SHA for the run
+      github_event_name   GitHub event type (push, pull_request, etc.)
+      github_run_id       GitHub Actions run identifier
+      github_run_attempt  Retry attempt number
+      github_run_number   Sequential run number
+      github_workflow     Workflow name
+      github_job          Job name within the workflow
+      python_version      Python version used in the run
+      rocm_version        ROCm version used
+      rocm_tag            ROCm container tag
+      isnighty            Whether it is a nightly or continuous run
+      gpu_count           Number of GPUs used
+      runner              CI runner label
+      base_image_name     Base container image name
+      base_image_digest   Container image digest
+      jax_packages_raw    Installed JAX Python packages (pipe-separated)
+      wheels_sha_raw      Wheel SHA256 list (pipe-separated)
+
+    Some fields may be optional and missing."""
+    p = local_logs_dir / MANIFEST_FILENAME
+    if not p.exists():
+        raise FileNotFoundError(f"{MANIFEST_FILENAME} not found: {p}")
+    with p.open("r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+# -----------------------------
+# Run Fields Preparation
+# -----------------------------
+def require_field(m: dict, key: str):
+    """Return a required manifest field, failing early if it is missing."""
+    v = m.get(key)
+    if v in (None, ""):
+        raise SystemExit(f"Manifest missing required field: {key}")
+    return v
+
+
+def packages_json_and_jax_version(
+    raw: Optional[str],
+) -> Tuple[Optional[str], Optional[str]]:
+    """Parse package list into JSON and extract the JAX version."""
+    if not raw:
+        return None, None
+    pkgs = []
+    jax_ver = None
+    for item in pipe_split(raw):
+        name, sep, ver = item.partition("==")
+        name = name.strip()
+        ver = ver.strip() if sep else None
+        pkgs.append({"name": name, "version": ver, "raw": item})
+        if name == "jax" and ver:
+            jax_ver = ver
+    return json.dumps(pkgs), jax_ver
+
+
+def wheels_json(raw: Optional[str]) -> Optional[str]:
+    """Parse wheels metadata into normalized JSON."""
+    if not raw:
+        return None
+    wheels = []
+    for line in pipe_split(raw):
+        m = re.match(r"^([0-9a-fA-F]{64})\s+(.+)$", line)
+        if m:
+            wheels.append({"sha256": m.group(1).lower(), "file": m.group(2).strip()})
+        else:
+            wheels.append({"sha256": None, "file": line})
+    return json.dumps(wheels)
+
+
+def build_run_fields(  # pylint: disable=too-many-locals
+    m: dict,
+    *,
+    artifact_uri: str,
+    run_tag: str,
+    gpu_tag: str,
+) -> dict:
+    """Normalize manifest fields for jax_ci_runs insertion."""
+    run_key, combo = parse_run_key_and_combo(artifact_uri)
+    github_repository = require_field(m, "github_repository")
+    github_ref_name = require_field(m, "github_ref_name")
+    github_run_id = int(require_field(m, "github_run_id"))
+    python_version = require_field(m, "python_version")
+    rocm_version = require_field(m, "rocm_version")
+    runner = require_field(m, "runner")
+    is_nightly = require_field(m, "is_nightly")
+    if is_nightly not in {"nightly", "continuous"}:
+        raise SystemExit(f"Invalid is_nightly value: {is_nightly}")
+    github_run_attempt = int(m.get("github_run_attempt") or 1)
+    github_run_number = (
+        int(m["github_run_number"])
+        if m.get("github_run_number") not in (None, "")
+        else None
+    )
+    pkgs_json, jax_ver_guess = packages_json_and_jax_version(m.get("jax_packages_raw"))
+    whl_json = wheels_json(m.get("wheels_sha_raw"))
+    return {
+        "github_repository": github_repository,
+        "github_ref_name": github_ref_name,
+        "github_ref": m.get("github_ref"),
+        "github_event_name": m.get("github_event_name"),
+        "github_run_url": m.get("github_run_url"),
+        "github_sha": m.get("github_sha"),
+        "github_run_id": github_run_id,
+        "github_run_attempt": github_run_attempt,
+        "github_run_number": github_run_number,
+        "github_workflow": m.get("github_workflow"),
+        "github_job": m.get("github_job"),
+        "runner": runner,
+        "python_version": python_version,
+        "rocm_version": rocm_version,
+        "rocm_tag": m.get("rocm_tag"),
+        "gpu_count": m.get("gpu_count"),
+        "gpu_tag": gpu_tag,
+        "is_nightly": is_nightly,
+        "run_tag": run_tag,
+        "run_key": run_key,
+        "combo": combo,
+        "artifact_uri": artifact_uri,
+        "jax_version": m.get("jax_version") or jax_ver_guess,
+        "jax_commit": m.get("jax_commit"),
+        "xla_commit": m.get("xla_commit"),
+        "base_image_name": m.get("base_image_name"),
+        "base_image_digest": m.get("base_image_digest"),
+        "packages_json": pkgs_json,
+        "wheels_json": whl_json,
+        "run_started_at": parse_iso_dt(m.get("run_started_at")),
+        "run_completed_at": parse_iso_dt(m.get("run_completed_at")),
+    }
 
 
 def extract_result_fields(
@@ -272,47 +436,127 @@ def connect():
     )
 
 
-def insert_run(cur, created_at: datetime, meta: dict) -> int:
-    """Insert one row into pytest_ci_runs and return run_id. Idempotence is not enforced here."""
+def find_existing_run_id(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    cur,
+    github_repository: str,
+    github_ref_name: str,
+    is_nightly: str,
+    run_key: str,
+    combo: str,
+) -> Optional[int]:
+    """Return run id for an existing logical run, if present."""
     cur.execute(
         """
-       INSERT INTO pytest_ci_runs (
-           created_at, commit_sha, runner_label, python_version, rocm_version,
-           build_num, github_run_id, branch_name, repo_name, run_tag, logs_path
-       ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+       SELECT id
+       FROM jax_ci_runs
+       WHERE github_repository = %s
+         AND github_ref_name = %s
+         AND is_nightly = %s
+         AND run_key = %s
+         AND combo = %s
+       LIMIT 1
+       """,
+        (github_repository, github_ref_name, is_nightly, run_key, combo),
+    )
+    row = cur.fetchone()
+    return int(row[0]) if row else None
+
+
+def insert_run(cur, report_created_at: Optional[datetime], fields: dict) -> int:
+    """Insert one row into jax_ci_runs and return run_id.
+
+    Runs are treated as immutable; duplicate logical runs should be
+    detected before calling this function."""
+    ingested_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    if report_created_at is None:
+        report_created_at = ingested_at
+    else:
+        report_created_at = report_created_at.replace(tzinfo=None)
+
+    cur.execute(
+        """
+       INSERT INTO jax_ci_runs (
+         report_created_at, run_started_at, run_completed_at, ingested_at,
+         github_repository, github_ref_name, github_ref, github_event_name,
+         github_run_url, github_sha,
+         github_run_id, github_run_attempt, github_run_number,
+         github_workflow, github_job,
+         runner, python_version, rocm_version, rocm_tag,
+         gpu_count, gpu_tag, is_nightly,
+         run_tag, run_key, combo, artifact_uri,
+         jax_version, jax_commit, xla_commit,
+         base_image_name, base_image_digest,
+         packages_json, wheels_json
+       ) VALUES (
+         %s, %s, %s, %s,
+         %s, %s, %s, %s,
+         %s, %s,
+         %s, %s, %s,
+         %s, %s,
+         %s, %s, %s, %s,
+         %s, %s, %s,
+         %s, %s, %s, %s,
+         %s, %s, %s,
+         %s, %s,
+         %s, %s
+       )
        """,
         (
-            created_at,
-            meta["commit_sha"],
-            meta["runner_label"],
-            meta["python_version"],
-            meta["rocm_version"],
-            meta["build_num"],
-            meta["github_run_id"],
-            meta["branch_name"],
-            meta["repo_name"],
-            meta["run_tag"],
-            meta["logs_dir"],
+            report_created_at,
+            fields["run_started_at"],
+            fields["run_completed_at"],
+            ingested_at,
+            fields["github_repository"],
+            fields["github_ref_name"],
+            fields["github_ref"],
+            fields["github_event_name"],
+            fields["github_run_url"],
+            fields["github_sha"],
+            fields["github_run_id"],
+            fields["github_run_attempt"],
+            fields["github_run_number"],
+            fields["github_workflow"],
+            fields["github_job"],
+            fields["runner"],
+            fields["python_version"],
+            fields["rocm_version"],
+            fields["rocm_tag"],
+            fields["gpu_count"],
+            fields["gpu_tag"],
+            fields["is_nightly"],
+            fields["run_tag"],
+            fields["run_key"],
+            fields["combo"],
+            fields["artifact_uri"],
+            fields["jax_version"],
+            fields["jax_commit"],
+            fields["xla_commit"],
+            fields["base_image_name"],
+            fields["base_image_digest"],
+            fields["packages_json"],
+            fields["wheels_json"],
         ),
     )
-    return cur.lastrowid
+    return int(cur.lastrowid)
 
 
 def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str], int]:
-    """Ensure all tests exist in pytest_ci_tests and return an ID mapping.
+    """Ensure all tests exist in jax_ci_tests and return an ID mapping.
 
     Uses a TEMPORARY TABLE for efficiency with large runs:
       1) Bulk insert unique (filename, classname, test_name) into a temp table.
-      2) INSERT any missing rows into pytest_ci_tests in one set operation.
+      2) INSERT any missing rows into jax_ci_tests in one set operation.
       3) SELECT back (file, class, test) -> id mapping in one query.
     """
     uniq = {nodeid_parts(t["nodeid"]) for t in tests}
     if not uniq:
         return {}
+
+    cur.execute("DROP TEMPORARY TABLE IF EXISTS tmp_tests_")
     # fmt: off
     cur.execute(
         """
-       CREATE TEMPORARY TABLE tmp_pytest_tests (
+       CREATE TEMPORARY TABLE tmp_tests_ (
          filename  VARCHAR(100) NOT NULL,
          classname VARCHAR(100) NOT NULL,
          test_name VARCHAR(500) NOT NULL,
@@ -321,16 +565,16 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
        """
     )
     cur.executemany(
-        "INSERT IGNORE INTO tmp_pytest_tests (filename, classname, test_name) VALUES (%s,%s,%s)",
+        "INSERT IGNORE INTO tmp_tests_ (filename, classname, test_name) VALUES (%s,%s,%s)",
         list(uniq),
     )
 
     cur.execute(
         """
-       INSERT INTO pytest_ci_tests (filename, classname, test_name)
+       INSERT INTO jax_ci_tests (filename, classname, test_name)
        SELECT s.filename, s.classname, s.test_name
-       FROM tmp_pytest_tests s
-       LEFT JOIN pytest_ci_tests t
+       FROM tmp_tests_ s
+       LEFT JOIN jax_ci_tests t
          ON t.filename = s.filename
         AND t.classname = s.classname
         AND t.test_name = s.test_name
@@ -341,26 +585,18 @@ def sync_tests_and_get_ids(cur, tests: List[dict]) -> Dict[Tuple[str, str, str],
     cur.execute(
         """
        SELECT t.id, s.filename, s.classname, s.test_name
-       FROM tmp_pytest_tests s
-       JOIN pytest_ci_tests t
+       FROM tmp_tests_ s
+       JOIN jax_ci_tests t
          ON t.filename = s.filename
         AND t.classname = s.classname
         AND t.test_name = s.test_name
        """
     )
     # fmt: on
-    mapping: Dict[Tuple[str, str, str], int] = {}
-    for test_id, f, c, n in cur.fetchall():
-        mapping[(f, c, n)] = test_id
-    return mapping
+    return {(f, c, n): int(test_id) for (test_id, f, c, n) in cur.fetchall()}
 
 
-def batch_insert_results(
-    cur,
-    rows: List[
-        Tuple[int, int, str, float, Optional[str], Optional[str], Optional[str]]
-    ],
-) -> None:
+def batch_insert_results(cur, rows) -> None:
     """Bulk insert/update result rows in chunks.
 
     Uses ON DUPLICATE KEY UPDATE to keep results idempotent per (run_id, test_id).
@@ -369,7 +605,7 @@ def batch_insert_results(
         return
 
     sql = """
-       INSERT INTO pytest_ci_results
+       INSERT INTO jax_ci_results
            (run_id, test_id, outcome, duration, longrepr, message, skip_label)
        VALUES (%s,%s,%s,%s,%s,%s,%s)
        ON DUPLICATE KEY UPDATE
@@ -386,106 +622,112 @@ def batch_insert_results(
 # -----------------------------
 # Entry point
 # -----------------------------
-def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-locals
-    logs_dir: Path,
+def upload_pytest_results(  # pylint: disable=too-many-locals
+    local_logs_dir: Path,
     *,
     run_tag: str,
+    gpu_tag: str,
+    artifact_uri: str,
 ) -> None:
     """Load per-test JSON reports and upload results to MySQL.
 
     Flow:
       1) Parse JSONs and gather tests.
-      2) Insert a pytest_ci_runs row and get run_id.
+      2) Insert a jax_ci_runs row and get run_id.
       3) Ensure all tests exist; get (file,class,test) -> test_id map.
-      4) Bulk insert/update pytest_ci_results for this run.
+      4) Bulk insert/update jax_ci_results for this run.
     """
-    report = find_single_report_json(logs_dir)
-    created_at, tests = load_from_single_json(report)
+    report = find_pytest_report_json(local_logs_dir)
+    if report is None:
+        report_created_at = None
+        tests = []
+    else:
+        report_created_at, tests = load_from_pytest_json(report)
 
-    metadata = load_metadata(logs_dir)
-    repo_name = metadata["repo_name"]
-    branch_name = metadata["branch_name"]
-    runner_label = metadata["runner_label"]
-    python_version = str(metadata["python_version"]).replace(
-        ".", ""
-    )  # bash ${Py_version//.}
-    rocm_version = str(metadata["rocm_version"]).replace(
-        ".", ""
-    )  # bash ${ROCM_VERSION//.}
-    commit_sha = metadata["github_sha"] or metadata.get("commit_sha")
-    github_run_id = int(metadata["github_run_id"])
-    build_num = metadata.get("build_num")
-
-    if not tests:
-        print("No tests found in JSONs")
-        raise SystemExit(2)  # input error
+    manifest = load_manifest(local_logs_dir)
+    fields = build_run_fields(
+        manifest,
+        artifact_uri=artifact_uri,
+        run_tag=run_tag,
+        gpu_tag=gpu_tag,
+    )
 
     conn = connect()
     cur = conn.cursor()
     try:
-        run_id = insert_run(
+        existing_run_id = find_existing_run_id(
             cur,
-            created_at,
-            {
-                "runner_label": runner_label,
-                "python_version": python_version,
-                "rocm_version": rocm_version,
-                "commit_sha": commit_sha,
-                "build_num": build_num,
-                "github_run_id": github_run_id,
-                "branch_name": branch_name,
-                "repo_name": repo_name,
-                "run_tag": run_tag,
-                "logs_dir": str(logs_dir),
-            },
+            fields["github_repository"],
+            fields["github_ref_name"],
+            fields["is_nightly"],
+            fields["run_key"],
+            fields["combo"],
         )
-
-        test_id_map = sync_tests_and_get_ids(cur, tests)
-
-        rows: List[
-            Tuple[int, int, str, float, Optional[str], Optional[str], Optional[str]]
-        ] = []
-        append = rows.append
-        for t in tests:
-            nodeid, outcome, duration, longrepr, message = extract_result_fields(t)
-            f, c, n = nodeid_parts(nodeid)
-            test_id = test_id_map[(f, c, n)]
-
-            # Categorize skip reason, with special check for Mosaic
-            # in filename/testname (including mgpu)
-            skip_label = None
-            if outcome == "skipped":
-                # Check if "mosaic" or "mgpu" is in filename or test name
-                if (
-                    "mosaic" in f.lower()
-                    or "mosaic" in n.lower()
-                    or "mgpu" in f.lower()
-                ):
-                    skip_label = "Mosaic"
-                else:
-                    skip_label = categorize_reason(longrepr)
-
-            append(
-                (
-                    run_id,
-                    test_id,
-                    outcome,
-                    duration,
-                    longrepr,
-                    message,
-                    skip_label,
-                )
+        if existing_run_id is not None:
+            conn.rollback()
+            print(
+                "[DUPLICATE] run already exists: "
+                f"run_id={existing_run_id} "
+                f"repo={fields['github_repository']} "
+                f"ref={fields['github_ref_name']} "
+                f"is_nightly={fields['is_nightly']} "
+                f"run_key={fields['run_key']} "
+                f"combo={fields['combo']}"
             )
-        batch_insert_results(cur, rows)
-        conn.commit()
-        print(
-            f"[summary] run_id={run_id} total_results={len(rows)} unique_tests={len(test_id_map)}"
-        )
-        # NOTE: optionally print Grafana dashboard URL, e.g. {URL}?var-run_id={id}
+            return
+        run_id = insert_run(cur, report_created_at, fields)
+
+        rows = []
+        test_id_map = {}
+
+        if tests:
+            test_id_map = sync_tests_and_get_ids(cur, tests)
+            for t in tests:
+                nodeid, outcome, duration, longrepr, message = extract_result_fields(t)
+                f, c, n = nodeid_parts(nodeid)
+                test_id = test_id_map[(f, c, n)]
+
+                # Categorize skip reason, with special check for Mosaic
+                # in filename/testname (including mgpu)
+                skip_label = None
+                if outcome == "skipped":
+                    # Check if "mosaic" or "mgpu" is in filename or test name
+                    if (
+                        "mosaic" in f.lower()
+                        or "mosaic" in n.lower()
+                        or "mgpu" in f.lower()
+                    ):
+                        skip_label = "Mosaic"
+                    else:
+                        skip_label = categorize_reason(longrepr)
+
+                rows.append(
+                    (run_id, test_id, outcome, duration, longrepr, message, skip_label)
+                )
+            batch_insert_results(cur, rows)
+
+            conn.commit()
+            print(
+                f"[summary] run_id={run_id} total_results={len(rows)} unique_tests={len(test_id_map)}"
+            )
+            # NOTE: optionally print Grafana dashboard URL, e.g. {URL}?var-run_id={id}
+
     except MySQLError as e:
         conn.rollback()
-        print(f"MySQL error: {e}")
-        raise SystemExit(10) from e  # db error
+        # INSERT may still hit a duplicate key (e.g. artifact_uri or logical identity)
+        # even if the earlier SELECT did not detect it.
+        if getattr(e, "errno", None) == 1062:
+            print(
+                "[DUPLICATE] insert hit unique constraint: "
+                f"repo={fields['github_repository']} "
+                f"ref={fields['github_ref_name']} "
+                f"is_nightly={fields['is_nightly']} "
+                f"run_key={fields['run_key']} "
+                f"combo={fields['combo']} "
+                f"artifact_uri={fields['artifact_uri']}"
+            )
+            return
+        raise SystemExit(f"MySQL error: {e}") from e
     except Exception:
         conn.rollback()
         raise
@@ -496,15 +738,19 @@ def upload_pytest_results(  # pylint: disable=too-many-arguments, too-many-local
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments for pytest DB uploader."""
-    p = argparse.ArgumentParser(description="Upload pytest JSON reports to MySQL")
-    p.add_argument("--logs_dir", required=True, help="Directory with JSON files")
-    p.add_argument("--run-tag", required=True, help="Run label, e.g. ci-run")
+    p = argparse.ArgumentParser(description="Upload pytest report + manifest to MySQL")
+    p.add_argument("--local_logs_dir", required=True, help="Directory with JSON files")
+    p.add_argument("--run-tag", required=True, help="Run tag, e.g. ci-run")
+    p.add_argument("--gpu-tag", required=True, help="GPU architecture, e.g. MI350")
+    p.add_argument("--artifact_uri", required=True, help="Unique artifact path for CI")
     return p.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
     upload_pytest_results(
-        Path(args.logs_dir),
+        Path(args.local_logs_dir),
         run_tag=args.run_tag,
+        gpu_tag=args.gpu_tag,
+        artifact_uri=args.artifact_uri,
     )
