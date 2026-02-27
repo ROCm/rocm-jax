@@ -1,0 +1,34 @@
+diff --git a/jax_plugins/rocm/__init__.py b/jax_plugins/rocm/__init__.py
+index 0f4c2f8e3..b2c5e8a4f 100644
+--- a/jax_plugins/rocm/__init__.py
++++ b/jax_plugins/rocm/__init__.py
+@@ -37,7 +37,9 @@ logger = logging.getLogger(__name__)
+ 
+ 
+ def _get_library_path():
+-  base_path = pathlib.Path(__file__).resolve().parent
++  # Don't resolve symlinks to handle bazel runfiles correctly.
++  # The .so file is in the runfiles dir, not the source dir.
++  base_path = pathlib.Path(__file__).parent
+   installed_path = (
+       base_path / 'xla_rocm_plugin.so'
+   )
+@@ -49,9 +51,15 @@ def _get_library_path():
+   )
+   if not local_path.exists():
+     runfiles_dir = os.getenv('RUNFILES_DIR', None)
++    # Try different workspace names for runfiles path
+     if runfiles_dir:
+-      local_path = pathlib.Path(
+-          os.path.join(runfiles_dir, '__main__/jax_plugins/rocm/pjrt_c_api_gpu_plugin.so')
+-      )
++      # For external repository (@jax), use 'jax/' prefix
++      # For main workspace, use '__main__/' prefix
++      for workspace in ['jax', '__main__']:
++        local_path = pathlib.Path(
++            os.path.join(runfiles_dir, f'{workspace}/jax_plugins/rocm/pjrt_c_api_gpu_plugin.so')
++        )
++        if local_path.exists():
++          break
+ 
+   if local_path.exists():
