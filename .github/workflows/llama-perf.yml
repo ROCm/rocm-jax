@@ -59,7 +59,7 @@ jobs:
       NVTE_USE_ROCM: 1
       HIP_PLATFORM: amd
       NVTE_FUSED_ATTN_AOTRITON: 0
-      ROCM_ARCH: "gfx950;gfx942"
+      ROCM_ARCH: gfx950;gfx942
     steps:
       - name: Checkout TE source
         uses: actions/checkout@v4
@@ -95,12 +95,6 @@ jobs:
             --group-add video \
             --cap-add=SYS_PTRACE \
             --security-opt seccomp=unconfined \
-            -e NVTE_FRAMEWORK=${{ env.NVTE_FRAMEWORK }} \
-            -e NVTE_USE_ROCM=${{ env.NVTE_USE_ROCM }} \
-            -e HIP_PLATFORM=${{ env.HIP_PLATFORM }} \
-            -e NVTE_ROCM_ARCH=${{ env.ROCM_ARCH }} \
-            -e NVTE_FUSED_ATTN_AOTRITON=${{ env.NVTE_FUSED_ATTN_AOTRITON }} \
-            -e PIP_BREAK_SYSTEM_PACKAGES=1 \
             -v "${{ github.workspace }}:/workspace" \
             ${{ matrix.docker-image }} \
             tail -f /dev/null
@@ -110,6 +104,12 @@ jobs:
             pip install setuptools ninja pybind11
             pip install cmake==4.1.0
             pip install packaging psutil
+            export NVTE_FRAMEWORK=${{ env.NVTE_FRAMEWORK }}
+            export NVTE_USE_ROCM=${{ env.NVTE_USE_ROCM }}
+            export HIP_PLATFORM=${{ env.HIP_PLATFORM }}
+            export NVTE_ROCM_ARCH=${{ env.ROCM_ARCH }}
+            export NVTE_FUSED_ATTN_AOTRITON=${{ env.NVTE_FUSED_ATTN_AOTRITON }}
+            export PIP_BREAK_SYSTEM_PACKAGES=1
             if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
               apt update
               apt install libdw1 libglib2.0-0
