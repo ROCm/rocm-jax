@@ -10,7 +10,7 @@ name: Llama Performance Benchmarks
 # PS: Ubuntu 24 & ROCm 7.2.0.
 
 env:
-  TE_REF_DEFAULT: "0e7a1a9e1d997ea42f48028f652453e6f9390b42"
+  TE_REF_DEFAULT: "4537cce2fa6a3370f3d489a97d39419bd03362fd"
 
 on:
   schedule:
@@ -59,7 +59,6 @@ jobs:
       NVTE_USE_ROCM: 1
       HIP_PLATFORM: amd
       NVTE_FUSED_ATTN_AOTRITON: 0
-      CU_NUM: 64
     steps:
       - name: Checkout TE source
         uses: actions/checkout@v4
@@ -78,13 +77,8 @@ jobs:
       - name: Define ROCm arch & runner-label
         id: arch
         run: |
-          if [ "${{ inputs.runner-label }}" == "linux-jax-mi325-8" ]; then
-            echo "ROCM_ARCH=gfx942" >> $GITHUB_ENV
-            echo "label=MI325" >> $GITHUB_OUTPUT
-          else
-            echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
-            echo "label=MI355" >> $GITHUB_OUTPUT
-          fi
+          echo "ROCM_ARCH=gfx950,gfx942" >> $GITHUB_ENV
+          echo "label=MI355,MI325" >> $GITHUB_OUTPUT
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.SECRET_TOKEN }}" \
@@ -106,7 +100,6 @@ jobs:
             -e HIP_PLATFORM=${{ env.HIP_PLATFORM }} \
             -e NVTE_ROCM_ARCH=${{ env.ROCM_ARCH }} \
             -e NVTE_FUSED_ATTN_AOTRITON=${{ env.NVTE_FUSED_ATTN_AOTRITON }} \
-            -e CU_NUM=${{ env.CU_NUM }} \
             -e PIP_BREAK_SYSTEM_PACKAGES=1 \
             -v "${{ github.workspace }}:/workspace" \
             ${{ matrix.docker-image }} \
@@ -165,6 +158,7 @@ jobs:
         with:
           repository: AMD-AGI/scif_repro
           token: ${{ secrets.SECRET_TOKEN }}
+          ref: gw_meshresource
       - name: Download JAX wheels
         env:
           GH_TOKEN: ${{ secrets.SECRET_TOKEN }}
