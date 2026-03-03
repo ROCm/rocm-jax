@@ -77,8 +77,8 @@ jobs:
       - name: Define ROCm arch & runner-label
         id: arch
         run: |
-          echo "ROCM_ARCH=gfx950;gfx942" >> $GITHUB_ENV
-          echo "label=MI355,MI325" >> $GITHUB_OUTPUT
+          echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
+          echo "label=MI355" >> $GITHUB_OUTPUT
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.SECRET_TOKEN }}" \
