@@ -451,7 +451,7 @@ gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
 timeout=1000
 minrate=1
-""" % (repodir, rocm_version_str))
+""" % (repodir, rocm_version_str, rhel_minor))
 
 
 def parse_args():
