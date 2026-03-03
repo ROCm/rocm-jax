@@ -29,6 +29,7 @@ import shutil
 import ssl
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 
 # pylint: disable=unspecified-encoding
@@ -206,7 +207,10 @@ def _install_therock(rocm_version, therock_path):
     else:
         os.makedirs(rocm_real_path)
         tar_path = "/tmp/therock.tar.gz"
-        with urllib.request.urlopen(therock_path) as response:
+        # Unquote first to avoid double-encoding if URL already encoded (e.g. '%2B' -> '%252B').
+        decoded_url = urllib.parse.unquote(therock_path)
+        encoded_url = urllib.parse.quote(decoded_url, safe=":/?&=")
+        with urllib.request.urlopen(encoded_url) as response:
             if response.status == 200:
                 with open(tar_path, "wb") as tar_file:
                     tar_file.write(response.read())
