@@ -1,8 +1,8 @@
 diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
+index 72f2ec6da..11f620658 100644
 --- a/jaxlib/rocm/BUILD
 +++ b/jaxlib/rocm/BUILD
-@@ -475,12 +475,13 @@ nanobind_extension(
- )
+@@ -477,6 +477,7 @@ nanobind_extension(
  
  py_library(
      name = "rocm_gpu_support",
@@ -10,15 +10,7 @@ diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
      deps = [
          ":_hybrid",
          ":_linalg",
-         ":_prng",
-         ":_rnn",
-         ":_solver",
-         ":_sparse",
-         ":_triton",
-     ],
- )
 @@ -528,6 +529,7 @@ cc_library(
- )
  
  nanobind_extension(
      name = "rocm_plugin_extension",
@@ -26,13 +18,3 @@ diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
      srcs = ["rocm_plugin_extension.cc"],
      module_name = "rocm_plugin_extension",
      deps = [
-         ":py_client_gpu",
-         "//jaxlib:kernel_nanobind_helpers",
-         "//jaxlib/gpu:gpu_plugin_extension",
-         "@com_google_absl//absl/log",
-         "@com_google_absl//absl/strings",
-         "@local_config_rocm//rocm:hip_runtime",
-         "@local_config_rocm//rocm:rocm_headers",
-         "@nanobind",
-     ],
- )
