@@ -74,10 +74,9 @@ jobs:
       - name: Get TE commit SHA
         id: tsha
         run: echo "hash=$(git -C transformerengine rev-parse HEAD)" >> $GITHUB_OUTPUT
-      - name: Define ROCm arch & runner-label
-        id: arch
+      - name: Define runner-label
+        id: runner_label
         run: |
-          echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
           echo "label=MI355" >> $GITHUB_OUTPUT
       - name: Authenticate to GitHub Container Registry
         run: |
