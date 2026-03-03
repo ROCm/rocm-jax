@@ -223,7 +223,7 @@ def _install_therock(rocm_version, therock_path):
     else:
         os.makedirs(rocm_real_path)
         tar_path = "/tmp/therock.tar.gz"
-        # First unquote to avoid double-encoding if the URL is already encoded (e.g., '%2B' -> '%252B')
+        # Unquote first to avoid double-encoding if URL already encoded (e.g. '%2B' -> '%252B').
         decoded_url = urllib.parse.unquote(therock_path)
         encoded_url = urllib.parse.quote(decoded_url, safe=":/?&=")
         with urllib.request.urlopen(encoded_url) as response:
