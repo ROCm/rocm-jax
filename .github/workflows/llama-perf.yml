@@ -59,6 +59,7 @@ jobs:
       NVTE_USE_ROCM: 1
       HIP_PLATFORM: amd
       NVTE_FUSED_ATTN_AOTRITON: 0
+      ROCM_ARCH: gfx950;gfx942
     steps:
       - name: Checkout TE source
         uses: actions/checkout@v4
