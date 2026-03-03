@@ -15,6 +15,6 @@ def repo():
         patch_args = ["-p1"],
         patches = [
             "//third_party/jax:0005-Fix-HIP-availability-errors.patch", #TODO(gulsumgudukbay): check if this is still needed
-            "//third_party/jax:0006-Expose-rocm-plugin-targets.patch",
+            "//third_party/jax:0008-Expose-rocm-plugin-targets.patch",
         ],
     )

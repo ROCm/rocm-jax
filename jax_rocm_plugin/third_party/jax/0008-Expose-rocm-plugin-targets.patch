@@ -1,10 +1,9 @@
 diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
-index 67fc1893..5ee3ef4c 100644
 --- a/jaxlib/rocm/BUILD
 +++ b/jaxlib/rocm/BUILD
-@@ -476,12 +476,14 @@ nanobind_extension(
+@@ -475,12 +475,13 @@ nanobind_extension(
  )
-  
+ 
  py_library(
      name = "rocm_gpu_support",
 +    visibility = ["//visibility:public"],
@@ -18,9 +17,9 @@ index 67fc1893..5ee3ef4c 100644
          ":_triton",
      ],
  )
-@@ -526,6 +528,7 @@ cc_library(
+@@ -528,6 +529,7 @@ cc_library(
  )
-  
+ 
  nanobind_extension(
      name = "rocm_plugin_extension",
 +    visibility = ["//visibility:public"],
