@@ -29,6 +29,7 @@ import shutil
 import ssl
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 
 # pylint: disable=unspecified-encoding
@@ -222,7 +223,10 @@ def _install_therock(rocm_version, therock_path):
     else:
         os.makedirs(rocm_real_path)
         tar_path = "/tmp/therock.tar.gz"
-        with urllib.request.urlopen(therock_path) as response:
+        # Unquote first to avoid double-encoding if URL already encoded (e.g. '%2B' -> '%252B').
+        decoded_url = urllib.parse.unquote(therock_path)
+        encoded_url = urllib.parse.quote(decoded_url, safe=":/?&=")
+        with urllib.request.urlopen(encoded_url) as response:
             if response.status == 200:
                 with open(tar_path, "wb") as tar_file:
                     tar_file.write(response.read())
@@ -233,11 +237,14 @@ def _install_therock(rocm_version, therock_path):
     os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
 
     # Make a symlink to amdgcn to fix LLVM not being able to find binaries
-    os.symlink(
-        rocm_real_path + "/lib/llvm/amdgcn/",
-        rocm_real_path + "/amdgcn",
-        target_is_directory=True,
-    )
+    try:
+        os.symlink(
+            rocm_real_path + "/lib/llvm/amdgcn/",
+            rocm_real_path + "/amdgcn",
+            target_is_directory=True,
+        )
+    except FileExistsError:
+        LOG.info("%s already exists", rocm_sym_path)
 
 
 def _setup_internal_repo(system, rocm_version, job_name, build_num):
@@ -431,10 +438,8 @@ minrate=1
     with open("/etc/yum.repos.d/amdgpu.repo", "w") as afd:
         if rocm_version_str.startswith("7"):
             repodir = "graphics"
-            rhel_minor = 10
         else:
             repodir = "amdgpu"
-            rhel_minor = 8
         afd.write("""
 [amdgpu]
 name=amdgpu
