@@ -5,15 +5,15 @@ Subject: [PATCH] Enable testing with ROCm plugin wheels
 
 ---
  WORKSPACE                |  2 ++
- jaxlib/jax.bzl           |  8 +++++---
+ jaxlib/jax.bzl           |  7 ++++---
  jaxlib/tools/BUILD.bazel | 19 +++++++++++++++++++
- 3 files changed, 26 insertions(+), 3 deletions(-)
+ 3 files changed, 25 insertions(+), 2 deletions(-)
 
 diff --git a/WORKSPACE b/WORKSPACE
 index 9061b65ab..c42aa005e 100644
 --- a/WORKSPACE
 +++ b/WORKSPACE
-@@ -31,6 +31,8 @@ python_init_repositories(
+@@ -59,6 +59,8 @@ python_init_repositories(
          "jaxlib*",
          "jax_cuda*",
          "jax-cuda*",
@@ -26,7 +26,7 @@ diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
 index dfa7657e6..1d5b5f4cf 100644
 --- a/jaxlib/jax.bzl
 +++ b/jaxlib/jax.bzl
-@@ -192,8 +192,10 @@ def _gpu_test_deps():
+@@ -200,8 +200,10 @@ def _gpu_test_deps():
              "//jax_plugins:gpu_plugin_only_test_deps",
          ],
          "//jax:config_build_jaxlib_false": [
@@ -39,20 +39,20 @@ index dfa7657e6..1d5b5f4cf 100644
          ],
          "//jax:config_build_jaxlib_wheel": [
              "//jaxlib/tools:jax_cuda_plugin_py_import",
-@@ -300,7 +302,7 @@ def jax_multiplatform_test(
+@@ -308,7 +310,7 @@ def jax_multiplatform_test(
              shard_count = test_shards,
              tags = test_tags,
              main = main,
 -            exec_properties = tf_exec_properties({"tags": test_tags}),
-+            exec_properties = {} #tf_exec_properties({"tags": test_tags}),
++            exec_properties = {}, #tf_exec_properties({"tags": test_tags}),
+             visibility = jax_visibility(name),
          )
  
- def jax_generate_backend_suites(backends = []):
 diff --git a/jaxlib/tools/BUILD.bazel b/jaxlib/tools/BUILD.bazel
 index 58fbfd734..57cbd4252 100644
 --- a/jaxlib/tools/BUILD.bazel
 +++ b/jaxlib/tools/BUILD.bazel
-@@ -564,6 +564,25 @@ py_import(
+@@ -478,6 +478,25 @@ py_import(
      wheel_deps = if_pypi_cuda_wheel_deps([":nvidia_wheel_deps"]),
  )
  
@@ -80,4 +80,3 @@ index 58fbfd734..57cbd4252 100644
  py_binary(
 -- 
 2.34.1
-

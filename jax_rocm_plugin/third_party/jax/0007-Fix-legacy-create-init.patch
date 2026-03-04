@@ -1,0 +1,12 @@
+diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
+index 28f236783..6be2ea706 100644
+--- a/jaxlib/jax.bzl
++++ b/jaxlib/jax.bzl
+@@ -309,6 +309,7 @@ def jax_multiplatform_test(
+             main = main,
+             exec_properties = tf_exec_properties({"tags": test_tags}),
+             visibility = jax_visibility(name),
++            legacy_create_init = 0,
+         )
+ 
+ def get_test_suite_list(paths, backends = []):

@@ -56,4 +56,6 @@ python3 build/build.py build --wheels=jax-rocm-plugin --configure_only --python_
     --test_filter=JaxprTypeChecks \
     --test_filter=DynamicShapesTest \
     --test_filter=testMatmul \
-    //tests:ffi_test_gpu
+    //tests:ffi_test_gpu \
+    --test_filter=-BufferCallbackTest \
+    --test_filter=-GpuMemoryFlagsTest

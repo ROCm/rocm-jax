@@ -1,0 +1,24 @@
+name: Pytest Results to DB
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-id:
+        required: true
+        type: string
+    secrets:
+      ROCM_JAX_DB_HOSTNAME:
+        required: true
+      ROCM_JAX_DB_USERNAME:
+        required: true
+      ROCM_JAX_DB_PASSWORD:
+        required: true
+      ROCM_JAX_DB_NAME:
+        required: true
+
+jobs:
+  upload-to-db:
+    runs-on: mysqldb
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4

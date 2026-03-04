@@ -64,7 +64,7 @@ jobs:
       - name: Apply patches to rocm/jax test repo
         run: |
           pushd jax
-          git apply ../ci/patches/*
+          git apply ../ci/patches/jax/*.patch
           popd
       - name: Authenticate to GitHub Container Registry
         run: |
