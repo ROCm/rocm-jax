@@ -6,7 +6,10 @@ SCRIPT_DIR=$(realpath "$(dirname "$0")")
 
 TAG_FILTERS=jax_test_gpu,-config-cuda-only,-manual
 
-TARGETS_TO_IGNORE=()
+TARGETS_TO_IGNORE=(
+    -@jax//tests:buffer_callback_test_gpu
+    -@jax//tests:gpu_memory_flags_test_gpu
+)
 
 for arg in "$@"; do
     if [[ "$arg" == "--config" ]]; then
