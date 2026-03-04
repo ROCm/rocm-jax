@@ -219,9 +219,14 @@ def get_gcc_major_version(gcc_path: str):
 
 def get_jax_configure_bazel_options(bazel_command: list[str]):
     """Returns the bazel options to be written to .jax_configure.bazelrc."""
-    # Get the index of the "run" parameter. Build options will come after "run" so
-    # we find the index of "run" and filter everything after it.
-    start = bazel_command.index("run")
+    # Get the index of the command verb ("run" or "build"). Options come after it.
+    if "run" in bazel_command:
+        start = bazel_command.index("run")
+    elif "build" in bazel_command:
+        start = bazel_command.index("build")
+    else:
+        logging.error("Bazel command has neither 'run' nor 'build'")
+        return ""
     jax_configure_bazel_options = ""
     try:
         for i in range(start + 1, len(bazel_command)):
@@ -258,6 +263,41 @@ def get_githash():
         ).stdout.strip()
     except (subprocess.CalledProcessError, OSError):
         return ""
+
+
+def copy_dir_recursively(src, dst):
+    """Copy a directory tree from src to dst."""
+    if os.path.exists(dst):
+        shutil.rmtree(dst)
+    os.makedirs(dst, exist_ok=True)
+    for root, dirs, files in os.walk(src):
+        relative_path = os.path.relpath(root, src)
+        dst_dir = os.path.join(dst, relative_path)
+        os.makedirs(dst_dir, exist_ok=True)
+        for f in files:
+            src_file = os.path.join(root, f)
+            dst_file = os.path.join(dst_dir, f)
+            shutil.copy2(src_file, dst_file)
+    logging.info("Editable wheel path: %s", dst)
+
+
+def copy_individual_files(src: str, dst: str, glob_pattern: str):
+    """Copy files matching glob_pattern from src to dst."""
+    import glob as glob_module
+
+    os.makedirs(dst, exist_ok=True)
+    logging.debug(
+        "Copying files matching pattern %r from %r to %r",
+        glob_pattern,
+        src,
+        dst,
+    )
+    for f in glob_module.glob(os.path.join(src, glob_pattern)):
+        dst_file = os.path.join(dst, os.path.basename(f))
+        if os.path.exists(dst_file):
+            os.remove(dst_file)
+        shutil.copy2(f, dst_file)
+        logging.info("Distribution path: %s", dst_file)
 
 
 def _parse_string_as_bool(s):

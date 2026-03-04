@@ -30,6 +30,20 @@ import tempfile
 from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
 
+
+def _find_patchelf():
+    """Return path to patchelf, or None if not found. Prefer env, then PATH, then common paths."""
+    exe = os.environ.get("PATCHELF")
+    if exe and os.path.isfile(exe) and os.access(exe, os.X_OK):
+        return exe
+    exe = shutil.which("patchelf")
+    if exe:
+        return exe
+    for path in ("/usr/bin/patchelf", "/usr/local/bin/patchelf"):
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    return None
+
 parser = argparse.ArgumentParser(fromfile_prefix_chars="@")
 parser.add_argument(
     "--sources_path",
@@ -201,14 +215,12 @@ def prepare_rocm_plugin_wheel(
     # which won't be correct until we make changes to
     # the xla/tsl/jax plugin build
 
-    try:
-        subprocess.check_output(["which", "patchelf"])
-    except subprocess.CalledProcessError as ex:
-        mesg = (
+    patchelf_cmd = _find_patchelf()
+    if patchelf_cmd is None:
+        raise RuntimeError(
             "rocm plugin and kernel wheel builds require patchelf. "
             "please install 'patchelf' and run again"
         )
-        raise RuntimeError(mesg) from ex
 
     shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
     runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
@@ -218,7 +230,7 @@ def prepare_rocm_plugin_wheel(
     if not perms & stat.S_IWUSR:
         fix_perms = True
         os.chmod(shared_obj_path, perms | stat.S_IWUSR)
-    subprocess.check_call(["patchelf", "--set-rpath", runpath, shared_obj_path])
+    subprocess.check_call([patchelf_cmd, "--set-rpath", runpath, shared_obj_path])
     if fix_perms:
         os.chmod(shared_obj_path, perms)
 
