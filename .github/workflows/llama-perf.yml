@@ -10,7 +10,7 @@ name: Llama Performance Benchmarks
 # PS: Ubuntu 24 & ROCm 7.2.0.
 
 env:
-  TE_REF_DEFAULT: "0e7a1a9e1d997ea42f48028f652453e6f9390b42"
+  TE_REF_DEFAULT: "366945e3c1b0217598f806f0e9ff6673ea53f2ea"
 
 on:
   schedule:
@@ -59,7 +59,7 @@ jobs:
       NVTE_USE_ROCM: 1
       HIP_PLATFORM: amd
       NVTE_FUSED_ATTN_AOTRITON: 0
-      CU_NUM: 64
+      ROCM_ARCH: gfx950;gfx942
     steps:
       - name: Checkout TE source
         uses: actions/checkout@v4
@@ -75,16 +75,10 @@ jobs:
       - name: Get TE commit SHA
         id: tsha
         run: echo "hash=$(git -C transformerengine rev-parse HEAD)" >> $GITHUB_OUTPUT
-      - name: Define ROCm arch & runner-label
-        id: arch
+      - name: Define runner-label
+        id: runner_label
         run: |
-          if [ "${{ inputs.runner-label }}" == "linux-jax-mi325-8" ]; then
-            echo "ROCM_ARCH=gfx942" >> $GITHUB_ENV
-            echo "label=MI325" >> $GITHUB_OUTPUT
-          else
-            echo "ROCM_ARCH=gfx950" >> $GITHUB_ENV
-            echo "label=MI355" >> $GITHUB_OUTPUT
-          fi
+          echo "label=MI355" >> $GITHUB_OUTPUT
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.SECRET_TOKEN }}" \
@@ -101,13 +95,6 @@ jobs:
             --group-add video \
             --cap-add=SYS_PTRACE \
             --security-opt seccomp=unconfined \
-            -e NVTE_FRAMEWORK=${{ env.NVTE_FRAMEWORK }} \
-            -e NVTE_USE_ROCM=${{ env.NVTE_USE_ROCM }} \
-            -e HIP_PLATFORM=${{ env.HIP_PLATFORM }} \
-            -e NVTE_ROCM_ARCH=${{ env.ROCM_ARCH }} \
-            -e NVTE_FUSED_ATTN_AOTRITON=${{ env.NVTE_FUSED_ATTN_AOTRITON }} \
-            -e CU_NUM=${{ env.CU_NUM }} \
-            -e PIP_BREAK_SYSTEM_PACKAGES=1 \
             -v "${{ github.workspace }}:/workspace" \
             ${{ matrix.docker-image }} \
             tail -f /dev/null
@@ -117,6 +104,13 @@ jobs:
             pip install setuptools ninja pybind11
             pip install cmake==4.1.0
             pip install packaging psutil
+            export NVTE_FRAMEWORK="${{ env.NVTE_FRAMEWORK }}"
+            export NVTE_USE_ROCM="${{ env.NVTE_USE_ROCM }}"
+            export HIP_PLATFORM="${{ env.HIP_PLATFORM }}"
+            export NVTE_ROCM_ARCH="${{ env.ROCM_ARCH }}"
+            export NVTE_FUSED_ATTN_AOTRITON="${{ env.NVTE_FUSED_ATTN_AOTRITON }}"
+            export PIP_BREAK_SYSTEM_PACKAGES=1
+            export NVTE_AITER_PREBUILT_BASE_URL=https://compute-artifactory.amd.com:5000/artifactory/rocm-generic-local/te-ci/aiter-prebuilts
             if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
               apt update
               apt install libdw1 libglib2.0-0
