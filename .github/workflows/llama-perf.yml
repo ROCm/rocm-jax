@@ -10,7 +10,7 @@ name: Llama Performance Benchmarks
 # PS: Ubuntu 24 & ROCm 7.2.0.
 
 env:
-  TE_REF_DEFAULT: "4537cce2fa6a3370f3d489a97d39419bd03362fd"
+  TE_REF_DEFAULT: "366945e3c1b0217598f806f0e9ff6673ea53f2ea"
 
 on:
   schedule:
@@ -158,7 +158,6 @@ jobs:
         with:
           repository: AMD-AGI/scif_repro
           token: ${{ secrets.SECRET_TOKEN }}
-          ref: gw_meshresource
       - name: Download JAX wheels
         env:
           GH_TOKEN: ${{ secrets.SECRET_TOKEN }}
