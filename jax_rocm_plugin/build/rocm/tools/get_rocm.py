@@ -438,10 +438,8 @@ minrate=1
     with open("/etc/yum.repos.d/amdgpu.repo", "w") as afd:
         if rocm_version_str.startswith("7"):
             repodir = "graphics"
-            rhel_minor = 10
         else:
             repodir = "amdgpu"
-            rhel_minor = 8
         afd.write("""
 [amdgpu]
 name=amdgpu
@@ -451,7 +449,7 @@ gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
 timeout=1000
 minrate=1
-""" % (repodir, rocm_version_str, rhel_minor))
+""" % (repodir, rocm_version_str))
 
 
 def parse_args():
