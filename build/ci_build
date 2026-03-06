@@ -130,11 +130,13 @@ def _docker_image_exists(image):
 
 
 def _construct_manylinux_builder_image_name(rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None):
-    """Create an image name that includes the ROCm ersion, build job, build number, etc"""
+    """Create an image name that includes the ROCm version, build job, build number, etc"""
+    # Docker tags cannot contain '+', so replace it with '.' for compatibility
+    sanitized_version = rocm_version.replace("+", ".")
     return "{base_name}-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
         base_name=MANYLINUX_IMAGE_BASE_NAME,
         rocm_type="therock" if therock_path else "rocm",
-        rocm_version=rocm_version,
+        rocm_version=sanitized_version,
         rocm_build_job="-%s" % rocm_build_job if rocm_build_job else "",
         rocm_build_num="-%s" % rocm_build_num if rocm_build_num else "",
     )
