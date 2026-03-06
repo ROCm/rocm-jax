@@ -120,7 +120,9 @@ def _docker_image_exists(image):
         subprocess.run(["docker", "inspect", image], check=True)
     except subprocess.CalledProcessError:
         # If we can't find the image with inspect, try pulling it
-        print(f"Could not find image '{image}' locally with docker inspect. Attempting to pull it.")
+        print(
+            f"Could not find image '{image}' locally with docker inspect. Attempting to pull it."
+        )
         try:
             subprocess.run(["docker", "pull", image], check=True)
         except subprocess.CalledProcessError:
@@ -129,14 +131,18 @@ def _docker_image_exists(image):
     return True
 
 
-def _construct_manylinux_builder_image_name(rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None):
+def _construct_manylinux_builder_image_name(
+    rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None
+):
     """Create an image name that includes the ROCm ersion, build job, build number, etc"""
-    return "{base_name}-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
-        base_name=MANYLINUX_IMAGE_BASE_NAME,
-        rocm_type="therock" if therock_path else "rocm",
-        rocm_version=rocm_version,
-        rocm_build_job="-%s" % rocm_build_job if rocm_build_job else "",
-        rocm_build_num="-%s" % rocm_build_num if rocm_build_num else "",
+    return (
+        "{base_name}-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
+            base_name=MANYLINUX_IMAGE_BASE_NAME,
+            rocm_type="therock" if therock_path else "rocm",
+            rocm_version=rocm_version,
+            rocm_build_job="-%s" % rocm_build_job if rocm_build_job else "",
+            rocm_build_num="-%s" % rocm_build_num if rocm_build_num else "",
+        )
     )
 
 
@@ -147,7 +153,9 @@ def build_manylinux_dockers(
     if tag:
         constructed_tag = tag
     else:
-        constructed_tag = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+        constructed_tag = _construct_manylinux_builder_image_name(
+            rocm_version, rocm_build_job, rocm_build_num, therock_path
+        )
 
     if therock_path:
         cmd = [
@@ -202,7 +210,9 @@ def dist_wheels(
     # If builder-image is set to 'search', try and find one based off of the passed ROCm info
     elif local_builder_image == "search":
         print("Searching for manylinux builder image...")
-        local_builder_image = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+        local_builder_image = _construct_manylinux_builder_image_name(
+            rocm_version, rocm_build_job, rocm_build_num, therock_path
+        )
         if not _docker_image_exists(local_builder_image):
             print(f"ERROR: Builder image '{local_builder_image}' does not exist")
             exit(1)
@@ -374,6 +384,7 @@ def build_dockers(
     therock_path=None,
     tag_base=None,
     docker_filters=None,
+    no_cache=False,
 ):
     commit_info = _get_commit_info_from_wheel()
     dockerfiles = _apply_filters(docker_filters, "Dockerfile.jax")
@@ -408,10 +419,17 @@ def build_dockers(
         )
 
         # Check if base image exists
-        if not _check_base_image_exists(base_image_name):
-            print(
-                "Base image %s not found in registry. Building it..." % base_image_name
-            )
+        if no_cache or not _check_base_image_exists(base_image_name):
+            if no_cache:
+                print(
+                    "Rebuilding base image %s from scratch (--no-cache)..."
+                    % base_image_name
+                )
+            else:
+                print(
+                    "Base image %s not found in registry. Building it..."
+                    % base_image_name
+                )
             # Build the base image
             build_base_dockers(
                 rocm_version=rocm_version,
@@ -422,6 +440,7 @@ def build_dockers(
                 add_llvm=False,  # Base images, not dev images
                 docker_filters=[ubuntu_version],  # Filter for specific ubuntu version
                 push_latest=True,  # Tag and push as latest to preserve Dockerfile invariant
+                no_cache=no_cache,
             )
         else:
             print("Base image %s found in registry." % base_image_name)
@@ -433,6 +452,10 @@ def build_dockers(
 
         print("Building dockerfile=%r to tag=%r" % (dockerfile, tag))
 
+        cache_args = []
+        if no_cache:
+            cache_args.append("--cache-from=%s:latest" % base_image_name)
+
         _run_docker(
             dockerfile,
             rocm_version,
@@ -440,7 +463,7 @@ def build_dockers(
             rocm_build_num,
             therock_path,
             tag,
-            extra_args,
+            extra_args + cache_args,
         )
 
 
@@ -455,17 +478,22 @@ def build_base_dockers(
     tag_base=None,
     docker_filters=None,
     push_latest=False,
+    no_cache=False,
 ):
     dockerfiles = _apply_filters(docker_filters, "Dockerfile.base")
     # Docker tags cannot contain '+', so replace it with '.' for consistency with wheel versions
     rocm_ver_tag = "rocm%s" % "".join(rocm_version.split(".")).replace("+", ".")
 
     extra_args = []
+    if no_cache:
+        extra_args.extend(["--no-cache", "--pull"])
     if add_llvm:
-        extra_args = [
-            f"--build-arg=INSTALL_LLVM={int(add_llvm)}",
-            f"--build-arg=LLVM_VERSION={llvm_version}",
-        ]
+        extra_args.extend(
+            [
+                f"--build-arg=INSTALL_LLVM={int(add_llvm)}",
+                f"--build-arg=LLVM_VERSION={llvm_version}",
+            ]
+        )
 
     for dockerfile in dockerfiles:
         _, tag_suffix = dockerfile.split(".", 1)
@@ -654,6 +682,11 @@ def parse_args():
         help="Comma separated strings to filter Dockerfiles to build. Substring match",
         default="",
     )
+    bdp.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Build images from scratch without using Docker layer cache",
+    )
 
     bbasedp = subp.add_parser("build_base_dockers")
     bbasedp.add_argument(
@@ -662,6 +695,11 @@ def parse_args():
         type=str,
         help="Comma separated strings to filter Dockerfiles to build. Substring match",
         default="",
+    )
+    bbasedp.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Build images from scratch without using Docker layer cache",
     )
     bbasedp.add_argument(
         "--install-llvm",
@@ -732,6 +770,7 @@ def main():
             rocm_build_num=args.rocm_build_num,
             therock_path=args.therock_path,
             docker_filters=filters,
+            no_cache=args.no_cache,
         )
     elif args.action == "build_base_dockers":
         filters = args.filter.split(",")
@@ -745,6 +784,7 @@ def main():
             docker_filters=filters,
             add_llvm=args.install_llvm,
             llvm_version=args.llvm_version,
+            no_cache=args.no_cache,
         )
 
     elif args.action == "test_docker":
