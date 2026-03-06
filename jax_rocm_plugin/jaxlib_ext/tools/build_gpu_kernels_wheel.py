@@ -27,7 +27,7 @@ import subprocess
 import tempfile
 
 # pylint: disable=import-error,invalid-name,consider-using-with
-from bazel_tools.tools.python.runfiles import runfiles
+from python.runfiles import runfiles  # fix fb41d65088
 from jaxlib_ext.tools import build_utils
 
 parser = argparse.ArgumentParser()

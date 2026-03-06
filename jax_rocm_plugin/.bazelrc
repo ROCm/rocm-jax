@@ -100,6 +100,12 @@ build:rocm --copt=-Qunused-arguments
 build:rocm --action_env=TF_HIPCC_CLANG="1"
 
 
+################ attempts to fix fb41d65088
+# Used for rules_python bootstrap 1.8.0+
+build --@rules_python//python/config_settings:bootstrap_impl=script --repo_env=RULES_PYTHON_ENABLE_PIPSTAR=0
+test --@rules_python//python/config_settings:bootstrap_impl=script --repo_env=RULES_PYTHON_ENABLE_PIPSTAR=0
+################
+
 #############################################################################
 # Configuration for running RBE builds and tests
 #############################################################################

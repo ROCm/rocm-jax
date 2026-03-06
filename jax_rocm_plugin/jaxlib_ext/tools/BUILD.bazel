@@ -19,6 +19,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("//third_party/xla:workspace.bzl", xla_commit = "XLA_COMMIT")
 load("//third_party/jax:workspace.bzl", jax_commit = "COMMIT")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 
 py_binary(
     name = "build_gpu_kernels_wheel",
@@ -36,7 +37,7 @@ py_binary(
     ],
     deps = [
         "build_utils",
-        "@bazel_tools//tools/python/runfiles",
+        "@rules_python//python/runfiles",  # fix fb41d65088
         "@pypi_build//:pkg",
         "@pypi_setuptools//:pkg",
         "@pypi_wheel//:pkg",

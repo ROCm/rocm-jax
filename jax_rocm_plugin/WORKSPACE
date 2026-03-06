@@ -52,6 +52,9 @@ load("//third_party/jax:workspace.bzl", jaxlib_workspace = "repo")
 
 jaxlib_workspace()
 
+load("@jax//third_party/external_deps:workspace.bzl","external_deps_repository")
+external_deps_repository(name = "rocm_external_test_deps")
+
 load("@xla//third_party/py:python_init_toolchains.bzl", "python_init_toolchains")
 
 python_init_toolchains()
