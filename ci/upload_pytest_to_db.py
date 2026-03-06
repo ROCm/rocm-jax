@@ -113,16 +113,15 @@ def find_pytest_report_json(local_logs_dir: Path) -> Optional[Path]:
         and not p.name.endswith("last_running.json")
     ]
     if not reports:
-        None
-    else:
-        if len(reports) != 1:
-            listing = "\n  - " + "\n  - ".join(
-                str(p.relative_to(local_logs_dir)) for p in sorted(reports)
-            )
-            raise SystemExit(
-                f"Expected exactly ONE pytest JSON report; found {len(reports)}:{listing}"
-            )
-        return reports[0]
+        return None
+    if len(reports) != 1:
+        listing = "\n  - " + "\n  - ".join(
+            str(p.relative_to(local_logs_dir)) for p in sorted(reports)
+        )
+        raise SystemExit(
+            f"Expected exactly ONE pytest JSON report; found {len(reports)}:{listing}"
+        )
+    return reports[0]
 
 
 def load_from_pytest_json(path: Path) -> Tuple[Optional[datetime], List[dict]]:
@@ -705,13 +704,11 @@ def upload_pytest_results(  # pylint: disable=too-many-locals
                     (run_id, test_id, outcome, duration, longrepr, message, skip_label)
                 )
             batch_insert_results(cur, rows)
-
-            conn.commit()
-            print(
-                f"[summary] run_id={run_id} total_results={len(rows)} unique_tests={len(test_id_map)}"
-            )
-            # NOTE: optionally print Grafana dashboard URL, e.g. {URL}?var-run_id={id}
-
+        conn.commit()
+        print(
+            f"[summary] run_id={run_id} total_results={len(rows)} unique_tests={len(test_id_map)}"
+        )
+        # NOTE: optionally print Grafana dashboard URL, e.g. {URL}?var-run_id={id}
     except MySQLError as e:
         conn.rollback()
         # INSERT may still hit a duplicate key (e.g. artifact_uri or logical identity)
