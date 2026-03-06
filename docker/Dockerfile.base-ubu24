@@ -103,7 +103,7 @@ RUN --mount=type=bind,source=tools/get_rocm.py,target=get_rocm.py \
     --mount=type=bind,from=therock,target=/tmp/therock/ \
     python3 get_rocm.py --rocm-version=$ROCM_VERSION --job-name=$ROCM_BUILD_JOB --build-num=$ROCM_BUILD_NUM --therock-path=$THEROCK_PATH
 
-# Install LLVM when enabled:
+# Install LLVM's clang and lld when enabled:
 RUN --mount=type=cache,target=/var/cache/apt   \
     [ $INSTALL_LLVM -eq 0 ] || (               \
     apt update &&                              \
@@ -115,7 +115,7 @@ RUN --mount=type=cache,target=/var/cache/apt   \
     cd /tmp &&                                 \
     wget https://apt.llvm.org/llvm.sh &&       \
     chmod +x llvm.sh &&                        \
-    ./llvm.sh $LLVM_VERSION all &&             \
+    ./llvm.sh $LLVM_VERSION clang lld &&       \
     rm llvm.sh &&                              \
     apt-get clean && rm -rf /var/lib/apt/lists/* )
 
@@ -143,7 +143,7 @@ RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
           -DMIOPEN_USE_MLIR=OFF -DMIOPEN_ENABLE_AI_KERNEL_TUNING=OFF  \
           -DMIOPEN_ENABLE_AI_IMMED_MODE_FALLBACK=OFF .. &&            \
     make -j10 && make install &&                                      \
-    apt-get clean && rm -rf /var/lib/apt/lists/* )
+    rm -rf /rocm-libraries && apt-get clean && rm -rf /var/lib/apt/lists/* )
 
 # This mitigates crashes related to the kernel database.
 ENV MIOPEN_FIND_ENFORCE=SEARCH_DB_UPDATE
