@@ -134,13 +134,15 @@ def count_amd_gpus(stop_at: int = None) -> int:
     """Count AMD GPUs available via KFD kernel driver.
 
     This function checks for the presence of AMD GPUs by examining KFD kernel
-    driver entities as a proxy. This approach provides a good compromise between
-    performance, reliability and simplicity. Presence of such entities doesn't
-    guarantee that the GPUs are usable through HIP and PJRT, however, we can't
-    do much better without spawning an additional process with a potentially
-    complicated setup to run actual HIP code. And we don't want to initialize
-    HIP right now inside the current process, because doing so might spoil a
-    proper initialization of the rocprofiler-sdk later during PJRT startup.
+    driver entities as a proxy. In WSL setups, if /dev/dxg exists, this check
+    hardcodes the result to 1 GPU for initialization gating. This approach
+    provides a good compromise between performance, reliability and simplicity.
+    Presence of such entities doesn't guarantee that the GPUs are usable
+    through HIP and PJRT, however, we can't do much better without spawning an
+    additional process with a potentially complicated setup to run actual HIP
+    code. And we don't want to initialize HIP right now inside the current
+    process, because doing so might spoil a proper initialization of the
+    rocprofiler-sdk later during PJRT startup.
 
     Args:
         stop_at: If provided, stop counting once this many GPUs are found.
@@ -150,6 +152,9 @@ def count_amd_gpus(stop_at: int = None) -> int:
         The number of AMD GPUs detected (up to stop_at if provided).
     """
     try:
+        if os.path.exists("/dev/dxg"):
+            return 1
+
         kfd_nodes_path = "/sys/class/kfd/kfd/topology/nodes/"
         if not os.path.exists(kfd_nodes_path):
             return 0
