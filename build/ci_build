@@ -82,7 +82,7 @@ def _tag_and_push_latest(local_tag, registry="ghcr.io/rocm"):
     ghcr_image = "%s/%s:latest" % (registry, local_tag)
     print("Tagging %s as %s" % (local_tag, ghcr_image))
     subprocess.check_call(["docker", "tag", local_tag, ghcr_image])
-    
+
     if _is_github_actions():
         print("Pushing %s" % ghcr_image)
         subprocess.check_call(["docker", "push", ghcr_image])
@@ -165,7 +165,7 @@ def build_manylinux_dockers(
             "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-therock",
             "--build-arg=ROCM_VERSION=%s" % rocm_version,
             "--build-arg=THEROCK_PATH=%s" % therock_path,
-            #"--build-context=%s" % therock_path,
+            # "--build-context=%s" % therock_path,
             ".",
         ]
     else:
@@ -559,7 +559,7 @@ def test(image_name, test_cmd=None):
         "--shm-size",
         "16G",
         "--env-file",
-        "/etc/podinfo/gha-gpu-isolation-settings"
+        "/etc/podinfo/gha-gpu-isolation-settings",
     ]
 
     cmd = [
@@ -596,7 +596,7 @@ def test(image_name, test_cmd=None):
 
 
 def parse_args():
-    p = argparse.ArgumentParser()
+    p = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     p.add_argument(
         "--base-docker",
         default="",
@@ -652,12 +652,17 @@ def parse_args():
 
     subp = p.add_subparsers(dest="action", required=True)
 
-    ml_parser = subp.add_parser("build_manylinux_dockers")
+    ml_parser = subp.add_parser(
+        "build_manylinux_dockers",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     ml_parser.add_argument(
         "--tag", "-t", type=str, help="Override the default image name and tag"
     )
 
-    dwp = subp.add_parser("dist_wheels")
+    dwp = subp.add_parser(
+        "dist_wheels", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     dwp.add_argument("--rbe", action="store_true", help="Use Bazel RBE for building")
     dwp.add_argument(
         "--builder-image",
@@ -666,7 +671,9 @@ def parse_args():
         help="Name of the docker image to build with",
     )
 
-    dtestp = subp.add_parser("test_docker")
+    dtestp = subp.add_parser(
+        "test_docker", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     dtestp.add_argument("--docker-build-only", action="store_true")
     dtestp.add_argument(
         "--jax-version",
@@ -674,7 +681,9 @@ def parse_args():
         help="JAX version that will be install via pip in test image.",
     )
 
-    bdp = subp.add_parser("build_dockers")
+    bdp = subp.add_parser(
+        "build_dockers", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     bdp.add_argument(
         "--filter",
         "-f",
@@ -688,7 +697,9 @@ def parse_args():
         help="Build images from scratch without using Docker layer cache",
     )
 
-    bbasedp = subp.add_parser("build_base_dockers")
+    bbasedp = subp.add_parser(
+        "build_base_dockers", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     bbasedp.add_argument(
         "--filter",
         "-f",
@@ -712,7 +723,9 @@ def parse_args():
         type=int,
     )
 
-    testp = subp.add_parser("test")
+    testp = subp.add_parser(
+        "test", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     testp.add_argument(
         "--test-cmd", help="Command which will be run inside the test container"
     )
