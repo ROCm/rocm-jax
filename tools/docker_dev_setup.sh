@@ -1,7 +1,5 @@
 #!/bin/bash
 
-PYTHON_BINARY=python3.11
-
 # shellcheck disable=SC2034
 CYAN="\033[36;01m"
 GREEN="\033[32;01m"
@@ -31,8 +29,8 @@ dpkg-reconfigure --frontend noninteractive tzdata
 
 # Default values
 rocm_version="7.2.0"
-rocm_build_number="16864"
-rocm_job_name="compute-rocm-dkms-no-npi-hipclang"
+rocm_build_number="74"
+rocm_job_name="compute-rocm-rel-7.2"
 
 # Parse named command-line arguments
 while [[ "$#" -gt 0 ]]; do
@@ -44,39 +42,6 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
-
-install_python_v311() {
-  PY_VERSION=3.11.14
-
-  # System packages needed to compile Python and installed bzip2, sqlite3 packages
-  apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      build-essential            \
-      wget curl ca-certificates  \
-      libssl-dev zlib1g-dev      \
-      libreadline-dev libffi-dev \
-      sqlite3 libsqlite3-dev     \
-      libbz2-dev liblzma-dev     \
-      libncursesw5-dev xz-utils  \
-      tk-dev uuid-dev            \
-      && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-  # Download and unpack python-v3.11
-  pushd . \
-  && mkdir -p /tmp && cd /tmp && wget https://www.python.org/ftp/python/${PY_VERSION}/Python-${PY_VERSION}.tgz \
-  && tar -xzf ./Python-${PY_VERSION}.tgz \
-  && rm ./Python-${PY_VERSION}.tgz \
-  && cd /tmp/Python-${PY_VERSION} && ./configure --enable-optimizations --with-lto \
-  && make -j"$(nproc)" && make install && ln -s -f /usr/local/bin/python3 /usr/local/bin/python \
-  && cd /tmp && rm -rf /tmp/Python-${PY_VERSION} && popd
-
-  # checking the assumption that $PYTHON_BINARY was indeed installed
-  hash -r 2>/dev/null # to refresh binaries cache
-  PYTHON_BINARY_PATH=$(which "$PYTHON_BINARY")
-  if [[ -z "$PYTHON_BINARY_PATH" || ! -f "$PYTHON_BINARY_PATH" ]]; then
-    die "Should have installed $PYTHON_BINARY, but can't find the expected executable: $PYTHON_BINARY_PATH"
-  fi
-}
 
 install_clang_packages() {
   apt-get install -y \
@@ -115,17 +80,12 @@ if [ -n "$ROCM_JAX_DIR" ]; then
   cd "${ROCM_JAX_DIR}"
 fi
 
-PYTHON_BINARY_PATH=$(which "$PYTHON_BINARY")
-if [[ ! -z "$PYTHON_BINARY_PATH" && -f "$PYTHON_BINARY_PATH" ]]; then
-  info "$PYTHON_BINARY is found. Skipping installation."
-else
-  info "$PYTHON_BINARY is not installed. Proceeding with installation..."
-  install_python_v311 || die "error while installing $PYTHON_BINARY"
-fi
-
 # install system deps
 apt-get update
 apt-get install -y \
+  python3 \
+  python-is-python3 \
+  python3-venv \
   wget \
   curl \
   vim \
@@ -140,6 +100,14 @@ apt-get install -y \
 # install a clang
 install_clang_packages || die "error while installing clang"
 
+PYTHON_BINARY_PATH=$(which "python3")
+if [[ ! -z "$PYTHON_BINARY_PATH" && -f "$PYTHON_BINARY_PATH" ]]; then
+  info "$PYTHON_BINARY is found. Skipping installation."
+else
+  info "$PYTHON_BINARY is not installed. Proceeding with installation..."
+fi
+
+
 # install ROCm (if needed)
 # extract the major version
 major_version=$(echo "$rocm_version" | cut -d. -f1)
@@ -150,20 +118,9 @@ if command -v rocminfo &> /dev/null; then
 elif [[ -d "/opt/rocm" ]]; then
   info "ROCm directory found at /opt/rocm. Assuming ROCm is installed. Skipping installation."
 else
-  info "ROCm is not installed. Proceeding with installation..."
-
-  # if major version is >= 7, then build number and name must be provided
-  if [ "$major_version" -ge 7 ]; then
-    if [[ -z "$rocm_build_number" || -z "$rocm_job_name" ]]; then
-      info "ERROR: For ROCm version >= 7.x, both --rocm_build_number and --rocm_job_name must be provided."
-      exit 1
-    fi
-  fi
-
-  info "Installing ROCm version: $rocm_version"
-  
+  info "ROCm is not installed. Proceeding with installation: $rocm_version..."
   # run get_rocm.py with appropriate arguments based on major version.
-  if [ "$major_version" -ge 7 ]; then
+  if [[ -n "$rocm_build_number" || -n "$rocm_job_name" ]]; then
     info "Running get_rocm.py with rocm_version $rocm_version, build number $rocm_build_number and build name $rocm_job_name"
     "$PYTHON_BINARY_PATH" tools/get_rocm.py --rocm-version "$rocm_version"  --job-name "$rocm_job_name" --build-num "$rocm_build_number"|| die "error while installing rocm"
   else
