@@ -14,9 +14,15 @@ build:rocm --repo_env=HERMETIC_PYTHON_VERSION=3.12
 
 build:rocm_mgpu --test_tag_filters=jax_test_gpu,multiaccelerator,-config-cuda-only,-manual
 build:rocm_mgpu --build_tag_filters=jax_test_gpu,multiaccelerator,-config-cuda-only,-manual
+build:rocm_mgpu --host_platform="//platform/linux:tf_linux_multigpu"
+build:rocm_mgpu --extra_execution_platforms="//platform/linux:tf_linux_multigpu"
+build:rocm_mgpu --platforms="//platform/linux:tf_linux_multigpu"
 
 build:rocm_sgpu --test_tag_filters=jax_test_gpu,-multiaccelerator,-config-cuda-only,-manual
 build:rocm_sgpu --build_tag_filters=jax_test_gpu,-multiaccelerator,-config-cuda-only,-manual
+build:rocm_sgpu --host_platform="//platform/linux:tf_linux_gpu"
+build:rocm_sgpu --extra_execution_platforms="//platform/linux:tf_linux_gpu"
+build:rocm_sgpu --platforms="//platform/linux:tf_linux_gpu"
 
 # for @xla//build_tools/rocm:parallel_gpu_execute
 build:rocm --legacy_external_runfiles=true

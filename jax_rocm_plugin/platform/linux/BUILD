@@ -43,3 +43,18 @@ platform(
         "Pool": "linux_x64_gpu",
     },
 )
+
+platform(
+    name = "tf_linux_multigpu",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+        "@bazel_tools//tools/cpp:clang",
+    ],
+    # note this image shall match the container one executes the build command!
+    exec_properties = {
+        "container-image": "docker://rocm/tensorflow-build@sha256:7fcfbd36b7ac8f6b0805b37c4248e929e31cf5ee3af766c8409dd70d5ab65faa",
+        "OSFamily": "Linux",
+        "Pool": "linux_x64_multigpu",
+    },
+)
