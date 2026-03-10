@@ -2,7 +2,7 @@
 set -euo pipefail
 
 : "${INPUT_GPU_ARCH:?}"
-: "${FILTER_REPO:=ROCm/jax}"
+: "${FILTER_REPO:=jax-ml/jax}"
 : "${FILTER_RUN_ID:=}"
 
 ROOT="jax-ci-test-logs/${FILTER_REPO}/"
