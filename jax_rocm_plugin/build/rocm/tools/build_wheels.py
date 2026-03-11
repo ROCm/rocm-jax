@@ -147,6 +147,7 @@ def build_plugin_wheel(
     rbe=False,
     compiler="gcc",
     wheels="jax-rocm-plugin,jax-rocm-pjrt",
+    wheel_post_release=None,
 ):
     """Build ROCm plugin and/or PJRT wheels via jax_rocm_plugin/build/build.py.
 
@@ -203,6 +204,9 @@ def build_plugin_wheel(
     env = dict(os.environ)
     env["JAX_RELEASE"] = str(1)
     env["JAXLIB_RELEASE"] = str(1)
+    env.pop("WHEEL_POST_RELEASE", None)
+    if wheel_post_release is not None:
+        env["WHEEL_POST_RELEASE"] = str(wheel_post_release)
     env["PATH"] = "%s:%s" % (py_bin, env["PATH"])
 
     LOG.info("Running %r from cwd=%r", cmd, plugin_path)
@@ -339,6 +343,14 @@ def to_cpy_ver(python_version):
     return "cp%d%d" % (int(tup[0]), int(tup[1]))
 
 
+def validate_wheel_post_release(post_release):
+    """Validate optional post-release number for wheel versions."""
+    if post_release is None:
+        return
+    if post_release <= 0:
+        raise ValueError("--wheel-post-release must be a positive integer")
+
+
 def fix_wheel(path, jax_path):
     """Fix auditwheel compliance using fixwheel.py and auditwheel."""
     try:
@@ -411,6 +423,12 @@ def parse_args():
         default="gcc",
         help="Compiler backend to use when compiling jax/jaxlib",
     )
+    p.add_argument(
+        "--wheel-post-release",
+        type=int,
+        default=None,
+        help="Optional post-release suffix number to append as .postX",
+    )
 
     p.add_argument(
         "plugin_path", help="Directory where JAX ROCm plugin source is located"
@@ -435,6 +453,7 @@ def find_wheels(path):
 def main():
     """Main entry point."""
     args = parse_args()
+    validate_wheel_post_release(args.wheel_post_release)
     python_versions = args.python_versions.split(",")
 
     manylinux_output_dir = "dist_manylinux"
@@ -482,6 +501,7 @@ def main():
         args.rbe,
         args.compiler,
         wheels="jax-rocm-pjrt",
+        wheel_post_release=args.wheel_post_release,
     )
     # Fix PJRT wheel.
     wheel_paths = find_wheels(full_output_path)
@@ -502,6 +522,7 @@ def main():
             args.rbe,
             args.compiler,
             wheels="jax-rocm-plugin",
+            wheel_post_release=args.wheel_post_release,
         )
         # Fix plugin wheels for this Python version.
         wheel_paths = find_wheels(full_output_path)
