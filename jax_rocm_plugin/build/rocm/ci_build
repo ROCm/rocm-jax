@@ -50,6 +50,7 @@ def dist_wheels(
     compiler,
     builder_image,
     wheel_build_number=None,
+    include_rocm_version_extra=True,
 ):
     if xla_path:
         xla_path = os.path.abspath(xla_path)
@@ -120,7 +121,8 @@ def dist_wheels(
             "--shm-size",
             "64G",
             "-e",
-            "ROCM_VERSION_EXTRA=" + rocm_version.replace("+", "."),
+            "ROCM_VERSION_EXTRA="
+            + (rocm_version.replace("+", ".") if include_rocm_version_extra else ""),
             "-e",
             "ROCM_JAX_COMMIT=" + rocm_jax_commit,
             builder_image,
@@ -226,6 +228,11 @@ def parse_args():
         default=None,
         help="Optional wheel build tag to allow multiple uploads for same version",
     )
+    p.add_argument(
+        "--no-rocm-version-extra",
+        action="store_true",
+        help="Do not append local '+rocm...' version tag to plugin/PJRT wheels",
+    )
 
     subp = p.add_subparsers(dest="action", required=True)
 
@@ -250,6 +257,7 @@ def main():
             args.compiler,
             args.builder_image,
             args.wheel_build_number,
+            not args.no_rocm_version_extra,
         )
 
     elif args.action == "test":
