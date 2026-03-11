@@ -49,6 +49,7 @@ def dist_wheels(
     rbe,
     compiler,
     builder_image,
+    wheel_build_number=None,
 ):
     if xla_path:
         xla_path = os.path.abspath(xla_path)
@@ -80,6 +81,9 @@ def dist_wheels(
 
     if rbe:
         bw_cmd.append("--rbe")
+
+    if wheel_build_number:
+        bw_cmd.extend(["--wheel-build-number", wheel_build_number])
 
     bw_cmd.append(container_plugin_path)
     container_cmd = " ".join(bw_cmd)
@@ -217,6 +221,11 @@ def parse_args():
         "--builder-image",
         default=None,
     )
+    p.add_argument(
+        "--wheel-build-number",
+        default=None,
+        help="Optional wheel build tag to allow multiple uploads for same version",
+    )
 
     subp = p.add_subparsers(dest="action", required=True)
 
@@ -240,6 +249,7 @@ def main():
             args.rbe,
             args.compiler,
             args.builder_image,
+            args.wheel_build_number,
         )
 
     elif args.action == "test":

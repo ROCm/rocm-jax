@@ -186,6 +186,7 @@ def dist_wheels(
     rbe=False,
     compiler="gcc",
     builder_image=None,
+    wheel_build_number=None,
 ):
     jax_plugin_dir = "jax_rocm_plugin"
 
@@ -227,6 +228,9 @@ def dist_wheels(
 
     if rbe:
         cmd.append("--rbe")
+
+    if wheel_build_number:
+        cmd.append("--wheel-build-number=%s" % wheel_build_number)
 
     cmd.append("dist_wheels")
     subprocess.check_call(cmd, cwd=jax_plugin_dir)
@@ -621,6 +625,11 @@ def parse_args():
         default="clang",
         help="Compiler backend to use when compiling jax/jaxlib",
     )
+    p.add_argument(
+        "--wheel-build-number",
+        default=None,
+        help="Optional wheel build tag to allow multiple uploads for same version",
+    )
 
     subp = p.add_subparsers(dest="action", required=True)
 
@@ -721,6 +730,7 @@ def main():
             rbe=args.rbe,
             compiler=args.compiler,
             builder_image=args.builder_image,
+            wheel_build_number=args.wheel_build_number,
         )
 
     if args.action == "build_dockers":
