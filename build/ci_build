@@ -186,7 +186,6 @@ def dist_wheels(
     rbe=False,
     compiler="gcc",
     builder_image=None,
-    include_rocm_version_extra=True,
 ):
     jax_plugin_dir = "jax_rocm_plugin"
 
@@ -228,9 +227,6 @@ def dist_wheels(
 
     if rbe:
         cmd.append("--rbe")
-
-    if not include_rocm_version_extra:
-        cmd.append("--no-rocm-version-extra")
 
     cmd.append("dist_wheels")
     subprocess.check_call(cmd, cwd=jax_plugin_dir)
@@ -625,11 +621,6 @@ def parse_args():
         default="clang",
         help="Compiler backend to use when compiling jax/jaxlib",
     )
-    p.add_argument(
-        "--no-rocm-version-extra",
-        action="store_true",
-        help="Do not append local '+rocm...' version tag to plugin/PJRT wheels",
-    )
 
     subp = p.add_subparsers(dest="action", required=True)
 
@@ -730,7 +721,6 @@ def main():
             rbe=args.rbe,
             compiler=args.compiler,
             builder_image=args.builder_image,
-            include_rocm_version_extra=not args.no_rocm_version_extra,
         )
 
     if args.action == "build_dockers":
