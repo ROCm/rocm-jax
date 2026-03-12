@@ -49,7 +49,6 @@ def dist_wheels(
     rbe,
     compiler,
     builder_image,
-    wheel_build_number=None,
     include_rocm_version_extra=True,
 ):
     if xla_path:
@@ -82,9 +81,6 @@ def dist_wheels(
 
     if rbe:
         bw_cmd.append("--rbe")
-
-    if wheel_build_number:
-        bw_cmd.extend(["--wheel-build-number", wheel_build_number])
 
     bw_cmd.append(container_plugin_path)
     container_cmd = " ".join(bw_cmd)
@@ -224,11 +220,6 @@ def parse_args():
         default=None,
     )
     p.add_argument(
-        "--wheel-build-number",
-        default=None,
-        help="Optional wheel build tag to allow multiple uploads for same version",
-    )
-    p.add_argument(
         "--no-rocm-version-extra",
         action="store_true",
         help="Do not append local '+rocm...' version tag to plugin/PJRT wheels",
@@ -256,7 +247,6 @@ def main():
             args.rbe,
             args.compiler,
             args.builder_image,
-            args.wheel_build_number,
             not args.no_rocm_version_extra,
         )
 

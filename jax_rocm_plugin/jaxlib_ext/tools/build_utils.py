@@ -25,23 +25,6 @@ import subprocess
 import glob
 import textwrap
 
-def _apply_wheel_build_number(wheel_path: str, build_number: str | None) -> str:
-    """Insert wheel build tag into filename when requested."""
-    if not build_number:
-        return wheel_path
-    base = os.path.basename(wheel_path)
-    parts = base[:-4].split("-")
-    if len(parts) == 6:
-        return wheel_path
-    if len(parts) != 5:
-        raise ValueError(f"Unexpected wheel filename format: {base}")
-    renamed = (
-        f"{parts[0]}-{parts[1]}-{build_number}-{parts[2]}-{parts[3]}-{parts[4]}.whl"
-    )
-    renamed_path = os.path.join(os.path.dirname(wheel_path), renamed)
-    os.rename(wheel_path, renamed_path)
-    return renamed_path
-
 
 def is_windows() -> bool:
     """Check if running on Windows platform."""
@@ -83,9 +66,7 @@ def build_wheel(
         cwd=sources_path,
         env=env,
     )
-    build_number = env.get("WHEEL_BUILD_NUMBER")
     for wheel in glob.glob(os.path.join(sources_path, "dist", "*.whl")):
-        wheel = _apply_wheel_build_number(wheel, build_number)
         output_file = os.path.join(output_path, os.path.basename(wheel))
         sys.stderr.write(f"Output wheel: {output_file}\n\n")
         sys.stderr.write(
