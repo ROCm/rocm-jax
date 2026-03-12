@@ -50,6 +50,27 @@ py_binary(
     ],
 )
 
+# Same script, no data. Used by jax_wheel so inputs come only from source_files
+# (target config), avoiding a second full build in exec config.
+py_binary(
+    name = "build_gpu_plugin_wheel_via_sources",
+    main = "build_gpu_plugin_wheel.py",
+    srcs = ["build_gpu_plugin_wheel.py"],
+    args = [
+        "--xla-commit",
+        xla_commit,
+        "--jax-commit",
+        jax_commit,
+    ],
+    deps = [
+        "build_utils",
+        "@bazel_tools//tools/python/runfiles",
+        "@pypi_build//:pkg",
+        "@pypi_setuptools//:pkg",
+        "@pypi_wheel//:pkg",
+    ],
+)
+
 py_library(
     name = "build_utils",
     srcs = ["build_utils.py"],
@@ -68,6 +89,18 @@ jax_wheel(
     no_abi = True,
     platform_version = "7",
     source_files = [":rocm_pjrt_sources"],
-    wheel_binary = ":build_gpu_plugin_wheel",
+    wheel_binary = ":build_gpu_plugin_wheel_via_sources",
+    wheel_name = "jax_rocm7_pjrt",
+)
+
+# Editable PJRT wheel (same sources, editable = True)
+jax_wheel(
+    name = "jax_rocm7_pjrt_wheel_editable",
+    editable = True,
+    enable_rocm = True,
+    no_abi = True,
+    platform_version = "7",
+    source_files = [":rocm_pjrt_sources"],
+    wheel_binary = ":build_gpu_plugin_wheel_via_sources",
     wheel_name = "jax_rocm7_pjrt",
 )

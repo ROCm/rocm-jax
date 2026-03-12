@@ -180,6 +180,8 @@ def build_plugin_wheel(
         "--output_path=%s" % output_dir,
         # Use roctracer (v1) instead of rocprofiler-sdk (v3) for profiling.
         "--bazel_options=--define=xla_rocm_profiler=v1",
+        # Release version with no suffix (BUILDING.md: jax_rocm7_pjrt-X.X.X-...).
+        "--bazel_options=--repo_env=ML_WHEEL_TYPE=release",
     ]
 
     # Add clang path if clang is used.
@@ -205,9 +207,12 @@ def build_plugin_wheel(
     env["PATH"] = "%s:%s" % (py_bin, env["PATH"])
 
     LOG.info("Running %r from cwd=%r", cmd, plugin_path)
-    pattern = re.compile("Output wheel: (.+)\n")
-
-    _run_scan_for_output(cmd, pattern, env=env, cwd=plugin_path, capture="stderr")
+    # With bazel build, wheels are copied to output_dir by build.py
+    result = subprocess.run(cmd, env=env, cwd=plugin_path, check=False)
+    if result.returncode != 0:
+        raise RuntimeError(
+            "Plugin wheel build failed with return code: %d" % result.returncode
+        )
 
 
 # pylint: disable=R0913,R0917,too-many-locals
@@ -246,7 +251,6 @@ def build_jaxlib_wheel(
         "--verbose",
         "--bazel_options=--action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress",
         "--bazel_options=--repo_env=ML_WHEEL_TYPE=release",
-        f"--bazel_options=--repo_env=ML_WHEEL_VERSION_SUFFIX=+rocm{version_string}",
     ]
 
     # Add clang path if clang is used.
@@ -338,8 +342,13 @@ def to_cpy_ver(python_version):
     return "cp%d%d" % (int(tup[0]), int(tup[1]))
 
 
-def fix_wheel(path, jax_path):
-    """Fix auditwheel compliance using fixwheel.py and auditwheel."""
+def fix_wheel(path, jax_path, wheelhouse_dir=None):
+    """Fix auditwheel compliance using fixwheel.py and auditwheel.
+
+    auditwheel repair writes the repaired wheel to ./wheelhouse (relative to cwd).
+    Pass wheelhouse_dir so we run with cwd set to its parent; then do not copy
+    the original from dist_manylinux to avoid duplicates.
+    """
     try:
         # NOTE(mrodden): fixwheel needs auditwheel 6.0.0, which has a min python of 3.8
         # so use one of the CPythons in /opt to run
@@ -355,7 +364,9 @@ def fix_wheel(path, jax_path):
 
         fixwheel_path = os.path.join(jax_path, "build/rocm/tools/fixwheel.py")
         cmd = ["python", fixwheel_path, path]
-        subprocess.run(cmd, check=True, env=env)
+        # So auditwheel repair writes to <cwd>/wheelhouse; use plugin dir as cwd.
+        cwd = os.path.dirname(wheelhouse_dir) if wheelhouse_dir else jax_path
+        subprocess.run(cmd, check=True, env=env, cwd=cwd)
         LOG.info("Wheel fix completed successfully.")
     except subprocess.CalledProcessError as cpe:
         LOG.error("Subprocess failed with error: %s", cpe)
@@ -437,7 +448,9 @@ def main():
     python_versions = args.python_versions.split(",")
 
     manylinux_output_dir = "dist_manylinux"
-    wheelhouse_dir = "/wheelhouse/"
+    # Use plugin-relative wheelhouse so it works in Docker and when run on the host.
+    wheelhouse_dir = os.path.join(args.plugin_path, "wheelhouse")
+    os.makedirs(wheelhouse_dir, exist_ok=True)
 
     rocm_path = args.rocm_path
     if args.rocm_version:
@@ -482,11 +495,11 @@ def main():
         args.compiler,
         wheels="jax-rocm-pjrt",
     )
-    # Fix PJRT wheel.
+    # Fix PJRT wheel (auditwheel repair writes repaired wheel to wheelhouse_dir).
     wheel_paths = find_wheels(full_output_path)
     for wheel_path in wheel_paths:
         if "pjrt" in os.path.basename(wheel_path).lower():
-            fix_wheel(wheel_path, args.plugin_path)
+            fix_wheel(wheel_path, args.plugin_path, wheelhouse_dir)
 
     # Build plugin wheel for each Python version.
     for py in python_versions:
@@ -502,19 +515,17 @@ def main():
             args.compiler,
             wheels="jax-rocm-plugin",
         )
-        # Fix plugin wheels for this Python version.
+        # Fix plugin wheels for this Python version (repaired wheels go to wheelhouse_dir).
         wheel_paths = find_wheels(full_output_path)
         for wheel_path in wheel_paths:
             base = os.path.basename(wheel_path)
             # Only fix plugin wheels, skip already-fixed PJRT wheel.
             if "plugin" in base.lower():
-                fix_wheel(wheel_path, args.plugin_path)
+                fix_wheel(wheel_path, args.plugin_path, wheelhouse_dir)
 
-    # Copy plugin + PJRT wheels to wheelhouse.
-    wheel_paths = find_wheels(full_output_path)
-    for whl in wheel_paths:
-        LOG.info("Copying %s into %s", whl, wheelhouse_dir)
-        shutil.copy(whl, wheelhouse_dir)
+    # Repaired plugin/PJRT wheels are already in wheelhouse_dir from fix_wheel
+    # (auditwheel repair writes there). Do not copy originals from dist_manylinux
+    # to avoid duplicate wheels
 
     # Optionally build jaxlib wheel if --jax-path is provided.
     if args.jax_path:

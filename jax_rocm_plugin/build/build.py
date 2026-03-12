@@ -56,10 +56,25 @@ From the root directory of the JAX repository, run
   `python build/build.py requirements_update`
 """
 
-# Define the build target for each wheel.
+# Define the build target for each wheel. Use jax_wheel targets so that
+# "bazel build" is used (enables --nobuild for prefetch-only workflows).
 WHEEL_BUILD_TARGET_DICT = {
-    "jax-rocm-plugin": "//jaxlib_ext/tools:build_gpu_kernels_wheel",
-    "jax-rocm-pjrt": "//pjrt/tools:build_gpu_plugin_wheel",
+    "jax-rocm-plugin": "//jaxlib_ext/tools:jax_rocm7_plugin_wheel",
+    "jax-rocm-pjrt": "//pjrt/tools:jax_rocm7_pjrt_wheel",
+}
+WHEEL_BUILD_TARGET_EDITABLE_DICT = {
+    "jax-rocm-plugin": "//jaxlib_ext/tools:jax_rocm7_plugin_wheel_editable",
+    "jax-rocm-pjrt": "//pjrt/tools:jax_rocm7_pjrt_wheel_editable",
+}
+# Bazel output dir (under bazel-bin) for each wheel for copy step.
+WHEEL_BAZEL_DIST_DIR = {
+    "jax-rocm-plugin": os.path.join("bazel-bin", "jaxlib_ext", "tools", "dist"),
+    "jax-rocm-pjrt": os.path.join("bazel-bin", "pjrt", "tools", "dist"),
+}
+# Wheel file prefix for glob when copying (e.g. jax_rocm7_plugin*.whl).
+WHEEL_GLOB_PREFIX = {
+    "jax-rocm-plugin": "jax_rocm7_plugin",
+    "jax-rocm-pjrt": "jax_rocm7_pjrt",
 }
 
 
@@ -425,7 +440,10 @@ async def main():
         for option in args.bazel_startup_options:
             bazel_command_base.append(option)
 
-    bazel_command_base.append("run")
+    if args.command == "requirements_update":
+        bazel_command_base.append("run")
+    else:
+        bazel_command_base.append("build")
 
     if args.python_version:
         # Do not add --repo_env=HERMETIC_PYTHON_VERSION with default args.python_version
@@ -477,6 +495,10 @@ async def main():
         sys.exit(0)
 
     wheel_build_command_base = copy.deepcopy(bazel_command_base)
+
+    # So the wheel build action (BuildJaxWheel) can find tools like patchelf
+    # that are on PATH in the runner (e.g. manylinux container).
+    wheel_build_command_base.append("--action_env=PATH")
 
     wheel_cpus = {
         "darwin_arm64": "arm64",
@@ -642,6 +664,9 @@ async def main():
                 f"--action_env=TF_ROCM_AMDGPU_TARGETS={args.rocm_amdgpu_targets}"
             )
 
+        # Release version with no suffix (BUILDING.md: jax_rocm7_pjrt-X.X.X-...).
+        wheel_build_command_base.append("--repo_env=ML_WHEEL_TYPE=release")
+
     # Append additional build options at the end to override any options set in
     # .bazelrc or above.
     if args.bazel_options:
@@ -683,6 +708,20 @@ async def main():
                 sys.exit(1)
 
             wheel_build_command = copy.deepcopy(wheel_build_command_base)
+            # Pass build settings used by the jax_wheel rule (from @jax repo).
+            wheel_build_command.append("--@jax//jaxlib/tools:output_path=dist")
+            wheel_build_command.append(
+                f"--@jax//jaxlib/tools:jaxlib_git_hash={git_hash}"
+            )
+
+            if args.editable:
+                build_target = WHEEL_BUILD_TARGET_EDITABLE_DICT.get(
+                    wheel, WHEEL_BUILD_TARGET_DICT[wheel]
+                )
+            else:
+                build_target = WHEEL_BUILD_TARGET_DICT[wheel]
+            wheel_build_command.append(build_target)
+
             print("\n")
             logger.info(
                 "Building %s for %s %s...",
@@ -690,43 +729,6 @@ async def main():
                 os_name,
                 arch,
             )
-
-            # Append the build target to the Bazel command.
-            build_target = WHEEL_BUILD_TARGET_DICT[wheel]
-            wheel_build_command.append(build_target)
-
-            wheel_build_command.append("--")
-
-            if args.editable:
-                logger.info("Building an editable build")
-                output_path = os.path.join(output_path, wheel)
-                wheel_build_command.append("--editable")
-
-            wheel_build_command.append(f'--output_path="{output_path}"')
-            wheel_build_command.append(f"--cpu={target_cpu}")
-
-            if "cuda" in wheel:
-                wheel_build_command.append("--enable-cuda=True")
-                if args.cuda_version:
-                    cuda_major_version = args.cuda_version.split(".")[0]
-                else:
-                    cuda_major_version = args.cuda_major_version
-                wheel_build_command.append(f"--platform_version={cuda_major_version}")
-
-            if "rocm" in wheel:
-                wheel_build_command.append("--enable-rocm=True")
-                wheel_build_command.append(f"--platform_version={args.rocm_version}")
-
-            wheel_build_command.append(f"--rocm_jax_git_hash={git_hash}")
-
-            use_local_xla = extract_override_path(args.bazel_options, "xla")
-            use_local_jax = extract_override_path(args.bazel_options, "jax")
-
-            if use_local_xla:
-                wheel_build_command.append(f"--use_local_xla={use_local_xla}")
-
-            if use_local_jax:
-                wheel_build_command.append(f"--use_local_jax={use_local_jax}")
 
             result = await executor.run(
                 wheel_build_command.get_command_as_string(),
@@ -738,6 +740,28 @@ async def main():
                 raise RuntimeError(
                     f"Command failed with return code {result.return_code}"
                 )
+
+    # Copy built wheels from bazel-bin to user output_path.
+    output_path = args.output_path
+    for wheel in args.wheels.split(","):
+        if ("plugin" in wheel or "pjrt" in wheel) and "jax" not in wheel:
+            wheel = "jax-" + wheel
+        if wheel not in WHEEL_BAZEL_DIST_DIR:
+            continue
+        bazel_dir = WHEEL_BAZEL_DIST_DIR[wheel]
+        if not os.path.isdir(bazel_dir):
+            logging.warning(
+                "Bazel output dir not found: %s (skipping copy)", bazel_dir
+            )
+            continue
+        if args.editable:
+            src_dir = os.path.join(bazel_dir, WHEEL_GLOB_PREFIX[wheel])
+            dst_dir = os.path.join(output_path, wheel)
+            if os.path.isdir(src_dir):
+                utils.copy_dir_recursively(src_dir, dst_dir)
+        else:
+            glob_pattern = f"{WHEEL_GLOB_PREFIX[wheel]}*.whl"
+            utils.copy_individual_files(bazel_dir, output_path, glob_pattern)
 
     # Exit with success if all wheels in the list were built successfully.
     sys.exit(0)
