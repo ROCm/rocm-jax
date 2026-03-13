@@ -112,6 +112,7 @@ jobs:
       fail-fast: false
       matrix:
         rocm-version: ["7.1.1", "7.2.0"]
+        manylinux-plat-tag: ["manylinux2014", "manylinux_2_28"]
         include:
           - rocm-version: "7.1.1"
             runner-label: "linux-x86-64-1gpu-amd"
@@ -139,7 +140,8 @@ jobs:
             --rocm-version="${{ matrix.rocm-version }}" \
             --rocm-build-job="${{ matrix.rocm-build-job }}" \
             --rocm-build-num="${{ matrix.rocm-build-num }}" \
-            build_manylinux_dockers
+            build_manylinux_dockers \
+            --manylinux-plat-tag="${{ matrix.manylinux-plat-tag }}"
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -154,7 +156,7 @@ jobs:
           ROCM_BUILD_NUM: >-
             ${{ matrix.rocm-build-num && format('-{0}', inputs.rocm-build-num) || '' }}
         run: |
-          image_tag="ghcr.io/rocm/jax-manylinux_2_28-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
+          image_tag="ghcr.io/rocm/jax-${{ matrix.manylinux-plat-tag }}-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
 
           # Push with commit SHA tag
           sha_image_tag="${image_tag}:${GITHUB_SHA}"
