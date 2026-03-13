@@ -91,7 +91,7 @@ build:rocm_base --config=clang_local
 build:rocm_base --crosstool_top=@local_config_rocm//crosstool:toolchain
 build:rocm_base --define=using_rocm=true --define=using_rocm_hipcc=true
 build:rocm_base --repo_env TF_NEED_ROCM=1
-build:rocm_base --action_env TF_ROCM_AMDGPU_TARGETS="gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
+build:rocm_base --action_env TF_ROCM_AMDGPU_TARGETS="gfx9-generic,gfx9-4-generic,gfx1030,gfx11-generic,gfx12-generic"
 
 # Build with hipcc for ROCm and clang for the host.
 build:rocm --config=rocm_base
@@ -99,6 +99,7 @@ build:rocm --action_env=TF_ROCM_CLANG="1"
 build:rocm --action_env=CLANG_COMPILER_PATH="/usr/lib/llvm-18/bin/clang"
 build:rocm --copt=-Wno-gnu-offsetof-extensions
 build:rocm --copt=-Qunused-arguments
+build:rocm --action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress
 build:rocm --action_env=TF_HIPCC_CLANG="1"
 
 build:asan --strip=never
@@ -118,7 +119,7 @@ build:asan --linkopt="-lclang_rt.asan-x86_64"
 build:asan --linkopt="-lclang_rt.asan_cxx-x86_64"
 build:asan --//build/rocm:sanitizer=asan
 build:asan --run_under=//build/rocm:sanitizer_wrapper
-build:asan --action_env TF_ROCM_AMDGPU_TARGETS="gfx908,gfx90a,gfx942"
+build:asan --action_env TF_ROCM_AMDGPU_TARGETS="gfx9-generic,gfx9-4-generic"
 
 #############################################################################
 # Configuration for running RBE builds and tests

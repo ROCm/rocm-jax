@@ -25,6 +25,32 @@ import subprocess
 import glob
 import textwrap
 
+def _append_post_release_suffix(version: str, post_release: str) -> str:
+    """Return version with .postX inserted before any local suffix."""
+    public, sep, local = version.partition("+")
+    return (
+        f"{public}.post{post_release}+{local}"
+        if sep
+        else f"{public}.post{post_release}"
+    )
+
+
+def _apply_wheel_post_release(wheel_path: str, post_release: str | None) -> str:
+    """Append a .postX version suffix into wheel filename when requested."""
+    if not post_release:
+        return wheel_path
+    base = os.path.basename(wheel_path)
+    parts = base[:-4].split("-")
+    if len(parts) != 5:
+        raise ValueError(f"Unexpected wheel filename format: {base}")
+    if ".post" in parts[1]:
+        return wheel_path
+    parts[1] = _append_post_release_suffix(parts[1], post_release)
+    renamed = f"{'-'.join(parts)}.whl"
+    renamed_path = os.path.join(os.path.dirname(wheel_path), renamed)
+    os.rename(wheel_path, renamed_path)
+    return renamed_path
+
 
 def is_windows() -> bool:
     """Check if running on Windows platform."""
@@ -66,7 +92,9 @@ def build_wheel(
         cwd=sources_path,
         env=env,
     )
+    post_release = env.get("WHEEL_POST_RELEASE")
     for wheel in glob.glob(os.path.join(sources_path, "dist", "*.whl")):
+        wheel = _apply_wheel_post_release(wheel, post_release)
         output_file = os.path.join(output_path, os.path.basename(wheel))
         sys.stderr.write(f"Output wheel: {output_file}\n\n")
         sys.stderr.write(
