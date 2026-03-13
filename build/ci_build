@@ -28,7 +28,7 @@ import json
 import re
 
 
-MANYLINUX_IMAGE_BASE_NAME = "ghcr.io/rocm/jax-manylinux_2_28"
+MANYLINUX_IMAGE_BASE_NAME = "ghcr.io/rocm/jax"
 
 
 def _get_labels(image_name):
@@ -129,10 +129,11 @@ def _docker_image_exists(image):
     return True
 
 
-def _construct_manylinux_builder_image_name(rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None):
+def _construct_manylinux_builder_image_name(rocm_version, manylinux_plat_tag, rocm_build_job="", rocm_build_num="", therock_path=None):
     """Create an image name that includes the ROCm ersion, build job, build number, etc"""
-    return "{base_name}-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
+    return "{base_name}-{manylinux_plat_tag}-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
         base_name=MANYLINUX_IMAGE_BASE_NAME,
+        manylinux_plat_tag=manylinux_plat_tag,
         rocm_type="therock" if therock_path else "rocm",
         rocm_version=rocm_version,
         rocm_build_job="-%s" % rocm_build_job if rocm_build_job else "",
@@ -141,20 +142,20 @@ def _construct_manylinux_builder_image_name(rocm_version, rocm_build_job="", roc
 
 
 def build_manylinux_dockers(
-    rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None, tag=None
+    rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None, tag=None, manylinux_plat_tag="manylinux_2_28",
 ):
     """Build a manylinux image that can be used for building release-ready JAX wheels"""
     if tag:
         constructed_tag = tag
     else:
-        constructed_tag = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+        constructed_tag = _construct_manylinux_builder_image_name(rocm_version, manylinux_plat_tag, rocm_build_job, rocm_build_num, therock_path)
 
     if therock_path:
         cmd = [
             "docker",
             "build",
             "-t=%s" % constructed_tag,
-            "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-therock",
+            "--file=docker/manylinux/Dockerfile.jax-%s-therock" % manylinux_plat_tag,
             "--build-arg=ROCM_VERSION=%s" % rocm_version,
             "--build-arg=THEROCK_PATH=%s" % therock_path,
             #"--build-context=%s" % therock_path,
@@ -165,7 +166,7 @@ def build_manylinux_dockers(
             "docker",
             "build",
             "-t=%s" % constructed_tag,
-            "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-rocm",
+            "--file=docker/manylinux/Dockerfile.jax-%s-rocm" % manylinux_plat_tag,
             "--build-arg=ROCM_VERSION=%s" % rocm_version,
             "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
             "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
@@ -201,8 +202,8 @@ def dist_wheels(
         )
     # If builder-image is set to 'search', try and find one based off of the passed ROCm info
     elif local_builder_image == "search":
-        print("Searching for manylinux builder image...")
-        local_builder_image = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+        print("Searching for manylinux_2_28 builder image...")
+        local_builder_image = _construct_manylinux_builder_image_name(rocm_version, "manylinux_2_28", rocm_build_job, rocm_build_num, therock_path)
         if not _docker_image_exists(local_builder_image):
             print(f"ERROR: Builder image '{local_builder_image}' does not exist")
             exit(1)
@@ -628,6 +629,9 @@ def parse_args():
     ml_parser.add_argument(
         "--tag", "-t", type=str, help="Override the default image name and tag"
     )
+    ml_parser.add_argument(
+        "--manylinux-plat-tag", "-m", type=str, help="manylinux platform to build the image from (e.g. 'manylinux_2_28' or 'manylinux2014')",
+    )
 
     dwp = subp.add_parser("dist_wheels")
     dwp.add_argument("--rbe", action="store_true", help="Use Bazel RBE for building")
@@ -707,6 +711,7 @@ def main():
             rocm_build_num=args.rocm_build_num,
             therock_path=args.therock_path,
             tag=args.tag,
+            manylinux_plat_tag=args.manylinux_plat_tag,
         )
 
     if args.action == "dist_wheels":
