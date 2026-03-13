@@ -28,6 +28,7 @@ package_name = f"jax_plugins.xla_rocm{rocm_version}"  # pylint: disable=invalid-
 default_rocm_path = "/opt/rocm"  # pylint: disable=invalid-name
 rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
 rocm_tag = os.getenv("ROCM_VERSION_EXTRA")
+wheel_post_release = os.getenv("WHEEL_POST_RELEASE")
 
 
 def detect_rocm_version(path, tag):
@@ -65,6 +66,8 @@ _version_module = load_version_module(f"jax_plugins/xla_rocm{rocm_version}")
 __version__ = (
     _version_module._get_version_for_build()  # pylint: disable=protected-access
 )
+if wheel_post_release:
+    __version__ = __version__ + ".post" + wheel_post_release
 if rocm_tag:
     __version__ = __version__ + "+rocm" + rocm_tag
 

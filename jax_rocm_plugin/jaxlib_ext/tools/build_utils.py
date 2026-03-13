@@ -43,6 +43,8 @@ def _apply_wheel_post_release(wheel_path: str, post_release: str | None) -> str:
     parts = base[:-4].split("-")
     if len(parts) != 5:
         raise ValueError(f"Unexpected wheel filename format: {base}")
+    if ".post" in parts[1]:
+        return wheel_path
     parts[1] = _append_post_release_suffix(parts[1], post_release)
     renamed = f"{'-'.join(parts)}.whl"
     renamed_path = os.path.join(os.path.dirname(wheel_path), renamed)
