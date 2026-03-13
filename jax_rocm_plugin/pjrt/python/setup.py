@@ -16,6 +16,7 @@
 
 import importlib
 import os
+import re
 from setuptools import setup, find_namespace_packages
 
 __version__ = None
@@ -26,8 +27,21 @@ package_name = f"jax_plugins.xla_rocm{rocm_version}"  # pylint: disable=invalid-
 # Extract ROCm version from the `ROCM_PATH` environment variable.
 default_rocm_path = "/opt/rocm"  # pylint: disable=invalid-name
 rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
-rocm_detected_version = rocm_path.split("-")[-1] if "-" in rocm_path else "unknown"
 rocm_tag = os.getenv("ROCM_VERSION_EXTRA")
+
+
+def detect_rocm_version(path, tag):
+    """Detect ROCm version from env tag or rocm path/realpath."""
+    if tag:
+        return tag
+    for candidate in (path, os.path.realpath(path)):
+        match = re.search(r"(\d+(?:\.\d+)+)", candidate)
+        if match:
+            return match.group(1)
+    return "unknown"
+
+
+rocm_detected_version = detect_rocm_version(rocm_path, rocm_tag)
 
 
 def load_version_module(pkg_path):
@@ -75,7 +89,7 @@ setup(
     url="https://github.com/ROCm/rocm-jax",
     license="Apache-2.0",
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
     ],
     package_data={
