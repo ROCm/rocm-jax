@@ -60,9 +60,13 @@ LABEL com.amdgpu.jax_version="$JAX_VERSION" \
 
 # Install ROCm JAX wheels for all Python versions
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
-    --mount=type=bind,source=wheelhouse,target=/wheelhouse \
+    --mount=type=bind,from=wheels,target=/wheelhouse \
     ls -lah /wheelhouse && \
     for py in python3.11 python3.12 python3.13 python3.14; do \
-        $py -m pip install -f /wheelhouse --no-deps --no-index "jax_rocm${PLUGIN_NAMESPACE}_plugin" "jax_rocm${PLUGIN_NAMESPACE}_pjrt" && \
-        $py -m pip install -f /wheelhouse --no-deps --no-index --force-reinstall "jaxlib"; \
+        pytag=cp$(echo $py | tr -dc '0-9'); \
+        if ls /wheelhouse/*${pytag}*.whl >/dev/null 2>&1; then \
+            $py -m pip install --break-system-packages --no-deps --force-reinstall /wheelhouse/*${pytag}*.whl; \
+        else \
+            echo "No wheels found for ${pytag}, skipping"; \
+        fi; \
     done
