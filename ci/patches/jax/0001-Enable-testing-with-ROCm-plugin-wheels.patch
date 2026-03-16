@@ -1,62 +1,47 @@
-From 5e6d27b98b054bd110efb24e4fad34454f513a94 Mon Sep 17 00:00:00 2001
-From: Charles Hofer <Charles.Hofer@amd.com>
-Date: Wed, 5 Nov 2025 01:25:50 +0000
-Subject: [PATCH] Enable testing with ROCm plugin wheels
-
----
- WORKSPACE                |  2 ++
- jaxlib/jax.bzl           |  8 +++++---
- jaxlib/tools/BUILD.bazel | 19 +++++++++++++++++++
- 3 files changed, 26 insertions(+), 3 deletions(-)
-
 diff --git a/WORKSPACE b/WORKSPACE
-index 9061b65ab..c42aa005e 100644
 --- a/WORKSPACE
 +++ b/WORKSPACE
-@@ -31,6 +31,8 @@ python_init_repositories(
+@@ -53,6 +53,8 @@ python_init_repositories(
          "jaxlib*",
          "jax_cuda*",
          "jax-cuda*",
-+	"jax_rocm*",
-+	"jax-rocm*",
++        "jax_rocm*",
++        "jax-rocm*",
      ],
      local_wheel_workspaces = ["//jaxlib:jax.bzl"],
      requirements = {
 diff --git a/jaxlib/jax.bzl b/jaxlib/jax.bzl
-index dfa7657e6..1d5b5f4cf 100644
 --- a/jaxlib/jax.bzl
 +++ b/jaxlib/jax.bzl
-@@ -192,8 +192,10 @@ def _gpu_test_deps():
+@@ -200,9 +200,12 @@ def _gpu_test_deps():
              "//jax_plugins:gpu_plugin_only_test_deps",
          ],
-         "//jax:config_build_jaxlib_false": [
+         "//jax:config_build_jaxlib_false": if_cuda_is_configured([
 -            "//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
 -            "//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
-+            "//jaxlib/tools:rocm_plugin_kernels_wheel",
-+            "//jaxlib/tools:rocm_plugin_pjrt_wheel",
+-        ]) + if_rocm_is_configured(EXTERNAL_DEPS),
 +            #"//jaxlib/tools:pypi_jax_cuda_plugin_with_cuda_deps",
 +            #"//jaxlib/tools:pypi_jax_cuda_pjrt_with_cuda_deps",
-         ],
-         "//jax:config_build_jaxlib_wheel": [
++        ]) + if_rocm_is_configured([
++            "//jaxlib/tools:rocm_plugin_kernels_wheel",
++            "//jaxlib/tools:rocm_plugin_pjrt_wheel",
++        ]),
+         "//jax:config_build_jaxlib_wheel": if_cuda_is_configured([
              "//jaxlib/tools:jax_cuda_plugin_py_import",
-@@ -300,7 +302,7 @@ def jax_multiplatform_test(
+             "//jaxlib/tools:jax_cuda_pjrt_py_import",
+@@ -311,7 +313,7 @@ def jax_multiplatform_test(
              shard_count = test_shards,
              tags = test_tags,
              main = main,
 -            exec_properties = tf_exec_properties({"tags": test_tags}),
-+            exec_properties = {} #tf_exec_properties({"tags": test_tags}),
++            exec_properties = {},  # tf_exec_properties({"tags": test_tags})
+             visibility = jax_visibility(name),
+             legacy_create_init = 0,
          )
- 
- def jax_generate_backend_suites(backends = []):
 diff --git a/jaxlib/tools/BUILD.bazel b/jaxlib/tools/BUILD.bazel
-index 58fbfd734..57cbd4252 100644
 --- a/jaxlib/tools/BUILD.bazel
 +++ b/jaxlib/tools/BUILD.bazel
-<<<<<<< HEAD
-@@ -564,6 +564,25 @@ py_import(
-=======
-@@ -478,6 +478,25 @@ py_import(
->>>>>>> 204ba629f (fix patch + engflow rbe fix)
+@@ -477,6 +477,25 @@ py_import(
      wheel_deps = if_pypi_cuda_wheel_deps([":nvidia_wheel_deps"]),
  )
  
@@ -82,6 +67,3 @@ index 58fbfd734..57cbd4252 100644
  # Mosaic GPU
  
  py_binary(
--- 
-2.34.1
-

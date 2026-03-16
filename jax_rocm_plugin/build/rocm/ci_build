@@ -121,10 +121,6 @@ def dist_wheels(
             "--shm-size",
             "64G",
             "-e",
-            "GIT_DIR=/repo/.git",
-            "-e",
-            "GIT_WORK_TREE=/repo",
-            "-e",
             "ROCM_VERSION_EXTRA="
             + (rocm_version if include_rocm_version_extra else ""),
             "-e",

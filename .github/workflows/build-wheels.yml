@@ -69,12 +69,6 @@ jobs:
           rocm-smi -a || true
           rocminfo | grep gfx || true
       - uses: actions/checkout@v4
-      - name: Checkout JAX repo for jaxlib build
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.jax-repo }}
-          ref: ${{ inputs.jax-ref }}
-          path: jax
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
@@ -94,7 +88,6 @@ jobs:
             --rocm-version="${{ inputs.rocm-version }}" \
             --rocm-build-job="${{ inputs.rocm-build-job }}" \
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
-            --jax-source-dir="./jax" \
             dist_wheels \
             --rbe \
             --builder-image="${{ inputs.builder-image }}"

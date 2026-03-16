@@ -1,8 +1,7 @@
 diff --git a/jaxlib/rocm/BUILD b/jaxlib/rocm/BUILD
-index 72f2ec6da..11f620658 100644
 --- a/jaxlib/rocm/BUILD
 +++ b/jaxlib/rocm/BUILD
-@@ -477,6 +477,7 @@ nanobind_extension(
+@@ -476,6 +476,7 @@
  
  py_library(
      name = "rocm_gpu_support",
@@ -10,11 +9,11 @@ index 72f2ec6da..11f620658 100644
      deps = [
          ":_hybrid",
          ":_linalg",
-@@ -528,6 +529,7 @@ cc_library(
- 
- nanobind_extension(
+@@ -530,6 +531,7 @@
      name = "rocm_plugin_extension",
-+    visibility = ["//visibility:public"],
      srcs = ["rocm_plugin_extension.cc"],
      module_name = "rocm_plugin_extension",
++    visibility = ["//visibility:public"],
      deps = [
+         ":py_client_gpu",
+         "//jaxlib:kernel_nanobind_helpers",
