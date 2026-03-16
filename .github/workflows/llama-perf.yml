@@ -10,7 +10,7 @@ name: Llama Performance Benchmarks
 # PS: Ubuntu 24 & ROCm 7.2.0.
 
 env:
-  TE_REF_DEFAULT: "366945e3c1b0217598f806f0e9ff6673ea53f2ea"
+  TE_REF_DEFAULT: "458ae94798b7a28a0e1290c409f70925816c7915"
 
 on:
   schedule:
