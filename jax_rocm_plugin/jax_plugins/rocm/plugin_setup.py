@@ -96,7 +96,10 @@ setup(
     author_email="dl.dl-JAX@amd.com",
     packages=[package_name],
     python_requires=">=3.11",
-    install_requires=[f"jax-rocm{rocm_version}-pjrt=={__version__}"],
+    install_requires=[
+        f"jax-rocm{rocm_version}-pjrt=="
+        f"{_version_module._version}.*"  # pylint: disable=protected-access
+    ],
     url="https://github.com/ROCm/rocm-jax",
     license="Apache-2.0",
     classifiers=[

@@ -13,13 +13,19 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 #   1. Find the commit hash you want to pin to (e.g., from rocm-jaxlib-v0.9.1 branch)
 #   2. Update XLA_COMMIT below
 
-XLA_COMMIT = "3cc8846c10052cc1c32c4db87866eac4e4cdbccd"
+XLA_COMMIT = "b61fa4053afd43f0a40880b7046382540f698af6"
 
 def repo():
     git_repository(
         name = "xla",
         remote = "https://github.com/ROCm/xla.git",
         commit = XLA_COMMIT,
+        patches = [
+            # Fix for zstd assembly compilation with LLVM-18's cet.h header
+            # The cet.h include path was not in cxx_builtin_include_directories
+            "//third_party/xla:0001-Add-clang-resource-dir-include-path.patch",
+        ],
+        patch_args = ["-p1"],
     )
 
     # For development, one often wants to make changes to the XLA repository as well
