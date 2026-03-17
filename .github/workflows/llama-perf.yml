@@ -62,7 +62,7 @@ jobs:
       CU_NUM: 64
     steps:
       - name: Checkout TE source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: rocm/transformerengine
           ref: ${{ inputs.te-ref || env.TE_REF_DEFAULT }}
