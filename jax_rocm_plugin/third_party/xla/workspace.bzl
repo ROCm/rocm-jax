@@ -24,6 +24,9 @@ def repo():
             # Fix for zstd assembly compilation with LLVM-18's cet.h header
             # The cet.h include path was not in cxx_builtin_include_directories
             "//third_party/xla:0001-Add-clang-resource-dir-include-path.patch",
+            # Downgrade rules_python 1.8.4 -> 1.6.0 to fix %interpreter_args%
+            # stub issue in WORKSPACE mode (1.8.4 generates broken py_binary stubs)
+            "//third_party/xla:0002-downgrade-rules-python-to-1.6.0.patch",
         ],
         patch_args = ["-p1"],
     )

@@ -3,6 +3,7 @@
 exports_files(
     srcs = [
         "0001-Add-clang-resource-dir-include-path.patch",
+        "0002-downgrade-rules-python-to-1.6.0.patch",
     ],
     visibility = ["//visibility:public"],
 )
