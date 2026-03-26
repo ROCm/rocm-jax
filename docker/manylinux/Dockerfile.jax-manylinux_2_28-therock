@@ -29,3 +29,12 @@ COPY ./docker/manylinux/clang.cfg /usr/lib/llvm-18/bin/clang.cfg
 COPY ./docker/manylinux/clang.cfg /opt/rocm/llvm/bin/clang++.cfg
 COPY ./docker/manylinux/clang.cfg /opt/rocm/llvm/bin/clang.cfg
 
+# Install AWS CLI v2
+RUN --mount=type=cache,target=/var/cache/dnf \
+    dnf install -y curl unzip && \
+    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip && \
+    unzip -q /tmp/awscliv2.zip -d /tmp && \
+    /tmp/aws/install && \
+    rm -rf /tmp/aws /tmp/awscliv2.zip && \
+    dnf clean all
+

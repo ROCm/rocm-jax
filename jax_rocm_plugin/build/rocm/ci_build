@@ -116,7 +116,7 @@ def dist_wheels(
             "--shm-size",
             "64G",
             "-e",
-            "ROCM_VERSION_EXTRA=" + rocm_version,
+            "ROCM_VERSION_EXTRA=" + rocm_version.replace("+", "."),
             "-e",
             "ROCM_JAX_COMMIT=" + rocm_jax_commit,
             builder_image,
