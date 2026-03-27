@@ -4,6 +4,7 @@
 import argparse
 import os
 import subprocess
+import getpass
 
 TEST_JAX_REPO_REF = "rocm-jaxlib-v0.8.2"
 XLA_REPO_REF = "rocm-jaxlib-v0.8.2"
@@ -345,15 +346,47 @@ def setup_development(
             mf.write(makefile_content)
 
 
+def _container_exists(name: str) -> bool:
+    # returns True if container exists (any state)
+    r = subprocess.run(
+        ["docker", "ps", "-a", "--filter", f"name=^{name}$", "--format", "{{.Names}}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return any(line.strip() == name for line in r.stdout.splitlines())
+
+
+def _remove_container(name: str) -> None:
+    # -f removes even if running
+    subprocess.run(["docker", "rm", "-f", name], check=False)
+
+
 def dev_docker(rm):
     """Start a docker container for local plugin development"""
     cur_abs_path = os.path.abspath(os.curdir)
     image_name = "ubuntu:24.04"
 
+    # pylint: disable=broad-exception-caught
+    try:
+        username = getpass.getuser()
+        print(f"Current username: {username}")
+        container_name = "jax-dev-" + username
+    except Exception as e:
+        print(f"Could not determine username: {e}")
+
+    # If container exists, delete it first
+    if _container_exists(container_name):
+        print(f"Container '{container_name}' already exists. Removing it...")
+        _remove_container(container_name)
+
+    ep = "/rocm-jax/tools/docker_dev_setup.sh"
+
     cmd = [
         "docker",
         "run",
         "-it",
+        "--name=%s" % container_name,
         "--network=host",
         "--device=/dev/kfd",
         "--device=/dev/dri",
@@ -367,6 +400,9 @@ def dev_docker(rm):
         "-v",
         "%s:/rocm-jax" % cur_abs_path,
         "--env=ROCM_JAX_DIR=/rocm-jax",
+        "--env",
+        "_IS_ENTRYPOINT=1",
+        "--entrypoint=%s" % ep,
     ]
 
     if rm:
