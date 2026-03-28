@@ -1,0 +1,79 @@
+diff --git a/projects/rocr-runtime/runtime/hsa-runtime/core/inc/intercept_queue.h b/projects/rocr-runtime/runtime/hsa-runtime/core/inc/intercept_queue.h
+index b840ec4a73..b2d4e66627 100644
+--- a/projects/rocr-runtime/runtime/hsa-runtime/core/inc/intercept_queue.h
++++ b/projects/rocr-runtime/runtime/hsa-runtime/core/inc/intercept_queue.h
+@@ -43,6 +43,7 @@
+ #ifndef HSA_RUNTIME_CORE_INC_INTERCEPT_QUEUE_H_
+ #define HSA_RUNTIME_CORE_INC_INTERCEPT_QUEUE_H_
+ 
++#include <mutex>
+ #include <vector>
+ #include <memory>
+ #include <utility>
+@@ -216,7 +217,7 @@ class InterceptQueue : public QueueProxy, private LocalSignal, public DoorbellSi
+ 
+  private:
+   // Serialize packet interception processing.
+-  KernelMutex lock_;
++  std::mutex lock_;
+ 
+   // Largest processed packet index.
+   uint64_t next_packet_;
+@@ -241,6 +242,9 @@ class InterceptQueue : public QueueProxy, private LocalSignal, public DoorbellSi
+   // Proxy packet buffer
+   SharedArray<AqlPacket, 4096> buffer_;
+ 
++  // Pre-allocated staging buffer for wrap-around cases
++  std::vector<AqlPacket> staging_buffer_;
++
+   // Packet transform callbacks
+   std::vector<std::pair<AMD::callback_t<hsa_amd_queue_intercept_handler>, void*>> interceptors;
+ 
+diff --git a/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/intercept_queue.cpp b/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/intercept_queue.cpp
+index 2acdffa415..cafd7dc2fc 100644
+--- a/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/intercept_queue.cpp
++++ b/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/intercept_queue.cpp
+@@ -127,6 +127,9 @@ InterceptQueue::InterceptQueue(std::unique_ptr<Queue> queue)
+   buffer_ = SharedArray<AqlPacket, 4096>(wrapped->amd_queue_.hsa_queue.size);
+   amd_queue_.hsa_queue.base_address = reinterpret_cast<void*>(&buffer_[0]);
+ 
++  // Pre-allocate staging buffer with queue size
++  staging_buffer_.resize(wrapped->amd_queue_.hsa_queue.size);
++
+   // Fill the ring buffer with invalid packet headers.
+   // Leave packet content uninitialized to help trigger application errors.
+   for (uint32_t pkt_id = 0; pkt_id < wrapped->amd_queue_.hsa_queue.size; ++pkt_id) {
+@@ -337,7 +340,7 @@ void InterceptQueue::StoreRelaxed(hsa_signal_value_t value) {
+     return;
+   }
+ 
+-  ScopedAcquire<KernelMutex> lock(&lock_);
++  std::lock_guard<std::mutex> lock(lock_);
+ 
+   // Submit overflow packets.
+   if (!overflow_.empty()) {
+@@ -398,8 +401,22 @@ void InterceptQueue::StoreRelaxed(hsa_signal_value_t value) {
+     Cursor.interceptor_index = interceptors.size() - 1;
+     Cursor.pkt_index = next_packet_;
+     auto& handler = interceptors[Cursor.interceptor_index];
+-    handler.first(&ring[next_packet_ & mask], packet_count, next_packet_,
+-                                                handler.second, PacketWriter);
++
++    // Check if packets wrap around the ring buffer boundary using unmasked indices.
++    // The interceptor callback expects packets to be contiguous in memory.
++    if ((next_packet_ + packet_count) > ((next_packet_ & ~mask) + amd_queue_.hsa_queue.size)) {
++      // Packets wrap around - use pre-allocated staging buffer
++      for (uint64_t j = 0; j < packet_count; ++j) {
++        staging_buffer_[j] = ring[(next_packet_ + j) & mask];
++      }
++      handler.first(staging_buffer_.data(), packet_count, next_packet_,
++                    handler.second, PacketWriter);
++    } else {
++      // Packets are contiguous in the ring buffer
++      handler.first(&ring[next_packet_ & mask], packet_count, next_packet_,
++                                                 handler.second, PacketWriter);
++    }
++
+     if (IsDeviceMemRingBuf() && needsPcieOrdering()) {
+       // Ensure the packet body is written as header may get reordered when writing over PCIE
+       _mm_sfence();

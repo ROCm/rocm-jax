@@ -148,6 +148,43 @@ RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
 # This mitigates crashes related to the kernel database.
 ENV MIOPEN_FIND_ENFORCE=SEARCH_DB_UPDATE
 
+# Temporarily include a custom built ROCR-Runtime. This should be removed
+# as soon as https://github.com/ROCm/rocm-systems/pull/2185 lands
+# in a ROCm release that we can install as deb package or with therock.
+# The profiler SDK's intercept queue corrupts AQL packets when they wrap
+# around the ring buffer boundary, causing HSA_STATUS_ERROR_INVALID_PACKET_FORMAT
+# aborts under parallel GPU workloads.
+RUN --mount=type=bind,source=docker/patches/rocr-intercept-queue-fix.patch,target=/tmp/rocr-fix.patch \
+    [ "$ROCM_VERSION" = "7.1.1" ] || (                 \
+    apt-get update && apt-get install -y --no-install-recommends \
+        cmake pkg-config libelf-dev libdrm-dev libnuma-dev rocm-llvm-dev xxd && \
+    git clone --filter=blob:none --no-checkout --depth=1 \
+        --branch rocm-${ROCM_VERSION}                  \
+        https://github.com/ROCm/rocm-systems.git /tmp/rocm-systems && \
+    cd /tmp/rocm-systems &&                            \
+    git sparse-checkout init --cone &&                 \
+    git sparse-checkout set projects/rocr-runtime &&   \
+    git checkout &&                                    \
+    git apply /tmp/rocr-fix.patch &&                   \
+    cd projects/rocr-runtime && mkdir build && cd build && \
+    cmake -DCMAKE_INSTALL_PREFIX=${ROCM_PATH}          \
+          -DCMAKE_PREFIX_PATH=${ROCM_PATH}             \
+          -DCMAKE_BUILD_TYPE=Release                   \
+          -DBUILD_SHARED_LIBS=ON                       \
+          -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang \
+          -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ .. && \
+    make -j$(nproc) &&                                 \
+    dpkg-divert --no-rename --remove ${ROCM_PATH}/lib/libhsa-runtime64.so.1 ; \
+    dpkg-divert --add --package local                  \
+        --divert ${ROCM_PATH}/lib/libhsa-runtime64.bak.so.1.18.70200 \
+        --rename ${ROCM_PATH}/lib/libhsa-runtime64.so.1.18.70200 && \
+    rm -f ${ROCM_PATH}/lib/libhsa-runtime64.so.1 ${ROCM_PATH}/lib/libhsa-runtime64.so && \
+    cp rocr/lib/libhsa-runtime64.so.1.18.0 ${ROCM_PATH}/lib/libhsa-runtime64.so.1.18.70200 && \
+    ln -sf libhsa-runtime64.so.1.18.70200 ${ROCM_PATH}/lib/libhsa-runtime64.so.1 && \
+    ln -sf libhsa-runtime64.so.1 ${ROCM_PATH}/lib/libhsa-runtime64.so && \
+    cd / && rm -rf /tmp/rocm-systems &&                \
+    apt-get clean && rm -rf /var/lib/apt/lists/* )
+
 ### Set Docker Environment
 ENV PATH="$PATH:/opt/rocm/bin:/opt/rocm/llvm/bin"
 # ENV ln -s "/opt/rocm-${ROCM_RELEASE}/lib/librocblas.so.5" "/opt/rocm-${ROCM_RELEASE}/lib/librocblas.so.4"
