@@ -44,6 +44,9 @@ More complete build instructions can be [found here](BUILDING.md).
 
 ## Quickbuild
 
+This build must be run on bare metal (not inside a Docker container), and will
+produce a wheels and an Ubuntu24 image with ROCm JAX installed on it.
+
 ```shell
 PYTHON_VERSION=3.12
 ROCM_VERSION=7.2.0
