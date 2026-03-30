@@ -75,10 +75,12 @@ jobs:
             --filter="ubu24" \
             ${{ matrix.install-llvm && '--install-llvm --llvm-version 18' || '' }}
       - name: Authenticate to GitHub Container Registry
+        if: github.event_name != 'pull_request'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Push docker images
+        if: github.event_name != 'pull_request'
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           INSTALL_LLVM: ${{ matrix.install-llvm }}
@@ -141,12 +143,14 @@ jobs:
             --rocm-build-num="${{ matrix.rocm-build-num }}" \
             build_manylinux_dockers
       - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push docker images
+        if: github.event_name != 'pull_request'
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           ROCM_BUILD_JOB: >-
