@@ -26,7 +26,6 @@ import stat
 import subprocess
 import tempfile
 
-
 # pylint: disable=import-error,invalid-name,consider-using-with
 from bazel_tools.tools.python.runfiles import runfiles
 from jaxlib_ext.tools import build_utils
@@ -106,14 +105,12 @@ def write_setup_cfg(setup_sources_path, cpu):
     tag = build_utils.platform_tag(cpu)
     cfg_path = setup_sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
-        f.write(
-            f"""[metadata]
+        f.write(f"""[metadata]
 license_files = LICENSE.txt
 
 [bdist_wheel]
 plat_name={tag}
-"""
-        )
+""")
 
 
 def get_xla_commit_hash():
