@@ -97,6 +97,12 @@ RUN --mount=type=cache,target=/var/cache/apt \
     rm -rf /tmp/aws /tmp/awscliv2.zip && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install Bazelisk (as `bazel`). It reads .bazelversion from the workspace
+# and automatically downloads + caches the correct Bazel release.
+RUN curl -fsSL https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 \
+        -o /usr/local/bin/bazel && \
+    chmod +x /usr/local/bin/bazel
+
 # Install ROCm:
 RUN --mount=type=bind,source=tools/get_rocm.py,target=get_rocm.py \
     --mount=type=cache,target=/var/cache/apt \
