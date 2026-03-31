@@ -26,7 +26,6 @@ import stat
 import subprocess
 import tempfile
 
-
 # pylint: disable=import-error,invalid-name,consider-using-with
 from bazel_tools.tools.python.runfiles import runfiles
 from jaxlib_ext.tools import build_utils
@@ -106,14 +105,12 @@ def write_setup_cfg(setup_sources_path, cpu):
     tag = build_utils.platform_tag(cpu)
     cfg_path = setup_sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
-        f.write(
-            f"""[metadata]
+        f.write(f"""[metadata]
 license_files = LICENSE.txt
 
 [bdist_wheel]
 plat_name={tag}
-"""
-        )
+""")
 
 
 def get_xla_commit_hash():
@@ -198,7 +195,7 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version):
         f"_triton.{pyext}",
         f"rocm_plugin_extension.{pyext}",
     ]
-    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../../rocm/lib:/opt/rocm/lib"
+    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../rocm/lib/rocm_sysdeps/lib:$ORIGIN/../../rocm/lib:$ORIGIN/../../rocm/lib/rocm_sysdeps/lib:/opt/rocm/lib:/opt/rocm/lib/rocm_sysdeps/lib"
     # patchelf --set-rpath $RUNPATH $so
     for f in files:
         so_path = os.path.join(plugin_dir, f)
