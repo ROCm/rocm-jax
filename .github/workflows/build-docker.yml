@@ -55,9 +55,8 @@ jobs:
           name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
           path: ./wheelhouse
       - name: Authenticate to GitHub Container Registry
+        if: github.event_name != 'pull_request'
         run: |
-          # Login must happen before calling build_dockers as the base image might need
-          # to be built and the pushed to the registry.
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Build JAX docker image
@@ -69,6 +68,7 @@ jobs:
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
             build_dockers
       - name: Push docker images
+        if: github.event_name != 'pull_request'
         env:
           EXTRA_CR_TAG: ${{ inputs.extra-cr-tag }}
           ROCM_VERSION: ${{ inputs.rocm-version }}
@@ -78,7 +78,7 @@ jobs:
           docker tag "jax-ubu24.rocm${ROCM_VERSION//.}" "${ubu24_img}"
           docker push "${ubu24_img}"
       - name: Push extra tags
-        if: ${{ inputs.extra-cr-tag }}
+        if: ${{ inputs.extra-cr-tag && github.event_name != 'pull_request' }}
         env:
           EXTRA_CR_TAG: ${{ inputs.extra-cr-tag }}
           ROCM_VERSION: ${{ inputs.rocm-version }}
