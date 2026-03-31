@@ -30,7 +30,6 @@ import tempfile
 from bazel_tools.tools.python.runfiles import runfiles
 from pjrt.tools import build_utils
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--sources_path",
@@ -104,14 +103,12 @@ def write_setup_cfg(setup_sources_path, cpu):
     tag = build_utils.platform_tag(cpu)
     cfg_path = setup_sources_path / "setup.cfg"
     with open(cfg_path, "w", encoding="utf-8") as f:
-        f.write(
-            f"""[metadata]
+        f.write(f"""[metadata]
 license_files = LICENSE.txt
 
 [bdist_wheel]
 plat_name={tag}
-"""
-        )
+""")
 
 
 def get_xla_commit_hash():
@@ -182,7 +179,16 @@ def prepare_rocm_plugin_wheel(wheel_sources_path: pathlib.Path, *, cpu, rocm_ver
         raise RuntimeError(mesg) from ex
 
     shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
-    runpath = "$ORIGIN/../rocm/lib:$ORIGIN/../rocm/lib/rocm_sysdeps/lib:$ORIGIN/../../rocm/lib:$ORIGIN/../../rocm/lib/rocm_sysdeps/lib:/opt/rocm/lib:/opt/rocm/lib/rocm_sysdeps/lib"
+    runpath = ":".join(
+        [
+            "$ORIGIN/../rocm/lib",
+            "$ORIGIN/../rocm/lib/rocm_sysdeps/lib",
+            "$ORIGIN/../../rocm/lib",
+            "$ORIGIN/../../rocm/lib/rocm_sysdeps/lib",
+            "/opt/rocm/lib",
+            "/opt/rocm/lib/rocm_sysdeps/lib",
+        ]
+    )
     # patchelf --set-rpath $RUNPATH $so
     fix_perms = False
     perms = os.stat(shared_obj_path).st_mode
