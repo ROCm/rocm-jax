@@ -65,6 +65,13 @@ pip install \
 You may need to pass `--force-reinstall` to your `pip install` command if you
 already have an installation of the plugin packages.
 
+## Prefetching dependencies (optional)
+
+The wheel build uses `bazel build` under the hood. When you run the build CLI
+directly (e.g. `python jax_rocm_plugin/build/build.py build ...` or via the
+Makefile/stack), you can pass `--bazel_options=--nobuild` to only fetch
+dependencies (no compile).
+
 ## Troubleshooting
 
 If you have an older version of Docker on your system, you might get an error
@@ -203,7 +210,7 @@ The plugin repo pulls together code from several other repositories as part of i
 ### `jax-ml/jax`
 
 Pulled in [via Bazel](https://github.com/ROCm/rocm-jax/blob/master/jax_rocm_plugin/third_party/jax/workspace.bzl#L12)
-and is only used to [build the rocm_jaxX_plugin wheel](https://github.com/ROCm/rocm-jax/blob/master/jax_rocm_plugin/jaxlib_ext/tools/BUILD.bazel#L26).
+and is only used to [build the jax-rocmX-plugin wheel](https://github.com/ROCm/rocm-jax/blob/master/jax_rocm_plugin/jaxlib_ext/tools/BUILD.bazel#L26).
 Bazel applies a [handful of patches](https://github.com/ROCm/rocm-jax/blob/master/jax_rocm_plugin/third_party/jax/workspace.bzl#L14)
 to the kernel code when it pulls jax-ml/jax. That kernel code is mostly stuff
 that we share with Nvidia, changes to it from AMD are few and far in-between,
