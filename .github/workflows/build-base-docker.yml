@@ -106,6 +106,134 @@ jobs:
           docker tag "${image_tag}" "${ghcr_image_latest}"
           docker push "${ghcr_image_latest}"
 
+  build-therock-base-images:
+    runs-on: ${{ matrix.runner-label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        install-llvm: [true, false]
+        include:
+          - runner-label: "linux-x86-64-1gpu-amd"
+            therock-index-url: "https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/"
+    steps:
+      - name: Clean up old runs
+        run: |
+          ls -lah
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+          rm -rf * || true
+          ls -lah
+          docker system prune -a --filter "until=168h"
+          docker ps --format="{{.RunningFor}} {{.Names}}" | grep hours \
+              | awk -F: '{if($1>12)print$1}' | awk ' {print $4} ' | xargs docker stop || true
+      - name: Print system info
+        run: |
+          whoami
+          printenv
+          df -h
+      - uses: actions/checkout@v4
+      - name: Build TheRock base docker image
+        run: |
+          python3 build/ci_build \
+            build_base_therock_dockers \
+            --filter="therock-ubu24" \
+            --therock-index-url="${{ matrix.therock-index-url }}" \
+            ${{
+              matrix.therock-version
+              && format('--therock-version="{0}"', matrix.therock-version)
+              || ''
+            }} \
+            ${{ matrix.install-llvm && '--install-llvm --llvm-version 18' || '' }}
+      - name: Authenticate to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push docker images
+        if: github.event_name != 'pull_request'
+        env:
+          INSTALL_LLVM: ${{ matrix.install-llvm }}
+        run: |
+          if [ "$INSTALL_LLVM" = "true" ]; then
+            image_tag="jax-dev-therock-ubu24.therock-latest"
+          else
+            image_tag="jax-base-therock-ubu24.therock-latest"
+          fi
+
+          # Push with commit SHA tag
+          ghcr_image_sha="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
+          echo "Image name (SHA): ${ghcr_image_sha}"
+          docker tag "${image_tag}" "${ghcr_image_sha}"
+          docker push "${ghcr_image_sha}"
+
+          # Push with latest tag
+          ghcr_image_latest="ghcr.io/rocm/${image_tag}:latest"
+          echo "Image name (latest): ${ghcr_image_latest}"
+          docker tag "${image_tag}" "${ghcr_image_latest}"
+          docker push "${ghcr_image_latest}"
+
+  build-therock-manylinux-images:
+    runs-on: linux-x86-64-1gpu-amd
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - therock-index-url: >-
+              https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/
+    steps:
+      - name: Clean up old runs
+        run: |
+          ls -lah
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+          rm -rf * || true
+          ls -lah
+          docker system prune -a --filter "until=168h"
+          docker ps --format="{{.RunningFor}} {{.Names}}" \
+            | grep hours \
+            | awk -F: '{if($1>12)print$1}' \
+            | awk '{print $4}' \
+            | xargs docker stop || true
+      - name: Print system info
+        run: |
+          whoami
+          printenv
+          df -h
+      - uses: actions/checkout@v4
+      - name: Build TheRock manylinux docker image
+        run: |
+          python3 build/ci_build \
+            build_manylinux_therock_dockers \
+            --therock-index-url="${{ matrix.therock-index-url }}" \
+            ${{
+              matrix.therock-version
+              && format('--therock-version="{0}"',
+                        matrix.therock-version)
+              || ''
+            }}
+      - name: Authenticate to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io \
+              -u ${{ github.actor }} --password-stdin
+      - name: Push docker images
+        if: github.event_name != 'pull_request'
+        run: |
+          image_tag="jax-manylinux_2_28-therock-latest"
+
+          # Push with commit SHA tag
+          ghcr_sha="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
+          echo "Image name (SHA): ${ghcr_sha}"
+          docker tag "${image_tag}" "${ghcr_sha}"
+          docker push "${ghcr_sha}"
+
+          # Push with latest tag
+          ghcr_latest="ghcr.io/rocm/${image_tag}:latest"
+          echo "Image name (latest): ${ghcr_latest}"
+          docker tag "${image_tag}" "${ghcr_latest}"
+          docker push "${ghcr_latest}"
+
   build-manylinux-builder-images:
     runs-on: ${{ matrix.runner-label }}
     strategy:
