@@ -27,7 +27,6 @@ import zipfile
 import json
 import re
 
-
 MANYLINUX_IMAGE_BASE_NAME = "ghcr.io/rocm/jax-manylinux_2_28"
 
 
@@ -82,7 +81,7 @@ def _tag_and_push_latest(local_tag, registry="ghcr.io/rocm"):
     ghcr_image = "%s/%s:latest" % (registry, local_tag)
     print("Tagging %s as %s" % (local_tag, ghcr_image))
     subprocess.check_call(["docker", "tag", local_tag, ghcr_image])
-    
+
     if _is_github_actions():
         print("Pushing %s" % ghcr_image)
         subprocess.check_call(["docker", "push", ghcr_image])
@@ -120,7 +119,9 @@ def _docker_image_exists(image):
         subprocess.run(["docker", "inspect", image], check=True)
     except subprocess.CalledProcessError:
         # If we can't find the image with inspect, try pulling it
-        print(f"Could not find image '{image}' locally with docker inspect. Attempting to pull it.")
+        print(
+            f"Could not find image '{image}' locally with docker inspect. Attempting to pull it."
+        )
         try:
             subprocess.run(["docker", "pull", image], check=True)
         except subprocess.CalledProcessError:
@@ -129,14 +130,18 @@ def _docker_image_exists(image):
     return True
 
 
-def _construct_manylinux_builder_image_name(rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None):
+def _construct_manylinux_builder_image_name(
+    rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None
+):
     """Create an image name that includes the ROCm ersion, build job, build number, etc"""
-    return "{base_name}-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
-        base_name=MANYLINUX_IMAGE_BASE_NAME,
-        rocm_type="therock" if therock_path else "rocm",
-        rocm_version=rocm_version,
-        rocm_build_job="-%s" % rocm_build_job if rocm_build_job else "",
-        rocm_build_num="-%s" % rocm_build_num if rocm_build_num else "",
+    return (
+        "{base_name}-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
+            base_name=MANYLINUX_IMAGE_BASE_NAME,
+            rocm_type="therock" if therock_path else "rocm",
+            rocm_version=rocm_version,
+            rocm_build_job="-%s" % rocm_build_job if rocm_build_job else "",
+            rocm_build_num="-%s" % rocm_build_num if rocm_build_num else "",
+        )
     )
 
 
@@ -147,7 +152,9 @@ def build_manylinux_dockers(
     if tag:
         constructed_tag = tag
     else:
-        constructed_tag = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+        constructed_tag = _construct_manylinux_builder_image_name(
+            rocm_version, rocm_build_job, rocm_build_num, therock_path
+        )
 
     if therock_path:
         cmd = [
@@ -157,7 +164,7 @@ def build_manylinux_dockers(
             "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-therock",
             "--build-arg=ROCM_VERSION=%s" % rocm_version,
             "--build-arg=THEROCK_PATH=%s" % therock_path,
-            #"--build-context=%s" % therock_path,
+            # "--build-context=%s" % therock_path,
             ".",
         ]
     else:
@@ -202,7 +209,9 @@ def dist_wheels(
     # If builder-image is set to 'search', try and find one based off of the passed ROCm info
     elif local_builder_image == "search":
         print("Searching for manylinux builder image...")
-        local_builder_image = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+        local_builder_image = _construct_manylinux_builder_image_name(
+            rocm_version, rocm_build_job, rocm_build_num, therock_path
+        )
         if not _docker_image_exists(local_builder_image):
             print(f"ERROR: Builder image '{local_builder_image}' does not exist")
             exit(1)
@@ -498,6 +507,99 @@ def build_base_dockers(
             _tag_and_push_latest(tag)
 
 
+def build_base_therock_dockers(
+    therock_index_url,
+    therock_version="",
+    add_llvm=False,
+    llvm_version=18,
+    tag_base=None,
+    docker_filters=None,
+    push_latest=False,
+):
+    """Build base Docker images that install ROCm via TheRock pip wheels.
+
+    Unlike the deb/tarball path, these Dockerfiles are self-contained and only
+    need the TheRock pip index URL and an optional version pin.
+    """
+    dockerfiles = _apply_filters(docker_filters, "Dockerfile.base", docker_dir="docker")
+
+    # Derive a tag component from the version pin (e.g. "7.13.0a20260401")
+    # or fall back to "latest" when no pin is given.
+    version_tag = therock_version.lstrip("=") if therock_version else "latest"
+    # Sanitise: replace characters that are invalid in Docker tags
+    version_tag = version_tag.replace("+", ".").replace(" ", "")
+
+    extra_args = [
+        "--build-arg=THEROCK_INDEX_URL=%s" % therock_index_url,
+        "--build-arg=THEROCK_VERSION=%s" % therock_version,
+    ]
+    if add_llvm:
+        extra_args.extend(
+            [
+                "--build-arg=INSTALL_LLVM=%d" % int(add_llvm),
+                "--build-arg=LLVM_VERSION=%s" % llvm_version,
+            ]
+        )
+
+    for dockerfile in dockerfiles:
+        _, tag_suffix = dockerfile.split(".", 1)
+        if add_llvm:
+            tag_suffix = tag_suffix.replace("base-", "dev-", 1)
+
+        tag_suffix = "jax-" + tag_suffix
+
+        if tag_base:
+            tag = "%s.%s.therock-%s" % (tag_base, tag_suffix, version_tag)
+        else:
+            tag = "%s.therock-%s" % (tag_suffix, version_tag)
+
+        print("Building dockerfile=%r to tag=%r" % (dockerfile, tag))
+
+        cmd = [
+            "docker",
+            "build",
+            "-f",
+            dockerfile,
+            "--tag=%s" % tag,
+        ]
+        cmd.extend(extra_args)
+        cmd.append(".")
+
+        subprocess.check_call(cmd)
+
+        if push_latest:
+            _tag_and_push_latest(tag)
+
+
+def build_manylinux_therock_dockers(
+    therock_index_url,
+    therock_version="",
+    tag=None,
+    push_latest=False,
+):
+    """Build a manylinux image using TheRock pip wheels for release-ready JAX wheels."""
+    version_tag = therock_version.lstrip("=") if therock_version else "latest"
+    version_tag = version_tag.replace("+", ".").replace(" ", "")
+
+    constructed_tag = tag or "jax-manylinux_2_28-therock-%s" % version_tag
+
+    print("Building TheRock manylinux image: %s" % constructed_tag)
+
+    cmd = [
+        "docker",
+        "build",
+        "-t=%s" % constructed_tag,
+        "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-therock",
+        "--build-arg=THEROCK_INDEX_URL=%s" % therock_index_url,
+        "--build-arg=THEROCK_VERSION=%s" % therock_version,
+        ".",
+    ]
+    subprocess.check_call(cmd)
+
+    if push_latest:
+        _tag_and_push_latest(constructed_tag)
+
+
 def test(image_name, test_cmd=None):
     """Run unit tests like CI would inside a JAX image."""
 
@@ -531,7 +633,7 @@ def test(image_name, test_cmd=None):
         "--shm-size",
         "16G",
         "--env-file",
-        "/etc/podinfo/gha-gpu-isolation-settings"
+        "/etc/podinfo/gha-gpu-isolation-settings",
     ]
 
     cmd = [
@@ -675,6 +777,52 @@ def parse_args():
         default="18",
     )
 
+    btherockp = subp.add_parser("build_base_therock_dockers")
+    btherockp.add_argument(
+        "--filter",
+        "-f",
+        type=str,
+        help="Comma separated strings to filter Dockerfiles to build. Substring match",
+        default="therock",
+    )
+    btherockp.add_argument(
+        "--therock-index-url",
+        type=str,
+        default="https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/",
+        help="TheRock pip index URL (GPU-family-specific)",
+    )
+    btherockp.add_argument(
+        "--therock-version",
+        type=str,
+        default="",
+        help="TheRock version specifier for pip (e.g. '==7.13.0a20260401')",
+    )
+    btherockp.add_argument(
+        "--install-llvm",
+        help="Enable the installation of LLVM in the containers.",
+        action="store_true",
+    )
+    btherockp.add_argument(
+        "--llvm-version",
+        help="Set the version number of LLVM to be installed.",
+        type=int,
+        default="18",
+    )
+
+    mltherockp = subp.add_parser("build_manylinux_therock_dockers")
+    mltherockp.add_argument(
+        "--therock-index-url",
+        type=str,
+        default="https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/",
+        help="TheRock pip index URL (GPU-family-specific)",
+    )
+    mltherockp.add_argument(
+        "--therock-version",
+        type=str,
+        default="",
+        help="TheRock version specifier for pip (e.g. '==7.13.0a20260401')",
+    )
+
     testp = subp.add_parser("test")
     testp.add_argument(
         "--test-cmd", help="Command which will be run inside the test container"
@@ -746,6 +894,23 @@ def main():
             docker_filters=filters,
             add_llvm=args.install_llvm,
             llvm_version=args.llvm_version,
+        )
+
+    elif args.action == "build_base_therock_dockers":
+        filters = args.filter.split(",")
+
+        build_base_therock_dockers(
+            therock_index_url=args.therock_index_url,
+            therock_version=args.therock_version,
+            docker_filters=filters,
+            add_llvm=args.install_llvm,
+            llvm_version=args.llvm_version,
+        )
+
+    elif args.action == "build_manylinux_therock_dockers":
+        build_manylinux_therock_dockers(
+            therock_index_url=args.therock_index_url,
+            therock_version=args.therock_version,
         )
 
     elif args.action == "test_docker":
