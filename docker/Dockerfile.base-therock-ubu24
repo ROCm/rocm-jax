@@ -44,11 +44,18 @@ RUN apt-get update && \
         zip && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install TheRock (ROCm via pip):
+# Install TheRock (ROCm via pip), initialize the SDK, and create a
+# conventional /opt/rocm symlink so ENV directives use a known path.
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     python3 -m pip install --break-system-packages \
         --pre --index-url "${THEROCK_INDEX_URL}" \
-        "rocm[libraries,devel]${THEROCK_VERSION}"
+        "rocm[libraries,devel]${THEROCK_VERSION}" && \
+    rocm-sdk init && \
+    ln -sfn "$(rocm-sdk path --root)" /opt/rocm
+
+ENV ROCM_HOME=/opt/rocm
+ENV PATH="/opt/rocm/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/rocm/lib"
 
 # Install GitHub CLI (gh):
 RUN --mount=type=cache,target=/var/cache/apt \
