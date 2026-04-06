@@ -37,7 +37,7 @@ jobs:
   build-te-wheels:
     runs-on: linux-jax-mi355-1
     outputs:
-      runner_label: ${{ steps.arch.outputs.label }}
+      runner_label: ${{ steps.runner_label.outputs.label }}
       te_commit_sha: ${{ steps.tsha.outputs.hash }}
     strategy:
       fail-fast: false
