@@ -38,3 +38,6 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     rm -rf /tmp/aws /tmp/awscliv2.zip && \
     dnf clean all
 
+# The manylinux base image provides python3 but not unversioned 'python'.
+# CI scripts currently require this so we symlink Python to Python3.
+RUN ln -s /usr/bin/python3 /usr/local/bin/python
