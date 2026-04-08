@@ -41,3 +41,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
 # The manylinux base image provides python3 but not unversioned 'python'.
 # CI scripts currently require this so we symlink Python to Python3.
 RUN ln -s /usr/bin/python3.11 /usr/local/bin/python
+
+# Use the symlinked Python to bootstrap pip and install the auditwheel
+# package. This is required for the JAX CI scripts.
+RUN python -m ensurepip && python -m pip install auditwheel
