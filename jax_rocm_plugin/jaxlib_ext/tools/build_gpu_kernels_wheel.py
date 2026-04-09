@@ -30,6 +30,21 @@ import tempfile
 from bazel_tools.tools.python.runfiles import runfiles
 from jaxlib_ext.tools import build_utils
 
+
+def _find_patchelf():
+    """Return path to patchelf, or None if not found. Prefer env, then PATH, then common paths."""
+    exe = os.environ.get("PATCHELF")
+    if exe and os.path.isfile(exe) and os.access(exe, os.X_OK):
+        return exe
+    exe = shutil.which("patchelf")
+    if exe:
+        return exe
+    for path in ("/usr/bin/patchelf", "/usr/local/bin/patchelf"):
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    return None
+
+
 parser = argparse.ArgumentParser(fromfile_prefix_chars="@")
 parser.add_argument(
     "--output_path",
@@ -50,8 +65,8 @@ parser.add_argument(
 parser.add_argument(
     "--srcs",
     action="append",
-    help="Source files passed by jax_wheel macro. If provided, these are used "
-    "for config files. .so files always come from runfiles.",
+    help="Source files passed by jax_wheel macro. If provided, config and .so "
+    "files are taken from here; otherwise from runfiles.",
 )
 parser.add_argument(
     "--cpu", default=None, required=True, help="Target CPU architecture. Required."
@@ -196,8 +211,9 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         plugin_dir, xla_commit_hash, jax_commit_hash, get_rocm_jax_git_hash()
     )
 
-    # Copy .so files: always from jax runfiles
-    for so_file in [
+    # Copy .so files: from --srcs when present there, else from runfiles.
+    # jax_wheel may pass only plugin-repo files in --srcs; .so from @jax are in runfiles.
+    so_files = [
         f"_linalg.{pyext}",
         f"_prng.{pyext}",
         f"_solver.{pyext}",
@@ -206,8 +222,28 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         f"_rnn.{pyext}",
         f"_triton.{pyext}",
         f"rocm_plugin_extension.{pyext}",
-    ]:
-        shutil.copy(r.Rlocation(f"jax/jaxlib/rocm/{so_file}"), plugin_dir)
+    ]
+    for so_file in so_files:
+        try:
+            if srcs:
+                shutil.copy(find_src(srcs, so_file), plugin_dir)
+            else:
+                runfiles_path = r.Rlocation(f"jax/jaxlib/rocm/{so_file}")
+                if runfiles_path is None:
+                    raise FileNotFoundError(
+                        f"'{so_file}' not in runfiles (run with data=ROCM_PLUGIN_SOURCES)"
+                    )
+                shutil.copy(runfiles_path, plugin_dir)
+        except FileNotFoundError:
+            runfiles_path = r.Rlocation(f"jax/jaxlib/rocm/{so_file}")
+            if runfiles_path is None:
+                raise FileNotFoundError(
+                    f"'{so_file}' not in --srcs and not in runfiles. "
+                    "Ensure jax_wheel source_files includes "
+                    "@jax//jaxlib/rocm:rocm_gpu_support and "
+                    "@jax//jaxlib/rocm:rocm_plugin_extension."
+                ) from None
+            shutil.copy(runfiles_path, plugin_dir)
 
     # NOTE(mrodden): this is a hack to change/set rpath values
     # in the shared objects that are produced by the bazel build
@@ -217,14 +253,12 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
     # which won't be correct until we make changes to
     # the xla/tsl/jax plugin build
 
-    try:
-        subprocess.check_output(["which", "patchelf"])
-    except subprocess.CalledProcessError as ex:
-        mesg = (
+    patchelf_cmd = _find_patchelf()
+    if patchelf_cmd is None:
+        raise RuntimeError(
             "rocm plugin and kernel wheel builds require patchelf. "
             "please install 'patchelf' and run again"
         )
-        raise RuntimeError(mesg) from ex
 
     files = [
         f"_linalg.{pyext}",
@@ -245,7 +279,7 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         if not perms & stat.S_IWUSR:
             fix_perms = True
             os.chmod(so_path, perms | stat.S_IWUSR)
-        subprocess.check_call(["patchelf", "--set-rpath", runpath, so_path])
+        subprocess.check_call([patchelf_cmd, "--set-rpath", runpath, so_path])
         if fix_perms:
             os.chmod(so_path, perms)
 

@@ -20,12 +20,16 @@ licenses(["notice"])  # Apache 2
 
 package(default_visibility = ["//visibility:public"])
 
-# Source files for the ROCm plugin wheel - used by both the tool and jax_wheel
-ROCM_PLUGIN_SOURCES = [
+# Static files only (no rule outputs). Used for py_binary data and wheel_sources static_srcs.
+ROCM_PLUGIN_STATIC_SRCS = [
     "LICENSE.txt",
     "//jax_plugins/rocm:plugin_pyproject.toml",
     "//jax_plugins/rocm:plugin_setup.py",
     "//pjrt/python:version.py",
+]
+
+# Full list for py_binary data (static + @jax targets so runfiles contain .so when using build_gpu_kernels_wheel).
+ROCM_PLUGIN_SOURCES = ROCM_PLUGIN_STATIC_SRCS + [
     "@jax//jaxlib/rocm:rocm_gpu_support",
     "@jax//jaxlib/rocm:rocm_plugin_extension",
 ]
@@ -49,23 +53,65 @@ py_binary(
     ],
 )
 
+# Same script, no data. Used by jax_wheel so inputs come only from source_files
+# (target config), avoiding a second full build in exec config.
+py_binary(
+    name = "build_gpu_kernels_wheel_via_sources",
+    main = "build_gpu_kernels_wheel.py",
+    srcs = ["build_gpu_kernels_wheel.py"],
+    args = [
+        "--xla-commit",
+        xla_commit,
+        "--jax-commit",
+        jax_commit,
+    ],
+    deps = [
+        "build_utils",
+        "@bazel_tools//tools/python/runfiles",
+        "@pypi_build//:pkg",
+        "@pypi_setuptools//:pkg",
+        "@pypi_wheel//:pkg",
+    ],
+)
+
 py_library(
     name = "build_utils",
     srcs = ["build_utils.py"],
 )
 
-# Wheel sources using the same list
+# Wheel sources: static_srcs for plain files; data_srcs so collect_data_aspect gathers
+# .so from @jax py_library/nanobind_extension (data/deps). Putting @jax targets in
+# static_srcs does not expand—their DefaultInfo.files are empty.
 wheel_sources(
     name = "rocm_plugin_sources",
-    static_srcs = ROCM_PLUGIN_SOURCES,
+    static_srcs = ROCM_PLUGIN_STATIC_SRCS,
+    data_srcs = [
+        "@jax//jaxlib/rocm:rocm_gpu_support",
+        "@jax//jaxlib/rocm:rocm_plugin_extension",
+    ],
+    py_srcs = [
+        "@jax//jaxlib/rocm:rocm_gpu_support",
+    ],
 )
 
-# ROCm Plugin Wheel (jax_rocm7_plugin) - contains GPU kernels
+# ROCm Plugin Wheel (jax_rocm7_plugin) - contains GPU kernels.
+# Use via_sources binary; .so files come from source_files via data_srcs (collect_data_aspect).
 jax_wheel(
     name = "jax_rocm7_plugin_wheel",
     enable_rocm = True,
     platform_version = "7",
     source_files = [":rocm_plugin_sources"],
-    wheel_binary = ":build_gpu_kernels_wheel",
+    wheel_binary = ":build_gpu_kernels_wheel_via_sources",
+    wheel_name = "jax_rocm7_plugin",
+)
+
+# Editable plugin wheel (same sources, editable = True)
+jax_wheel(
+    name = "jax_rocm7_plugin_wheel_editable",
+    editable = True,
+    enable_rocm = True,
+    platform_version = "7",
+    source_files = [":rocm_plugin_sources"],
+    wheel_binary = ":build_gpu_kernels_wheel_via_sources",
     wheel_name = "jax_rocm7_plugin",
 )
