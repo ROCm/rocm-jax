@@ -202,6 +202,20 @@ def update_setup_with_rocm_version(file_dir: pathlib.Path, rocm_version: str):
         f.write(content)
 
 
+def update_setup_with_gpu_arch(file_dir: pathlib.Path, gpu_arch: str):
+    """Update setup.py with the specified GPU architecture suffix."""
+    if not gpu_arch:
+        return
+    src_file = file_dir / "setup.py"
+    with open(src_file, encoding="utf-8") as f:
+        content = f.read()
+    content = content.replace(
+        'gpu_arch = ""  # placeholder', f'gpu_arch = "{gpu_arch}"'
+    )
+    with open(src_file, "w", encoding="utf-8") as f:
+        f.write(content)
+
+
 def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
     """Write commit hash information into commit_info.py inside `plugin_dir`."""
     os.makedirs(plugin_dir, exist_ok=True)

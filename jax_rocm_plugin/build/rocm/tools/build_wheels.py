@@ -42,6 +42,8 @@ GPU_DEVICE_TARGETS = (
     "gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
 )
 
+ALL_GPU_ARCHS = GPU_DEVICE_TARGETS.split()
+
 
 # pylint: disable=R0801
 # This function reads the version file from inside a ROCm installation
@@ -148,12 +150,14 @@ def build_plugin_wheel(
     compiler="gcc",
     wheels="jax-rocm-plugin,jax-rocm-pjrt",
     wheel_post_release=None,
+    gpu_arch="",
 ):
     """Build ROCm plugin and/or PJRT wheels via jax_rocm_plugin/build/build.py.
 
     Args:
         wheels: Comma-separated list of wheels to build. Valid options are
                 'jax-rocm-plugin', 'jax-rocm-pjrt', or both.
+        gpu_arch: GPU architecture for arch-specific wheels (e.g. 'gfx950').
     """
     use_clang = compiler == "clang"
 
@@ -191,6 +195,9 @@ def build_plugin_wheel(
             cmd.append("--clang_path=%s" % clang_path)
         else:
             raise RuntimeError("Clang binary not found in /usr/lib/llvm-*")
+
+    if gpu_arch:
+        cmd.append("--gpu_arch=%s" % gpu_arch)
 
     if xla_path:
         cmd.append("--bazel_options=--override_repository=xla=%s" % xla_path)
@@ -429,6 +436,13 @@ def parse_args():
         default=None,
         help="Optional post-release suffix number to append as .postX",
     )
+    p.add_argument(
+        "--gpu-arch",
+        type=str,
+        default="",
+        help="GPU architecture for arch-specific wheels (e.g. gfx950). "
+        "When set, builds only for this arch and embeds it in wheel names.",
+    )
 
     p.add_argument(
         "plugin_path", help="Directory where JAX ROCm plugin source is located"
@@ -468,6 +482,8 @@ def main():
             rocm_path = "/opt/rocm"
         rocm_version = get_rocm_version(rocm_path)
 
+    gpu_arch = args.gpu_arch
+
     print("ROCM_PATH=%s" % rocm_path)
     print("ROCM_VERSION=%s" % rocm_version)
     print("PYTHON_VERSIONS=%r" % python_versions)
@@ -475,11 +491,16 @@ def main():
     print("JAX_PATH=%s" % args.jax_path)
     print("XLA_PATH=%s" % args.xla_path)
     print("COMPILER=%s" % args.compiler)
+    print("GPU_ARCH=%s" % (gpu_arch or "(fat)"))
     print("OUTPUT_DIR=%s" % manylinux_output_dir)
 
-    update_rocm_targets(rocm_path, GPU_DEVICE_TARGETS)
+    if gpu_arch == "all":
+        arch_list = ALL_GPU_ARCHS
+    elif gpu_arch:
+        arch_list = [gpu_arch]
+    else:
+        arch_list = [""]
 
-    # Build plugin + PJRT wheels.
     full_output_path = os.path.join(args.plugin_path, manylinux_output_dir)
     os.makedirs(full_output_path, exist_ok=True)
 
@@ -489,50 +510,61 @@ def main():
         print("Removing wheel=%r" % whl)
         os.remove(whl)
 
-    # Build PJRT wheel once (it's Python version agnostic).
-    print("Building PJRT wheel (Python version agnostic)...")
-    build_plugin_wheel(
-        args.plugin_path,
-        rocm_path,
-        rocm_version,
-        python_versions[0],  # Use first Python version for build environment
-        full_output_path,
-        args.xla_path,
-        args.rbe,
-        args.compiler,
-        wheels="jax-rocm-pjrt",
-        wheel_post_release=args.wheel_post_release,
-    )
-    # Fix PJRT wheel.
-    wheel_paths = find_wheels(full_output_path)
-    for wheel_path in wheel_paths:
-        if "pjrt" in os.path.basename(wheel_path).lower():
-            fix_wheel(wheel_path, args.plugin_path)
+    fixed_wheels = set()
 
-    # Build plugin wheel for each Python version.
-    for py in python_versions:
-        print("Building plugin wheel for Python %s..." % py)
+    for arch in arch_list:
+        device_targets = arch if arch else GPU_DEVICE_TARGETS
+        arch_label = arch or "all-archs"
+        print("\n===== Building wheels for %s =====" % arch_label)
+
+        update_rocm_targets(rocm_path, device_targets)
+
+        # Build PJRT wheel once per arch (it's Python version agnostic).
+        print("Building PJRT wheel for %s..." % arch_label)
         build_plugin_wheel(
             args.plugin_path,
             rocm_path,
             rocm_version,
-            py,
+            python_versions[0],
             full_output_path,
             args.xla_path,
             args.rbe,
             args.compiler,
-            wheels="jax-rocm-plugin",
+            wheels="jax-rocm-pjrt",
             wheel_post_release=args.wheel_post_release,
+            gpu_arch=arch,
         )
-        # Fix plugin wheels for this Python version.
-        wheel_paths = find_wheels(full_output_path)
-        for wheel_path in wheel_paths:
-            base = os.path.basename(wheel_path)
-            # Only fix plugin wheels, skip already-fixed PJRT wheel.
-            if "plugin" in base.lower():
+        for wheel_path in find_wheels(full_output_path):
+            if (
+                wheel_path not in fixed_wheels
+                and "pjrt" in os.path.basename(wheel_path).lower()
+            ):
                 fix_wheel(wheel_path, args.plugin_path)
+                fixed_wheels.add(wheel_path)
 
-    # Copy plugin + PJRT wheels to wheelhouse.
+        # Build plugin wheel for each Python version.
+        for py in python_versions:
+            print("Building plugin wheel for %s Python %s..." % (arch_label, py))
+            build_plugin_wheel(
+                args.plugin_path,
+                rocm_path,
+                rocm_version,
+                py,
+                full_output_path,
+                args.xla_path,
+                args.rbe,
+                args.compiler,
+                wheels="jax-rocm-plugin",
+                wheel_post_release=args.wheel_post_release,
+                gpu_arch=arch,
+            )
+            for wheel_path in find_wheels(full_output_path):
+                base = os.path.basename(wheel_path)
+                if wheel_path not in fixed_wheels and "plugin" in base.lower():
+                    fix_wheel(wheel_path, args.plugin_path)
+                    fixed_wheels.add(wheel_path)
+
+    # Copy all wheels to wheelhouse.
     wheel_paths = find_wheels(full_output_path)
     for whl in wheel_paths:
         LOG.info("Copying %s into %s", whl, wheelhouse_dir)
