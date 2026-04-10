@@ -247,7 +247,11 @@ def dist_wheels(
         cmd.append("--no-rocm-version-extra")
 
     cmd.append("dist_wheels")
-    subprocess.check_call(cmd, cwd=jax_plugin_dir)
+
+    env = os.environ.copy()
+    if therock_path:
+        env["THEROCK_BUILD"] = "1"
+    subprocess.check_call(cmd, cwd=jax_plugin_dir, env=env)
 
 
 def _apply_filters(docker_filters, dockerfile_basename, docker_dir="docker"):
