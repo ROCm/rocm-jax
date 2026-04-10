@@ -78,10 +78,6 @@ jobs:
       - name: Get TE commit SHA
         id: tsha
         run: echo "hash=$(git -C transformerengine rev-parse HEAD)" >> $GITHUB_OUTPUT
-      - name: Define runner-label
-        id: runner_label
-        run: |
-          echo "label=MI355" >> $GITHUB_OUTPUT
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.SECRET_TOKEN }}" \
@@ -251,6 +247,14 @@ jobs:
             -v "${{ github.workspace }}:/workspace" \
             ${{ matrix.docker-image }} \
             tail -f /dev/null
+      - name: Define runner-label
+        id: runner_label
+        run: |
+          if [ "${{ inputs.runner-label }}" == "linux-jax-mi325-8" ]; then
+            echo "label=MI325" >> $GITHUB_OUTPUT
+          else
+            echo "label=MI355" >> $GITHUB_OUTPUT
+          fi
       - name: Run model
         run: |
           docker exec model-run-jax${{ matrix.jax-version }}-${{ matrix.model-name }} bash -lc '
@@ -325,7 +329,7 @@ jobs:
             --jax-version "${{ matrix.jax-version }}" \
             --rocm-version "${ROCM_VERSION//.}" \
             --python-version "${PYTHON_VERSION//.}" \
-            --runner-label "${{ needs.build-te-wheels.outputs.runner_label }}" \
+            --runner-label "${{ needs.run-llama-perf-model.outputs.runner_label }}" \
             --github-ref "${{ github.ref_name }}" \
             --trig-event "${{ github.event_name }}" \
             --actor-name "${{ github.actor }}"
