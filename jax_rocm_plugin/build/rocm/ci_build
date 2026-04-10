@@ -124,6 +124,10 @@ def dist_wheels(
             "ROCM_VERSION_EXTRA="
             + (rocm_version if include_rocm_version_extra else ""),
             "-e",
+            "ROCM_VERSION=" + rocm_version,
+            "-e",
+            "THEROCK_BUILD=" + os.environ.get("THEROCK_BUILD", ""),
+            "-e",
             "ROCM_JAX_COMMIT=" + rocm_jax_commit,
             builder_image,
             "bash",
