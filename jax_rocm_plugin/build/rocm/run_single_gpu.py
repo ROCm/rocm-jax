@@ -41,6 +41,9 @@ from collections import defaultdict
 # Add the configuration directory to Python path
 sys.path.insert(0, "jax_rocm_plugin/build/rocm")
 
+# Use the jax source tree so test-only modules (e.g. pallas_test_util) are importable.
+os.environ["PYTHONPATH"] = os.path.abspath("jax") + os.pathsep + os.environ.get("PYTHONPATH", "")
+
 GPU_LOCK = threading.Lock()
 LAST_CODE = 0
 BASE_DIR = "./logs"
