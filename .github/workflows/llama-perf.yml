@@ -128,7 +128,6 @@ jobs:
                 jaxlib==0.6.0 \
                 "$PJRT_URL" \
                 "$PLUGIN_URL"
-            fi
             elif [ "${{ matrix.jax-version }}" == "0.9.1" ]; then
               apt update
               apt install libdw1 libglib2.0-0
@@ -182,6 +181,10 @@ jobs:
             "$REL_URL/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
             curl -L --output-dir wheelhouse -O \
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
+          elif [ "${{ matrix.jax-version }}" == "0.9.1" ]; then
+            # technically we could get the jax pjrt and plugin directly from pip below but this is fewer changes to the workflow
+            mkdir -p wheelhouse
+            python -m pip download -d wheelhouse jax_rocm7_pjrt==0.9.1 jax_rocm7_plugin==0.9.1 --no-deps
           else
             gh run download \
               $(gh run list \
