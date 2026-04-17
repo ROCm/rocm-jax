@@ -185,7 +185,7 @@ jobs:
             # technically we could get the jax pjrt and plugin directly from pip below but this
             # is fewer changes to the workflow
             mkdir -p wheelhouse
-            python3 -m pip download -d wheelhouse jax_rocm7_pjrt==0.9.1 jax_rocm7_plugin==0.9.1 \
+            python3 -m pip download -d wheelhouse jax_rocm7_pjrt~=0.9.1 jax_rocm7_plugin~=0.9.1 \
              --no-deps
           else
             gh run download \
