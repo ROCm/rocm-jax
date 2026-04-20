@@ -576,6 +576,9 @@ def build_base_therock_dockers(
 
     for dockerfile in dockerfiles:
         _, tag_suffix = dockerfile.split(".", 1)
+        # Strip "-therock" so images match upstream's rocm-tag naming pattern:
+        # jax-base-ubu24.therock-<ver> instead of jax-base-therock-ubu24.therock-<ver>
+        tag_suffix = tag_suffix.replace("-therock", "")
         if add_llvm:
             tag_suffix = tag_suffix.replace("base-", "dev-", 1)
 
