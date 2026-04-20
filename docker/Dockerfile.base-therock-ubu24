@@ -1,0 +1,130 @@
+FROM ubuntu:24.04
+
+### Container Build Arguments:
+# TheRock nightly index URL (GPU-family-specific).
+ARG THEROCK_INDEX_URL=https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/
+# TheRock version number (e.g. "7.13.0a20260401" or "" for latest).
+ARG THEROCK_VERSION=""
+# Enable LLVM install.
+ARG INSTALL_LLVM=0
+# Version of LLVM to be installed.
+ARG LLVM_VERSION="none"
+
+### Build-time only variables:
+ARG DEBIAN_FRONTEND=noninteractive
+
+### Build Steps:
+
+# Install all Python versions from deadsnakes PPA:
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y \
+        python3.11 python3.11-dev python3.11-venv \
+        python3.12 python3.12-dev python3.12-venv \
+        python3.13 python3.13-dev python3.13-venv \
+        python3.13-nogil \
+        python3.14 python3.14-dev python3.14-venv \
+        python3.14-nogil \
+        python3-pip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Set default Python to 3.12:
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 100 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.12 100 && \
+    mv /usr/lib/python3.12/EXTERNALLY-MANAGED /usr/lib/python3.12/EXTERNALLY-MANAGED.old
+
+# Install system libraries needed at runtime:
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        sqlite3 libsqlite3-dev \
+        libbz2-dev \
+        zip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install TheRock (ROCm via pip), initialize the SDK, and create a
+# conventional /opt/rocm symlink so ENV directives use a known path.
+RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
+    python3 -m pip install --break-system-packages \
+        --pre --index-url "${THEROCK_INDEX_URL}" \
+        "rocm[libraries,devel]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
+    rocm-sdk init && \
+    ln -sfn "$(rocm-sdk path --root)" /opt/rocm
+
+ENV ROCM_HOME=/opt/rocm
+ENV PATH="/opt/rocm/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/rocm/lib"
+
+# Install GitHub CLI (gh):
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        gpg && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | gpg --dearmor -o /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y gh && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Google Cloud CLI (gcloud):
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        apt-transport-https \
+        ca-certificates \
+        gnupg \
+        curl && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+        | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+        | tee /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    apt-get update && \
+    apt-get install -y google-cloud-cli && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    gcloud config set auth/disable_credentials True
+
+# Install AWS CLI v2:
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y --no-install-recommends curl unzip && \
+    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip && \
+    unzip -q /tmp/awscliv2.zip -d /tmp && \
+    /tmp/aws/install && \
+    rm -rf /tmp/aws /tmp/awscliv2.zip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Bazelisk (as `bazel`). It reads .bazelversion from the workspace
+# and automatically downloads + caches the correct Bazel release.
+RUN curl -fsSL https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 \
+        -o /usr/local/bin/bazel && \
+    chmod +x /usr/local/bin/bazel
+
+# Install LLVM's clang and lld when enabled:
+RUN --mount=type=cache,target=/var/cache/apt   \
+    [ $INSTALL_LLVM -eq 0 ] || (               \
+    apt update &&                              \
+    apt-get install -y --no-install-recommends \
+        lsb-release                            \
+        software-properties-common             \
+        gnupg                                  \
+        wget &&                                \
+    apt-get purge -y llvm &&                   \
+    cd /tmp &&                                 \
+    wget https://apt.llvm.org/llvm.sh &&       \
+    chmod +x llvm.sh &&                        \
+    ./llvm.sh $LLVM_VERSION clang lld &&       \
+    rm llvm.sh &&                              \
+    apt-get clean && rm -rf /var/lib/apt/lists/* )
+
+LABEL com.amdgpu.therock_index_url="$THEROCK_INDEX_URL" \
+      com.amdgpu.therock_version="$THEROCK_VERSION" \
+      com.amdgpu.python_versions="3.11,3.12,3.13,3.13-nogil,3.14,3.14-nogil" \
+      com.amdgpu.install_llvm="$INSTALL_LLVM" \
+      com.amdgpu.llvm_version="$LLVM_VERSION"
