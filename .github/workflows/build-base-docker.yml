@@ -75,12 +75,10 @@ jobs:
             --filter="ubu24" \
             ${{ matrix.install-llvm && '--install-llvm --llvm-version 18' || '' }}
       - name: Authenticate to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Push docker images
-        if: github.event_name != 'pull_request'
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           INSTALL_LLVM: ${{ matrix.install-llvm }}
@@ -99,8 +97,19 @@ jobs:
           echo "Image name (SHA): ${ghcr_image_sha}"
           docker tag "${image_tag}" "${ghcr_image_sha}"
           docker push "${ghcr_image_sha}"
+      - name: Push latest tag
+        if: github.event_name != 'pull_request'
+        env:
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+          INSTALL_LLVM: ${{ matrix.install-llvm }}
+        run: |
+          rocm_tag="rocm${ROCM_VERSION//.}"
+          if [ "$INSTALL_LLVM" = "true" ]; then
+            image_tag="jax-dev-ubu24.${rocm_tag}"
+          else
+            image_tag="jax-base-ubu24.${rocm_tag}"
+          fi
 
-          # Push with latest tag
           ghcr_image_latest="ghcr.io/rocm/${image_tag}:latest"
           echo "Image name (latest): ${ghcr_image_latest}"
           docker tag "${image_tag}" "${ghcr_image_latest}"
@@ -141,14 +150,12 @@ jobs:
             --rocm-build-num="${{ matrix.rocm-build-num }}" \
             build_manylinux_dockers
       - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push docker images
-        if: github.event_name != 'pull_request'
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           ROCM_BUILD_JOB: >-
@@ -163,8 +170,17 @@ jobs:
           echo "Image name (SHA): ${sha_image_tag}"
           docker tag "${image_tag}" "${sha_image_tag}"
           docker push "${sha_image_tag}"
+      - name: Push latest tag
+        if: github.event_name != 'pull_request'
+        env:
+          ROCM_VERSION: ${{ matrix.rocm-version }}
+          ROCM_BUILD_JOB: >-
+            ${{ matrix.rocm-build-job && format('-{0}', inputs.rocm-build-job) || '' }}
+          ROCM_BUILD_NUM: >-
+            ${{ matrix.rocm-build-num && format('-{0}', inputs.rocm-build-num) || '' }}
+        run: |
+          image_tag="ghcr.io/rocm/jax-manylinux_2_28-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
 
-          # Push with latest tag
           latest_image_tag="${image_tag}:latest"
           echo "Image Name (latest): ${latest_image_tag}"
           docker tag "${image_tag}" "${latest_image_tag}"
