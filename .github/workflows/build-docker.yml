@@ -55,7 +55,6 @@ jobs:
           name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
           path: ./wheelhouse
       - name: Authenticate to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -68,7 +67,6 @@ jobs:
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
             build_dockers
       - name: Push docker images
-        if: github.event_name != 'pull_request'
         env:
           EXTRA_CR_TAG: ${{ inputs.extra-cr-tag }}
           ROCM_VERSION: ${{ inputs.rocm-version }}
