@@ -2,7 +2,7 @@
 """
 Ingest JAX Pytest results from S3 into MySQL.
 
-Recursively locates one Pytest report under given log dir
+Recursively locates multiple Pytest reports under given log dir
 
 Tables:
  - jax_ci_runs:    one row per run
@@ -34,6 +34,7 @@ TEXT_LIMIT = 250
 BATCH_SIZE = 2000
 DEFAULT_LABEL = "Skipped Upstream"
 MANIFEST_FILENAME = "run-manifest.json"
+MAX_REPORTS_PER_RUN = 2
 
 
 # -----------------------------
@@ -102,8 +103,12 @@ def parse_run_key_and_combo(artifact_uri: str) -> tuple[str, str]:
 # -----------------------------
 # Input/File Loading
 # -----------------------------
-def find_pytest_report_json(local_logs_dir: Path) -> Optional[Path]:
-    """Find the single Pytest JSON report under the given logs directory, if present"""
+def find_pytest_report_jsons(local_logs_dir: Path) -> List[Path]:
+    """Find up to MAX_REPORTS_PER_RUN Pytest JSON reports under the given logs directory.
+
+    A run may produce one report (single-GPU) or two reports (single + multi-GPU).
+    Returns a sorted list of paths; empty if no reports are found.
+    """
     ignore = {MANIFEST_FILENAME, "last_running.json"}
     reports = [
         p
@@ -113,15 +118,16 @@ def find_pytest_report_json(local_logs_dir: Path) -> Optional[Path]:
         and not p.name.endswith("last_running.json")
     ]
     if not reports:
-        return None
-    if len(reports) != 1:
+        return []
+    if len(reports) > MAX_REPORTS_PER_RUN:
         listing = "\n  - " + "\n  - ".join(
             str(p.relative_to(local_logs_dir)) for p in sorted(reports)
         )
         raise SystemExit(
-            f"Expected exactly ONE pytest JSON report; found {len(reports)}:{listing}"
+            f"Expected at most {MAX_REPORTS_PER_RUN} pytest JSON reports; "
+            f"found {len(reports)}:{listing}"
         )
-    return reports[0]
+    return sorted(reports)
 
 
 def load_from_pytest_json(path: Path) -> Tuple[Optional[datetime], List[dict]]:
@@ -621,7 +627,7 @@ def batch_insert_results(cur, rows) -> None:
 # -----------------------------
 # Entry point
 # -----------------------------
-def upload_pytest_results(  # pylint: disable=too-many-locals
+def upload_pytest_results(  # pylint: disable=too-many-locals, disable=too-many-branches
     local_logs_dir: Path,
     *,
     run_tag: str,
@@ -636,12 +642,16 @@ def upload_pytest_results(  # pylint: disable=too-many-locals
       3) Ensure all tests exist; get (file,class,test) -> test_id map.
       4) Bulk insert/update jax_ci_results for this run.
     """
-    report = find_pytest_report_json(local_logs_dir)
-    if report is None:
-        report_created_at = None
-        tests = []
-    else:
-        report_created_at, tests = load_from_pytest_json(report)
+    reports = find_pytest_report_jsons(local_logs_dir)
+    report_created_at = None
+    tests = []
+
+    for report in reports:
+        current_created_at, current_tests = load_from_pytest_json(report)
+        if current_created_at is not None:
+            if report_created_at is None or current_created_at > report_created_at:
+                report_created_at = current_created_at
+        tests.extend(current_tests)
 
     manifest = load_manifest(local_logs_dir)
     fields = build_run_fields(
