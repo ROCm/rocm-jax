@@ -1,10 +1,10 @@
 name: Llama Performance Benchmarks
 
 # This workflow runs Llama performance benchmarks
-# using two different JAX versions: 0.6.0 & 0.8.2
+# using two different JAX versions: 0.6.0 & 0.9.1
 # For JAX 0.6.0: uses official released wheels
 # and Docker image.
-# For JAX 0.8.2: uses wheels and Docker image
+# For JAX 0.9.1: uses wheels and Docker image
 # built from the latest nightly results.
 
 # PS: Ubuntu 24 & ROCm 7.2.0.
@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        jax-version: ["0.6.0", "0.8.2"]
+        jax-version: ["0.6.0", "0.9.1"]
         include:
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
@@ -51,8 +51,12 @@ jobs:
             # before building TE. For the application workload Bazel installs
             # its own Jax
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
-          - jax-version: "0.8.2"
-            jaxlib-version: "0.8.2"
+          - jax-version: "0.9.1"
+            jaxlib-version: "0.9.1"
+            # There is no docker image with ROCm 7.2.0 and Jax 0.9.1
+            # use a ROCm 7.2.0 / Jax 0.8.2 docker image and update Jax
+            # before building TE. For the application workload Bazel installs
+            # its own Jax
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
     env:
       NVTE_FRAMEWORK: jax
@@ -124,6 +128,10 @@ jobs:
                 jaxlib==0.6.0 \
                 "$PJRT_URL" \
                 "$PLUGIN_URL"
+            elif [ "${{ matrix.jax-version }}" == "0.9.1" ]; then
+              apt update
+              apt install libdw1 libglib2.0-0
+              pip install --force-reinstall jax==0.9.1 jax-rocm7-plugin~=0.9.1 jax-rocm7-pjrt~=0.9.1
             fi
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
@@ -145,16 +153,16 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        jax-version: ["0.6.0", "0.8.2"]
+        jax-version: ["0.6.0", "0.9.1"]
         model-name: ["train_dense"]
         include:
           - jax-version: "0.6.0"
             model-name: "train_dense"
             jaxlib-version: "0.6.0"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
-          - jax-version: "0.8.2"
+          - jax-version: "0.9.1"
             model-name: "train_dense"
-            jaxlib-version: "0.8.2"
+            jaxlib-version: "0.9.1"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
     steps:
       - name: Checkout source repo
@@ -173,6 +181,12 @@ jobs:
             "$REL_URL/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
             curl -L --output-dir wheelhouse -O \
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
+          elif [ "${{ matrix.jax-version }}" == "0.9.1" ]; then
+            # technically we could get the jax pjrt and plugin directly from pip below but this
+            # is fewer changes to the workflow
+            mkdir -p wheelhouse
+            python3 -m pip download -d wheelhouse jax_rocm7_pjrt~=0.9.1 jax_rocm7_plugin~=0.9.1 \
+             --no-deps
           else
             gh run download \
               $(gh run list \
@@ -291,7 +305,7 @@ jobs:
             model-name: "train_dense"
             rocm-version: "7.2.0"
             python-version: "3.12"
-          - jax-version: "0.8.2"
+          - jax-version: "0.9.1"
             model-name: "train_dense"
             rocm-version: "7.2.0"
             python-version: "3.12"
