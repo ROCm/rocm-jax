@@ -3,10 +3,8 @@ FROM quay.io/pypa/manylinux_2_28_x86_64
 ### Container Build Arguments:
 # TheRock nightly index URL (GPU-family-specific).
 ARG THEROCK_INDEX_URL=https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/
-# TheRock version specifier for pip (e.g. "==7.13.0a20260401" or "" for latest).
+# TheRock version number (e.g. "7.13.0a20260401" or "" for latest).
 ARG THEROCK_VERSION=""
-
-ENV GPU_DEVICE_TARGETS="gfx906 gfx908 gfx90a gfx9-4-generic gfx10-3-generic gfx11-generic gfx12-generic"
 
 # Install patchelf and headers for numactl
 RUN --mount=type=cache,target=/var/cache/dnf \
@@ -18,7 +16,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     /opt/python/cp312-cp312/bin/python3 -m pip install \
         --pre --index-url "${THEROCK_INDEX_URL}" \
-        "rocm[libraries,devel]${THEROCK_VERSION}" && \
+        "rocm[libraries,devel]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
     ln -sf /opt/python/cp312-cp312/bin/rocm-sdk /usr/local/bin/rocm-sdk && \
     rocm-sdk init && \
     ln -sfn "$(rocm-sdk path --root)" /opt/rocm

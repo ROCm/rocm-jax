@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 ### Container Build Arguments:
 # TheRock nightly index URL (GPU-family-specific).
 ARG THEROCK_INDEX_URL=https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/
-# TheRock version specifier for pip (e.g. "==7.13.0a20260401" or "" for latest).
+# TheRock version number (e.g. "7.13.0a20260401" or "" for latest).
 ARG THEROCK_VERSION=""
 # Enable LLVM install.
 ARG INSTALL_LLVM=0
@@ -49,7 +49,7 @@ RUN apt-get update && \
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     python3 -m pip install --break-system-packages \
         --pre --index-url "${THEROCK_INDEX_URL}" \
-        "rocm[libraries,devel]${THEROCK_VERSION}" && \
+        "rocm[libraries,devel]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
     rocm-sdk init && \
     ln -sfn "$(rocm-sdk path --root)" /opt/rocm
 

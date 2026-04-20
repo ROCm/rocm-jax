@@ -556,7 +556,7 @@ def build_base_therock_dockers(
 
     # Derive a tag component from the version pin (e.g. "7.13.0a20260401")
     # or fall back to "latest" when no pin is given.
-    version_tag = therock_version.lstrip("=") if therock_version else "latest"
+    version_tag = therock_version if therock_version else "latest"
     # Sanitise: replace characters that are invalid in Docker tags
     version_tag = version_tag.replace("+", ".").replace(" ", "")
 
@@ -615,7 +615,7 @@ def build_manylinux_therock_dockers(
     no_cache=False,
 ):
     """Build a manylinux image using TheRock pip wheels for release-ready JAX wheels."""
-    version_tag = therock_version.lstrip("=") if therock_version else "latest"
+    version_tag = therock_version if therock_version else "latest"
     version_tag = version_tag.replace("+", ".").replace(" ", "")
 
     constructed_tag = tag or "jax-manylinux_2_28-therock-%s" % version_tag
@@ -870,7 +870,7 @@ def parse_args():
         "--therock-version",
         type=str,
         default="",
-        help="TheRock version specifier for pip (e.g. '==7.13.0a20260401')",
+        help="TheRock version number (e.g. '7.13.0a20260401')",
     )
     btherockp.add_argument(
         "--install-llvm",
@@ -903,7 +903,7 @@ def parse_args():
         "--therock-version",
         type=str,
         default="",
-        help="TheRock version specifier for pip (e.g. '==7.13.0a20260401')",
+        help="TheRock version number (e.g. '7.13.0a20260401')",
     )
     mltherockp.add_argument(
         "--no-cache",
