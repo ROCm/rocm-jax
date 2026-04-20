@@ -124,7 +124,8 @@ def find_pytest_report_jsons(local_logs_dir: Path) -> List[Path]:
             str(p.relative_to(local_logs_dir)) for p in sorted(reports)
         )
         raise SystemExit(
-            f"Expected at most {MAX_REPORTS_PER_RUN} pytest JSON reports; found {len(reports)}:{listing}"
+            f"Expected at most {MAX_REPORTS_PER_RUN} pytest JSON reports; "
+            f"found {len(reports)}:{listing}"
         )
     return sorted(reports)
 
