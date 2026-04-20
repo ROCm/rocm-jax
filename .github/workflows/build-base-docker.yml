@@ -164,9 +164,9 @@ jobs:
           INSTALL_LLVM: ${{ matrix.install-llvm }}
         run: |
           if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="jax-dev-therock-ubu24.therock-latest"
+            image_tag="jax-dev-ubu24.therock-latest"
           else
-            image_tag="jax-base-therock-ubu24.therock-latest"
+            image_tag="jax-base-ubu24.therock-latest"
           fi
 
           # Push with commit SHA tag
