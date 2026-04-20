@@ -131,7 +131,7 @@ jobs:
             elif [ "${{ matrix.jax-version }}" == "0.9.1" ]; then
               apt update
               apt install libdw1 libglib2.0-0
-              pip install --force-reinstall jax==0.9.1 jax-rocm7-plugin jax-rocm7-pjrt
+              pip install --force-reinstall jax==0.9.1 jax-rocm7-plugin~=0.9.1 jax-rocm7-pjrt~=0.9.1
             fi
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
