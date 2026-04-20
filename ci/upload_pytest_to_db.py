@@ -2,7 +2,7 @@
 """
 Ingest JAX Pytest results from S3 into MySQL.
 
-Recursively locates up to two Pytest report under given log dir
+Recursively locates multiple Pytest reports under given log dir
 
 Tables:
  - jax_ci_runs:    one row per run
@@ -34,6 +34,7 @@ TEXT_LIMIT = 250
 BATCH_SIZE = 2000
 DEFAULT_LABEL = "Skipped Upstream"
 MANIFEST_FILENAME = "run-manifest.json"
+MAX_REPORTS_PER_RUN = 2
 
 
 # -----------------------------
@@ -103,7 +104,7 @@ def parse_run_key_and_combo(artifact_uri: str) -> tuple[str, str]:
 # Input/File Loading
 # -----------------------------
 def find_pytest_report_jsons(local_logs_dir: Path) -> List[Path]:
-    """Find up to two Pytest JSON reports under the given logs directory.
+    """Find up to MAX_REPORTS_PER_RUN Pytest JSON reports under the given logs directory.
 
     A run may produce one report (single-GPU) or two reports (single + multi-GPU).
     Returns a sorted list of paths; empty if no reports are found.
@@ -118,12 +119,12 @@ def find_pytest_report_jsons(local_logs_dir: Path) -> List[Path]:
     ]
     if not reports:
         return []
-    if len(reports) > 2:
+    if len(reports) > MAX_REPORTS_PER_RUN:
         listing = "\n  - " + "\n  - ".join(
             str(p.relative_to(local_logs_dir)) for p in sorted(reports)
         )
         raise SystemExit(
-            f"Expected at most TWO pytest JSON reports; found {len(reports)}:{listing}"
+            f"Expected at most {MAX_REPORTS_PER_RUN} pytest JSON reports; found {len(reports)}:{listing}"
         )
     return sorted(reports)
 
