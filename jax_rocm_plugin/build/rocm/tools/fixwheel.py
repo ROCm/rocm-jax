@@ -63,7 +63,7 @@ def fix_wheel(path):
     """Fixes a wheel and attaches manylinux platform labels to it"""
     tup = parse_wheel_name(path)
     plat_tag = tup[4]
-    if "manylinux2014" in plat_tag:
+    if "manylinux2014" in plat_tag or "manylinux_2_27" in plat_tag:
         # strip any manylinux tags from the current wheel first
         plat_mod_str = "linux_x86_64"
         output = subprocess.run(
