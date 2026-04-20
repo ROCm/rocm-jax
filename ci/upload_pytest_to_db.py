@@ -625,7 +625,7 @@ def batch_insert_results(cur, rows) -> None:
 # -----------------------------
 # Entry point
 # -----------------------------
-def upload_pytest_results(  # pylint: disable=too-many-locals
+def upload_pytest_results(  # pylint: disable=too-many-locals, disable=too-many-branches
     local_logs_dir: Path,
     *,
     run_tag: str,
