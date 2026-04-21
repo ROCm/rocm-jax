@@ -166,7 +166,7 @@ jobs:
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
     steps:
       - name: Checkout source repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: AMD-AGI/scif_repro
           token: ${{ secrets.SECRET_TOKEN }}
@@ -311,7 +311,7 @@ jobs:
             python-version: "3.12"
     steps:
       - name: Checkout plugin repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Download training summary
         uses: actions/download-artifact@v4
         with:
