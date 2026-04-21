@@ -59,7 +59,7 @@ def parse_wheel_name(path):
     return wheel_name[:-4].split("-")
 
 
-def fix_wheel(path):
+def fix_wheel(path):  # pylint: disable=too-many-locals
     """Fixes a wheel and attaches manylinux platform labels to it"""
     original_input = path
     intermediate = None
