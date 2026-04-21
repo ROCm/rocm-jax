@@ -129,7 +129,8 @@ RUN --mount=type=cache,target=/var/cache/apt   \
 # Temporarily include a custom built MIOpen. This should be removed
 # as soon as https://github.com/ROCm/rocm-libraries/pull/4472 lands
 # in a ROCm release that we can install as deb package or with therock.
-RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
+# Fix is already included in ROCm 7.2.2 and later, so skip the rebuild there.
+RUN [ "$ROCM_VERSION" = "7.1.1" ] || [ "$ROCM_VERSION" = "7.2.2" ] || (       \
     git clone https://github.com/ROCm/rocm-libraries.git --branch fix/stack-overflow-kernel-init --depth 1 /rocm-libraries && \
     apt update &&                              \
     apt-get install -y --no-install-recommends \
@@ -161,8 +162,9 @@ ENV MIOPEN_FIND_ENFORCE=SEARCH_DB_UPDATE
 # The profiler SDK's intercept queue corrupts AQL packets when they wrap
 # around the ring buffer boundary, causing HSA_STATUS_ERROR_INVALID_PACKET_FORMAT
 # aborts under parallel GPU workloads.
+# Fix is already included in ROCm 7.2.2 and later, so skip the rebuild there.
 RUN --mount=type=bind,source=docker/patches/rocr-intercept-queue-fix.patch,target=/tmp/rocr-fix.patch \
-    [ "$ROCM_VERSION" = "7.1.1" ] || (                 \
+    [ "$ROCM_VERSION" = "7.1.1" ] || [ "$ROCM_VERSION" = "7.2.2" ] || (                 \
     apt-get update && apt-get install -y --no-install-recommends \
         cmake pkg-config libelf-dev libdrm-dev libnuma-dev rocm-llvm-dev xxd && \
     git clone --filter=blob:none --no-checkout --depth=1 \

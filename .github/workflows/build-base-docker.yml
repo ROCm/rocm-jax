@@ -26,12 +26,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.1.1", "7.2.2"]
         install-llvm: [true, false]
         include:
           - rocm-version: "7.1.1"
             runner-label: "linux-x86-64-1gpu-amd"
-          - rocm-version: "7.2.0"
+          - rocm-version: "7.2.2"
             runner-label: "linux-x86-64-1gpu-amd"
     steps:
       - name: Clean up old runs
@@ -86,7 +86,7 @@ jobs:
           INSTALL_LLVM: ${{ matrix.install-llvm }}
         run: |
           # Construct image tag based on matrix values
-          # ROCm version tag removes dots (7.1.1 -> 711, 7.2.0 -> 720)
+          # ROCm version tag removes dots (7.1.1 -> 711, 7.2.2 -> 722)
           rocm_tag="rocm${ROCM_VERSION//.}"
           if [ "$INSTALL_LLVM" = "true" ]; then
             image_tag="jax-dev-ubu24.${rocm_tag}"
@@ -111,11 +111,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.1.1", "7.2.2"]
         include:
           - rocm-version: "7.1.1"
             runner-label: "linux-x86-64-1gpu-amd"
-          - rocm-version: "7.2.0"
+          - rocm-version: "7.2.2"
             runner-label: "linux-x86-64-1gpu-amd"
     steps:
       - name: Clean up old runs
