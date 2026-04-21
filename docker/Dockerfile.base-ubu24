@@ -144,8 +144,13 @@ RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
     dpkg-divert --no-rename --remove /opt/rocm/lib/libMIOpen.so.1 && \
     dpkg-divert --add --package local --divert /opt/rocm/lib/libMIOpen.bak.1.0.70200 --rename /opt/rocm/lib/libMIOpen.so.1.0.70200 && \
     cd /rocm-libraries/projects/miopen/ && mkdir build && cd build && \
-    export CXX=amdclang++ &&                                          \
+    # The PATH/ENV updates at the bottom of this Dockerfile have not run yet,
+    # so amdclang++ is not on PATH. Add /opt/rocm/llvm/bin and /opt/rocm/bin
+    # explicitly and pin CXX to the absolute path so CMake can locate it.
+    export PATH="/opt/rocm/llvm/bin:/opt/rocm/bin:${PATH}" &&          \
+    export CXX=/opt/rocm/llvm/bin/amdclang++ &&                       \
     cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DMIOPEN_BACKEND=HIP     \
+          -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/amdclang++          \
           -DBUILD_TESTING=OFF -DCMAKE_PREFIX_PATH="/opt/rocm"         \
           -DMIOPEN_USE_MLIR=OFF -DMIOPEN_ENABLE_AI_KERNEL_TUNING=OFF  \
           -DMIOPEN_ENABLE_AI_IMMED_MODE_FALLBACK=OFF .. &&            \
