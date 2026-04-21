@@ -65,9 +65,7 @@ def _apply_wheel_post_release(  # pylint: disable=too-many-locals
 
     def _record_hash(payload: bytes) -> str:
         digest = hashlib.sha256(payload).digest()
-        return (
-            "sha256=" + base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
-        )
+        return "sha256=" + base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
 
     tmp_path = wheel_path + ".tmp"
     record_entries: list[tuple[str, str, int]] = []
