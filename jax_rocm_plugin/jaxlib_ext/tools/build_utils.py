@@ -39,9 +39,17 @@ def _append_post_release_suffix(version: str, post_release: str) -> str:
 def _apply_wheel_post_release(  # pylint: disable=too-many-locals
     wheel_path: str, post_release: str | None
 ) -> str:
-    """Append a .postX version suffix into wheel filename and internal metadata."""
+    """Append a .postX version suffix into wheel filename and internal metadata.
+
+    Rewrites RECORD with valid PEP 376 hash/size entries. The original
+    implementation emitted ``path,,`` for every file, which downstream tooling
+    such as ``wheel tags`` (used by ``fixwheel.py``) rejects with
+    ``No hash found for file '<...>/WHEEL'``.
+    """
     if not post_release:
         return wheel_path
+    import base64  # pylint: disable=import-outside-toplevel
+    import hashlib  # pylint: disable=import-outside-toplevel
     import re  # pylint: disable=import-outside-toplevel
     import zipfile  # pylint: disable=import-outside-toplevel
 
@@ -56,7 +64,14 @@ def _apply_wheel_post_release(  # pylint: disable=too-many-locals
     old_dist_info = None
     new_dist_info = None
 
+    def _record_hash(payload: bytes) -> str:
+        digest = hashlib.sha256(payload).digest()
+        return (
+            "sha256=" + base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+        )
+
     tmp_path = wheel_path + ".tmp"
+    record_entries: list[tuple[str, str, int]] = []
     with zipfile.ZipFile(wheel_path, "r") as zin, zipfile.ZipFile(
         tmp_path, "w", compression=zipfile.ZIP_DEFLATED
     ) as zout:
@@ -89,11 +104,11 @@ def _apply_wheel_post_release(  # pylint: disable=too-many-locals
             info = zipfile.ZipInfo(new_name, date_time=item.date_time)
             info.compress_type = item.compress_type
             zout.writestr(info, data)
+            record_entries.append((new_name, _record_hash(data), len(data)))
 
-        record_lines = []
-        for entry in zout.namelist():
-            record_lines.append(f"{entry},,")
         record_name = f"{new_dist_info}/RECORD"
+        record_lines = [f"{name},{h},{size}" for name, h, size in record_entries]
+        # PEP 376: hash/size for the RECORD file itself MUST be empty.
         record_lines.append(f"{record_name},,")
         zout.writestr(record_name, "\n".join(record_lines) + "\n")
 
