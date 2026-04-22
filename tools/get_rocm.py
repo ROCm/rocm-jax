@@ -372,6 +372,40 @@ Pin-Priority: 600
 """
 
 
+def _graphics_url_version(rocm_version_str):
+    """Pick the right /graphics/<version>/ path component on repo.radeon.com.
+
+    AMD does not always publish a per-patch graphics subfolder (e.g. as of
+    now /graphics/7.2.2/ 404s while /rocm/.../7.2.2/ exists). Try the full
+    version first; fall back to major.minor so ROCm patch releases keep
+    working even when the graphics driver lags.
+    """
+    rv = parse_version(rocm_version_str)
+    major_minor = "%d.%d" % (rv.major, rv.minor)
+
+    if rocm_version_str == major_minor:
+        return rocm_version_str
+
+    probe_url = "https://repo.radeon.com/graphics/%s/" % rocm_version_str
+    try:
+        req = urllib.request.Request(probe_url, method="HEAD")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if 200 <= response.status < 400:
+                LOG.info(
+                    "Graphics repo: using full-version path %s", rocm_version_str
+                )
+                return rocm_version_str
+    # pylint: disable=W0718
+    except Exception as exc:
+        LOG.info(
+            "Graphics repo: %s unavailable (%s); falling back to %s",
+            probe_url,
+            exc,
+            major_minor,
+        )
+    return major_minor
+
+
 def setup_repos_ubuntu(rocm_version_str):
     """Configure an apt sources list entry for ROCm."""
 
@@ -380,6 +414,11 @@ def setup_repos_ubuntu(rocm_version_str):
     # if X.Y.0 -> repo url version should be X.Y
     if rv.rev == 0:
         rocm_version_str = "%d.%d" % (rv.major, rv.minor)
+
+    # AMD does not always publish a per-patch graphics subfolder (e.g.
+    # /graphics/7.2.2/ 404s while /rocm/apt/7.2.2/ exists), so probe and
+    # fall back to major.minor for the amdgpu/graphics URL when needed.
+    graphics_version = _graphics_url_version(rocm_version_str)
 
     # update indexes before prereq install, for fresh docker images
     subprocess.check_call(["apt-get", "update"])
@@ -396,7 +435,7 @@ def setup_repos_ubuntu(rocm_version_str):
     with open("/etc/apt/sources.list.d/amdgpu.list", "w") as fd:
         fd.write(
             ("deb [arch=amd64] " "https://repo.radeon.com/graphics/%s/ubuntu %s main\n")
-            % (rocm_version_str, codename)
+            % (graphics_version, codename)
         )
 
     with open("/etc/apt/sources.list.d/rocm.list", "w") as fd:
@@ -422,6 +461,11 @@ def setup_repos_el8(rocm_version_str):
     # if X.Y.0 -> repo url version should be X.Y
     if rv.rev == 0:
         rocm_version_str = "%d.%d" % (rv.major, rv.minor)
+
+    # AMD does not always publish a per-patch graphics subfolder (e.g.
+    # /graphics/7.2.2/ 404s while /rocm/rhel8/7.2.2/ exists), so probe and
+    # fall back to major.minor for the amdgpu/graphics URL when needed.
+    graphics_version = _graphics_url_version(rocm_version_str)
 
     with open("/etc/yum.repos.d/rocm.repo", "w") as rfd:
         rfd.write("""
@@ -449,7 +493,7 @@ gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
 timeout=1000
 minrate=1
-""" % (repodir, rocm_version_str))
+""" % (repodir, graphics_version))
 
 
 def parse_args():
