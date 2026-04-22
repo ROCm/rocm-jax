@@ -391,9 +391,7 @@ def _graphics_url_version(rocm_version_str):
         req = urllib.request.Request(probe_url, method="HEAD")
         with urllib.request.urlopen(req, timeout=10) as response:
             if 200 <= response.status < 400:
-                LOG.info(
-                    "Graphics repo: using full-version path %s", rocm_version_str
-                )
+                LOG.info("Graphics repo: using full-version path %s", rocm_version_str)
                 return rocm_version_str
     # pylint: disable=W0718
     except Exception as exc:
