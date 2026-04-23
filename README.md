@@ -102,3 +102,16 @@ Once inside the container,
 ```shell
 python3 stack.py develop --rebuild-makefile
 ```
+
+# building rocm plugins from within upstream repo
+There are 2 commands for each wheel type respectively
+* jax_rocm_plugin wheel
+```
+bazel --bazelrc=build/rocm/rocm.bazelrc run --config=rocm_release_wheel //jaxlib/tools:deploy_rocm_plugin_wheel -- /tmp/plugin/
+```
+
+* jax_rocm_pjrt wheel
+```
+bazel --bazelrc=build/rocm/rocm.bazelrc run --config=rocm_release_wheel //jaxlib/tools:deploy_rocm_pjrt_wheel -- /tmp/plugin/
+```
+/tmp/plugin in that case is the location where the wheel will be deployed
