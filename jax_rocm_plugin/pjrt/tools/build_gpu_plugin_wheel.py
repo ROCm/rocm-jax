@@ -77,6 +77,12 @@ parser.add_argument(
     "--enable-rocm", default=False, help="Should we build with ROCM enabled?"
 )
 parser.add_argument(
+    "--gpu_arch",
+    type=str,
+    default="",
+    help="GPU architecture suffix for arch-specific wheels (e.g. gfx950).",
+)
+parser.add_argument(
     "--xla-commit",
     default="",
     help="rocm/xla Git hash. Empty if unknown.",
@@ -159,10 +165,13 @@ def get_jax_commit_hash():
 
 
 def prepare_rocm_plugin_wheel(
-    wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs
+    wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs, gpu_arch=""
 ):
     """Assembles a source tree for the ROCm wheel in `sources_path`."""
-    plugin_dir = wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
+    arch_uscore = f"_{gpu_arch}" if gpu_arch else ""
+    plugin_dir = (
+        wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}{arch_uscore}"
+    )
     os.makedirs(plugin_dir, exist_ok=True)
 
     if srcs:
@@ -186,6 +195,7 @@ def prepare_rocm_plugin_wheel(
         )
 
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
+    build_utils.update_setup_with_gpu_arch(wheel_sources_path, gpu_arch)
     write_setup_cfg(wheel_sources_path, cpu)
     xla_commit_hash = get_xla_commit_hash()
     jax_commit_hash = get_jax_commit_hash()
@@ -247,8 +257,10 @@ try:
             cpu=args.cpu,
             rocm_version=args.platform_version,
             srcs=args.srcs,
+            gpu_arch=args.gpu_arch,
         )
-        package_name = "jax rocm plugin"
+        arch_label = f" {args.gpu_arch}" if args.gpu_arch else ""
+        package_name = f"jax rocm plugin{arch_label}"
     else:
         raise ValueError("Unsupported backend. Choose 'rocm'.")
 

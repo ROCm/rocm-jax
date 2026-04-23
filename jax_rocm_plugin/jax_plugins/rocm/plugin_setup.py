@@ -22,8 +22,15 @@ from setuptools.dist import Distribution
 
 __version__ = None
 rocm_version = 0  # placeholder  # pylint: disable=invalid-name
-project_name = f"jax-rocm{rocm_version}-plugin"  # pylint: disable=invalid-name
-package_name = f"jax_rocm{rocm_version}_plugin"  # pylint: disable=invalid-name
+gpu_arch = ""  # placeholder  # pylint: disable=invalid-name
+_arch_suffix = f"-{gpu_arch}" if gpu_arch else ""  # pylint: disable=invalid-name
+_arch_uscore = f"_{gpu_arch}" if gpu_arch else ""  # pylint: disable=invalid-name
+project_name = (  # pylint: disable=invalid-name
+    f"jax-rocm{rocm_version}-plugin{_arch_suffix}"
+)
+package_name = (  # pylint: disable=invalid-name
+    f"jax_rocm{rocm_version}_plugin{_arch_uscore}"
+)
 
 # Extract ROCm version from the `ROCM_PATH` environment variable.
 default_rocm_path = "/opt/rocm"  # pylint: disable=invalid-name
@@ -114,7 +121,7 @@ setup(
     packages=[package_name],
     python_requires=">=3.11",
     install_requires=[
-        f"jax-rocm{rocm_version}-pjrt=="
+        f"jax-rocm{rocm_version}-pjrt{_arch_suffix}=="
         f"{_version_module._version}.*"  # pylint: disable=protected-access
     ],
     url="https://github.com/ROCm/rocm-jax",

@@ -21,8 +21,15 @@ from setuptools import setup, find_namespace_packages
 
 __version__ = None
 rocm_version = 0  # placeholder  # pylint: disable=invalid-name
-project_name = f"jax-rocm{rocm_version}-pjrt"  # pylint: disable=invalid-name
-package_name = f"jax_plugins.xla_rocm{rocm_version}"  # pylint: disable=invalid-name
+gpu_arch = ""  # placeholder  # pylint: disable=invalid-name
+_arch_suffix = f"-{gpu_arch}" if gpu_arch else ""  # pylint: disable=invalid-name
+_arch_uscore = f"_{gpu_arch}" if gpu_arch else ""  # pylint: disable=invalid-name
+project_name = (  # pylint: disable=invalid-name
+    f"jax-rocm{rocm_version}-pjrt{_arch_suffix}"
+)
+package_name = (  # pylint: disable=invalid-name
+    f"jax_plugins.xla_rocm{rocm_version}{_arch_uscore}"
+)
 
 # Extract ROCm version from the `ROCM_PATH` environment variable.
 default_rocm_path = "/opt/rocm"  # pylint: disable=invalid-name
@@ -78,7 +85,9 @@ def load_version_module(pkg_path):
     return module
 
 
-_version_module = load_version_module(f"jax_plugins/xla_rocm{rocm_version}")
+_version_module = load_version_module(
+    f"jax_plugins/xla_rocm{rocm_version}{_arch_uscore}"
+)
 __version__ = (
     _version_module._get_version_for_build()  # pylint: disable=protected-access
 )
@@ -115,7 +124,7 @@ setup(
     zip_safe=False,
     entry_points={
         "jax_plugins": [
-            f"xla_rocm{rocm_version} = {package_name}",
+            f"xla_rocm{rocm_version}{_arch_uscore} = {package_name}",
         ],
     },
 )

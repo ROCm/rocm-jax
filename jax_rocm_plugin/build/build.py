@@ -245,6 +245,14 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
     )
 
     rocm_group.add_argument(
+        "--gpu_arch",
+        type=str,
+        default="",
+        help="GPU architecture for arch-specific wheels (e.g. gfx950). "
+        "When set, overrides --rocm_amdgpu_targets to build for this arch only.",
+    )
+
+    rocm_group.add_argument(
         "--rocm_path",
         type=str,
         default="",
@@ -621,6 +629,12 @@ async def main():
             wheel_build_command_base.append(
                 f'--action_env=ROCM_PATH="{args.rocm_path}"'
             )
+        if args.gpu_arch and args.gpu_arch != "all":
+            logging.info(
+                "GPU arch set: overriding rocm_amdgpu_targets to %s", args.gpu_arch
+            )
+            args.rocm_amdgpu_targets = args.gpu_arch
+
         if args.rocm_amdgpu_targets:
             targets = args.rocm_amdgpu_targets.split(",")
 
@@ -705,6 +719,8 @@ async def main():
             if "rocm" in wheel:
                 wheel_build_command.append("--enable-rocm=True")
                 wheel_build_command.append(f"--platform_version={args.rocm_version}")
+                if args.gpu_arch:
+                    wheel_build_command.append(f"--gpu_arch={args.gpu_arch}")
 
             wheel_build_command.append(f"--rocm_jax_git_hash={git_hash}")
 

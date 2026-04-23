@@ -51,6 +51,7 @@ def dist_wheels(
     builder_image,
     wheel_post_release=None,
     include_rocm_version_extra=True,
+    gpu_arch="",
 ):
     if xla_path:
         xla_path = os.path.abspath(xla_path)
@@ -85,6 +86,9 @@ def dist_wheels(
 
     if wheel_post_release is not None:
         bw_cmd.extend(["--wheel-post-release", str(wheel_post_release)])
+
+    if gpu_arch:
+        bw_cmd.extend(["--gpu-arch", gpu_arch])
 
     bw_cmd.append(container_plugin_path)
     container_cmd = " ".join(bw_cmd)
@@ -238,6 +242,12 @@ def parse_args():
         action="store_true",
         help="Do not append local '+rocm...' version tag to plugin/PJRT wheels",
     )
+    p.add_argument(
+        "--gpu-arch",
+        type=str,
+        default="",
+        help="GPU architecture for arch-specific wheels (e.g. gfx950).",
+    )
 
     subp = p.add_subparsers(dest="action", required=True)
 
@@ -263,6 +273,7 @@ def main():
             args.builder_image,
             args.wheel_post_release,
             not args.no_rocm_version_extra,
+            gpu_arch=args.gpu_arch,
         )
 
     elif args.action == "test":

@@ -75,6 +75,12 @@ parser.add_argument(
 parser.add_argument(
     "--enable-rocm", default=False, help="Should we build with ROCM enabled?"
 )
+parser.add_argument(
+    "--gpu_arch",
+    type=str,
+    default="",
+    help="GPU architecture suffix for arch-specific wheels (e.g. gfx950).",
+)
 
 parser.add_argument(
     "--xla-commit",
@@ -162,10 +168,13 @@ def get_jax_commit_hash():
     return args.jax_commit
 
 
-def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs):
+def prepare_wheel_rocm(
+    wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs, gpu_arch=""
+):
     # pylint: disable=too-many-locals
     """Assembles a source tree for the rocm kernel wheel in `sources_path`."""
-    plugin_dir = wheel_sources_path / f"jax_rocm{rocm_version}_plugin"
+    arch_uscore = f"_{gpu_arch}" if gpu_arch else ""
+    plugin_dir = wheel_sources_path / f"jax_rocm{rocm_version}_plugin{arch_uscore}"
     os.makedirs(plugin_dir, exist_ok=True)
 
     # Copy config files: from --srcs if provided, else from runfiles
@@ -189,6 +198,7 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         shutil.copy(rloc("pjrt/python/version.py"), plugin_dir)
 
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
+    build_utils.update_setup_with_gpu_arch(wheel_sources_path, gpu_arch)
     write_setup_cfg(wheel_sources_path, cpu)
     xla_commit_hash = get_xla_commit_hash()
     jax_commit_hash = get_jax_commit_hash()
@@ -268,8 +278,10 @@ try:
         cpu=args.cpu,
         rocm_version=args.platform_version,
         srcs=args.srcs,
+        gpu_arch=args.gpu_arch,
     )
-    package_name = f"jax rocm{args.platform_version} plugin"
+    arch_label = f" {args.gpu_arch}" if args.gpu_arch else ""
+    package_name = f"jax rocm{args.platform_version} plugin{arch_label}"
     if args.editable:
         build_utils.build_editable(sources_path, args.output_path, package_name)
     else:

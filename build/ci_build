@@ -188,6 +188,7 @@ def dist_wheels(
     builder_image=None,
     wheel_post_release=None,
     include_rocm_version_extra=True,
+    gpu_arch="",
 ):
     jax_plugin_dir = "jax_rocm_plugin"
 
@@ -235,6 +236,9 @@ def dist_wheels(
 
     if not include_rocm_version_extra:
         cmd.append("--no-rocm-version-extra")
+
+    if gpu_arch:
+        cmd.append("--gpu-arch=%s" % gpu_arch)
 
     cmd.append("dist_wheels")
 
@@ -644,6 +648,13 @@ def parse_args():
         action="store_true",
         help="Do not append local '+rocm...' version tag to plugin/PJRT wheels",
     )
+    p.add_argument(
+        "--gpu-arch",
+        type=str,
+        default="",
+        help="GPU architecture for arch-specific wheels (e.g. gfx950). "
+        "When set, builds only for this arch and embeds it in wheel names.",
+    )
 
     subp = p.add_subparsers(dest="action", required=True)
 
@@ -746,6 +757,7 @@ def main():
             builder_image=args.builder_image,
             wheel_post_release=args.wheel_post_release,
             include_rocm_version_extra=not args.no_rocm_version_extra,
+            gpu_arch=args.gpu_arch,
         )
 
     if args.action == "build_dockers":
