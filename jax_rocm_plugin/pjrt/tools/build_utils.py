@@ -25,6 +25,7 @@ import subprocess
 import glob
 import textwrap
 
+
 def _append_post_release_suffix(version: str, post_release: str) -> str:
     """Return version with .postX inserted before any local suffix."""
     public, sep, local = version.partition("+")
