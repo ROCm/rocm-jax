@@ -26,6 +26,11 @@ jobs:
         ) }}
       PYTHON_VERSION: ${{ matrix.python-version }}
       ROCM_VERSION: ${{ matrix.rocm-version }}
+      # JAX repo/ref for jaxlib build. Empty = do not build jaxlib (JAX 0.9.1+
+      # uses upstream PyPI jaxlib). Set both to non-empty to re-enable
+      # source-built jaxlib (e.g. JAX_REPO=ROCm/jax JAX_REF=rocm-jaxlib-v0.8.2).
+      JAX_REPO: ''
+      JAX_REF: ''
 
     steps:
       - name: Get job metadata
@@ -53,19 +58,28 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout JAX repo for jaxlib build
+        if: ${{ env.JAX_REF != '' }}
         uses: actions/checkout@v4
         with:
-          repository: ROCm/jax
-          ref: rocm-jaxlib-v0.9.1
+          repository: ${{ env.JAX_REPO }}
+          ref: ${{ env.JAX_REF }}
           path: jax
 
       - name: Build plugin wheels
         run: |
+          # When JAX_REF is empty (JAX 0.9.1+ default), --jax-source-dir is
+          # omitted and jaxlib is NOT built from source; jaxlib is installed
+          # from upstream PyPI inside the docker image. Only PJRT and plugin
+          # wheels are produced here.
+          JAX_SOURCE_ARG=()
+          if [ -n "${JAX_REF}" ]; then
+            JAX_SOURCE_ARG=(--jax-source-dir=./jax)
+          fi
           python3 build/ci_build \
             --compiler clang \
             --python-versions $PYTHON_VERSION \
             --rocm-version $ROCM_VERSION \
-            --jax-source-dir="./jax" \
+            "${JAX_SOURCE_ARG[@]}" \
             dist_wheels
 
       - name: Copy wheels for Docker build context
