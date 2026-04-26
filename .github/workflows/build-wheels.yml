@@ -23,15 +23,19 @@ on:
         default: 'plugin_wheels'
         type: string
       jax-repo:
-        description: 'JAX repository to checkout for jaxlib build'
+        description: >-
+          JAX repository to checkout for jaxlib build. Leave empty to skip
+          (JAX 0.9.1+ uses upstream PyPI jaxlib).
         required: false
         type: string
-        default: 'ROCm/jax'
+        default: ''
       jax-ref:
-        description: 'JAX git ref (branch, tag, or commit) to checkout for jaxlib build'
+        description: >-
+          JAX git ref (branch, tag, or commit) to checkout for jaxlib build.
+          Leave empty to skip (JAX 0.9.1+ uses upstream PyPI jaxlib).
         required: false
         type: string
-        default: 'rocm-jaxlib-v0.8.2'
+        default: ''
       builder-image:
         required: false
         type: string
@@ -70,6 +74,7 @@ jobs:
           rocminfo | grep gfx || true
       - uses: actions/checkout@v4
       - name: Checkout JAX repo for jaxlib build
+        if: ${{ inputs.jax-ref != '' }}
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.jax-repo }}
@@ -87,14 +92,24 @@ jobs:
           echo "$RBE_CI_CERT" >> ./jax_rocm_plugin/ci-cert.crt
           echo "$RBE_CI_KEY" >> ./jax_rocm_plugin/ci-cert.key
       - name: Build plugin wheels
+        env:
+          JAX_REF: ${{ inputs.jax-ref }}
         run: |
+          # When jax-ref is empty (JAX 0.9.1+ default), --jax-source-dir is
+          # omitted and jaxlib is NOT built from source; consumers install
+          # jaxlib from upstream PyPI. Only PJRT and plugin wheels are produced.
+          # When jax-ref is set, jaxlib is built from the checked-out ./jax dir.
+          JAX_SOURCE_ARG=()
+          if [ -n "${JAX_REF}" ]; then
+            JAX_SOURCE_ARG=(--jax-source-dir=./jax)
+          fi
           python3 build/ci_build \
             --compiler=clang \
             --python-versions="${{ inputs.python-versions }}" \
             --rocm-version="${{ inputs.rocm-version }}" \
             --rocm-build-job="${{ inputs.rocm-build-job }}" \
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
-            --jax-source-dir="./jax" \
+            "${JAX_SOURCE_ARG[@]}" \
             dist_wheels \
             --rbe \
             --builder-image="${{ inputs.builder-image }}"

@@ -59,12 +59,16 @@ jobs:
           # TODO: Change the repo and ref once we figure out how exactly we're going to
           #       manage tests
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.8.2
+          ref: rocm-jaxlib-v0.9.1
           path: jax
       - name: Apply patches to rocm/jax test repo
         run: |
           pushd jax
-          git apply ../ci/patches/*
+          shopt -s nullglob
+          patches=(../ci/patches/jax/*.patch)
+          if [ ${#patches[@]} -gt 0 ]; then
+            git apply "${patches[@]}"
+          fi
           popd
       - name: Authenticate to GitHub Container Registry
         run: |

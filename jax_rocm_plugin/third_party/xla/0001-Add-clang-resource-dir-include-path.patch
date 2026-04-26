@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ROCm CI <rocm-ci@amd.com>
+Date: Mon, 24 Feb 2026 09:30:00 -0600
+Subject: [PATCH] Add clang resource dir include path for cet.h
+
+The zstd assembly file huf_decompress_amd64.S includes cet.h from
+the clang resource directory's include folder. This path was not
+being added to cxx_builtin_include_directories, causing the build
+to fail with "absolute path inclusion(s) found" error in RBE builds.
+
+This patch adds the clang resource directory's include path
+(e.g., /usr/lib/llvm-18/lib/clang/18/include) alongside the existing
+share path.
+
+---
+ third_party/gpus/compiler_common_tools.bzl | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/third_party/gpus/compiler_common_tools.bzl b/third_party/gpus/compiler_common_tools.bzl
+index 1234567..abcdefg 100644
+--- a/third_party/gpus/compiler_common_tools.bzl
++++ b/third_party/gpus/compiler_common_tools.bzl
+@@ -91,8 +91,11 @@ def _get_cxx_inc_directories_impl(repository_ctx, cc, lang_is_cpp, tf_sys_root):
+ 
+     if print_resource_dir_supported:
+         resource_dir = repository_ctx.execute(
+             [cc, "-print-resource-dir"],
+-        ).stdout.strip() + "/share"
+-        inc_dirs += "\n" + resource_dir
++        ).stdout.strip()
++        # Add the share directory
++        inc_dirs += "\n" + resource_dir + "/share"
++        # Also add the include directory where cet.h lives (needed for zstd assembly)
++        inc_dirs += "\n" + resource_dir + "/include"
+ 
+     compiler_includes = [
+         _normalize_include_path(repository_ctx, _cxx_inc_convert(p))
+-- 
+2.34.1

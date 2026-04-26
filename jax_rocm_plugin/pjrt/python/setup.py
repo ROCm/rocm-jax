@@ -16,6 +16,7 @@
 
 import importlib
 import os
+import re
 from setuptools import setup, find_namespace_packages
 
 __version__ = None
@@ -26,8 +27,38 @@ package_name = f"jax_plugins.xla_rocm{rocm_version}"  # pylint: disable=invalid-
 # Extract ROCm version from the `ROCM_PATH` environment variable.
 default_rocm_path = "/opt/rocm"  # pylint: disable=invalid-name
 rocm_path = os.getenv("ROCM_PATH", default_rocm_path)
-rocm_detected_version = rocm_path.split("-")[-1] if "-" in rocm_path else "unknown"
 rocm_tag = os.getenv("ROCM_VERSION_EXTRA")
+
+
+def detect_rocm_version(path, tag):
+    """Detect ROCm version from env tag, ROCM_VERSION env, rocm path, or pip."""
+    if tag:
+        return tag
+    rocm_ver_env = os.getenv("ROCM_VERSION")
+    if rocm_ver_env:
+        return rocm_ver_env
+    for candidate in (path, os.path.realpath(path)):
+        match = re.search(r"(\d+(?:\.\d+)+)", candidate)
+        if match:
+            return match.group(1)
+    try:
+        import subprocess  # pylint: disable=import-outside-toplevel
+
+        result = subprocess.run(
+            ["pip", "list"], capture_output=True, text=True, check=False
+        )
+        for line in result.stdout.splitlines():
+            if line.startswith("rocm "):
+                return line.split()[-1]
+    except Exception:  # pylint: disable=broad-except
+        pass
+    return "unknown"
+
+
+rocm_detected_version = detect_rocm_version(rocm_path, rocm_tag)
+ROCM_PROVIDER = (
+    "TheRock" if os.getenv("THEROCK_BUILD") else "Legacy ROCm"
+)  # pylint: disable=invalid-name
 
 
 def load_version_module(pkg_path):
@@ -65,7 +96,7 @@ packages = find_namespace_packages(
 setup(
     name=project_name,
     version=__version__,
-    description=f"JAX XLA PJRT Plugin for AMD GPUs (ROCm:{rocm_detected_version})",
+    description=f"JAX XLA PJRT Plugin for AMD GPUs (ROCm: {ROCM_PROVIDER} {rocm_detected_version})",
     long_description="",
     long_description_content_type="text/markdown",
     author="ROCm JAX Devs",
@@ -75,7 +106,7 @@ setup(
     url="https://github.com/ROCm/rocm-jax",
     license="Apache-2.0",
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
     ],
     package_data={

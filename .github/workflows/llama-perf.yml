@@ -47,16 +47,12 @@ jobs:
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
             # There is no docker image with ROCm 7.2.0 and Jax 0.6.0
-            # use a ROCm 7.2.0 / Jax 0.8.2 docker image and update Jax
+            # use a ROCm 7.2.0 / Jax 0.9.1 docker image and update Jax
             # before building TE. For the application workload Bazel installs
             # its own Jax
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
           - jax-version: "0.9.1"
             jaxlib-version: "0.9.1"
-            # There is no docker image with ROCm 7.2.0 and Jax 0.9.1
-            # use a ROCm 7.2.0 / Jax 0.8.2 docker image and update Jax
-            # before building TE. For the application workload Bazel installs
-            # its own Jax
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
     env:
       NVTE_FRAMEWORK: jax

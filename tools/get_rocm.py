@@ -427,7 +427,7 @@ def setup_repos_el8(rocm_version_str):
         rfd.write("""
 [ROCm]
 name=ROCm
-baseurl=http://repo.radeon.com/rocm/rhel8/%s/main
+baseurl=https://repo.radeon.com/rocm/rhel8/%s/main
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key

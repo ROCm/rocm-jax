@@ -49,6 +49,8 @@ def dist_wheels(
     rbe,
     compiler,
     builder_image,
+    wheel_post_release=None,
+    include_rocm_version_extra=True,
 ):
     if xla_path:
         xla_path = os.path.abspath(xla_path)
@@ -80,6 +82,9 @@ def dist_wheels(
 
     if rbe:
         bw_cmd.append("--rbe")
+
+    if wheel_post_release is not None:
+        bw_cmd.extend(["--wheel-post-release", str(wheel_post_release)])
 
     bw_cmd.append(container_plugin_path)
     container_cmd = " ".join(bw_cmd)
@@ -116,7 +121,12 @@ def dist_wheels(
             "--shm-size",
             "64G",
             "-e",
-            "ROCM_VERSION_EXTRA=" + rocm_version.replace("+", "."),
+            "ROCM_VERSION_EXTRA="
+            + (rocm_version.replace("+", ".") if include_rocm_version_extra else ""),
+            "-e",
+            "ROCM_VERSION=" + rocm_version,
+            "-e",
+            "THEROCK_BUILD=" + os.environ.get("THEROCK_BUILD", ""),
             "-e",
             "ROCM_JAX_COMMIT=" + rocm_jax_commit,
             builder_image,
@@ -217,6 +227,17 @@ def parse_args():
         "--builder-image",
         default=None,
     )
+    p.add_argument(
+        "--wheel-post-release",
+        type=int,
+        default=None,
+        help="Optional post-release suffix number to append as .postX",
+    )
+    p.add_argument(
+        "--no-rocm-version-extra",
+        action="store_true",
+        help="Do not append local '+rocm...' version tag to plugin/PJRT wheels",
+    )
 
     subp = p.add_subparsers(dest="action", required=True)
 
@@ -240,6 +261,8 @@ def main():
             args.rbe,
             args.compiler,
             args.builder_image,
+            args.wheel_post_release,
+            not args.no_rocm_version_extra,
         )
 
     elif args.action == "test":

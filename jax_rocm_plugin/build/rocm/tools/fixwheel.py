@@ -59,11 +59,13 @@ def parse_wheel_name(path):
     return wheel_name[:-4].split("-")
 
 
-def fix_wheel(path):
+def fix_wheel(path):  # pylint: disable=too-many-locals
     """Fixes a wheel and attaches manylinux platform labels to it"""
+    original_input = path
+    intermediate = None
     tup = parse_wheel_name(path)
     plat_tag = tup[4]
-    if "manylinux2014" in plat_tag:
+    if "manylinux2014" in plat_tag or "manylinux_2_27" in plat_tag:
         # strip any manylinux tags from the current wheel first
         plat_mod_str = "linux_x86_64"
         output = subprocess.run(
@@ -80,6 +82,7 @@ def fix_wheel(path):
         new_wheel = output.stdout.strip()
         new_path = os.path.join(os.path.dirname(path), new_wheel)
         LOG.info("Stripped broken tags and created new wheel at %r", new_path)
+        intermediate = new_path
         path = new_path
 
     # build excludes, using auditwheels lddtree to find them
@@ -103,6 +106,23 @@ def fix_wheel(path):
     LOG.info("running %r", cmd)
 
     subprocess.run(cmd, check=True)
+
+    # auditwheel writes the clean wheel into ./wheelhouse/. Remove the Bazel
+    # input and any `wheel tags` intermediate so build_wheels.py doesn't
+    # propagate them alongside the auditwheel output (which would leave
+    # users with three differently-tagged copies of the same package in the
+    # wheelhouse).
+    if intermediate and intermediate != original_input:
+        try:
+            os.remove(intermediate)
+            LOG.info("Removed intermediate wheel %r", intermediate)
+        except OSError as exc:
+            LOG.warning("Could not remove intermediate %r: %s", intermediate, exc)
+    try:
+        os.remove(original_input)
+        LOG.info("Removed source wheel %r", original_input)
+    except OSError as exc:
+        LOG.warning("Could not remove source wheel %r: %s", original_input, exc)
 
 
 def main():
