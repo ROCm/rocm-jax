@@ -19,7 +19,7 @@ jobs:
   call-build-wheels:
     strategy:
       matrix:
-        rocm-version: ["7.1.1"]
+        rocm-version: ["7.2.0"]
     uses: ./.github/workflows/build-wheels.yml
     with:
       python-versions: "3.11,3.12,3.13,3.14"
@@ -33,7 +33,7 @@ jobs:
     needs: call-build-wheels
     strategy:
       matrix:
-        rocm-version: ["7.1.1"]
+        rocm-version: ["7.2.0"]
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
@@ -44,7 +44,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        rocm-version: ["7.1.1"]
+        rocm-version: ["7.2.0"]
     steps:
       - name: Change owners for cleanup
         run: |
