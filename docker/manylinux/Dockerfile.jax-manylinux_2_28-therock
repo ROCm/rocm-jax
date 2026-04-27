@@ -3,7 +3,7 @@ FROM quay.io/pypa/manylinux_2_28_x86_64
 
 ARG ROCM_VERSION
 ARG THEROCK_PATH
-ENV GPU_DEVICE_TARGETS="gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
+ENV GPU_DEVICE_TARGETS="gfx906 gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1151 gfx1200 gfx1201"
 
 # Install patchelf and headers for numactl
 RUN --mount=type=cache,target=/var/cache/dnf \
