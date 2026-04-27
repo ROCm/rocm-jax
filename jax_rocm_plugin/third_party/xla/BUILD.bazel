@@ -3,6 +3,7 @@
 exports_files(
     srcs = [
         "0001-Add-clang-resource-dir-include-path.patch",
+        "0002-upgrade-rules-python-to-1.8.5.patch",
     ],
     visibility = ["//visibility:public"],
 )
