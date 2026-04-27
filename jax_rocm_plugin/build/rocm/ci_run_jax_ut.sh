@@ -50,7 +50,7 @@ bazel --bazelrc="${SCRIPT_DIR}/jax.bazelrc" test \
     --config=rocm \
     --test_tag_filters="${TAG_FILTERS}" \
     --build_tag_filters="${TAG_FILTERS}" \
-    --@jax//jax:build_jaxlib=wheel \
+    --@jax//jax:build_jaxlib=false \
     --keep_going \
     --test_verbose_timeout_warnings \
     --local_test_jobs=4 \
