@@ -10,7 +10,7 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 # To update XLA:
-#   1. Find the commit hash you want to pin to (e.g., from rocm-jaxlib-v0.9.1 branch)
+#   1. Find the commit hash you want to pin to (e.g., from rocm-jaxlib-v0.9.2 branch)
 #   2. Update XLA_COMMIT below
 
 XLA_COMMIT = "60f77b59e233ffb97d039086f0531ab75d7e0181"
@@ -24,6 +24,8 @@ def repo():
             # Fix for zstd assembly compilation with LLVM-18's cet.h header
             # The cet.h include path was not in cxx_builtin_include_directories
             "//third_party/xla:0001-Add-clang-resource-dir-include-path.patch",
+            # Upgrade rules_python 1.8.4 -> 1.8.5 to fix %interpreter_args% SyntaxError
+            "//third_party/xla:0002-upgrade-rules-python-to-1.8.5.patch",
         ],
         patch_args = ["-p1"],
     )
