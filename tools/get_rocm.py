@@ -29,6 +29,7 @@ import shutil
 import ssl
 import subprocess
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -393,8 +394,7 @@ def _graphics_url_version(rocm_version_str):
             if 200 <= response.status < 400:
                 LOG.info("Graphics repo: using full-version path %s", rocm_version_str)
                 return rocm_version_str
-    # pylint: disable=W0718
-    except Exception as exc:
+    except (urllib.error.HTTPError, urllib.error.URLError) as exc:
         LOG.info(
             "Graphics repo: %s unavailable (%s); falling back to %s",
             probe_url,
