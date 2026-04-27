@@ -39,7 +39,7 @@ LOG = logging.getLogger(__name__)
 
 
 GPU_DEVICE_TARGETS = (
-    "gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1200 gfx1201"
+    "gfx908 gfx90a gfx942 gfx950 gfx1030 gfx1100 gfx1101 gfx1151 gfx1200 gfx1201"
 )
 
 
