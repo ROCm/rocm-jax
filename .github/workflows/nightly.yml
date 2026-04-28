@@ -21,11 +21,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.1.1", "7.2.2"]
         include:
           - rocm-version: "7.1.1"
             runner-label: '["linux-x86-64-1gpu-amd"]'
-          - rocm-version: "7.2.0"
+          - rocm-version: "7.2.2"
             runner-label: '["linux-x86-64-1gpu-amd"]'
     uses: ./.github/workflows/build-wheels.yml
     with:
@@ -43,11 +43,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.1.1", "7.2.2"]
         include:
           - rocm-version: "7.1.1"
             runner-label: '["linux-x86-64-1gpu-amd"]'
-          - rocm-version: "7.2.0"
+          - rocm-version: "7.2.2"
             runner-label: '["linux-x86-64-1gpu-amd"]'
     uses: ./.github/workflows/build-docker.yml
     with:
@@ -64,7 +64,7 @@ jobs:
         test-command:
           - "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
           - "python jax_rocm_plugin/build/rocm/run_multi_gpu.py -c -s"
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.1.1", "7.2.2"]
         include:
           - test-command: "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c -s"
             runner-label: '["linux-x86-64-1gpu-amd"]'

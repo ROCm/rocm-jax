@@ -1,5 +1,5 @@
 ### Container Build Arguments:
-# The ROCm version tag (dots removed, e.g., 7.1.1 -> 711, 7.2.0 -> 720)
+# The ROCm version tag (dots removed, e.g., 7.1.1 -> 711, 7.2.2 -> 720)
 ARG ROCM_VERSION_TAG
 # The base image tag to use (defaults to latest, can be set to commit SHA)
 ARG BASE_IMAGE_TAG=latest

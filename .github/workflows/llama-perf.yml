@@ -7,7 +7,7 @@ name: Llama Performance Benchmarks
 # For JAX 0.9.2: uses wheels and Docker image
 # built from the latest nightly results.
 
-# PS: Ubuntu 24 & ROCm 7.2.0.
+# PS: Ubuntu 24 & ROCm 7.2.2.
 
 env:
   TE_REF_DEFAULT: "c54e8b2bac2eeed8da6bb45eb7c4764b4e94d538"
@@ -46,14 +46,14 @@ jobs:
         include:
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
-            # There is no docker image with ROCm 7.2.0 and Jax 0.6.0
-            # use a ROCm 7.2.0 / Jax 0.9.2 docker image and update Jax
+            # There is no docker image with ROCm 7.2.2 and Jax 0.6.0
+            # use a ROCm 7.2.2 / Jax 0.9.2 docker image and update Jax
             # before building TE. For the application workload Bazel installs
             # its own Jax
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm722:nightly"
           - jax-version: "0.9.2"
             jaxlib-version: "0.9.2"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm722:nightly"
     env:
       NVTE_FRAMEWORK: jax
       NVTE_USE_ROCM: 1
@@ -155,11 +155,11 @@ jobs:
           - jax-version: "0.6.0"
             model-name: "train_dense"
             jaxlib-version: "0.6.0"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm722:nightly"
           - jax-version: "0.9.2"
             model-name: "train_dense"
             jaxlib-version: "0.9.2"
-            docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
+            docker-image: "ghcr.io/rocm/jax-ubu24.rocm722:nightly"
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v4
@@ -196,7 +196,7 @@ jobs:
                   | max_by(.createdAt)
                   | .databaseId') \
               -R ROCm/rocm-jax \
-              -n plugin_wheels_r7.2.0 \
+              -n plugin_wheels_r7.2.2 \
               -D wheelhouse
             rm -v wheelhouse/*311*
           fi
@@ -299,11 +299,11 @@ jobs:
         include:
           - jax-version: "0.6.0"
             model-name: "train_dense"
-            rocm-version: "7.2.0"
+            rocm-version: "7.2.2"
             python-version: "3.12"
           - jax-version: "0.9.2"
             model-name: "train_dense"
-            rocm-version: "7.2.0"
+            rocm-version: "7.2.2"
             python-version: "3.12"
     steps:
       - name: Checkout plugin repo

@@ -27,7 +27,7 @@ setting `--rocm-build-job` and `--rocm-build-num` and with your own local
 copy of XLA. For example,
 ```shell
 PYTHON_VERSION="3.11,3.12"
-ROCM_VERSION=7.2.0
+ROCM_VERSION=7.2.2
 ROCM_BUILD_JOB=compute-rocm-dkms-no-npi-hipclang
 ROCM_BUILD_NUM=16623
 XLA_SOURCE=~/path/to/xla
@@ -95,7 +95,7 @@ which require Python 3.11 and Python 3.12 respectively. The kernels wheel
 
 Run the build script 
 ```shell
-ROCM_VERSION=7.2.0
+ROCM_VERSION=7.2.2
 
 python3 build/ci_build \
     --rocm-version=$ROCM_VERSION \
@@ -106,7 +106,7 @@ Like the wheel build, you can also install versions of ROCm that were built
 internally at AMD. You can also filter on the Dockerfile names in `docker/`,
 and only build images from select Dockerfiles with the `--filter` option.
 ```shell
-ROCM_VERSION=7.2.0
+ROCM_VERSION=7.2.2
 ROCM_BUILD_JOB=compute-rocm-dkms-no-npi-hipclang
 ROCM_BUILD_NUM=16623
 

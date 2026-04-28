@@ -30,7 +30,7 @@ TZ=UTC DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
 dpkg-reconfigure --frontend noninteractive tzdata
 
 # Default values
-rocm_version="7.2.0"
+rocm_version="7.2.2"
 rocm_build_number="16864"
 rocm_job_name="compute-rocm-dkms-no-npi-hipclang"
 
