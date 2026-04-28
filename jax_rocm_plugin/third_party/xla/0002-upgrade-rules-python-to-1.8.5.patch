@@ -1,8 +1,8 @@
 diff --git a/third_party/py/python_init_rules.bzl b/third_party/py/python_init_rules.bzl
-index d1b268f..dbb4b4b 100644
+index d1b268f..5a192ca 100644
 --- a/third_party/py/python_init_rules.bzl
 +++ b/third_party/py/python_init_rules.bzl
-@@ -37,12 +37,10 @@ def python_init_rules(extra_patches = []):
+@@ -37,10 +37,11 @@ def python_init_rules(extra_patches = []):
  
      tf_http_archive(
          name = "rules_python",
@@ -13,9 +13,40 @@ index d1b268f..dbb4b4b 100644
 +        strip_prefix = "rules_python-1.8.5",
 +        urls = tf_mirror_urls("https://github.com/bazelbuild/rules_python/releases/download/1.8.5/rules_python-1.8.5.tar.gz"),
          patch_file = [
--            "@xla//third_party/py:rules_python_scope.patch",
--            "@xla//third_party/py:rules_python_freethreaded.patch",
--            "@xla//third_party/py:rules_python_versions.patch",
 +            "@xla//third_party/py:rules_python_pip_version.patch",
-         ] + extra_patches,
-     )
+             "@xla//third_party/py:rules_python_scope.patch",
+             "@xla//third_party/py:rules_python_freethreaded.patch",
+             "@xla//third_party/py:rules_python_versions.patch",
+diff --git a/third_party/py/rules_python_freethreaded.patch b/third_party/py/rules_python_freethreaded.patch
+index d564e9a..3313c99 100644
+--- a/third_party/py/rules_python_freethreaded.patch
++++ b/third_party/py/rules_python_freethreaded.patch
+@@ -42,4 +42,4 @@ index f7ff19c3..458f2885 100644
+ +
+      if candidates:
+          platform_name, meta = candidates[0]
+-         suffix = meta.impl_repo_name
+\ No newline at end of file
++         suffix = meta.impl_repo_name
+diff --git a/third_party/py/rules_python_scope.patch b/third_party/py/rules_python_scope.patch
+index 4e64061..272eb56 100644
+--- a/third_party/py/rules_python_scope.patch
++++ b/third_party/py/rules_python_scope.patch
+@@ -30,4 +30,4 @@ index 369989eb..b20a0da6 100644
+      build_setting_default = "python",
+ -    scope = "universal",
+      visibility = ["//visibility:public"],
+- )
+\ No newline at end of file
++ )
+diff --git a/third_party/py/rules_python_versions.patch b/third_party/py/rules_python_versions.patch
+index d160e2a..fe8f28a 100644
+--- a/third_party/py/rules_python_versions.patch
++++ b/third_party/py/rules_python_versions.patch
+@@ -33,4 +33,4 @@ index 3299a9f1..ae900149 100644
+ -
+          release_filename = u.format(
+              platform = p,
+-             python_version = python_version,
+\ No newline at end of file
++             python_version = python_version,
