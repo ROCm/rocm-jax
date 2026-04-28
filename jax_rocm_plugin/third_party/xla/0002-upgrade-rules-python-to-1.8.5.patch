@@ -1,7 +1,8 @@
 diff --git a/third_party/py/python_init_rules.bzl b/third_party/py/python_init_rules.bzl
+index d1b268f..dbb4b4b 100644
 --- a/third_party/py/python_init_rules.bzl
 +++ b/third_party/py/python_init_rules.bzl
-@@ -37,9 +37,9 @@ def python_init_rules(extra_patches = []):
+@@ -37,12 +37,10 @@ def python_init_rules(extra_patches = []):
  
      tf_http_archive(
          name = "rules_python",
@@ -12,5 +13,9 @@ diff --git a/third_party/py/python_init_rules.bzl b/third_party/py/python_init_r
 +        strip_prefix = "rules_python-1.8.5",
 +        urls = tf_mirror_urls("https://github.com/bazelbuild/rules_python/releases/download/1.8.5/rules_python-1.8.5.tar.gz"),
          patch_file = [
-             "@xla//third_party/py:rules_python_scope.patch",
-             "@xla//third_party/py:rules_python_freethreaded.patch",
+-            "@xla//third_party/py:rules_python_scope.patch",
+-            "@xla//third_party/py:rules_python_freethreaded.patch",
+-            "@xla//third_party/py:rules_python_versions.patch",
++            "@xla//third_party/py:rules_python_pip_version.patch",
+         ] + extra_patches,
+     )
