@@ -10,7 +10,7 @@ die() {
 }
 
 python3 build/ci_build \
-    --rocm-version 7.2.2 \
+    --rocm-version 7.2.0 \
     --python-versions 3.11,3.12,3.13,3.14 \
     --compiler clang dist_wheels \
     || die "jax_rocm_plugin wheel build failed"
@@ -22,13 +22,13 @@ cp jax_rocm_plugin/wheelhouse/* wheelhouse/
 
 
 python3 build/ci_build \
-    --rocm-version 7.2.2 \
+    --rocm-version 7.2.0 \
     build_dockers \
     || die "failed to build docker image(s) for testing"
 
 
 python3 build/ci_build \
-    test jax-ubu24.rocm722 \
+    test jax-ubu24.rocm720 \
     || die "failure during integration tests"
 
 

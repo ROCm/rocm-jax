@@ -4,7 +4,7 @@ all: .docker-jax-ubu24
 
 clean: clean-jax-ubu24
 
-ROCM_VERSION ?= 7.2.2
+ROCM_VERSION ?= 7.2.0
 
 .docker-%  : build/rocm/docker/Dockerfile.%
 	docker build -f $< --tag $(*F) --progress plain \

@@ -147,7 +147,7 @@ def parse_args():
     p.add_argument("--model-name", required=True, help="Model/workload, e.g. train_moe")
     p.add_argument("--te-commit", required=True, help="TE commit SHA, e.g. abc1234")
     p.add_argument("--jax-version", required=True, help="JAX version, e.g. 0.6.0")
-    p.add_argument("--rocm-version", required=True, help="ROCm version, e.g. 7.2.2")
+    p.add_argument("--rocm-version", required=True, help="ROCm version, e.g. 7.2.0")
     p.add_argument("--python-version", required=True, help="Python version, e.g. 3.12")
     p.add_argument(
         "--github-run-id",
