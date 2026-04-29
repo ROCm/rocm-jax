@@ -27,7 +27,13 @@ import subprocess
 import tempfile
 
 # pylint: disable=import-error,invalid-name,consider-using-with
-from bazel_tools.tools.python.runfiles import runfiles
+try:
+    from python.runfiles import runfiles as _runfiles
+except ModuleNotFoundError:
+    try:
+        from bazel_tools.tools.python.runfiles import runfiles as _runfiles
+    except ModuleNotFoundError:
+        _runfiles = None
 from pjrt.tools import build_utils
 
 parser = argparse.ArgumentParser(fromfile_prefix_chars="@")
@@ -108,15 +114,45 @@ def get_rocm_jax_git_hash():
     return args.rocm_jax_git_hash or args.jaxlib_git_hash or ""
 
 
-r = runfiles.Create()
+def _discover_workspace_root():
+    script_path = pathlib.Path(__file__).resolve()
+    for parent in script_path.parents:
+        if (parent / "pjrt").is_dir() and (parent / "jaxlib_ext").is_dir():
+            return parent
+    return None
+
+
+_WORKSPACE_ROOT = _discover_workspace_root()
+_RUNFILES = _runfiles.Create() if _runfiles is not None else None
+
+
+def _iter_runfile_candidates(path):
+    runfiles_dir = os.environ.get("RUNFILES_DIR")
+    if runfiles_dir:
+        base = pathlib.Path(runfiles_dir)
+        yield base / path
+        yield base / "__main__" / path
+        yield base / "jax_rocm_plugin" / path
+        try:
+            for child in base.iterdir():
+                if child.is_dir():
+                    yield child / path
+        except OSError:
+            pass
+    if _WORKSPACE_ROOT is not None:
+        yield _WORKSPACE_ROOT / path
 
 
 def rloc(path):
-    """Get runfiles location, trying multiple workspace prefixes."""
-    for prefix in ["__main__", "jax_rocm_plugin"]:
-        loc = r.Rlocation(f"{prefix}/{path}")
-        if loc is not None:
-            return loc
+    """Get runfiles location, trying module lookup first then filesystem fallback."""
+    if _RUNFILES is not None:
+        for prefix in ["__main__", "jax_rocm_plugin"]:
+            loc = _RUNFILES.Rlocation(f"{prefix}/{path}")
+            if loc is not None and os.path.exists(loc):
+                return loc
+    for candidate in _iter_runfile_candidates(path):
+        if candidate.exists():
+            return str(candidate)
     raise FileNotFoundError(f"Unable to find in runfiles: {path}")
 
 

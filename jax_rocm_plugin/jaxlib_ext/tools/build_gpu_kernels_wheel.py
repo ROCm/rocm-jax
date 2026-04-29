@@ -27,7 +27,13 @@ import subprocess
 import tempfile
 
 # pylint: disable=import-error,invalid-name,consider-using-with
-from bazel_tools.tools.python.runfiles import runfiles
+try:
+    from python.runfiles import runfiles as _runfiles
+except ModuleNotFoundError:
+    try:
+        from bazel_tools.tools.python.runfiles import runfiles as _runfiles
+    except ModuleNotFoundError:
+        _runfiles = None
 from jaxlib_ext.tools import build_utils
 
 parser = argparse.ArgumentParser(fromfile_prefix_chars="@")
@@ -110,17 +116,60 @@ def get_rocm_jax_git_hash():
     return args.rocm_jax_git_hash or args.jaxlib_git_hash or ""
 
 
-r = runfiles.Create()
+def _discover_workspace_root():
+    script_path = pathlib.Path(__file__).resolve()
+    for parent in script_path.parents:
+        if (parent / "pjrt").is_dir() and (parent / "jaxlib_ext").is_dir():
+            return parent
+    return None
+
+
+_WORKSPACE_ROOT = _discover_workspace_root()
+_RUNFILES = _runfiles.Create() if _runfiles is not None else None
 pyext = "pyd" if build_utils.is_windows() else "so"
 
 
-def rloc(path):
-    """Get runfiles location, trying multiple workspace prefixes."""
-    for prefix in ["__main__", "jax_rocm_plugin"]:
-        loc = r.Rlocation(f"{prefix}/{path}")
-        if loc is not None:
+def _iter_runfile_candidates(path, prefixes):
+    runfiles_dir = os.environ.get("RUNFILES_DIR")
+    if runfiles_dir:
+        base = pathlib.Path(runfiles_dir)
+        for prefix in prefixes:
+            yield base / prefix / path
+        yield base / path
+        try:
+            for child in base.iterdir():
+                if child.is_dir():
+                    for prefix in prefixes:
+                        yield child / prefix / path
+                    yield child / path
+        except OSError:
+            pass
+    if _WORKSPACE_ROOT is not None:
+        for prefix in prefixes:
+            yield _WORKSPACE_ROOT / prefix / path
+        yield _WORKSPACE_ROOT / path
+
+
+def resolve_runfile(path, prefixes=()):
+    """Resolve a runfile path via runfiles module or filesystem fallback."""
+    if _RUNFILES is not None:
+        for prefix in prefixes:
+            loc = _RUNFILES.Rlocation(f"{prefix}/{path}")
+            if loc is not None and os.path.exists(loc):
+                return loc
+        loc = _RUNFILES.Rlocation(path)
+        if loc is not None and os.path.exists(loc):
             return loc
+
+    for candidate in _iter_runfile_candidates(path, prefixes):
+        if candidate.exists():
+            return str(candidate)
     raise FileNotFoundError(f"Unable to find in runfiles: {path}")
+
+
+def rloc(path):
+    """Get runfiles location for this workspace."""
+    return resolve_runfile(path, prefixes=("__main__", "jax_rocm_plugin"))
 
 
 def find_src(srcs, basename):
@@ -207,7 +256,7 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         f"_triton.{pyext}",
         f"rocm_plugin_extension.{pyext}",
     ]:
-        shutil.copy(r.Rlocation(f"jax/jaxlib/rocm/{so_file}"), plugin_dir)
+        shutil.copy(resolve_runfile(f"jax/jaxlib/rocm/{so_file}"), plugin_dir)
 
     # NOTE(mrodden): this is a hack to change/set rpath values
     # in the shared objects that are produced by the bazel build
