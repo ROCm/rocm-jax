@@ -11,9 +11,4 @@ def repo():
         name = "jax",
         remote = "https://github.com/ROCm/jax.git",
         commit = JAX_COMMIT,
-        patch_tool = "patch",
-        patch_args = ["-p1"],
-        patches = [
-            "//third_party/jax:0008-Expose-rocm-plugin-targets.patch",
-        ],
     )
