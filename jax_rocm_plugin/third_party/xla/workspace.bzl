@@ -10,10 +10,10 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 # To update XLA:
-#   1. Find the commit hash you want to pin to (e.g., from rocm-jaxlib-v0.9.2 branch)
+#   1. Find the commit hash you want to pin to (e.g., from rocm-jaxlib-v0.10.0 branch)
 #   2. Update XLA_COMMIT below
 
-XLA_COMMIT = "d8b2a5f5ece8af6b45e0fbfd6d3dbea1958d2f7e"
+XLA_COMMIT = "a4814ea3bd46c3440d8cb7b61850719aeaf24aa1"
 
 def repo():
     git_repository(
