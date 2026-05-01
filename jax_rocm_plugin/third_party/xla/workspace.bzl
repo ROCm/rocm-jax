@@ -24,8 +24,6 @@ def repo():
             # Fix for zstd assembly compilation with LLVM-18's cet.h header
             # The cet.h include path was not in cxx_builtin_include_directories
             "//third_party/xla:0001-Add-clang-resource-dir-include-path.patch",
-            # Upgrade rules_python 1.8.4 -> 1.8.5 to fix %interpreter_args% SyntaxError
-            "//third_party/xla:0002-upgrade-rules-python-to-1.8.5.patch",
         ],
         patch_args = ["-p1"],
     )
