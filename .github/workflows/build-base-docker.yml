@@ -21,7 +21,35 @@ on:
       - 'docker/manylinux/*'
 
 jobs:
+  build-core-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build core docker image
+        run: |
+          python3 build/ci_build build_core_dockers --filter="ubu24"
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push docker images
+        run: |
+          image_tag="jax-core-ubu24"
+          ghcr_image_sha="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
+          echo "Image name (SHA): ${ghcr_image_sha}"
+          docker tag "${image_tag}" "${ghcr_image_sha}"
+          docker push "${ghcr_image_sha}"
+      - name: Push latest tag
+        if: github.event_name != 'pull_request'
+        run: |
+          image_tag="jax-core-ubu24"
+          ghcr_image_latest="ghcr.io/rocm/${image_tag}:latest"
+          echo "Image name (latest): ${ghcr_image_latest}"
+          docker tag "${image_tag}" "${ghcr_image_latest}"
+          docker push "${ghcr_image_latest}"
+
   build-base-images:
+    needs: build-core-image
     runs-on: ${{ matrix.runner-label }}
     strategy:
       fail-fast: false
@@ -73,6 +101,7 @@ jobs:
             $BUILD_ARGS \
             build_base_dockers \
             --filter="ubu24" \
+            --core-image-tag="${{ github.sha }}" \
             ${{ matrix.install-llvm && '--install-llvm --llvm-version 18' || '' }}
       - name: Authenticate to GitHub Container Registry
         run: |

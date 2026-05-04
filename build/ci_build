@@ -183,6 +183,36 @@ def build_manylinux_dockers(
     return constructed_tag
 
 
+CORE_IMAGE_NAME = "ghcr.io/rocm/jax-core-ubu24"
+
+
+def build_core_dockers(
+    docker_filters=None,
+    push_latest=False,
+):
+    """Build the core Ubuntu + Python image (no ROCm, no tooling)."""
+    dockerfiles = _apply_filters(docker_filters, "Dockerfile.core")
+
+    for dockerfile in dockerfiles:
+        _, tag_suffix = dockerfile.split(".", 1)
+        tag = "jax-" + tag_suffix
+
+        print("Building dockerfile=%r to tag=%r" % (dockerfile, tag))
+
+        cmd = [
+            "docker",
+            "build",
+            "-f",
+            dockerfile,
+            "--tag=%s" % tag,
+            ".",
+        ]
+        subprocess.check_call(cmd)
+
+        if push_latest:
+            _tag_and_push_latest(tag)
+
+
 def dist_wheels(
     rocm_version,
     python_versions,
@@ -491,12 +521,26 @@ def build_base_dockers(
     docker_filters=None,
     push_latest=False,
     no_cache=False,
+    core_image_tag="latest",
 ):
+    core_image = "%s:%s" % (CORE_IMAGE_NAME, core_image_tag)
+    if not _check_base_image_exists(core_image):
+        print("Core image %s not found in registry. Building it..." % core_image)
+        build_core_dockers(
+            docker_filters=docker_filters,
+            push_latest=True,
+        )
+        core_image_tag = "latest"
+    else:
+        print("Core image %s found in registry." % core_image)
+
     dockerfiles = _apply_filters(docker_filters, "Dockerfile.base")
     # Docker tags cannot contain '+', so replace it with '.' for consistency with wheel versions
     rocm_ver_tag = "rocm%s" % "".join(rocm_version.split(".")).replace("+", ".")
 
-    extra_args = []
+    extra_args = [
+        "--build-arg=CORE_IMAGE_TAG=%s" % core_image_tag,
+    ]
     if no_cache:
         extra_args.extend(["--no-cache", "--pull"])
     if add_llvm:
@@ -720,6 +764,17 @@ def parse_args():
         help="Build images from scratch without using Docker layer cache",
     )
 
+    bcoredp = subp.add_parser(
+        "build_core_dockers", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    bcoredp.add_argument(
+        "--filter",
+        "-f",
+        type=str,
+        help="Comma separated strings to filter Dockerfiles to build. Substring match",
+        default="",
+    )
+
     bbasedp = subp.add_parser(
         "build_base_dockers", formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -745,6 +800,12 @@ def parse_args():
         help="Set the version number of LLVM to be installed.",
         type=int,
         default="18",
+    )
+    bbasedp.add_argument(
+        "--core-image-tag",
+        help="Tag of the core image to use as base for the base images.",
+        type=str,
+        default="latest",
     )
 
     testp = subp.add_parser(
@@ -799,7 +860,14 @@ def main():
             include_rocm_version_extra=not args.no_rocm_version_extra,
         )
 
-    if args.action == "build_dockers":
+    if args.action == "build_core_dockers":
+        filters = args.filter.split(",")
+
+        build_core_dockers(
+            docker_filters=filters,
+        )
+
+    elif args.action == "build_dockers":
         filters = args.filter.split(",")
 
         build_dockers(
@@ -824,6 +892,7 @@ def main():
             add_llvm=args.install_llvm,
             llvm_version=args.llvm_version,
             no_cache=args.no_cache,
+            core_image_tag=args.core_image_tag,
         )
 
     elif args.action == "test_docker":
