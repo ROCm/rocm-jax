@@ -25,7 +25,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Install all Python versions from deadsnakes PPA:
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
-    apt-get install -y software-properties-common && \
+    apt-get install --no-install-recommends -y \
+      software-properties-common ca-certificates gpg-agent && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
