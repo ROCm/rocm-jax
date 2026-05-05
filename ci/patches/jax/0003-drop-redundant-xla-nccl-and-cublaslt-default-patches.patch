@@ -1,0 +1,13 @@
+diff --git a/third_party/xla/workspace.bzl b/third_party/xla/workspace.bzl
+index bc50996..5979c77 100644
+--- a/third_party/xla/workspace.bzl
++++ b/third_party/xla/workspace.bzl
+@@ -24,8 +24,6 @@ def repo():
+         urls = tf_mirror_urls("https://github.com/openxla/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)),
+         patch_file = [
+             "//third_party/xla:shardy_temporary.patch",
+-            "//third_party/xla:xla_gpu_cublaslt_default.patch",
+-	    "//third_party/xla:xla_nccl_comm_split_deadlock.patch",
+         ],
+     )
+ 
