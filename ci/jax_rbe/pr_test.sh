@@ -20,10 +20,15 @@ fi
 
 pushd "${JAX_DIR}" || exit
 
-# If we haven't stuck the plugin requirements in the requirements.in file yet, put them in.
-# Use bash arrays to ensure exactly one wheel is selected per package, failing fast if
-# 0 or >1 matches are found.
+# Pin jaxlib from PyPI here. The rocm plugin/pjrt wheels are NOT appended to
+# requirements.in: they're injected into the merged requirements as proper
+# `==<version>` entries by xla's _get_injected_local_wheels via the
+# jax/dist symlink set up in pr_setup.sh. This is what creates the
+# @pypi_jax_rocm7_{plugin,pjrt} repos that //jaxlib/tools:rocm_plugin_*_wheel
+# expects (the `@ file://` form pip-compile would otherwise produce does not
+# get a per-package repo in rules_python 1.8.5).
 if ! grep -q jax_rocm7 build/requirements.in; then
+    # Sanity-check the rocm wheels are present where pr_setup.sh expects them.
     pjrt=( "${WHEELHOUSE}"/jax_rocm7_pjrt-*"${JAX_VERSION}"*manylinux_2_28*.whl )
     plugin=( "${WHEELHOUSE}"/jax_rocm7_plugin-*"${JAX_VERSION}"*cp"${PYTHON//.}"*manylinux_2_28*.whl )
 
@@ -32,8 +37,7 @@ if ! grep -q jax_rocm7 build/requirements.in; then
 
     {
         echo "jaxlib==${JAX_VERSION}"
-        echo "${pjrt[0]}"
-        echo "${plugin[0]}"
+        echo "# jax_rocm7_{plugin,pjrt} injected via jax/dist symlink (see pr_setup.sh)"
     } >> build/requirements.in
 fi
 
