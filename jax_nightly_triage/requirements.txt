@@ -1,0 +1,7 @@
+# All Python deps live in the standard library: argparse, json, sqlite3,
+# subprocess, pathlib, concurrent.futures, dataclasses, re. No pip install
+# needed once gh CLI is available.
+#
+# Optional (only if you want fancier reports later):
+#   jinja2>=3.1     # if you replace the inline HTML template
+#   pyyaml>=6.0     # if you switch the config to YAML
