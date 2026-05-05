@@ -12,3 +12,8 @@ fi
 # Give platform information to JAX
 cp -r jax_rocm_plugin/platform jax/
 
+# Expose the prebuilt rocm plugin/pjrt wheels via JAX's local-wheel injection
+# path (xla/.../python_repo.bzl). Without this, rules_python 1.8.5 does not
+# create @pypi_jax_rocm7_{plugin,pjrt} repos for `@ file://` lock entries.
+ln -sfn ../wheelhouse jax/dist
+
