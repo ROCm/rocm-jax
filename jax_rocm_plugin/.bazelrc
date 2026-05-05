@@ -149,3 +149,7 @@ try-import %workspace%/.jax_configure.bazelrc
 
 # Load rc file with user-specific options.
 try-import %workspace%/.bazelrc.user
+
+# Fix rules_python 1.8.x %interpreter_args% in WORKSPACE mode
+build --@rules_python//python/config_settings:bootstrap_impl=script
+build --repo_env=RULES_PYTHON_ENABLE_PIPSTAR=0

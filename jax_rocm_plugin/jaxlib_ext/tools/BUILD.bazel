@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
 load("@jax//jaxlib:jax.bzl", "jax_wheel", "wheel_sources")
 load("//third_party/jax:workspace.bzl", jax_commit = "JAX_COMMIT")
 load("//third_party/xla:workspace.bzl", xla_commit = "XLA_COMMIT")
@@ -42,6 +44,7 @@ py_binary(
     data = ROCM_PLUGIN_SOURCES,
     deps = [
         "build_utils",
+        "@rules_python//python/runfiles",
         "@bazel_tools//tools/python/runfiles",
         "@pypi_build//:pkg",
         "@pypi_setuptools//:pkg",
