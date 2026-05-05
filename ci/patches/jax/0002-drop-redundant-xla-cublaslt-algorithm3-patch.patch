@@ -1,0 +1,12 @@
+diff --git a/third_party/xla/workspace.bzl b/third_party/xla/workspace.bzl
+index 8c9d53c..bc50996 100644
+--- a/third_party/xla/workspace.bzl
++++ b/third_party/xla/workspace.bzl
+@@ -25,7 +25,6 @@ def repo():
+         patch_file = [
+             "//third_party/xla:shardy_temporary.patch",
+             "//third_party/xla:xla_gpu_cublaslt_default.patch",
+-            "//third_party/xla:xla_gpu_cublaslt_algorithm3.patch",
+ 	    "//third_party/xla:xla_nccl_comm_split_deadlock.patch",
+         ],
+     )
