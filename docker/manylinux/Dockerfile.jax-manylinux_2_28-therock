@@ -25,6 +25,9 @@ ENV ROCM_HOME=/opt/rocm
 ENV PATH="/opt/rocm/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/rocm/lib"
 
+RUN ln -s /opt/python/cp312-cp312/bin/python3 /usr/local/bin/python && \
+    python -m ensurepip && python -m pip install auditwheel
+
 # Install LLVM 18 from source (manylinux has no apt):
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y wget && dnf clean all
