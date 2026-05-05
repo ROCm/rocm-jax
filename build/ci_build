@@ -27,7 +27,6 @@ import zipfile
 import json
 import re
 
-
 MANYLINUX_IMAGE_BASE_NAME = "ghcr.io/rocm/jax-manylinux_2_28"
 
 
@@ -538,6 +537,109 @@ def build_base_dockers(
             _tag_and_push_latest(tag)
 
 
+def build_base_therock_dockers(
+    therock_index_url,
+    therock_version="",
+    add_llvm=False,
+    llvm_version=18,
+    tag_base=None,
+    docker_filters=None,
+    push_latest=False,
+    no_cache=False,
+):
+    """Build base Docker images that install ROCm via TheRock pip wheels.
+
+    Unlike the deb/tarball path, these Dockerfiles are self-contained and only
+    need the TheRock pip index URL and an optional version pin.
+    """
+    dockerfiles = _apply_filters(docker_filters, "Dockerfile.base", docker_dir="docker")
+
+    # Derive a tag component from the version pin (e.g. "7.13.0a20260401")
+    # or fall back to "latest" when no pin is given.
+    version_tag = therock_version if therock_version else "latest"
+    # Sanitise: replace characters that are invalid in Docker tags
+    version_tag = version_tag.replace("+", ".").replace(" ", "")
+
+    extra_args = [
+        "--build-arg=THEROCK_INDEX_URL=%s" % therock_index_url,
+        "--build-arg=THEROCK_VERSION=%s" % therock_version,
+    ]
+    if no_cache:
+        extra_args.extend(["--no-cache", "--pull"])
+    if add_llvm:
+        extra_args.extend(
+            [
+                "--build-arg=INSTALL_LLVM=%d" % int(add_llvm),
+                "--build-arg=LLVM_VERSION=%s" % llvm_version,
+            ]
+        )
+
+    for dockerfile in dockerfiles:
+        _, tag_suffix = dockerfile.split(".", 1)
+        # Strip "-therock" so images match upstream's rocm-tag naming pattern:
+        # jax-base-ubu24.therock-<ver> instead of jax-base-therock-ubu24.therock-<ver>
+        tag_suffix = tag_suffix.replace("-therock", "")
+        if add_llvm:
+            tag_suffix = tag_suffix.replace("base-", "dev-", 1)
+
+        tag_suffix = "jax-" + tag_suffix
+
+        if tag_base:
+            tag = "%s.%s.therock-%s" % (tag_base, tag_suffix, version_tag)
+        else:
+            tag = "%s.therock-%s" % (tag_suffix, version_tag)
+
+        print("Building dockerfile=%r to tag=%r" % (dockerfile, tag))
+
+        cmd = [
+            "docker",
+            "build",
+            "-f",
+            dockerfile,
+            "--tag=%s" % tag,
+        ]
+        cmd.extend(extra_args)
+        cmd.append(".")
+
+        subprocess.check_call(cmd)
+
+        if push_latest:
+            _tag_and_push_latest(tag)
+
+
+def build_manylinux_therock_dockers(
+    therock_index_url,
+    therock_version="",
+    tag=None,
+    push_latest=False,
+    no_cache=False,
+):
+    """Build a manylinux image using TheRock pip wheels for release-ready JAX wheels."""
+    version_tag = therock_version if therock_version else "latest"
+    version_tag = version_tag.replace("+", ".").replace(" ", "")
+
+    constructed_tag = tag or "jax-manylinux_2_28-therock-%s" % version_tag
+
+    print("Building TheRock manylinux image: %s" % constructed_tag)
+
+    cache_args = ["--no-cache", "--pull"] if no_cache else []
+
+    cmd = [
+        "docker",
+        "build",
+        "-t=%s" % constructed_tag,
+        "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-therock",
+        "--build-arg=THEROCK_INDEX_URL=%s" % therock_index_url,
+        "--build-arg=THEROCK_VERSION=%s" % therock_version,
+    ]
+    cmd.extend(cache_args)
+    cmd.append(".")
+    subprocess.check_call(cmd)
+
+    if push_latest:
+        _tag_and_push_latest(constructed_tag)
+
+
 def test(image_name, test_cmd=None):
     """Run unit tests like CI would inside a JAX image."""
 
@@ -747,6 +849,68 @@ def parse_args():
         default="18",
     )
 
+    btherockp = subp.add_parser(
+        "build_base_therock_dockers",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    btherockp.add_argument(
+        "--filter",
+        "-f",
+        type=str,
+        help="Comma separated strings to filter Dockerfiles to build. Substring match",
+        default="therock",
+    )
+    btherockp.add_argument(
+        "--therock-index-url",
+        type=str,
+        default="https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/",
+        help="TheRock pip index URL (GPU-family-specific)",
+    )
+    btherockp.add_argument(
+        "--therock-version",
+        type=str,
+        default="",
+        help="TheRock version number (e.g. '7.13.0a20260401')",
+    )
+    btherockp.add_argument(
+        "--install-llvm",
+        help="Enable the installation of LLVM in the containers.",
+        action="store_true",
+    )
+    btherockp.add_argument(
+        "--llvm-version",
+        help="Set the version number of LLVM to be installed.",
+        type=int,
+        default="18",
+    )
+    btherockp.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Build images from scratch without using Docker layer cache",
+    )
+
+    mltherockp = subp.add_parser(
+        "build_manylinux_therock_dockers",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    mltherockp.add_argument(
+        "--therock-index-url",
+        type=str,
+        default="https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/",
+        help="TheRock pip index URL (GPU-family-specific)",
+    )
+    mltherockp.add_argument(
+        "--therock-version",
+        type=str,
+        default="",
+        help="TheRock version number (e.g. '7.13.0a20260401')",
+    )
+    mltherockp.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Build images from scratch without using Docker layer cache",
+    )
+
     testp = subp.add_parser(
         "test", formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -823,6 +987,25 @@ def main():
             docker_filters=filters,
             add_llvm=args.install_llvm,
             llvm_version=args.llvm_version,
+            no_cache=args.no_cache,
+        )
+
+    elif args.action == "build_base_therock_dockers":
+        filters = args.filter.split(",")
+
+        build_base_therock_dockers(
+            therock_index_url=args.therock_index_url,
+            therock_version=args.therock_version,
+            docker_filters=filters,
+            add_llvm=args.install_llvm,
+            llvm_version=args.llvm_version,
+            no_cache=args.no_cache,
+        )
+
+    elif args.action == "build_manylinux_therock_dockers":
+        build_manylinux_therock_dockers(
+            therock_index_url=args.therock_index_url,
+            therock_version=args.therock_version,
             no_cache=args.no_cache,
         )
 
