@@ -23,8 +23,7 @@ Env-var overrides (all optional)::
     TRIAGE_WORKFLOW_RE       default --workflow-name-re
     TRIAGE_JOB_PREFIX        default --job-prefix
     TRIAGE_BRANCH            default --branch
-    TRIAGE_WINDOW_DAYS       default --window-days
-    TRIAGE_CHRONIC_THRESHOLD default --chronic-threshold
+    TRIAGE_WINDOW_DAYS       default --window-days  (capped at 7)
 """
 from __future__ import annotations
 
@@ -55,8 +54,7 @@ DEFAULT_CONTINUOUS_RE     = os.environ.get(
     "TRIAGE_CONTINUOUS_RE", r"Wheel Tests \(Continuous\)")
 DEFAULT_JOB_NAME_PREFIX   = os.environ.get("TRIAGE_JOB_PREFIX", "Pytest ROCm")
 DEFAULT_BRANCH            = os.environ.get("TRIAGE_BRANCH", "main")
-DEFAULT_WINDOW_DAYS       = int(os.environ.get("TRIAGE_WINDOW_DAYS", "7"))
-DEFAULT_CHRONIC_THRESHOLD = int(os.environ.get("TRIAGE_CHRONIC_THRESHOLD", "4"))
+DEFAULT_WINDOW_DAYS       = min(7, int(os.environ.get("TRIAGE_WINDOW_DAYS", "7")))
 DEFAULT_DB                = Path(os.environ.get("TRIAGE_DB", "reports/history.db"))
 DEFAULT_REPORTS_DIR       = Path(os.environ.get("TRIAGE_REPORTS_DIR", "reports"))
 
@@ -266,38 +264,33 @@ def cmd_run(args: argparse.Namespace, client: GitHubClient) -> int:
             print(f"  ingested {ingested} continuous run(s)", file=sys.stderr)
 
     # ------------------------------------------------------------------
-    # Run BOTH classifiers:
-    #   * Stage 1: rolling-window chronic diff (NEW / RECURRING / FLAKY /
-    #     RECOVERED), purely from nightly history.
-    #   * Stage 2: multi-source classification (REGRESSION / CHRONIC /
-    #     CHRONIC_PENDING / NEWLY_BROKEN / KNOWN / NEW), which combines
-    #     the chronic window with continuous-CI evidence.
-    # Both go into the report; Stage 2 is rendered at the top.
+    # Six-bucket classification: combines Stage-1 (prior nightly window)
+    # and Stage-2 (continuous-CI runs strictly after today's nightly).
     # ------------------------------------------------------------------
-    diff = regression.compute_diff(
-        args.db, today=run_meta["date"],
-        days=args.window_days,
-        chronic_threshold=args.chronic_threshold,
-    )
-
-    regression_result: Optional[dict] = None
-    if args.cross_check_continuous:
-        try:
-            regression_result = regression.regression_classify(
-                args.db,
-                today_run_id=run_meta["run_id"],
-                today_workflow_re=args.workflow_name_re,
-                continuous_workflow_re=args.continuous_workflow_re,
-                window_days=args.window_days,
-                chronic_threshold=args.chronic_threshold,
-            )
-        except ValueError as e:
-            print(f"  regression_classify skipped: {e}", file=sys.stderr)
+    classification: Optional[dict] = None
+    try:
+        classification = regression.regression_classify(
+            args.db,
+            today_run_id=run_meta["run_id"],
+            today_workflow_re=args.workflow_name_re,
+            continuous_workflow_re=args.continuous_workflow_re,
+            window_days=args.window_days,
+        )
+    except ValueError as e:
+        print(f"  regression_classify skipped: {e}", file=sys.stderr)
+        classification = {
+            "regression": [], "known": [], "chronic": [], "flaky": [],
+            "newly_failed": [], "cancelled_infra": [],
+            "stage2_continuous_confirmed": [],
+            "prior_nightly_run_ids": [], "continuous_runs_used": [],
+            "today_failure_count": 0, "today_flaky_count": 0,
+            "today_cell_count": 0, "window_days": args.window_days,
+        }
 
     out_dir = args.reports_dir / run_meta["date"]
     paths = report.write_all(out_dir, run_meta=run_meta,
-                             jobs=analyses, diff=diff,
-                             regression_result=regression_result)
+                             jobs=analyses,
+                             classification=classification)
     print(f"Wrote: {paths['json']}", file=sys.stderr)
     print(f"Wrote: {paths['markdown']}", file=sys.stderr)
     print(f"Wrote: {paths['html']}", file=sys.stderr)
@@ -383,38 +376,31 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--reports-dir", type=Path, default=DEFAULT_REPORTS_DIR,
                      help=f"Output root (default: {DEFAULT_REPORTS_DIR}).")
     run.add_argument("--window-days", type=int, default=DEFAULT_WINDOW_DAYS,
-                     help=f"Prior nights to diff against (default: {DEFAULT_WINDOW_DAYS}).")
-    run.add_argument("--chronic-threshold", type=int,
-                     default=DEFAULT_CHRONIC_THRESHOLD,
-                     help=f"Nights-failed-of-window required to mark a "
-                          f"failure as chronic (drives Stage-1 RECURRING "
-                          f"and Stage-2 REGRESSION/CHRONIC/"
-                          f"CHRONIC_PENDING). "
-                          f"Default: {DEFAULT_CHRONIC_THRESHOLD} of "
-                          f"--window-days.")
+                     help=f"Prior nights to consider for the Stage-1 "
+                          f"history check.  Hard-capped at 7 by the "
+                          f"spec (default: {DEFAULT_WINDOW_DAYS}).")
     run.add_argument("--no-store", action="store_true",
                      help="Skip persisting to the SQLite history.")
     run.add_argument("--print-md", action="store_true",
                      help="Also print the markdown report to stdout.")
-    # ---- Continuous CI cross-check (Stage 2 regression detection) ----
+    # ---- Continuous CI cross-check (Stage 2) ----
     cont = run.add_argument_group(
-        "Continuous-CI cross-check (Stage 2 regression detection)",
-        "After triaging the nightly, ingest any continuous CI runs that "
-        "completed since (and any that fall inside the chronic window).  "
-        "Continuous-CI evidence is what splits chronic-in-nightly "
-        "failures into REGRESSION (continuous also failing), CHRONIC "
-        "(continuous passing), or CHRONIC_PENDING (no continuous run "
-        "landed yet).  Re-running the pipeline later picks up newly "
-        "completed continuous runs cheaply and reclassifies "
-        "CHRONIC_PENDING entries.")
+        "Continuous-CI cross-check (Stage 2)",
+        "After triaging the nightly, ingest any continuous-CI runs that "
+        "completed strictly after the latest nightly.  Continuous-CI "
+        "covers only py3.11, so only py3.11 nightly cells participate "
+        "in Stage 2.  Continuous-CI evidence determines the `chronic` "
+        "bucket (failed today + continuous passed) and adds a "
+        "`+continuous` badge to `regression` / `known` rows when the "
+        "test also failed in continuous.")
     cont.add_argument("--cross-check-continuous",
                       dest="cross_check_continuous",
                       action="store_true", default=True,
-                      help="Enable Stage 2 cross-check (default).")
+                      help="Enable Stage-2 ingest (default).")
     cont.add_argument("--no-cross-check-continuous",
                       dest="cross_check_continuous",
                       action="store_false",
-                      help="Disable Stage 2 cross-check.")
+                      help="Disable Stage-2 ingest.")
     cont.add_argument("--continuous-workflow-re",
                       default=DEFAULT_CONTINUOUS_RE,
                       help=f"Regex for the continuous workflow name "

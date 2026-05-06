@@ -118,6 +118,27 @@ class SmokeTest(unittest.TestCase):
         import shutil
         shutil.rmtree(self.tmp, ignore_errors=True)
 
+    def test_rerun_passed_extraction(self):
+        log = """\
+2026-05-01T11:23:45Z tests/foo_test.py::test_a RERUN
+2026-05-01T11:23:46Z tests/foo_test.py::test_a PASSED
+2026-05-01T11:23:47Z tests/foo_test.py::test_b RERUN
+2026-05-01T11:23:48Z tests/foo_test.py::test_b FAILED
+2026-05-01T11:23:49Z tests/foo_test.py::test_c PASSED
+2026-05-01T11:23:50Z tests/bar_test.py::test_d[fp16] RERUN
+2026-05-01T11:23:51Z tests/bar_test.py::test_d[fp16] RERUN
+2026-05-01T11:23:52Z tests/bar_test.py::test_d[fp16] PASSED
+"""
+        flaky = analyze_job.extract_rerun_passed(log)
+        self.assertEqual(flaky, [
+            "tests/bar_test.py::test_d[fp16]",
+            "tests/foo_test.py::test_a",
+        ])
+        # test_b ended up FAILED on retry -> not flaky.
+        # test_c was never RERUN -> not flaky.
+        self.assertNotIn("tests/foo_test.py::test_b", flaky)
+        self.assertNotIn("tests/foo_test.py::test_c", flaky)
+
     def test_short_summary_extraction(self):
         fs = analyze_job.extract_short_summary(LOG_NUMERIC_HIP)
         nodeids = [f.nodeid for f in fs]
@@ -187,9 +208,9 @@ class SmokeTest(unittest.TestCase):
         ]:
             self.assertEqual(analyze_job.parse_matrix_cell(raw), want)
 
-    def test_regression_diff_finds_new_and_chronic(self):
+    def test_classify_finds_known_and_newly_failed(self):
         db = self.tmp / "history.db"
-        # Day 1..7 (chronic): a single failure repeats every night for 5 nights.
+        # 5 prior nightlies: chronic failure repeats every night.
         for i in range(5):
             d = (date(2026, 4, 24) + timedelta(days=i)).isoformat()
             stub = analyze_job.JobAnalysis(
@@ -202,11 +223,12 @@ class SmokeTest(unittest.TestCase):
                 nodeid="tests/x.py::test_chronic", bucket="TEST_FAIL_NUMERIC",
                 summary="chronic numeric", excerpt="")]
             regression.store_run(
-                db, run_id=2000 + i, workflow_name="WF", head_sha="abc",
+                db, run_id=2000 + i, workflow_name="Wheel Tests (Nightly/Release)",
+                head_sha="abc",
                 run_date=d, created_at=d + "T03:00:00Z",
                 conclusion="failure", html_url="", jobs=[stub])
 
-        # Today: chronic still fails AND a new test fails too.
+        # Latest nightly: chronic still fails AND a new test fails too.
         today = "2026-05-01"
         stub = analyze_job.JobAnalysis(
             job_id=3000, name="Pytest ROCm (...) / 1gpu, ROCm 7.2.0, py3.11",
@@ -218,20 +240,27 @@ class SmokeTest(unittest.TestCase):
             analyze_job.Failure("tests/y.py::test_new",     "TEST_FAIL_HIP",     "...", ""),
         ]
         regression.store_run(
-            db, run_id=3000, workflow_name="WF", head_sha="def",
+            db, run_id=3000, workflow_name="Wheel Tests (Nightly/Release)",
+            head_sha="def",
             run_date=today, created_at=today + "T03:00:00Z",
             conclusion="failure", html_url="", jobs=[stub])
 
-        diff = regression.compute_diff(db, today=today, days=7,
-                                       chronic_threshold=4)
-        self.assertEqual(diff["new"],
-                         [("tests/y.py::test_new", "1gpu-py3.11-rocm7.2.0")])
-        self.assertEqual(diff["recurring"],
-                         [("tests/x.py::test_chronic", "1gpu-py3.11-rocm7.2.0")])
-        self.assertEqual(diff["recovered"], [])
+        rr = regression.regression_classify(
+            db, today_run_id=3000,
+            today_workflow_re=r"Wheel Tests \(Nightly/Release\)",
+            continuous_workflow_re=r"Wheel Tests \(Continuous\)")
+        # test_chronic failed every night the cell ran -> known.
+        self.assertEqual(
+            rr["known"],
+            [("tests/x.py::test_chronic", "1gpu-py3.11-rocm7.2.0")])
+        # test_new only appeared today; the cell DID run prior nights
+        # but n_failed == 0 and n_ran == n_prior_runs (5 == 5) so this
+        # is regression (passed in all prior).
+        self.assertEqual(
+            rr["regression"],
+            [("tests/y.py::test_new", "1gpu-py3.11-rocm7.2.0")])
 
     def test_full_report_renders(self):
-        # Three jobs forming a tiny synthetic run.
         a1 = _analyze_with_log(
             1001, "Pytest ROCm (...) / 1gpu, ROCm 7.2.0, py3.11",
             LOG_NUMERIC_HIP, self.tmp / "logs")
@@ -248,39 +277,40 @@ class SmokeTest(unittest.TestCase):
             "head_sha": "deadbeef", "conclusion": "failure",
             "html_url": "https://example/9999",
             "created_at": "2026-05-01T03:00:00Z",
-            "workflow_name": "Wheel Tests",
+            "workflow_name": "Wheel Tests (Nightly/Release)",
             "repo": "jax-ml/jax",
         }
 
-        # Persist + diff against an empty history.
         db = self.tmp / "history.db"
         regression.store_run(
-            db, run_id=9999, workflow_name="Wheel Tests",
+            db, run_id=9999, workflow_name="Wheel Tests (Nightly/Release)",
             head_sha="deadbeef", run_date="2026-05-01",
             created_at="2026-05-01T03:00:00Z", conclusion="failure",
             html_url="", jobs=jobs)
-        diff = regression.compute_diff(db, today="2026-05-01")
+        classification = regression.regression_classify(
+            db, today_run_id=9999,
+            today_workflow_re=r"Wheel Tests \(Nightly/Release\)",
+            continuous_workflow_re=r"Wheel Tests \(Continuous\)")
 
         out_dir = self.tmp / "report-out"
         paths = report.write_all(out_dir, run_meta=run_meta,
-                                 jobs=jobs, diff=diff)
+                                 jobs=jobs,
+                                 classification=classification)
 
         self.assertTrue(paths["json"].exists())
         self.assertTrue(paths["markdown"].exists())
         self.assertTrue(paths["html"].exists())
 
         md = paths["markdown"].read_text(encoding="utf-8")
-        # Buckets should appear.
         self.assertIn("TEST_FAIL_NUMERIC", md)
         self.assertIn("TEST_FAIL_HIP", md)
         self.assertIn("INFRA_RUNNER", md)
         self.assertIn("INFRA_OOM", md)
-        # Heatmap header rows.
         self.assertIn("**1gpu**", md)
         self.assertIn("**4gpu**", md)
-        # Per-job sections.
         self.assertIn("`1gpu-py3.11-rocm7.2.0`", md)
-        # JSON parses.
+        # New classification headlines must render.
+        self.assertIn("Classification", md)
         json.loads(paths["json"].read_text(encoding="utf-8"))
 
 

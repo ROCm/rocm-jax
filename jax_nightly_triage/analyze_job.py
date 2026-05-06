@@ -62,6 +62,12 @@ class JobAnalysis:
     infra_events: list[str] = field(default_factory=list)
     log_path: Optional[str] = None    # filesystem path of the saved log
     pytest_totals: Optional[dict] = None  # {"failed": 9, "passed": 28261, ...}
+    # Tests that ``pytest-rerunfailures`` retried and that ultimately
+    # passed (final pytest verdict for them is PASSED, *not* FAILED).
+    # These are the canonical "flaky-by-rerun" signal -- a test that
+    # genuinely passed once given a second chance.  Stored as bare
+    # nodeids; they do not appear in ``failures``.
+    flaky_tests: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -168,6 +174,66 @@ def extract_short_summary(log_text: str) -> list[Failure]:
             failures.append(Failure(nodeid=nodeid, bucket="UNCATEGORIZED",
                                     summary=reason.strip()))
     return failures
+
+
+# ---------------------------------------------------------------------------
+# pytest-rerunfailures detection
+# ---------------------------------------------------------------------------
+#
+# pytest-rerunfailures is the canonical retry plugin used in the JAX CI.
+# When a test fails it gets re-run a configurable number of times.  Possible
+# end states for a single test (after all retries) are:
+#
+#   * Final PASSED after >= 1 RERUN  -- the test "flaked": it didn't pass
+#     the first time but passed under retry.  pytest's final summary calls
+#     this "X rerun, Y passed".  These tests do NOT appear in the
+#     short-summary FAILED section.
+#   * Final FAILED after >= 1 RERUN  -- still actionable failure.  These DO
+#     appear in the short-summary FAILED section.
+#
+# We want bucket #1 ("flaky-by-rerun") because it is the only deterministic,
+# job-local signal that a test is unstable -- much stronger than a
+# statistical "fails sometimes" guess.
+#
+# pytest's verbose-form per-test progress lines look roughly like:
+#
+#     tests/foo_test.py::test_bar RERUN
+#     tests/foo_test.py::test_bar PASSED
+#
+# (Order matters: the same nodeid may appear FAILED, then RERUN, then
+# either PASSED or FAILED on retry.)  The extractor below tracks the last
+# verdict seen per nodeid and reports nodeids where (a) we saw at least
+# one RERUN line and (b) the last verdict line was PASSED.
+
+# Match "<nodeid>  <VERDICT>" where verdict in {RERUN, PASSED, FAILED, ERROR}.
+# We require at least one ``::`` in the nodeid so we don't accidentally
+# match other log lines (e.g. shell prompts) that happen to end in PASSED.
+_RERUN_LINE = re.compile(
+    r"(?P<nodeid>\S+::\S+?)\s+(?P<verdict>RERUN|PASSED|FAILED|ERROR)\b")
+
+
+def extract_rerun_passed(log_text: str) -> list[str]:
+    """Return sorted list of nodeids that pytest-rerunfailures retried and
+    that ultimately passed.
+
+    A nodeid qualifies iff at least one line of the log says
+    ``<nodeid> RERUN`` AND the *last* verdict line for that nodeid is
+    ``PASSED``.  Tests that failed on retry are excluded -- those are real
+    failures and will appear in the short-summary FAILED section instead.
+    """
+    rerun_seen: set[str] = set()
+    last_verdict: dict[str, str] = {}
+    for line in log_text.splitlines():
+        s = _clean(line)
+        m = _RERUN_LINE.search(s)
+        if not m:
+            continue
+        nodeid, verdict = m.group("nodeid"), m.group("verdict")
+        if verdict == "RERUN":
+            rerun_seen.add(nodeid)
+        else:
+            last_verdict[nodeid] = verdict
+    return sorted(n for n in rerun_seen if last_verdict.get(n) == "PASSED")
 
 
 # ---------------------------------------------------------------------------
@@ -337,15 +403,37 @@ def analyze(job: dict, *, repo: str, log_dir: Path,
         duration_s=duration_s,
     )
 
-    if analysis.conclusion not in ("failure", "timed_out", "cancelled"):
-        # Successful job -- nothing to analyze.
+    # Cancelled / timed-out jobs typically have no log to fetch (and even
+    # if they do, no pytest summary).  We still want them in the database
+    # so the per-cell ``cancelled_infra`` bucket can be computed; the
+    # caller decides bucketing based on conclusion + infra_events.
+    if analysis.conclusion in ("cancelled", "skipped"):
         return analysis
 
-    log_path = fetch_log(job_id, repo=repo, dest_dir=log_dir, client=client)
+    # For successful jobs we still pull the log so that ``flaky_tests``
+    # (pytest-rerunfailures retry-passed) can be extracted -- these
+    # nodeids are PASSED in pytest's final accounting and would otherwise
+    # never be recorded.  Skip the log-fetch only when the job didn't
+    # produce one at all (in_progress / queued shouldn't happen here, but
+    # be defensive).
+    if analysis.conclusion not in ("failure", "timed_out", "success"):
+        return analysis
+
+    try:
+        log_path = fetch_log(job_id, repo=repo, dest_dir=log_dir, client=client)
+    except Exception as e:
+        # Successful jobs without a fetchable log are common (e.g. the log
+        # was already pruned by GitHub).  Don't blow up the whole pipeline.
+        analysis.infra_events.append(f"LOG_FETCH_FAILED: {type(e).__name__}: {e}")
+        return analysis
     analysis.log_path = str(log_path)
     log_text = log_path.read_text(encoding="utf-8", errors="replace")
 
-    # Failures from short-summary.
+    # Rerun-passed (flaky) test ids: pulled from any conclusion since
+    # successful jobs are the *primary* place these appear.
+    analysis.flaky_tests = extract_rerun_passed(log_text)
+
+    # Failures from short-summary -- only present in failing jobs.
     failures = extract_short_summary(log_text)
     excerpts = extract_tracebacks(log_text)
     attach_excerpts(failures, excerpts)

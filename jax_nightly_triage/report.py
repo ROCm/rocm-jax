@@ -3,16 +3,42 @@
 The renderers are deliberately self-contained -- no jinja2 dependency, just
 f-strings + a tiny HTML template -- so a fresh checkout runs without any
 ``pip install``.
+
+The single classification source of truth is the ``classification`` dict
+returned by ``regression.regression_classify``.  Six buckets:
+
+    cancelled_infra | flaky | chronic | regression | known | newly-failed
+
+Stage-2 confirmation (continuous-CI also failed the test) is rendered as a
+``+continuous`` badge on rows in ``regression`` and ``known``.
 """
 from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
-from datetime import datetime
 from pathlib import Path
-from typing import Iterable
 
-from analyze_job import BUCKETS, JobAnalysis
+from analyze_job import BUCKETS as FAILURE_BUCKETS, JobAnalysis
+
+
+# Headline buckets in priority order (this is the order the report uses).
+HEADLINE_BUCKETS = (
+    "cancelled_infra",
+    "flaky",
+    "chronic",
+    "regression",
+    "known",
+    "newly_failed",
+)
+
+_BUCKET_LABELS = {
+    "cancelled_infra": "🛑 cancelled / infra",
+    "flaky":           "⚠️ flaky",
+    "chronic":         "♻️ chronic (passes in continuous)",
+    "regression":      "🚨 regression",
+    "known":           "🔁 known",
+    "newly_failed":      "🆕 newly-failed",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -20,87 +46,82 @@ from analyze_job import BUCKETS, JobAnalysis
 # ---------------------------------------------------------------------------
 
 def render_json(*, run_meta: dict, jobs: list[JobAnalysis],
-                diff: dict, regression_result: dict | None = None) -> str:
+                classification: dict) -> str:
     payload: dict = {
         "run":   run_meta,
         "jobs":  [j.to_dict() for j in jobs],
-        "diff":  {
-            **diff,
-            "new":       [list(t) for t in diff["new"]],
-            "recurring": [list(t) for t in diff["recurring"]],
-            "flaky":     [list(t) for t in diff["flaky"]],
-            "recovered": [list(t) for t in diff["recovered"]],
-            "prior_nights_seen": [
-                {"nodeid": k[0], "matrix_cell": k[1], "nights_failed": v}
-                for k, v in diff["prior_nights_seen"].items()
-            ],
-        },
+        "classification": _json_safe_classification(classification),
     }
-    if regression_result is not None:
-        payload["regression"] = {
-            **regression_result,
-            "regression":      [list(t) for t in regression_result["regression"]],
-            "chronic":         [list(t) for t in regression_result["chronic"]],
-            "chronic_pending": [list(t) for t in regression_result["chronic_pending"]],
-            "newly_broken":    [list(t) for t in regression_result["newly_broken"]],
-            "known":           [list(t) for t in regression_result["known"]],
-            "new":             [list(t) for t in regression_result["new"]],
-        }
     return json.dumps(payload, indent=2, default=str)
+
+
+def _json_safe_classification(c: dict) -> dict:
+    """Convert tuple-of-tuples to list-of-lists for JSON friendliness."""
+    out = {**c}
+    for k in ("regression", "known", "chronic", "flaky", "newly_failed",
+              "stage2_continuous_confirmed"):
+        if k in out:
+            out[k] = [list(t) for t in out[k]]
+    if "cancelled_infra" in out:
+        out["cancelled_infra"] = [
+            {"matrix_cell": cell, "reason": reason, "events": list(events)}
+            for cell, reason, events in out["cancelled_infra"]
+        ]
+    return out
 
 
 # ---------------------------------------------------------------------------
 # Markdown
 # ---------------------------------------------------------------------------
 
-def _render_regression_section(lines: list[str], rr: dict) -> None:
-    """Append the regression classification to the markdown."""
-    n_reg     = len(rr["regression"])
-    n_chronic = len(rr["chronic"])
-    n_cpend   = len(rr["chronic_pending"])
-    n_newly   = len(rr["newly_broken"])
-    n_known   = len(rr["known"])
-    n_new     = len(rr["new"])
-    prior     = rr.get("prior_nightly_run_id")
-    cont_n    = len(rr.get("continuous_runs_used") or [])
-    window    = rr.get("window_days", 7)
-    threshold = rr.get("chronic_threshold", 4)
+def _render_classification_section(lines: list[str], rr: dict) -> None:
+    """Append the six-bucket classification to the markdown."""
+    counts = {
+        "cancelled_infra": len(rr.get("cancelled_infra", [])),
+        "flaky":           len(rr.get("flaky", [])),
+        "chronic":         len(rr.get("chronic", [])),
+        "regression":      len(rr.get("regression", [])),
+        "known":           len(rr.get("known", [])),
+        "newly_failed":      len(rr.get("newly_failed", [])),
+    }
+    prior_n = len(rr.get("prior_nightly_run_ids") or [])
+    cont_n  = len(rr.get("continuous_runs_used") or [])
+    window  = rr.get("window_days", 7)
 
-    lines.append("## 🚨 Regression check "
-                 f"(chronic ≥{threshold}-of-{window} + continuous CI)")
+    lines.append("## 🚦 Classification")
     lines.append("")
-    if prior is None:
-        lines.append("- No prior nightly run in the database -- "
-                     "history-based buckets are unavailable.  Today's "
-                     "failures are labelled `NEW` until a second nightly "
-                     "is ingested.")
-    else:
-        lines.append(f"- Immediately prior nightly: `{prior}` "
-                     f"(used for KNOWN vs NEWLY_BROKEN).")
-    lines.append(f"- Chronic window: {window} prior nights, "
-                 f"threshold ≥{threshold} of {window}.")
-    lines.append(f"- Continuous-CI evidence: {cont_n} run(s) within the "
-                 f"window or after this nightly.")
+    lines.append(f"- Prior nightly window: **{window}** days "
+                 f"({prior_n} prior nightly run(s) on file).")
+    lines.append(f"- Continuous-CI evidence: **{cont_n}** run(s) "
+                 f"strictly after the latest nightly.")
     lines.append("")
     lines.append("| Bucket | Definition | Count |")
     lines.append("|---|---|---:|")
-    lines.append(f"| 🚨 **REGRESSION** | failed today + chronic in nightly "
-                 f"(≥{threshold}-of-{window}) + failed in continuous CI "
-                 f"| {n_reg} |")
-    lines.append(f"| ♻️ **CHRONIC** | failed today + chronic in nightly, "
-                 f"continuous CI shows it passing (likely env-specific or "
-                 f"fixed in HEAD) | {n_chronic} |")
-    lines.append(f"| 🕒 **CHRONIC_PENDING** | failed today + chronic in "
-                 f"nightly, but no continuous-CI evidence yet | {n_cpend} |")
-    lines.append(f"| 🆕 **NEWLY_BROKEN** | failed today, passed in the "
-                 f"immediately prior nightly, not yet chronic | {n_newly} |")
-    lines.append(f"| ♻️ **KNOWN** | failed today AND in the prior nightly, "
-                 f"not yet chronic | {n_known} |")
-    lines.append(f"| 🆕 **NEW** | first time seen "
-                 f"(no prior nightly to compare) | {n_new} |")
+    lines.append(f"| 🛑 **cancelled / infra** | latest job for the cell "
+                 f"produced no pytest signal (cancelled / timed-out / "
+                 f"infra-failed) | {counts['cancelled_infra']} |")
+    lines.append(f"| ⚠️ **flaky** | rerun-passed in latest job, OR "
+                 f"mixed pass/fail prior history | {counts['flaky']} |")
+    lines.append(f"| ♻️ **chronic** | failed today + same `(gpu, py)` "
+                 f"passed in continuous CI | {counts['chronic']} |")
+    lines.append(f"| 🚨 **regression** | failed today + passed in **all** "
+                 f"prior nightlies in the window | {counts['regression']} |")
+    lines.append(f"| 🔁 **known** | failed today + failed in **all** prior "
+                 f"nights the cell ran | {counts['known']} |")
+    lines.append(f"| 🆕 **newly-failed** | failed today + cell or test had "
+                 f"no full prior history (and never failed) "
+                 f"| {counts['newly_failed']} |")
     lines.append("")
 
-    def _table(title: str, rows: list[tuple[str, str]]) -> None:
+    confirmed = set(map(tuple, rr.get("stage2_continuous_confirmed", [])))
+
+    def _row_badge(nodeid: str, cell: str, bucket: str) -> str:
+        if bucket in ("regression", "known") and (nodeid, cell) in confirmed:
+            return f"`{nodeid}` `+continuous`"
+        return f"`{nodeid}`"
+
+    def _table(title: str, rows: list[tuple[str, str]],
+               bucket: str) -> None:
         if not rows:
             return
         lines.append(f"### {title} ({len(rows)})")
@@ -110,20 +131,32 @@ def _render_regression_section(lines: list[str], rr: dict) -> None:
             by_node[nodeid].append(cell)
         lines.append("| nodeid | cells affected |")
         lines.append("|---|---|")
-        for nodeid, cells in sorted(by_node.items(), key=lambda kv: -len(kv[1])):
-            lines.append(f"| `{nodeid}` | {', '.join(sorted(cells))} |")
+        for nodeid, cells in sorted(by_node.items(),
+                                    key=lambda kv: -len(kv[1])):
+            badge = _row_badge(nodeid, cells[0], bucket)
+            lines.append(f"| {badge} | {', '.join(sorted(cells))} |")
         lines.append("")
 
-    _table("🚨 REGRESSION (chronic in nightly + failing in continuous CI)",
-           rr["regression"])
-    _table("♻️ CHRONIC (chronic in nightly, but passing in continuous CI)",
-           rr["chronic"])
-    _table("🕒 CHRONIC_PENDING (chronic in nightly, no continuous evidence yet)",
-           rr["chronic_pending"])
-    _table("🆕 NEWLY_BROKEN (passed yesterday, failed today)", rr["newly_broken"])
-    _table("♻️ KNOWN (also failing in prior nightly, not yet chronic)",
-           rr["known"])
-    _table("🆕 NEW (first nightly we've recorded for this test)", rr["new"])
+    # Render in priority order so the most-actionable buckets come first.
+    if rr.get("cancelled_infra"):
+        lines.append(f"### 🛑 cancelled / infra ({len(rr['cancelled_infra'])})")
+        lines.append("")
+        lines.append("| matrix cell | reason | events |")
+        lines.append("|---|---|---|")
+        for cell, reason, events in rr["cancelled_infra"]:
+            ev = ", ".join(events) if events else "—"
+            lines.append(f"| `{cell}` | `{reason}` | {ev} |")
+        lines.append("")
+
+    _table("⚠️ flaky", rr.get("flaky", []),         "flaky")
+    _table("♻️ chronic (passes in continuous CI)",
+           rr.get("chronic", []),                   "chronic")
+    _table("🚨 regression (passed in all prior nightlies)",
+           rr.get("regression", []),                "regression")
+    _table("🔁 known (failed in all prior nights cell ran)",
+           rr.get("known", []),                     "known")
+    _table("🆕 newly-failed (no/partial prior history, never failed)",
+           rr.get("newly_failed", []),                "newly_failed")
 
 
 def _bucket_counter(jobs: list[JobAnalysis]) -> Counter:
@@ -134,13 +167,15 @@ def _bucket_counter(jobs: list[JobAnalysis]) -> Counter:
     return c
 
 
-def _matrix_index(jobs: list[JobAnalysis]) -> tuple[list[str], list[str], dict[tuple[str, str], int]]:
+def _matrix_index(jobs: list[JobAnalysis]
+                  ) -> tuple[list[str], list[str], dict[tuple[str, str], int]]:
     """Build a dense (gpu_config x py) matrix of failure counts.
 
-    The keys come from `matrix_cell = "<gpu>-py<py>-rocm<rocm>"`.
+    The keys come from ``matrix_cell = "<gpu>-py<py>-rocm<rocm>"``.
     """
-    rows = sorted({j.matrix_cell.split("-")[0] for j in jobs})  # gpu configs
-    cols = sorted({j.matrix_cell.split("-")[1] for j in jobs})  # py versions
+    rows = sorted({j.matrix_cell.split("-")[0] for j in jobs})
+    cols = sorted({j.matrix_cell.split("-")[1] for j in jobs
+                   if "-" in j.matrix_cell})
     grid: dict[tuple[str, str], int] = {}
     for j in jobs:
         parts = j.matrix_cell.split("-")
@@ -152,8 +187,7 @@ def _matrix_index(jobs: list[JobAnalysis]) -> tuple[list[str], list[str], dict[t
 
 
 def render_markdown(*, run_meta: dict, jobs: list[JobAnalysis],
-                    diff: dict,
-                    regression_result: dict | None = None) -> str:
+                    classification: dict) -> str:
     lines: list[str] = []
     head_sha = (run_meta.get("head_sha") or "")[:8]
     lines.append(f"# JAX nightly Pytest-ROCm triage — {run_meta['date']}")
@@ -166,47 +200,26 @@ def render_markdown(*, run_meta: dict, jobs: list[JobAnalysis],
                  f"({sum(1 for j in jobs if j.conclusion=='failure')} failed, "
                  f"{sum(1 for j in jobs if j.conclusion=='success')} passed, "
                  f"{sum(1 for j in jobs if j.conclusion not in ('failure','success'))} other)")
-    lines.append(f"- Diff window: {diff['window_days']} prior nights "
-                 f"(chronic threshold: {diff['chronic_threshold']}-of-{diff['window_days']})")
+    lines.append(f"- Window: {classification.get('window_days', 7)} prior nights "
+                 f"(history is keyed on `(nodeid, gpu, py)`; "
+                 f"ROCm tag ignored).")
     lines.append("")
 
-    # ---- REGRESSION classification (top of report -- highest priority) ----
-    if regression_result is not None:
-        _render_regression_section(lines, regression_result)
+    # ---- Headline classification ----
+    _render_classification_section(lines, classification)
 
-    # ---- Bucket distribution ----
+    # ---- Failure-bucket distribution (per-failure infra/build/test bucket) ----
     counter = _bucket_counter(jobs)
     if counter:
-        lines.append("## Failure buckets")
+        lines.append("## Per-failure category")
         lines.append("")
-        lines.append("| Bucket | Count |")
+        lines.append("| Category | Count |")
         lines.append("|---|---:|")
-        for b in BUCKETS:
+        for b in FAILURE_BUCKETS:
             n = counter.get(b, 0)
             if n:
                 lines.append(f"| {b} | {n} |")
         lines.append("")
-
-    # ---- Diff sections ----
-    def _table(name: str, rows: list[tuple[str, str]], emoji: str) -> None:
-        if not rows:
-            return
-        lines.append(f"## {emoji} {name} ({len(rows)})")
-        lines.append("")
-        # Group by nodeid to show blast radius as a comma-list of cells.
-        by_node: dict[str, list[str]] = defaultdict(list)
-        for nodeid, cell in rows:
-            by_node[nodeid].append(cell)
-        lines.append("| nodeid | cells affected |")
-        lines.append("|---|---|")
-        for nodeid, cells in sorted(by_node.items(), key=lambda kv: -len(kv[1])):
-            lines.append(f"| `{nodeid}` | {', '.join(sorted(cells))} |")
-        lines.append("")
-
-    _table("Regressions (NEW today)", diff["new"], "🆕")
-    _table("Recurring / chronic", diff["recurring"], "♻️")
-    _table("Flaky", diff["flaky"], "⚠️")
-    _table("Recovered", diff["recovered"], "✅")
 
     # ---- Cell matrix heatmap ----
     rows_, cols_, grid = _matrix_index(jobs)
@@ -222,22 +235,27 @@ def render_markdown(*, run_meta: dict, jobs: list[JobAnalysis],
             lines.append(f"| **{r}** | " + " | ".join(cells) + " |")
         lines.append("")
 
-    # ---- Per-job summary (failures, infra events, link to log) ----
+    # ---- Per-job summary ----
     lines.append("## Per-job summary")
     lines.append("")
     for j in sorted(jobs, key=lambda x: x.matrix_cell):
-        url = f"https://github.com/{run_meta.get('repo','jax-ml/jax')}/actions/runs/{run_meta['run_id']}/job/{j.job_id}"
-        status = "❌" if j.conclusion == "failure" else ("✅" if j.conclusion == "success" else "⚠️")
-        lines.append(f"### {status} `{j.matrix_cell}` — [{j.job_id}]({url})  ({j.duration_s}s)")
+        url = (f"https://github.com/{run_meta.get('repo','jax-ml/jax')}"
+               f"/actions/runs/{run_meta['run_id']}/job/{j.job_id}")
+        status = ("❌" if j.conclusion == "failure"
+                  else ("✅" if j.conclusion == "success" else "⚠️"))
+        lines.append(f"### {status} `{j.matrix_cell}` — "
+                     f"[{j.job_id}]({url})  ({j.duration_s}s)")
         if j.infra_events:
             lines.append(f"- infra events: {', '.join(j.infra_events)}")
+        if j.flaky_tests:
+            lines.append(f"- {len(j.flaky_tests)} rerun-passed (flaky) test(s)")
         if not j.failures:
             lines.append("- no test failures parsed")
         else:
             lines.append(f"- {len(j.failures)} failures:")
-            # Show up to 10 to keep the report scannable.
             for f in j.failures[:10]:
-                summary = f.summary[:120].replace("\n", " ") if f.summary else ""
+                summary = (f.summary[:120].replace("\n", " ")
+                           if f.summary else "")
                 lines.append(f"  - `[{f.bucket}]` `{f.nodeid}` — {summary}")
             if len(j.failures) > 10:
                 lines.append(f"  - ... and {len(j.failures) - 10} more")
@@ -247,7 +265,7 @@ def render_markdown(*, run_meta: dict, jobs: list[JobAnalysis],
 
 
 # ---------------------------------------------------------------------------
-# HTML (matrix heatmap, color-coded)
+# HTML
 # ---------------------------------------------------------------------------
 
 _HTML_TMPL = """<!doctype html>
@@ -270,6 +288,9 @@ _HTML_TMPL = """<!doctype html>
  .small {{ color: #57606a; font-size: 12px; }}
  .pill {{ display: inline-block; padding: 1px 8px; border-radius: 10px;
          background: #eaeef2; font-size: 11px; margin-right: 4px; }}
+ .badge {{ display: inline-block; padding: 1px 6px; border-radius: 6px;
+          background: #ffe5e0; color: #b1300a; font-size: 11px;
+          margin-left: 6px; }}
 </style>
 </head><body>
 <h1>JAX nightly Pytest-ROCm triage — {date}</h1>
@@ -278,17 +299,16 @@ _HTML_TMPL = """<!doctype html>
   conclusion: <b>{conclusion}</b> ·
   jobs: {n_jobs} ({n_failed} failed, {n_passed} passed)
 </p>
-<p class="small">Diff window: {window} prior nights · chronic threshold: {threshold} of {window}.</p>
+<p class="small">Window: {window} prior nights. History keyed on
+<code>(nodeid, gpu, py)</code> · ROCm tag ignored. Continuous-CI runs
+strictly after the latest nightly contribute Stage-2 evidence.</p>
 
-{regression_block}
+{classification_block}
 
 <h2>Failure-count matrix</h2>
 {matrix_table}
 
-<h2>Diff vs prior nights</h2>
-{diff_tables}
-
-<h2>Bucket distribution</h2>
+<h2>Per-failure category</h2>
 {bucket_table}
 
 <h2>Per-job</h2>
@@ -306,11 +326,90 @@ def _heat_class(n: int) -> str:
     return "heat4"
 
 
+def _diff_section_html(title: str, items: list[tuple[str, str]],
+                       confirmed: set) -> str:
+    if not items:
+        return ""
+    out: list[str] = []
+    by_node: dict[str, list[str]] = defaultdict(list)
+    for n, c in items:
+        by_node[n].append(c)
+    out.append(f"<h3>{title} ({len(items)})</h3>")
+    out.append('<table><tr><th>nodeid</th><th>cells</th></tr>')
+    for nodeid, cells in sorted(by_node.items(),
+                                key=lambda kv: -len(kv[1])):
+        badge = ('<span class="badge">+continuous</span>'
+                 if (nodeid, cells[0]) in confirmed else "")
+        out.append(f'<tr><td class="nodeid">{nodeid}{badge}</td>'
+                   f'<td>{", ".join(sorted(cells))}</td></tr>')
+    out.append("</table>")
+    return "\n".join(out)
+
+
+def _render_classification_html(rr: dict) -> str:
+    counts = {
+        "cancelled_infra": len(rr.get("cancelled_infra", [])),
+        "flaky":           len(rr.get("flaky", [])),
+        "chronic":         len(rr.get("chronic", [])),
+        "regression":      len(rr.get("regression", [])),
+        "known":           len(rr.get("known", [])),
+        "newly_failed":      len(rr.get("newly_failed", [])),
+    }
+    prior_n = len(rr.get("prior_nightly_run_ids") or [])
+    cont_n  = len(rr.get("continuous_runs_used") or [])
+    window  = rr.get("window_days", 7)
+    confirmed = set(map(tuple, rr.get("stage2_continuous_confirmed", [])))
+
+    parts = ["<h2>🚦 Classification</h2>",
+             "<p>",
+             f"Prior nightly window: <b>{window}</b> days "
+             f"({prior_n} prior run(s) on file). "
+             f"Continuous-CI evidence: <b>{cont_n}</b> run(s) "
+             f"strictly after the latest nightly.",
+             "</p>",
+             "<table>",
+             "<tr><th>Bucket</th><th>Count</th></tr>",
+             f"<tr><td>🛑 cancelled / infra</td><td>{counts['cancelled_infra']}</td></tr>",
+             f"<tr><td>⚠️ flaky</td><td>{counts['flaky']}</td></tr>",
+             f"<tr><td>♻️ chronic</td><td>{counts['chronic']}</td></tr>",
+             f"<tr><td>🚨 regression</td><td>{counts['regression']}</td></tr>",
+             f"<tr><td>🔁 known</td><td>{counts['known']}</td></tr>",
+             f"<tr><td>🆕 newly-failed</td><td>{counts['newly_failed']}</td></tr>",
+             "</table>"]
+
+    if rr.get("cancelled_infra"):
+        parts.append(
+            f"<h3>🛑 cancelled / infra ({counts['cancelled_infra']})</h3>")
+        parts.append("<table><tr><th>matrix cell</th><th>reason</th>"
+                     "<th>events</th></tr>")
+        for cell, reason, events in rr["cancelled_infra"]:
+            ev = ", ".join(events) if events else "—"
+            parts.append(f'<tr><td class="nodeid">{cell}</td>'
+                         f'<td>{reason}</td><td>{ev}</td></tr>')
+        parts.append("</table>")
+
+    parts.append(_diff_section_html("⚠️ flaky", rr.get("flaky", []),
+                                    confirmed))
+    parts.append(_diff_section_html("♻️ chronic (passes in continuous CI)",
+                                    rr.get("chronic", []), confirmed))
+    parts.append(_diff_section_html(
+        "🚨 regression (passed in all prior nightlies)",
+        rr.get("regression", []), confirmed))
+    parts.append(_diff_section_html(
+        "🔁 known (failed in all prior nights cell ran)",
+        rr.get("known", []), confirmed))
+    parts.append(_diff_section_html(
+        "🆕 newly-failed (no/partial prior history, never failed)",
+        rr.get("newly_failed", []), confirmed))
+    return "\n".join(filter(None, parts))
+
+
 def render_html(*, run_meta: dict, jobs: list[JobAnalysis],
-                diff: dict,
-                regression_result: dict | None = None) -> str:
+                classification: dict) -> str:
     rows_, cols_, grid = _matrix_index(jobs)
-    matrix_html = ['<table><tr><th></th>'] + [f"<th>{c}</th>" for c in cols_] + ['</tr>']
+    matrix_html = ['<table><tr><th></th>']
+    matrix_html += [f"<th>{c}</th>" for c in cols_]
+    matrix_html.append('</tr>')
     for r in rows_:
         matrix_html.append(f"<tr><th>{r}</th>")
         for c in cols_:
@@ -320,98 +419,30 @@ def render_html(*, run_meta: dict, jobs: list[JobAnalysis],
     matrix_html.append("</table>")
 
     counter = _bucket_counter(jobs)
-    bucket_html = ['<table><tr><th>Bucket</th><th>Count</th></tr>']
-    for b in BUCKETS:
+    bucket_html = ['<table><tr><th>Category</th><th>Count</th></tr>']
+    for b in FAILURE_BUCKETS:
         if counter.get(b, 0):
             bucket_html.append(f"<tr><td>{b}</td><td>{counter[b]}</td></tr>")
     bucket_html.append("</table>")
 
-    def _diff_section(title: str, items: list[tuple[str, str]]) -> str:
-        if not items:
-            return ""
-        rows_ = []
-        by_node: dict[str, list[str]] = defaultdict(list)
-        for n, c in items:
-            by_node[n].append(c)
-        rows_.append(f"<h3>{title} ({len(items)})</h3>")
-        rows_.append('<table><tr><th>nodeid</th><th>cells</th></tr>')
-        for nodeid, cells in sorted(by_node.items(), key=lambda kv: -len(kv[1])):
-            rows_.append(f'<tr><td class="nodeid">{nodeid}</td>'
-                         f'<td>{", ".join(sorted(cells))}</td></tr>')
-        rows_.append("</table>")
-        return "\n".join(rows_)
-
-    diff_html = "\n".join(filter(None, [
-        _diff_section("🆕 New (regressions)", diff["new"]),
-        _diff_section("♻️ Recurring / chronic", diff["recurring"]),
-        _diff_section("⚠️ Flaky", diff["flaky"]),
-        _diff_section("✅ Recovered", diff["recovered"]),
-    ])) or "<p>No prior nights to diff against.</p>"
-
-    # Regression-classification block (rendered above the chronic diff).
-    regression_html_parts: list[str] = []
-    if regression_result is not None:
-        rr = regression_result
-        prior     = rr.get("prior_nightly_run_id")
-        cont_n    = len(rr.get("continuous_runs_used") or [])
-        n_reg     = len(rr["regression"])
-        n_chronic = len(rr["chronic"])
-        n_cpend   = len(rr["chronic_pending"])
-        n_newly   = len(rr["newly_broken"])
-        n_known   = len(rr["known"])
-        n_new     = len(rr["new"])
-        window    = rr.get("window_days", 7)
-        threshold = rr.get("chronic_threshold", 4)
-        regression_html_parts.append(
-            f"<h2>🚨 Regression check "
-            f"(chronic ≥{threshold}-of-{window} + continuous CI)</h2>"
-        )
-        regression_html_parts.append("<p>")
-        regression_html_parts.append(
-            f"Immediately prior nightly: "
-            f"{'<code>' + str(prior) + '</code>' if prior else '<em>none in DB</em>'}. "
-            f"Chronic window: <b>{window}</b> nights, threshold "
-            f"<b>≥{threshold}</b> of <b>{window}</b>. "
-            f"Continuous-CI evidence: <b>{cont_n}</b> run(s).")
-        regression_html_parts.append("</p>")
-        regression_html_parts.append(
-            "<table>"
-            "<tr><th>Bucket</th><th>Count</th></tr>"
-            f"<tr><td>🚨 REGRESSION</td><td>{n_reg}</td></tr>"
-            f"<tr><td>♻️ CHRONIC</td><td>{n_chronic}</td></tr>"
-            f"<tr><td>🕒 CHRONIC_PENDING</td><td>{n_cpend}</td></tr>"
-            f"<tr><td>🆕 NEWLY_BROKEN</td><td>{n_newly}</td></tr>"
-            f"<tr><td>♻️ KNOWN</td><td>{n_known}</td></tr>"
-            f"<tr><td>🆕 NEW</td><td>{n_new}</td></tr>"
-            "</table>")
-        regression_html_parts.append(_diff_section(
-            "🚨 REGRESSION (chronic in nightly + failing in continuous CI)",
-            rr["regression"]))
-        regression_html_parts.append(_diff_section(
-            "♻️ CHRONIC (chronic in nightly, but passing in continuous CI)",
-            rr["chronic"]))
-        regression_html_parts.append(_diff_section(
-            "🕒 CHRONIC_PENDING (chronic in nightly, no continuous evidence yet)",
-            rr["chronic_pending"]))
-        regression_html_parts.append(_diff_section(
-            "🆕 NEWLY_BROKEN (passed yesterday, failed today)",
-            rr["newly_broken"]))
-        regression_html_parts.append(_diff_section(
-            "♻️ KNOWN (also failing in prior nightly, not yet chronic)",
-            rr["known"]))
-        regression_html_parts.append(_diff_section(
-            "🆕 NEW (first nightly we've recorded for this test)", rr["new"]))
-
-    per_job_html = []
+    per_job_html: list[str] = []
     for j in sorted(jobs, key=lambda x: x.matrix_cell):
-        url = f"https://github.com/{run_meta.get('repo','jax-ml/jax')}/actions/runs/{run_meta['run_id']}/job/{j.job_id}"
+        url = (f"https://github.com/{run_meta.get('repo','jax-ml/jax')}"
+               f"/actions/runs/{run_meta['run_id']}/job/{j.job_id}")
         per_job_html.append(f'<h3>{j.matrix_cell} '
-                            f'<a class="small" href="{url}">job {j.job_id}</a></h3>')
+                            f'<a class="small" href="{url}">job {j.job_id}'
+                            f'</a></h3>')
         if j.infra_events:
             per_job_html.append("<p>" + "".join(
-                f'<span class="pill">{ev}</span>' for ev in j.infra_events) + "</p>")
+                f'<span class="pill">{ev}</span>'
+                for ev in j.infra_events) + "</p>")
+        if j.flaky_tests:
+            per_job_html.append(
+                f'<p class="small">{len(j.flaky_tests)} rerun-passed '
+                f'(flaky) test(s)</p>')
         if j.failures:
-            per_job_html.append('<table><tr><th>bucket</th><th>nodeid</th><th>summary</th></tr>')
+            per_job_html.append('<table><tr><th>bucket</th><th>nodeid</th>'
+                                '<th>summary</th></tr>')
             for f in j.failures[:50]:
                 per_job_html.append(
                     f'<tr><td>{f.bucket}</td>'
@@ -419,7 +450,9 @@ def render_html(*, run_meta: dict, jobs: list[JobAnalysis],
                     f'<td>{(f.summary or "")[:200]}</td></tr>')
             per_job_html.append("</table>")
             if len(j.failures) > 50:
-                per_job_html.append(f'<p class="small">... and {len(j.failures)-50} more</p>')
+                per_job_html.append(
+                    f'<p class="small">... and {len(j.failures)-50} '
+                    f'more</p>')
         else:
             per_job_html.append("<p><em>no test failures parsed</em></p>")
 
@@ -432,12 +465,10 @@ def render_html(*, run_meta: dict, jobs: list[JobAnalysis],
         n_jobs=len(jobs),
         n_failed=sum(1 for j in jobs if j.conclusion == "failure"),
         n_passed=sum(1 for j in jobs if j.conclusion == "success"),
-        window=diff["window_days"],
-        threshold=diff["chronic_threshold"],
-        regression_block="\n".join(filter(None, regression_html_parts)),
+        window=classification.get("window_days", 7),
+        classification_block=_render_classification_html(classification),
         matrix_table="\n".join(matrix_html),
         bucket_table="\n".join(bucket_html),
-        diff_tables=diff_html,
         per_job="\n".join(per_job_html),
     )
 
@@ -447,23 +478,23 @@ def render_html(*, run_meta: dict, jobs: list[JobAnalysis],
 # ---------------------------------------------------------------------------
 
 def write_all(out_dir: Path, *, run_meta: dict,
-              jobs: list[JobAnalysis], diff: dict,
-              regression_result: dict | None = None) -> dict[str, Path]:
+              jobs: list[JobAnalysis],
+              classification: dict) -> dict[str, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = {
         "json":     out_dir / "summary.json",
         "markdown": out_dir / "report.md",
         "html":     out_dir / "report.html",
     }
-    # Always write UTF-8: report.md/report.html contain emoji (🚨/⚠️/♻️/🆕)
-    # that Python's locale-default codec on Windows (cp1252) cannot encode.
+    # Always write UTF-8: report.md/report.html contain emoji that Python's
+    # locale-default codec on Windows (cp1252) cannot encode.
     paths["json"].write_text(render_json(
-        run_meta=run_meta, jobs=jobs, diff=diff,
-        regression_result=regression_result), encoding="utf-8")
+        run_meta=run_meta, jobs=jobs,
+        classification=classification), encoding="utf-8")
     paths["markdown"].write_text(render_markdown(
-        run_meta=run_meta, jobs=jobs, diff=diff,
-        regression_result=regression_result), encoding="utf-8")
+        run_meta=run_meta, jobs=jobs,
+        classification=classification), encoding="utf-8")
     paths["html"].write_text(render_html(
-        run_meta=run_meta, jobs=jobs, diff=diff,
-        regression_result=regression_result), encoding="utf-8")
+        run_meta=run_meta, jobs=jobs,
+        classification=classification), encoding="utf-8")
     return paths
