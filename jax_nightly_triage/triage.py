@@ -23,7 +23,7 @@ Env-var overrides (all optional)::
     TRIAGE_WORKFLOW_RE       default --workflow-name-re
     TRIAGE_JOB_PREFIX        default --job-prefix
     TRIAGE_BRANCH            default --branch
-    TRIAGE_WINDOW_DAYS       default --window-days  (capped at 7)
+    TRIAGE_WINDOW_DAYS       default --window-days  (capped at 6)
 """
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ DEFAULT_CONTINUOUS_RE     = os.environ.get(
     "TRIAGE_CONTINUOUS_RE", r"Wheel Tests \(Continuous\)")
 DEFAULT_JOB_NAME_PREFIX   = os.environ.get("TRIAGE_JOB_PREFIX", "Pytest ROCm")
 DEFAULT_BRANCH            = os.environ.get("TRIAGE_BRANCH", "main")
-DEFAULT_WINDOW_DAYS       = min(7, int(os.environ.get("TRIAGE_WINDOW_DAYS", "7")))
+DEFAULT_WINDOW_DAYS       = min(6, int(os.environ.get("TRIAGE_WINDOW_DAYS", "6")))
 DEFAULT_DB                = Path(os.environ.get("TRIAGE_DB", "reports/history.db"))
 DEFAULT_REPORTS_DIR       = Path(os.environ.get("TRIAGE_REPORTS_DIR", "reports"))
 
@@ -377,8 +377,11 @@ def build_parser() -> argparse.ArgumentParser:
                      help=f"Output root (default: {DEFAULT_REPORTS_DIR}).")
     run.add_argument("--window-days", type=int, default=DEFAULT_WINDOW_DAYS,
                      help=f"Prior nights to consider for the Stage-1 "
-                          f"history check.  Hard-capped at 7 by the "
-                          f"spec (default: {DEFAULT_WINDOW_DAYS}).")
+                          f"history check.  Hard-capped at 6 by the "
+                          f"spec; missing nights inside the window are "
+                          f"silently ignored, so the analysis uses "
+                          f"whatever prior nights are on file "
+                          f"(default: {DEFAULT_WINDOW_DAYS}).")
     run.add_argument("--no-store", action="store_true",
                      help="Skip persisting to the SQLite history.")
     run.add_argument("--print-md", action="store_true",

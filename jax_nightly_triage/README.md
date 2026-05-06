@@ -32,7 +32,7 @@ buckets, in priority order. The first matching bucket wins:
 | 🛑 `cancelled_infra` | Cell didn't produce a pytest pass/fail signal (cancelled, timed-out, infra-failed before pytest) | Fix infra, re-run |
 | ⚠️ `flaky` | (a) pytest-rerunfailures retried-and-passed in this job, OR (b) mixed pass/fail history in the prior window | Track if persistent |
 | ♻️ `chronic` | Failed in latest nightly **and** the same `(gpu, py)` was covered by a continuous-CI run after the nightly that **passed** the test | Likely env-specific to nightly runner; not a HEAD regression |
-| 🚨 `regression` | Failed in latest nightly **and** passed in **every** prior nightly in the 7-day window | Wake somebody up |
+| 🚨 `regression` | Failed in latest nightly **and** passed in **every** prior nightly in the 6-day window | Wake somebody up |
 | 🔁 `known` | Failed in latest nightly **and** failed in **every** prior nightly the cell ran in | Already broken; track |
 | 🆕 `newly_failed` | Failed in latest nightly **and** the cell or test had no full prior history (cell joined mid-window, or test never ran in earlier prior nightlies) | Investigate; not enough history yet |
 
@@ -55,7 +55,7 @@ signal that something is broken in HEAD on multiple pipelines.
 3. **Persists** every `(run, job, failure, flaky-by-rerun)` to a local
    SQLite store so future runs can compare against it.
 4. **Cross-checks** the latest nightly against:
-   - **Stage 1 — prior nightly window:** the previous 7 nightly runs
+   - **Stage 1 — prior nightly window:** the previous 6 nightly runs
      (cap is hard-coded; missing nights are simply ignored).
    - **Stage 2 — continuous CI:** continuous-CI runs created **strictly
      after** the latest nightly's `created_at`. Continuous covers only
@@ -99,7 +99,7 @@ signal that something is broken in HEAD on multiple pipelines.
 ### Stage 1 (per-test, against prior nightlies)
 
 For every failing `(nodeid, gpu, py)` in the latest nightly, the
-classifier examines the prior 7 nightlies (or fewer, if we have fewer on
+classifier examines the prior 6 nightlies (or fewer, if we have fewer on
 file). It computes:
 
 - `J` = number of prior nightlies in window where the **job** for
@@ -207,7 +207,7 @@ The classifier needs three pieces of evidence in the SQLite store to
 return a complete verdict:
 
 1. The latest nightly (today's).
-2. The previous 7 nightlies (Stage-1 evidence).
+2. The previous 6 nightlies (Stage-1 evidence).
 3. Continuous-CI runs created strictly after the latest nightly
    (Stage-2 evidence).
 
@@ -218,7 +218,7 @@ will land in `newly_failed`. Replay a few previous nightlies first:
 
 ```bash
 # Find recent nightly runs
-python3 triage.py runs --limit 7
+python3 triage.py runs --limit 6
 #       run_id  date        conclusion  url
 # 25250121345   2026-05-02  cancelled   https://github.com/jax-ml/jax/actions/runs/...
 # 25212524054   2026-05-01  failure     https://github.com/jax-ml/jax/actions/runs/...
@@ -279,7 +279,8 @@ The Markdown report has the classification at the top:
 ```markdown
 ## 🚦 Classification
 
-- Prior nightly window: **7** days (5 prior nightly run(s) on file).
+- Prior-nightly window configured: **6** day(s).
+- Prior nightlies actually used in this analysis: **5** of up to 6 (missing nights inside the window are silently ignored).
 - Continuous-CI evidence: **3** run(s) strictly after the latest nightly.
 
 | Bucket | Definition | Count |
@@ -367,7 +368,7 @@ python3 triage.py run --help
 
 | Flag | Env var | Default | Notes |
 |---|---|---|---|
-| `--window-days` | `TRIAGE_WINDOW_DAYS` | `7` | Hard-capped at 7 by the spec; values > 7 are clamped. Missing nights inside the window are silently ignored ("work with the data we have"). |
+| `--window-days` | `TRIAGE_WINDOW_DAYS` | `6` | Hard-capped at 6 by the spec; values > 6 are clamped. Missing nights inside the window are silently ignored ("work with the data we have") and the actual count surfaces in the report's classification header. |
 
 ### Stage-2 continuous-CI cross-check
 
@@ -500,7 +501,7 @@ keys:
     "today_failure_count":    43,
     "today_flaky_count":      2,
     "today_cell_count":       12,
-    "window_days":             7
+    "window_days":             6
   }
 }
 ```
@@ -608,7 +609,7 @@ Coverage:
 - **ROCm-tag tolerance** (a tag bump does not wipe history)
 - **Stage-2 window discipline** (continuous runs strictly *after* the
   latest nightly only; older continuous runs are ignored)
-- **window cap** (values > 7 are clamped to 7)
+- **window cap** (values > 6 are clamped to 6)
 - **HTTP client** (token mode, gh-CLI fallback, gzip decoding,
   retry-on-5xx, cross-origin redirect strips Authorization, helpful 404
   message)

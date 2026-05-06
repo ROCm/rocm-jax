@@ -480,7 +480,7 @@ def regression_classify(db_path: Path, *,
                         today_run_id: int,
                         today_workflow_re: str,
                         continuous_workflow_re: str,
-                        window_days: int = 7) -> dict:
+                        window_days: int = 6) -> dict:
     """Classify today's run into the six-bucket model documented at the
     top of this module.
 
@@ -489,8 +489,12 @@ def regression_classify(db_path: Path, *,
         today_run_id: the run id we're triaging.
         today_workflow_re: regex matching the nightly workflow name.
         continuous_workflow_re: regex matching the continuous workflow name.
-        window_days: prior-nightly history window, in nights (default 7,
-            and the spec caps it at 7 -- callers should not pass more).
+        window_days: prior-nightly history window, in nights (default 6,
+            and the spec caps it at 6 -- callers should not pass more).
+            Missing nights inside the window are silently ignored, so
+            the classifier uses whatever prior nights are on file (the
+            actual count is reported in the output as
+            ``prior_nightly_run_ids`` and surfaced in the headline).
 
     Returns dict with keys:
 
@@ -509,8 +513,8 @@ def regression_classify(db_path: Path, *,
             ``today_failure_count``, ``today_flaky_count``,
             ``today_cell_count``, ``window_days``.
     """
-    if window_days > 7:
-        window_days = 7  # spec hard cap
+    if window_days > 6:
+        window_days = 6  # spec hard cap
 
     ensure_schema(db_path)
     with connect(db_path) as c:

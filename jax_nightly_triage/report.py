@@ -14,11 +14,109 @@ Stage-2 confirmation (continuous-CI also failed the test) is rendered as a
 """
 from __future__ import annotations
 
+import html
 import json
+import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from analyze_job import BUCKETS as FAILURE_BUCKETS, JobAnalysis
+from analyze_job import BUCKETS as FAILURE_BUCKETS, Failure, JobAnalysis
+
+
+# Maximum characters of a failure summary to render inline in the headline
+# classification tables. Longer messages are truncated with a U+2026 marker.
+# Per-job tables (further down the report) always show the full first 200
+# chars; the headline tables prefer a tighter excerpt so the row stays
+# readable at table width.
+SUMMARY_INLINE_MAX = 160
+
+# Per-job table summary cap (full text, not truncated to inline width).
+SUMMARY_PER_JOB_MAX = 400
+
+# Pytest renders the actual exception message inside the FAILURES section as
+# lines that start with ``E   `` (one ``E``, then whitespace, then content).
+# Empty ``E`` spacer lines are skipped.
+_E_LINE = re.compile(r"^E\s+(.*\S)\s*$")
+
+# A pytest short-summary line that boils down to just an exception class
+# name -- ``AssertionError:``, ``RuntimeError`` -- is uninformative because
+# it tells you nothing about *why* the test failed.  When we see one of
+# these we prefer building the displayed summary from the excerpt's
+# ``E   ...`` lines instead.  Recognises common Python exception suffixes
+# (``Error``, ``Exception``, ``Failure``, ``Warning``).
+_BARE_EXC_RE = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception|Failure|Warning)\s*:?\s*$")
+
+
+def _e_lines_text(excerpt: str) -> str:
+    """Join the ``E   ...`` content lines of a pytest excerpt into a single
+    string, preserving order.  Returns ``""`` if the excerpt has none.
+    """
+    keep: list[str] = []
+    for line in (excerpt or "").splitlines():
+        m = _E_LINE.match(line.strip())
+        if m:
+            keep.append(m.group(1).strip())
+    return "  ".join(keep)
+
+
+def _failure_display_text(f: Failure) -> str:
+    """Pick the best human-readable text to show for a single failure.
+
+    Falls back to the traceback excerpt's ``E   ...`` lines when the
+    pytest short-summary line is empty or is just a bare exception class
+    name with no message (e.g. ``AssertionError:``).  This is what makes
+    rows like ``testApplyAlongAxis5`` actually say *why* they failed
+    instead of just echoing ``AssertionError:``.
+    """
+    summary = (f.summary or "").strip()
+    excerpt = (f.excerpt or "").strip()
+    if summary and not _BARE_EXC_RE.match(summary):
+        return summary
+    enriched = _e_lines_text(excerpt)
+    if enriched:
+        return enriched
+    return summary or excerpt
+
+
+def _build_failure_summaries(
+        jobs: list[JobAnalysis]) -> dict[tuple[str, str], str]:
+    """Return ``(nodeid, matrix_cell) -> excerpt`` for the headline tables.
+
+    Uses :func:`_failure_display_text` so a row whose short-summary is just
+    ``AssertionError:`` still gets a useful message spliced in from the
+    traceback excerpt.  The first non-empty match per
+    ``(nodeid, matrix_cell)`` wins.
+    """
+    out: dict[tuple[str, str], str] = {}
+    for j in jobs:
+        for f in j.failures:
+            key = (f.nodeid, j.matrix_cell)
+            if key in out:
+                continue
+            text = _failure_display_text(f)
+            if text:
+                out[key] = text
+    return out
+
+
+def _excerpt_for_row(nodeid: str, cells: list[str],
+                     summaries: dict[tuple[str, str], str] | None) -> str:
+    """Pick a representative summary for a (nodeid, cells) row.
+
+    Returns "" if no excerpt is available (so callers can render an em-dash
+    or omit the column gracefully).
+    """
+    if not summaries:
+        return ""
+    for c in cells:
+        text = summaries.get((nodeid, c))
+        if text:
+            text = " ".join(text.split())  # collapse whitespace / newlines
+            if len(text) > SUMMARY_INLINE_MAX:
+                text = text[:SUMMARY_INLINE_MAX - 1].rstrip() + "\u2026"
+            return text
+    return ""
 
 
 # Headline buckets in priority order (this is the order the report uses).
@@ -38,6 +136,37 @@ _BUCKET_LABELS = {
     "regression":      "🚨 regression",
     "known":           "🔁 known",
     "newly_failed":      "🆕 newly-failed",
+}
+
+# Single source of truth for the per-bucket definitions rendered in the
+# headline classification table.  Kept short enough to fit a table cell
+# without wrapping more than a couple of lines; deeper detail belongs in
+# the README, not the daily report.
+_BUCKET_DEFINITIONS = {
+    "cancelled_infra":
+        "Latest job for the cell produced no pytest signal — cancelled, "
+        "timed out, or infra-failed before tests ran. Not a code-level "
+        "failure; retry the runner.",
+    "flaky":
+        "Test rerun-passed in the latest job, OR has a mixed pass/fail "
+        "history across prior nightlies. Non-deterministic; not necessarily "
+        "a regression.",
+    "chronic":
+        "Failed today AND the same (gpu, py) cell currently passes in "
+        "continuous CI runs that ran after this nightly. Likely a stale "
+        "nightly artefact, not a real regression.",
+    "regression":
+        "Failed today AND passed in every prior nightly inside the window. "
+        "Most actionable bucket — points at a recent code change.",
+    "known":
+        "Failed today AND failed in every prior nightly the cell ran. "
+        "Pre-existing failure, not a new regression; usually waiting on "
+        "a fix.",
+    "newly_failed":
+        "Failed today with no full prior history (test or cell is new, or "
+        "the window is not yet warm) and was never previously seen "
+        "failing. Investigate as a possible regression once history "
+        "accumulates.",
 }
 
 
@@ -74,8 +203,17 @@ def _json_safe_classification(c: dict) -> dict:
 # Markdown
 # ---------------------------------------------------------------------------
 
-def _render_classification_section(lines: list[str], rr: dict) -> None:
-    """Append the six-bucket classification to the markdown."""
+def _render_classification_section(
+        lines: list[str], rr: dict,
+        summaries: dict[tuple[str, str], str] | None = None) -> None:
+    """Append the six-bucket classification to the markdown.
+
+    If ``summaries`` is provided (a ``(nodeid, matrix_cell) -> excerpt``
+    map, typically built via ``_build_failure_summaries(jobs)``), the
+    per-test bucket tables grow a third ``summary`` column so the
+    headline view shows *why* each test failed without scrolling down to
+    the per-job section.
+    """
     counts = {
         "cancelled_infra": len(rr.get("cancelled_infra", [])),
         "flaky":           len(rr.get("flaky", [])),
@@ -86,31 +224,28 @@ def _render_classification_section(lines: list[str], rr: dict) -> None:
     }
     prior_n = len(rr.get("prior_nightly_run_ids") or [])
     cont_n  = len(rr.get("continuous_runs_used") or [])
-    window  = rr.get("window_days", 7)
+    window  = rr.get("window_days", 6)
 
     lines.append("## 🚦 Classification")
     lines.append("")
-    lines.append(f"- Prior nightly window: **{window}** days "
-                 f"({prior_n} prior nightly run(s) on file).")
+    lines.append(f"- Prior-nightly window configured: **{window}** day(s).")
+    lines.append(f"- Prior nightlies actually used in this analysis: "
+                 f"**{prior_n}** of up to {window} (missing nights inside "
+                 f"the window are silently ignored).")
     lines.append(f"- Continuous-CI evidence: **{cont_n}** run(s) "
                  f"strictly after the latest nightly.")
     lines.append("")
+    def _md_def(text: str) -> str:
+        # Pipe is the column separator in markdown tables -- escape any
+        # literal pipes that might sneak into a definition.
+        return text.replace("|", "\\|")
+
     lines.append("| Bucket | Definition | Count |")
     lines.append("|---|---|---:|")
-    lines.append(f"| 🛑 **cancelled / infra** | latest job for the cell "
-                 f"produced no pytest signal (cancelled / timed-out / "
-                 f"infra-failed) | {counts['cancelled_infra']} |")
-    lines.append(f"| ⚠️ **flaky** | rerun-passed in latest job, OR "
-                 f"mixed pass/fail prior history | {counts['flaky']} |")
-    lines.append(f"| ♻️ **chronic** | failed today + same `(gpu, py)` "
-                 f"passed in continuous CI | {counts['chronic']} |")
-    lines.append(f"| 🚨 **regression** | failed today + passed in **all** "
-                 f"prior nightlies in the window | {counts['regression']} |")
-    lines.append(f"| 🔁 **known** | failed today + failed in **all** prior "
-                 f"nights the cell ran | {counts['known']} |")
-    lines.append(f"| 🆕 **newly-failed** | failed today + cell or test had "
-                 f"no full prior history (and never failed) "
-                 f"| {counts['newly_failed']} |")
+    for b in HEADLINE_BUCKETS:
+        lines.append(
+            f"| **{_BUCKET_LABELS[b]}** | {_md_def(_BUCKET_DEFINITIONS[b])} "
+            f"| {counts[b]} |")
     lines.append("")
 
     confirmed = set(map(tuple, rr.get("stage2_continuous_confirmed", [])))
@@ -119,6 +254,13 @@ def _render_classification_section(lines: list[str], rr: dict) -> None:
         if bucket in ("regression", "known") and (nodeid, cell) in confirmed:
             return f"`{nodeid}` `+continuous`"
         return f"`{nodeid}`"
+
+    def _md_summary(text: str) -> str:
+        """Escape ``|`` (column separator) and collapse newlines for an
+        inline markdown table cell."""
+        if not text:
+            return "—"
+        return text.replace("\\", "\\\\").replace("|", "\\|")
 
     def _table(title: str, rows: list[tuple[str, str]],
                bucket: str) -> None:
@@ -129,12 +271,23 @@ def _render_classification_section(lines: list[str], rr: dict) -> None:
         by_node: dict[str, list[str]] = defaultdict(list)
         for nodeid, cell in rows:
             by_node[nodeid].append(cell)
-        lines.append("| nodeid | cells affected |")
-        lines.append("|---|---|")
+        if summaries is not None:
+            lines.append("| nodeid | cells affected | summary |")
+            lines.append("|---|---|---|")
+        else:
+            lines.append("| nodeid | cells affected |")
+            lines.append("|---|---|")
         for nodeid, cells in sorted(by_node.items(),
                                     key=lambda kv: -len(kv[1])):
             badge = _row_badge(nodeid, cells[0], bucket)
-            lines.append(f"| {badge} | {', '.join(sorted(cells))} |")
+            cells_sorted = sorted(cells)
+            cells_md = ", ".join(cells_sorted)
+            if summaries is not None:
+                excerpt = _excerpt_for_row(nodeid, cells_sorted, summaries)
+                lines.append(f"| {badge} | {cells_md} "
+                             f"| {_md_summary(excerpt)} |")
+            else:
+                lines.append(f"| {badge} | {cells_md} |")
         lines.append("")
 
     # Render in priority order so the most-actionable buckets come first.
@@ -200,13 +353,15 @@ def render_markdown(*, run_meta: dict, jobs: list[JobAnalysis],
                  f"({sum(1 for j in jobs if j.conclusion=='failure')} failed, "
                  f"{sum(1 for j in jobs if j.conclusion=='success')} passed, "
                  f"{sum(1 for j in jobs if j.conclusion not in ('failure','success'))} other)")
-    lines.append(f"- Window: {classification.get('window_days', 7)} prior nights "
+    lines.append(f"- Window: up to {classification.get('window_days', 6)} "
+                 f"prior nights considered "
                  f"(history is keyed on `(nodeid, gpu, py)`; "
                  f"ROCm tag ignored).")
     lines.append("")
 
     # ---- Headline classification ----
-    _render_classification_section(lines, classification)
+    summaries = _build_failure_summaries(jobs)
+    _render_classification_section(lines, classification, summaries)
 
     # ---- Failure-bucket distribution (per-failure infra/build/test bucket) ----
     counter = _bucket_counter(jobs)
@@ -254,8 +409,8 @@ def render_markdown(*, run_meta: dict, jobs: list[JobAnalysis],
         else:
             lines.append(f"- {len(j.failures)} failures:")
             for f in j.failures[:10]:
-                summary = (f.summary[:120].replace("\n", " ")
-                           if f.summary else "")
+                text = _failure_display_text(f)
+                summary = " ".join(text.split())[:SUMMARY_PER_JOB_MAX]
                 lines.append(f"  - `[{f.bucket}]` `{f.nodeid}` — {summary}")
             if len(j.failures) > 10:
                 lines.append(f"  - ... and {len(j.failures) - 10} more")
@@ -291,6 +446,15 @@ _HTML_TMPL = """<!doctype html>
  .badge {{ display: inline-block; padding: 1px 6px; border-radius: 6px;
           background: #ffe5e0; color: #b1300a; font-size: 11px;
           margin-left: 6px; }}
+ .excerpt {{ display: block; max-width: 720px; color: #57606a;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 12px; word-break: break-word;
+            white-space: normal; }}
+ table.bucket-legend td.bucket {{ white-space: nowrap; font-weight: 600; }}
+ table.bucket-legend td.bucket-def {{ max-width: 640px; color: #57606a;
+            font-size: 12px; line-height: 1.4; }}
+ table.bucket-legend td.num,
+ table.bucket-legend th.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
 </style>
 </head><body>
 <h1>JAX nightly Pytest-ROCm triage — {date}</h1>
@@ -299,9 +463,10 @@ _HTML_TMPL = """<!doctype html>
   conclusion: <b>{conclusion}</b> ·
   jobs: {n_jobs} ({n_failed} failed, {n_passed} passed)
 </p>
-<p class="small">Window: {window} prior nights. History keyed on
-<code>(nodeid, gpu, py)</code> · ROCm tag ignored. Continuous-CI runs
-strictly after the latest nightly contribute Stage-2 evidence.</p>
+<p class="small">Window: up to {window} prior nights considered.
+History keyed on <code>(nodeid, gpu, py)</code> · ROCm tag ignored.
+Continuous-CI runs strictly after the latest nightly contribute
+Stage-2 evidence.</p>
 
 {classification_block}
 
@@ -326,27 +491,47 @@ def _heat_class(n: int) -> str:
     return "heat4"
 
 
-def _diff_section_html(title: str, items: list[tuple[str, str]],
-                       confirmed: set) -> str:
+def _diff_section_html(
+        title: str, items: list[tuple[str, str]],
+        confirmed: set,
+        summaries: dict[tuple[str, str], str] | None = None) -> str:
     if not items:
         return ""
     out: list[str] = []
     by_node: dict[str, list[str]] = defaultdict(list)
     for n, c in items:
         by_node[n].append(c)
-    out.append(f"<h3>{title} ({len(items)})</h3>")
-    out.append('<table><tr><th>nodeid</th><th>cells</th></tr>')
+    out.append(f"<h3>{html.escape(title)} ({len(items)})</h3>")
+    if summaries is not None:
+        out.append('<table><tr><th>nodeid</th><th>cells</th>'
+                   '<th>summary</th></tr>')
+    else:
+        out.append('<table><tr><th>nodeid</th><th>cells</th></tr>')
     for nodeid, cells in sorted(by_node.items(),
                                 key=lambda kv: -len(kv[1])):
+        cells_sorted = sorted(cells)
         badge = ('<span class="badge">+continuous</span>'
-                 if (nodeid, cells[0]) in confirmed else "")
-        out.append(f'<tr><td class="nodeid">{nodeid}{badge}</td>'
-                   f'<td>{", ".join(sorted(cells))}</td></tr>')
+                 if (nodeid, cells_sorted[0]) in confirmed else "")
+        nodeid_html = f'{html.escape(nodeid)}{badge}'
+        cells_html = html.escape(", ".join(cells_sorted))
+        if summaries is not None:
+            excerpt = _excerpt_for_row(nodeid, cells_sorted, summaries)
+            excerpt_html = (f'<span class="excerpt">{html.escape(excerpt)}'
+                            f'</span>' if excerpt
+                            else '<span class="small">—</span>')
+            out.append(f'<tr><td class="nodeid">{nodeid_html}</td>'
+                       f'<td>{cells_html}</td>'
+                       f'<td>{excerpt_html}</td></tr>')
+        else:
+            out.append(f'<tr><td class="nodeid">{nodeid_html}</td>'
+                       f'<td>{cells_html}</td></tr>')
     out.append("</table>")
     return "\n".join(out)
 
 
-def _render_classification_html(rr: dict) -> str:
+def _render_classification_html(
+        rr: dict,
+        summaries: dict[tuple[str, str], str] | None = None) -> str:
     counts = {
         "cancelled_infra": len(rr.get("cancelled_infra", [])),
         "flaky":           len(rr.get("flaky", [])),
@@ -357,25 +542,28 @@ def _render_classification_html(rr: dict) -> str:
     }
     prior_n = len(rr.get("prior_nightly_run_ids") or [])
     cont_n  = len(rr.get("continuous_runs_used") or [])
-    window  = rr.get("window_days", 7)
+    window  = rr.get("window_days", 6)
     confirmed = set(map(tuple, rr.get("stage2_continuous_confirmed", [])))
 
     parts = ["<h2>🚦 Classification</h2>",
              "<p>",
-             f"Prior nightly window: <b>{window}</b> days "
-             f"({prior_n} prior run(s) on file). "
+             f"Prior-nightly window configured: <b>{window}</b> day(s). "
+             f"Prior nightlies actually used in this analysis: "
+             f"<b>{prior_n}</b> of up to {window} (missing nights inside "
+             f"the window are silently ignored). "
              f"Continuous-CI evidence: <b>{cont_n}</b> run(s) "
              f"strictly after the latest nightly.",
              "</p>",
-             "<table>",
-             "<tr><th>Bucket</th><th>Count</th></tr>",
-             f"<tr><td>🛑 cancelled / infra</td><td>{counts['cancelled_infra']}</td></tr>",
-             f"<tr><td>⚠️ flaky</td><td>{counts['flaky']}</td></tr>",
-             f"<tr><td>♻️ chronic</td><td>{counts['chronic']}</td></tr>",
-             f"<tr><td>🚨 regression</td><td>{counts['regression']}</td></tr>",
-             f"<tr><td>🔁 known</td><td>{counts['known']}</td></tr>",
-             f"<tr><td>🆕 newly-failed</td><td>{counts['newly_failed']}</td></tr>",
-             "</table>"]
+             '<table class="bucket-legend">',
+             "<tr><th>Bucket</th><th>Definition</th>"
+             '<th class="num">Count</th></tr>']
+    for b in HEADLINE_BUCKETS:
+        parts.append(
+            f'<tr><td class="bucket">{html.escape(_BUCKET_LABELS[b])}</td>'
+            f'<td class="bucket-def">{html.escape(_BUCKET_DEFINITIONS[b])}'
+            f'</td>'
+            f'<td class="num">{counts[b]}</td></tr>')
+    parts.append("</table>")
 
     if rr.get("cancelled_infra"):
         parts.append(
@@ -388,19 +576,20 @@ def _render_classification_html(rr: dict) -> str:
                          f'<td>{reason}</td><td>{ev}</td></tr>')
         parts.append("</table>")
 
-    parts.append(_diff_section_html("⚠️ flaky", rr.get("flaky", []),
-                                    confirmed))
-    parts.append(_diff_section_html("♻️ chronic (passes in continuous CI)",
-                                    rr.get("chronic", []), confirmed))
+    parts.append(_diff_section_html(
+        "⚠️ flaky", rr.get("flaky", []), confirmed, summaries))
+    parts.append(_diff_section_html(
+        "♻️ chronic (passes in continuous CI)",
+        rr.get("chronic", []), confirmed, summaries))
     parts.append(_diff_section_html(
         "🚨 regression (passed in all prior nightlies)",
-        rr.get("regression", []), confirmed))
+        rr.get("regression", []), confirmed, summaries))
     parts.append(_diff_section_html(
         "🔁 known (failed in all prior nights cell ran)",
-        rr.get("known", []), confirmed))
+        rr.get("known", []), confirmed, summaries))
     parts.append(_diff_section_html(
         "🆕 newly-failed (no/partial prior history, never failed)",
-        rr.get("newly_failed", []), confirmed))
+        rr.get("newly_failed", []), confirmed, summaries))
     return "\n".join(filter(None, parts))
 
 
@@ -429,12 +618,12 @@ def render_html(*, run_meta: dict, jobs: list[JobAnalysis],
     for j in sorted(jobs, key=lambda x: x.matrix_cell):
         url = (f"https://github.com/{run_meta.get('repo','jax-ml/jax')}"
                f"/actions/runs/{run_meta['run_id']}/job/{j.job_id}")
-        per_job_html.append(f'<h3>{j.matrix_cell} '
-                            f'<a class="small" href="{url}">job {j.job_id}'
-                            f'</a></h3>')
+        per_job_html.append(f'<h3>{html.escape(j.matrix_cell)} '
+                            f'<a class="small" href="{html.escape(url)}">'
+                            f'job {j.job_id}</a></h3>')
         if j.infra_events:
             per_job_html.append("<p>" + "".join(
-                f'<span class="pill">{ev}</span>'
+                f'<span class="pill">{html.escape(ev)}</span>'
                 for ev in j.infra_events) + "</p>")
         if j.flaky_tests:
             per_job_html.append(
@@ -444,10 +633,12 @@ def render_html(*, run_meta: dict, jobs: list[JobAnalysis],
             per_job_html.append('<table><tr><th>bucket</th><th>nodeid</th>'
                                 '<th>summary</th></tr>')
             for f in j.failures[:50]:
+                text = _failure_display_text(f)
+                summary_text = " ".join(text.split())[:SUMMARY_PER_JOB_MAX]
                 per_job_html.append(
-                    f'<tr><td>{f.bucket}</td>'
-                    f'<td class="nodeid">{f.nodeid}</td>'
-                    f'<td>{(f.summary or "")[:200]}</td></tr>')
+                    f'<tr><td>{html.escape(f.bucket)}</td>'
+                    f'<td class="nodeid">{html.escape(f.nodeid)}</td>'
+                    f'<td class="excerpt">{html.escape(summary_text)}</td></tr>')
             per_job_html.append("</table>")
             if len(j.failures) > 50:
                 per_job_html.append(
@@ -456,6 +647,7 @@ def render_html(*, run_meta: dict, jobs: list[JobAnalysis],
         else:
             per_job_html.append("<p><em>no test failures parsed</em></p>")
 
+    summaries = _build_failure_summaries(jobs)
     return _HTML_TMPL.format(
         date=run_meta["date"],
         url=run_meta.get("html_url", ""),
@@ -465,8 +657,9 @@ def render_html(*, run_meta: dict, jobs: list[JobAnalysis],
         n_jobs=len(jobs),
         n_failed=sum(1 for j in jobs if j.conclusion == "failure"),
         n_passed=sum(1 for j in jobs if j.conclusion == "success"),
-        window=classification.get("window_days", 7),
-        classification_block=_render_classification_html(classification),
+        window=classification.get("window_days", 6),
+        classification_block=_render_classification_html(
+            classification, summaries),
         matrix_table="\n".join(matrix_html),
         bucket_table="\n".join(bucket_html),
         per_job="\n".join(per_job_html),

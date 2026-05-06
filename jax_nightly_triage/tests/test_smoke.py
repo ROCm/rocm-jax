@@ -57,6 +57,19 @@ LOG_INFRA_RUNNER = """\
 2026-05-01T03:00:01.0000000Z ##[error]Process completed with exit code 1
 """
 
+# (3a) A step-level GH Actions ``timeout-minutes:`` trip. The pytest banner
+# is printed, a few skips/passes scroll by, then the step is killed at the
+# configured budget. No FAILED line, no infra_events under the old
+# (runner-only) INFRA_TIMEOUT rule -- which is the bug this fixture pins.
+LOG_INFRA_TIMEOUT_STEP = """\
+2026-05-06T11:18:35.0000000Z ============================= test session starts ==============================
+2026-05-06T11:18:35.0000000Z platform linux -- Python 3.11.15, pytest-8.4.2, pluggy-1.6.0
+2026-05-06T11:18:35.0000000Z 16 workers [56440 items]
+2026-05-06T11:18:35.0000000Z ssssssssssssssssssssssssssssssssssssssssssssssssssss [  0%]
+2026-05-06T13:18:03.0000000Z ##[error]The action 'Run Pytest ROCm tests' has timed out after 120 minutes.
+2026-05-06T13:18:08.0000000Z Post job cleanup.
+"""
+
 # (3) An OOM during pytest.
 LOG_OOM = """\
 2026-05-01T05:00:00.0000000Z ##[group]Run pytest
@@ -177,6 +190,77 @@ class SmokeTest(unittest.TestCase):
         self.assertTrue(any("hipErrorInvalidValue" in f.excerpt for f in fs),
                         msg=f"excerpts={ex}")
 
+    def test_traceback_attach_dotted_class_banner(self):
+        # Pins the fix for class-style ABSL tests (e.g. JAX's
+        # ``LaxBackedNumpyTests.testApplyAlongAxis5``): pytest prints the
+        # FAILURES banner with a dotted ``ClassName.methodName`` short name,
+        # but the short-summary line carries the full ``::``-separated
+        # nodeid.  The matcher must bridge the two so excerpts attach.
+        log = (
+            "2026-05-06T11:51:23Z =================================== FAILURES ===================================\n"
+            "2026-05-06T11:51:23Z ___________________ LaxBackedNumpyTests.testApplyAlongAxis5 ____________________\n"
+            "2026-05-06T11:51:23Z tests/lax_numpy_test.py:1823: in testApplyAlongAxis\n"
+            "2026-05-06T11:51:23Z     self._CheckAgainstNumpy(np_fun, jnp_fun, args_maker, ...)\n"
+            "2026-05-06T11:51:23Z E   AssertionError:\n"
+            "2026-05-06T11:51:23Z E   Not equal to tolerance rtol=1e-06, atol=1e-06\n"
+            "2026-05-06T11:51:23Z E   Mismatched elements: 24 / 24 (100%)\n"
+            "2026-05-06T11:51:31Z =========================== short test summary info ============================\n"
+            "2026-05-06T11:51:31Z FAILED tests/lax_numpy_test.py::LaxBackedNumpyTests::testApplyAlongAxis5 - AssertionError:\n"
+        )
+        fs = analyze_job.extract_short_summary(log)
+        ex = analyze_job.extract_tracebacks(log)
+        analyze_job.attach_excerpts(fs, ex)
+        self.assertEqual(len(fs), 1)
+        self.assertTrue(
+            fs[0].excerpt,
+            msg=f"excerpt was empty; nodeid={fs[0].nodeid!r}, ex_keys={list(ex)}",
+        )
+        self.assertIn("Not equal to tolerance", fs[0].excerpt)
+        self.assertIn("Mismatched elements", fs[0].excerpt)
+
+    def test_failure_display_text_prefers_excerpt_for_bare_exception(self):
+        # Bare ``AssertionError:`` short-summary -> use excerpt's E lines.
+        f = analyze_job.Failure(
+            nodeid="tests/lax_numpy_test.py::LaxBackedNumpyTests::testApplyAlongAxis5",
+            bucket="TEST_FAIL_FUNCTIONAL",
+            summary="AssertionError:",
+            excerpt=(
+                "tests/lax_numpy_test.py:1823: in testApplyAlongAxis\n"
+                "    self._CheckAgainstNumpy(np_fun, jnp_fun, args_maker, ...)\n"
+                "E   AssertionError:\n"
+                "E   Not equal to tolerance rtol=1e-06, atol=1e-06\n"
+                "E   Mismatched elements: 24 / 24 (100%)\n"
+            ),
+        )
+        text = report._failure_display_text(f)
+        self.assertIn("Not equal to tolerance", text)
+        self.assertIn("Mismatched elements", text)
+        # Sanity: an informative short-summary wins over excerpt.
+        f2 = analyze_job.Failure(
+            nodeid="tests/x.py::test_y",
+            bucket="TEST_FAIL_FUNCTIONAL",
+            summary="RuntimeError: HIP error: hipErrorInvalidValue",
+            excerpt="E   ignored\n",
+        )
+        self.assertEqual(
+            report._failure_display_text(f2),
+            "RuntimeError: HIP error: hipErrorInvalidValue",
+        )
+
+    def test_candidate_short_names(self):
+        # Class-style nodeid -> dotted form first, bare method second.
+        self.assertEqual(
+            analyze_job._candidate_short_names(
+                "tests/lax_numpy_test.py::LaxBackedNumpyTests::testApplyAlongAxis5"),
+            ["LaxBackedNumpyTests.testApplyAlongAxis5", "testApplyAlongAxis5"],
+        )
+        # Plain function nodeid -> just the bare name.
+        self.assertEqual(
+            analyze_job._candidate_short_names(
+                "tests/numeric_test.py::test_matmul_numeric[bf16]"),
+            ["test_matmul_numeric[bf16]"],
+        )
+
     def test_classification(self):
         a = _analyze_with_log(
             1001, "Pytest ROCm (...) / 1gpu, ROCm 7.2.0, py3.11",
@@ -193,6 +277,19 @@ class SmokeTest(unittest.TestCase):
             LOG_INFRA_RUNNER, self.tmp / "logs")
         self.assertEqual(a.failures, [])
         self.assertIn("INFRA_RUNNER", a.infra_events)
+
+    def test_infra_step_level_timeout(self):
+        # Pins the fix for the gap that hid 1gpu-py3.11 / 1gpu-py3.12 cells
+        # killed by GH Actions ``timeout-minutes:`` in the 2026-05-06 nightly:
+        # the log has no FAILED line, only a ``##[error]... has timed out
+        # after N minutes`` banner. Without this pattern the cell falls into
+        # zero buckets (failure conclusion + empty infra_events + empty
+        # failures => cancelled_infra rule does not fire).
+        a = _analyze_with_log(
+            1004, "Pytest ROCm (...) / 1gpu, ROCm 7.2.0, py3.11",
+            LOG_INFRA_TIMEOUT_STEP, self.tmp / "logs")
+        self.assertEqual(a.failures, [])
+        self.assertIn("INFRA_TIMEOUT", a.infra_events)
 
     def test_oom_classification(self):
         a = _analyze_with_log(

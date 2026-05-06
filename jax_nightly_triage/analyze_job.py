@@ -288,20 +288,55 @@ def extract_tracebacks(log_text: str) -> dict[str, str]:
     return excerpts
 
 
+def _candidate_short_names(nodeid: str) -> list[str]:
+    """Build the various short-name forms pytest may use in a FAILURES banner.
+
+    Pytest emits headers like ``___ <name> ___`` whose ``<name>`` style
+    depends on the test framework:
+
+      * plain function:        ``test_bar``  /  ``test_bar[param]``
+      * unittest / absl class: ``ClassName.testBar``  (dot, NOT ``::``)
+
+    Given a full nodeid like ``tests/foo.py::ClassName::testBar[param]``
+    we want to try **both** ``ClassName.testBar[param]`` and
+    ``testBar[param]`` (in that order of specificity).
+    """
+    parts = nodeid.split("::")
+    cands: list[str] = []
+    if len(parts) >= 3:
+        # ``tests/foo.py::Class::testBar`` -> ``Class.testBar``.  Pytest
+        # joins nested classes with dots too, hence ``parts[1:]``.
+        cands.append(".".join(parts[1:]))
+    if len(parts) >= 2:
+        cands.append(parts[-1])
+    if not cands:
+        cands.append(nodeid)
+    seen: set[str] = set()
+    return [c for c in cands if not (c in seen or seen.add(c))]
+
+
 def attach_excerpts(failures: list[Failure], excerpts: dict[str, str]) -> None:
-    """Best-effort match short-name -> full nodeid by suffix."""
+    """Best-effort match a FAILURES-section short name -> full nodeid.
+
+    Tries each candidate short-name form (see :func:`_candidate_short_names`)
+    by exact match first, then falls back to a parametrization-stripping
+    prefix match so that a banner that omits ``[param]`` still attributes.
+    """
     for f in failures:
-        # nodeid like "tests/foo_test.py::test_bar[bf16]"
-        # short name typically "test_bar[bf16]" or "test_bar"
-        short = f.nodeid.split("::", 1)[-1]
-        if short in excerpts:
-            f.excerpt = excerpts[short]
+        cands = _candidate_short_names(f.nodeid)
+        for c in cands:
+            if c in excerpts:
+                f.excerpt = excerpts[c]
+                break
+        if f.excerpt:
             continue
-        # Fallback: any short name ending with the same final token.
-        token = short.split("[", 1)[0]
-        for k, v in excerpts.items():
-            if k.split("[", 1)[0] == token:
-                f.excerpt = v
+        for c in cands:
+            token = c.split("[", 1)[0]
+            for k, v in excerpts.items():
+                if k.split("[", 1)[0] == token:
+                    f.excerpt = v
+                    break
+            if f.excerpt:
                 break
 
 
@@ -317,6 +352,12 @@ CLASSIFY_RULES: list[tuple[str, str, re.Pattern[str]]] = [
     ("INFRA_RUNNER",   "log",     re.compile(r"Executing the custom container implementation failed", re.I)),
     ("INFRA_RUNNER",   "log",     re.compile(r"ScriptExecutorError when trying to execute", re.I)),
     ("INFRA_TIMEOUT",  "log",     re.compile(r"The job running on runner .+ has exceeded the maximum execution time", re.I)),
+    # GH Actions step-level ``timeout-minutes:`` trip. Emitted as a literal
+    # ``##[error]The action '<step name>' has timed out after N minutes.``
+    # in the raw job log when a step (not the whole runner) exhausts its
+    # configured time budget. The runner-level message above does NOT cover
+    # this case.
+    ("INFRA_TIMEOUT",  "log",     re.compile(r"\#\#\[error\].*has timed out after \d+ minutes?", re.I)),
     ("INFRA_OOM",      "log",     re.compile(r"\b(OOMKilled|hipErrorOutOfMemory|CUDA_ERROR_OUT_OF_MEMORY)\b")),
     ("INFRA_OOM",      "log",     re.compile(r"^Killed\b", re.M)),
     ("BUILD_FAIL",     "log",     re.compile(r"^ERROR: .+ failed to build", re.M | re.I)),

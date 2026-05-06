@@ -550,8 +550,8 @@ class WindowAndContinuousScope(_Base):
         self.assertEqual(rr["cancelled_infra"], [])
         self.assertEqual(rr["today_failure_count"], 0)
 
-    def test_window_capped_at_seven(self):
-        """Spec hard caps the window at 7 even if user passes more."""
+    def test_window_capped_at_six(self):
+        """Spec hard caps the window at 6 even if user passes more."""
         cell = "1gpu-py3.11-rocm7.2.0"
         self.store(run_id=1100, workflow_name=NIGHTLY,
                    when=TODAY_DT,
@@ -559,7 +559,7 @@ class WindowAndContinuousScope(_Base):
                                conclusion="success")],
                    conclusion="success")
         rr = self.classify(1100, window_days=30)
-        self.assertEqual(rr["window_days"], 7)
+        self.assertEqual(rr["window_days"], 6)
 
 
 # ---------------------------------------------------------------------------
