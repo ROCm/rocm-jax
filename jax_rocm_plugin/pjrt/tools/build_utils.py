@@ -95,6 +95,14 @@ def _apply_wheel_post_release(  # pylint: disable=too-many-locals
                         count=1,
                         flags=re.MULTILINE,
                     )
+                    text = re.sub(
+                        r"^(Requires-Dist:\s+jax-rocm\d+-pjrt==)"
+                        + re.escape(old_version)
+                        + r"(\s*(?:;.*)?)$",
+                        rf"\g<1>{new_version}\2",
+                        text,
+                        flags=re.MULTILINE,
+                    )
                     data = text.encode("utf-8")
                 elif item.filename.endswith("/RECORD"):
                     continue
