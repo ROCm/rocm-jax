@@ -26,6 +26,9 @@ Six buckets, in priority order (top wins):
                           (b) "mixed history": failed today AND prior
                               nights show both passes and failures for
                               this ``(nodeid, gpu, py)``.
+                        Both flaky paths win over chronic -- a flaky test
+                        that continuous happened to pass once is still
+                        flaky, not env-specific-chronic.
 
     chronic          -- per-test.  Failed today AND continuous-CI evidence
                         exists for the same ``(nodeid, gpu, py)`` AND
@@ -576,6 +579,19 @@ def regression_classify(db_path: Path, *,
     # Today's flaky-by-rerun set (keyed by full triple) -- looked up first.
     today_flaky_keys = {(n, g, p) for (n, _c, g, p) in today_flaky}
 
+    # Priority tree (top wins):
+    #
+    #   1. flaky  (log-local rerun-pass)
+    #   2. flaky  (statistical: mixed pass/fail prior history)
+    #   3. chronic (continuous covered the (gpu,py) and PASSED the test)
+    #   4. newly_failed (cell didn't run in window at all)
+    #   5. regression  (full prior coverage AND zero prior failures)
+    #   6. newly_failed (partial prior coverage AND zero prior failures)
+    #   7. known       (every prior night the cell ran, the test failed)
+    #
+    # Both flaky paths are deliberately above chronic so that the
+    # spec-mandated rule "mixed history goes to flaky" is honored even
+    # when continuous-CI happens to pass the test on one run.
     for nodeid, cell, gpu, py in today_failures:
         if cell in skip_cells:
             # The job didn't produce a pytest signal at all -- the
@@ -590,7 +606,21 @@ def regression_classify(db_path: Path, *,
             flaky.append((nodeid, cell))
             continue
 
-        # 2. chronic = (gpu, py) covered by continuous AND continuous
+        # ---- Stage-1 history counters (need them for flaky-stat too) ---
+        runs_ran_cell = [r for r in prior_run_ids
+                         if (gpu, py) in prior_cells.get(r, set())]
+        n_ran = len(runs_ran_cell)
+        n_failed = sum(1 for r in runs_ran_cell if _failed_in(r, key3))
+        n_passed = n_ran - n_failed
+
+        # 2. flaky-by-mixed-history -- statistical flake.  Promoted ahead
+        #    of chronic because the spec says mixed history goes to
+        #    flaky regardless of continuous outcome.
+        if n_failed > 0 and n_passed > 0:
+            flaky.append((nodeid, cell))
+            continue
+
+        # 3. chronic = (gpu, py) covered by continuous AND continuous
         #    PASSED this test (i.e. test absent from continuous_failures).
         cont_covers = (gpu, py) in covered_gpu_py
         cont_failed = key3 in cont_failures
@@ -598,13 +628,8 @@ def regression_classify(db_path: Path, *,
             chronic.append((nodeid, cell))
             continue
 
-        # 3-5. Stage-1 history (apply over the runs where the cell ran).
-        runs_ran_cell = [r for r in prior_run_ids
-                         if (gpu, py) in prior_cells.get(r, set())]
-        n_ran = len(runs_ran_cell)
-        n_failed = sum(1 for r in runs_ran_cell if _failed_in(r, key3))
-        n_passed = n_ran - n_failed
-
+        # 4-7. Stage-1 verdict (only reached when n_passed == 0 OR
+        #      n_failed == 0 -- mixed was already handled above).
         if n_ran == 0:
             # Job for (gpu, py) never ran in window -> brand-new cell.
             newly_failed.append((nodeid, cell))
@@ -616,26 +641,40 @@ def regression_classify(db_path: Path, *,
                 # first failure on a previously-green test).
                 regression.append((nodeid, cell))
             else:
-                # Partial coverage with no failures -> newly-failed (we
+                # Partial coverage with no failures -> newly_failed (we
                 # cannot say "passed in all 7" because we don't have 7).
                 newly_failed.append((nodeid, cell))
             if cont_covers and cont_failed:
                 stage2_confirmed.append((nodeid, cell))
             continue
-        if n_passed == 0:
-            # Failed every prior night the cell ran -> known.
-            known.append((nodeid, cell))
-            if cont_covers and cont_failed:
-                stage2_confirmed.append((nodeid, cell))
-            continue
-
-        # 6. Mixed prior history -> statistical flaky.
-        flaky.append((nodeid, cell))
+        # n_passed == 0 (since we ruled out mixed and n_failed == 0).
+        known.append((nodeid, cell))
+        if cont_covers and cont_failed:
+            stage2_confirmed.append((nodeid, cell))
 
     cancelled_infra = sorted(
         (cell, meta["reason"], tuple(meta["events"]))
         for cell, meta in infra_cells.items()
     )
+
+    # ---- Mutual-exclusion invariant -------------------------------------
+    # Every failing (nodeid, matrix_cell) in today's run that survived the
+    # skip_cells gate should land in EXACTLY ONE of the five per-test
+    # buckets.  This is guaranteed by the decision tree above, but is
+    # cheap to assert and protects against future edits silently breaking
+    # the property.  ``stage2_continuous_confirmed`` is a tag (subset of
+    # regression+known), not a bucket, so it doesn't participate.
+    _all_pairs = (
+        list(regression) + list(known) + list(chronic) +
+        list(flaky) + list(newly_failed)
+    )
+    if len(_all_pairs) != len(set(_all_pairs)):
+        # Find the duplicates so the error message is actionable.
+        from collections import Counter
+        dups = [p for p, n in Counter(_all_pairs).items() if n > 1]
+        raise RuntimeError(
+            "Internal classifier error: (nodeid, matrix_cell) appears in "
+            f"more than one per-test bucket: {dups[:5]}")
 
     return {
         "regression":      sorted(regression),

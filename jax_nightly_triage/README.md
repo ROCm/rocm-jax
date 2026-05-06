@@ -129,21 +129,41 @@ continuous-CI runs whose `created_at > latest_nightly.created_at`:
 
 | Condition | Stage-2 effect |
 |---|---|
-| Same `(gpu, py)` covered by continuous AND continuous **passed** the test | Promote to `chronic` (overrides Stage-1 verdict for `regression` / `known` / `newly_failed`) |
+| Same `(gpu, py)` covered by continuous AND continuous **passed** the test | Promote to `chronic` (overrides Stage-1 `regression` / `known` / `newly_failed` — but **not** `flaky`) |
 | Same `(gpu, py)` covered AND continuous **also failed** the test | Stay in Stage-1 bucket; tag with `+continuous` badge |
 | `(gpu, py)` not covered by continuous | Stage-1 verdict stands; no badge |
 
-### Flaky detection has two independent paths
+### Flaky detection has two independent paths (both above `chronic`)
 
 1. **Log-local (deterministic):** `pytest-rerunfailures` writes
    `<nodeid> RERUN` lines and a final verdict. If the last verdict for a
    nodeid is `PASSED` after at least one `RERUN`, the test is recorded
-   in `JobAnalysis.flaky_tests` and lands in the `flaky` bucket
-   regardless of any other signal. This is the highest-priority bucket
-   in the tree.
+   in `JobAnalysis.flaky_tests` and lands in the `flaky` bucket. This
+   is the highest-priority bucket in the tree.
 2. **Statistical:** if the prior nightly window shows mixed pass/fail
-   (`0 < F < J`), the test goes in `flaky` even without a rerun
-   signal.
+   (`0 < F < J`), the test goes in `flaky` even without a rerun signal
+   — and even if continuous happens to pass it on one run. Mixed
+   history is treated as a stronger signal of unreliability than a
+   single passing continuous run.
+
+### Decision-tree priority (top wins)
+
+```
+1. flaky-by-rerun        # rerun-passed in latest log
+2. flaky-by-mixed         # 0 < F < J in the prior window
+3. chronic                # cont covers (gpu, py) AND cont passed test
+4. newly_failed           # J == 0 (cell never ran in window)
+5. regression             # J == N_priors AND F == 0
+6. newly_failed           # J < N_priors AND F == 0 (partial coverage)
+7. known                  # F == J > 0 (every night the cell ran)
+```
+
+The tree is exhaustive over the failing population: every failing
+`(nodeid, matrix_cell)` lands in **exactly one** of `flaky`, `chronic`,
+`regression`, `known`, `newly_failed`. A runtime assertion in
+`regression_classify` enforces the disjointness invariant; the
+`BucketDisjointness` test class drives all five buckets in one nightly
+and checks the union equals the sum of sizes.
 
 ### Cancelled / infra cells (per-cell, not per-test)
 

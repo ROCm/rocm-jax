@@ -562,5 +562,139 @@ class WindowAndContinuousScope(_Base):
         self.assertEqual(rr["window_days"], 7)
 
 
+# ---------------------------------------------------------------------------
+# Disjointness: every (nodeid, matrix_cell) lands in EXACTLY ONE per-test
+# bucket.  cancelled_infra is per-cell (different keying) and
+# stage2_continuous_confirmed is a tag (subset of regression + known), so
+# they don't participate in the disjointness check.
+# ---------------------------------------------------------------------------
+
+class BucketDisjointness(_Base):
+    """Construct a single nightly that exercises every per-test bucket
+    and assert the resulting bucket lists are pairwise disjoint."""
+
+    def test_no_pair_appears_in_two_per_test_buckets(self):
+        cell11 = "1gpu-py3.11-rocm7.2.0"
+        cell13 = "1gpu-py3.13-rocm7.2.0"
+        # Distinct nodeids, each engineered to land in a different bucket.
+        n_reg     = "tests/x.py::test_regression_case"
+        n_known   = "tests/x.py::test_known_case"
+        n_chronic = "tests/x.py::test_chronic_case"
+        n_flakyR  = "tests/x.py::test_flaky_rerun_case"
+        n_flakyM  = "tests/x.py::test_flaky_mixed_case"
+        n_newly   = "tests/x.py::test_newly_failed_case"
+
+        # ---- Build 7 prior nightly runs (full window). ------------------
+        # In every prior nightly the py3.11 cell exists; the py3.13 cell
+        # only exists in the most recent 2 prior nightlies (so a failure
+        # on cell13 with no full coverage maps to newly_failed).
+        for i, day_offset in enumerate(range(-7, 0), start=1):
+            # py3.11 run: regression case passes; known case fails;
+            #             chronic case fails; flaky-mixed alternates.
+            jobs = [
+                _stub(5000 + i, "nightly / 1gpu", cell11,
+                      failures=(
+                          [n_known, n_chronic]
+                          + ([n_flakyM] if i % 2 == 0 else [])
+                      ),
+                      conclusion="failure")
+            ]
+            # py3.13 run: only in the last 2 prior nightlies.
+            if day_offset >= -2:
+                jobs.append(_stub(6000 + i, "nightly / 1gpu", cell13,
+                                  failures=[],
+                                  conclusion="success"))
+            self.store(run_id=4000 + i, workflow_name=NIGHTLY,
+                       when=TODAY_DT + timedelta(days=day_offset),
+                       jobs=jobs, conclusion="failure")
+
+        # ---- Latest nightly: every bucket gets exactly one failure. ----
+        latest_jobs = [
+            _stub(1100, "nightly / 1gpu", cell11,
+                  failures=[n_reg, n_known, n_chronic, n_flakyR, n_flakyM],
+                  flaky_tests=[n_flakyR]),
+            # newly_failed: cell13 only ran in 2 of 7 prior nightlies.
+            _stub(1101, "nightly / 1gpu", cell13,
+                  failures=[n_newly]),
+        ]
+        self.store(run_id=1100, workflow_name=NIGHTLY,
+                   when=TODAY_DT, jobs=latest_jobs)
+
+        # ---- Continuous-CI run after latest: passes the chronic case
+        #      (drives it into chronic) and is silent on the others.
+        self.store(run_id=2001, workflow_name=CONTINUOUS,
+                   when=TODAY_DT + timedelta(hours=2),
+                   jobs=[_stub(2001, "continuous / 1gpu", cell11,
+                               failures=[n_known, n_flakyR, n_reg],
+                               # Note: not failing n_chronic -> chronic.
+                               # Failing n_known/n_reg -> they get
+                               # +continuous badge.
+                               conclusion="failure")])
+
+        rr = self.classify(1100)
+
+        # Sanity: every engineered case ended up in the bucket we expected.
+        self.assertEqual(rr["regression"], [(n_reg, cell11)])
+        self.assertEqual(rr["known"],      [(n_known, cell11)])
+        self.assertEqual(rr["chronic"],    [(n_chronic, cell11)])
+        self.assertEqual(rr["newly_failed"], [(n_newly, cell13)])
+        # flaky has BOTH the rerun-pass AND the mixed-history case.
+        self.assertEqual(sorted(rr["flaky"]), sorted([
+            (n_flakyR, cell11), (n_flakyM, cell11),
+        ]))
+
+        # The disjointness invariant: union must equal sum of sizes.
+        union = set()
+        for key in ("regression", "known", "chronic", "flaky", "newly_failed"):
+            union |= set(rr[key])
+        total = (len(rr["regression"]) + len(rr["known"]) +
+                 len(rr["chronic"]) + len(rr["flaky"]) +
+                 len(rr["newly_failed"]))
+        self.assertEqual(len(union), total,
+                         "Some (nodeid, matrix_cell) appears in more than "
+                         "one per-test bucket")
+
+        # stage2_continuous_confirmed is a tag, MUST be a subset of
+        # regression UNION known (and never of chronic / flaky /
+        # newly_failed).
+        confirmed = set(map(tuple, rr["stage2_continuous_confirmed"]))
+        reg_known = set(rr["regression"]) | set(rr["known"])
+        self.assertTrue(
+            confirmed.issubset(reg_known),
+            f"stage2_continuous_confirmed escaped regression+known: "
+            f"{confirmed - reg_known}")
+        self.assertEqual(
+            confirmed & set(rr["chronic"]), set(),
+            "stage2_continuous_confirmed must not tag chronic rows")
+        self.assertEqual(
+            confirmed & set(rr["flaky"]), set(),
+            "stage2_continuous_confirmed must not tag flaky rows")
+
+    def test_cancelled_infra_short_circuits_per_test_buckets(self):
+        """A cell in cancelled_infra must not contribute to any per-test
+        bucket, even if some failures somehow got parsed for it."""
+        cell = "1gpu-py3.11-rocm7.2.0"
+        nodeid = "tests/x.py::test_in_cancelled_cell"
+
+        # Latest nightly: the job is cancelled but somehow has a parsed
+        # failure (defensive case -- shouldn't happen in practice but the
+        # code path must be correct).
+        stub = _stub(1100, "nightly / 1gpu", cell, [nodeid],
+                     conclusion="cancelled")
+        self.store(run_id=1100, workflow_name=NIGHTLY,
+                   when=TODAY_DT, jobs=[stub], conclusion="failure")
+
+        rr = self.classify(1100)
+        # Cell appears in cancelled_infra (per-cell) ...
+        self.assertEqual(len(rr["cancelled_infra"]), 1)
+        self.assertEqual(rr["cancelled_infra"][0][0], cell)
+        # ... and in NONE of the per-test buckets.
+        for k in ("regression", "known", "chronic", "flaky",
+                  "newly_failed"):
+            self.assertEqual(rr[k], [],
+                             f"per-test bucket {k!r} should be empty for "
+                             f"a cancelled cell, got {rr[k]}")
+
+
 if __name__ == "__main__":
     unittest.main()
