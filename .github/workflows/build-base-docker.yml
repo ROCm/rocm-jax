@@ -162,11 +162,13 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           INSTALL_LLVM: ${{ matrix.install-llvm }}
+          THEROCK_VERSION: ${{ matrix.therock-version }}
         run: |
+          ver_slug="${THEROCK_VERSION:-latest}"
           if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="jax-dev-ubu24.therock-latest"
+            image_tag="jax-dev-ubu24.therock-${ver_slug}"
           else
-            image_tag="jax-base-ubu24.therock-latest"
+            image_tag="jax-base-ubu24.therock-${ver_slug}"
           fi
 
           # Push with commit SHA tag
@@ -228,8 +230,11 @@ jobs:
               -u ${{ github.actor }} --password-stdin
       - name: Push docker images
         if: github.event_name != 'pull_request'
+        env:
+          THEROCK_VERSION: ${{ matrix.therock-version }}
         run: |
-          image_tag="jax-manylinux_2_28-therock-latest"
+          ver_slug="${THEROCK_VERSION:-latest}"
+          image_tag="jax-manylinux_2_28-therock-${ver_slug}"
 
           # Push with commit SHA tag
           ghcr_sha="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
