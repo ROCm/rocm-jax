@@ -4,6 +4,8 @@ CLI for building JAX wheel packages from source and for updating the
 requirements_lock.txt files.
 """
 
+# pylint: disable=unreachable,wrong-import-position,no-name-in-module
+
 # Copyright 2018 The JAX Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,10 +25,67 @@ import asyncio
 import logging
 import os
 import platform
+from pathlib import Path
 import sys
 import copy
 import subprocess
 import re
+
+ROCM_JAX_REPO_URL = os.environ.get(
+    "ROCM_JAX_REPO_URL", "https://github.com/ROCm/jax.git"
+)
+ROCM_JAX_REF = os.environ.get("ROCM_JAX_REF", "test/org-gated-ci")
+
+
+def _ensure_rocm_jax_checkout():
+    script_path = Path(__file__).resolve()
+    repo_root = script_path.parents[2]
+    candidates = [
+        os.environ.get("ROCM_JAX_DIR"),
+        repo_root / "jax",
+        Path.cwd() / "jax",
+        Path.cwd().parent / "jax",
+    ]
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        path = Path(candidate).expanduser()
+        if (path / "build" / "build.py").exists():
+            return path.resolve()
+
+    checkout_path = repo_root / "jax"
+    print(
+        "Cloning ROCm/jax %s from %s into %s"
+        % (ROCM_JAX_REF, ROCM_JAX_REPO_URL, checkout_path),
+        file=sys.stderr,
+    )
+    subprocess.check_call(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "--branch",
+            ROCM_JAX_REF,
+            ROCM_JAX_REPO_URL,
+            str(checkout_path),
+        ]
+    )
+    return checkout_path.resolve()
+
+
+print(
+    (
+        "WARNING: rocm-jax jax_rocm_plugin/build/build.py is deprecated. "
+        "Delegating to ROCm/jax build/build.py."
+    ),
+    file=sys.stderr,
+)
+rocm_jax_dir = _ensure_rocm_jax_checkout()
+sys.exit(
+    subprocess.call(["python3", "build/build.py", *sys.argv[1:]], cwd=rocm_jax_dir)
+)
 
 from tools import command, utils
 

@@ -202,9 +202,6 @@ cython_debug/
 # vscode local settings
 /.vscode
 
-# script produced by tools/docker_dev_setup.sh
-/llvm.sh
-
 # compile_commands related
 /jax_rocm_plugin/strace.txt
 /jax_rocm_plugin/compile_commands.json

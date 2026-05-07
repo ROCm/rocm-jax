@@ -40,6 +40,26 @@ on:
         required: false
         type: string
         default: ''
+      rocm-jax-repo:
+        description: ROCm JAX repository to use for wheel builds.
+        required: false
+        type: string
+        default: 'ROCm/jax'
+      rocm-jax-ref:
+        description: ROCm JAX ref that contains the artifact build workflow logic.
+        required: false
+        type: string
+        default: 'test/org-gated-ci'
+      rocm-release-version:
+        description: Full ROCm release version used for manylinux image selection.
+        required: false
+        type: string
+        default: ''
+      manylinux-image:
+        description: Override the ROCm/jax manylinux image, e.g. TheRock latest.
+        required: false
+        type: string
+        default: ''
     secrets:
       rbe_ci_key:
         required: true
@@ -49,6 +69,22 @@ on:
 jobs:
   build-plugin-wheels:
     runs-on: ${{ fromJSON(inputs.runner-label) }}
+    container:
+      image: >-
+        ${{
+          inputs.manylinux-image ||
+          format('ghcr.io/rocm/jax-manylinux_2_28-rocm-{0}:latest',
+                 inputs.rocm-release-version || inputs.rocm-version)
+        }}
+      options: >-
+        --device=/dev/kfd
+        --device=/dev/dri
+        --security-opt seccomp=unconfined
+        --group-add video
+        --shm-size 64G
+    env:
+      JAXCI_CLONE_MAIN_XLA: '1'
+      JAXCI_OUTPUT_DIR: ${{ github.workspace }}/dist
     steps:
       - name: Clean up old runs
         run: |
@@ -72,49 +108,38 @@ jobs:
           rocm-smi || true
           rocm-smi -a || true
           rocminfo | grep gfx || true
-      - uses: actions/checkout@v4
-      - name: Checkout JAX repo for jaxlib build
-        if: ${{ inputs.jax-ref != '' }}
+      - name: Checkout ROCm/jax
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.jax-repo }}
-          ref: ${{ inputs.jax-ref }}
-          path: jax
+          repository: ${{ inputs.rocm-jax-repo }}
+          ref: ${{ inputs.rocm-jax-ref }}
+          fetch-depth: 0
+      - name: Install Bazelisk
+        run: |
+          curl -fSsL -o /usr/local/bin/bazel \
+            https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64
+          chmod +x /usr/local/bin/bazel
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Get RBE cluster keys
+      - name: Build ROCm plugin and PJRT wheels
         env:
-          RBE_CI_CERT: ${{ secrets.rbe_ci_cert }}
-          RBE_CI_KEY: ${{ secrets.rbe_ci_key }}
+          PYTHON_VERSIONS: ${{ inputs.python-versions }}
         run: |
-          echo "$RBE_CI_CERT" >> ./jax_rocm_plugin/ci-cert.crt
-          echo "$RBE_CI_KEY" >> ./jax_rocm_plugin/ci-cert.key
-      - name: Build plugin wheels
-        env:
-          JAX_REF: ${{ inputs.jax-ref }}
-        run: |
-          # When jax-ref is empty (JAX 0.9.1+ default), --jax-source-dir is
-          # omitted and jaxlib is NOT built from source; consumers install
-          # jaxlib from upstream PyPI. Only PJRT and plugin wheels are produced.
-          # When jax-ref is set, jaxlib is built from the checked-out ./jax dir.
-          JAX_SOURCE_ARG=()
-          if [ -n "${JAX_REF}" ]; then
-            JAX_SOURCE_ARG=(--jax-source-dir=./jax)
-          fi
-          python3 build/ci_build \
-            --compiler=clang \
-            --python-versions="${{ inputs.python-versions }}" \
-            --rocm-version="${{ inputs.rocm-version }}" \
-            --rocm-build-job="${{ inputs.rocm-build-job }}" \
-            --rocm-build-num="${{ inputs.rocm-build-num }}" \
-            "${JAX_SOURCE_ARG[@]}" \
-            dist_wheels \
-            --rbe \
-            --builder-image="${{ inputs.builder-image }}"
+          IFS=',' read -ra PYTHONS <<< "$PYTHON_VERSIONS"
+          mkdir -p "$JAXCI_OUTPUT_DIR"
+
+          for py in "${PYTHONS[@]}"; do
+            JAXCI_HERMETIC_PYTHON_VERSION="$py" ./ci/build_rocm_artifacts.sh jax-rocm-plugin
+          done
+
+          # PJRT is a py3-none wheel; build it once using the first requested Python.
+          JAXCI_HERMETIC_PYTHON_VERSION="${PYTHONS[0]}" ./ci/build_rocm_artifacts.sh jax-rocm-pjrt
+
+          ls -lh "$JAXCI_OUTPUT_DIR"/*.whl
       - name: Archive plugin wheels
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
-          path: ./jax_rocm_plugin/wheelhouse/*.whl
+          path: dist/*.whl

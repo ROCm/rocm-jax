@@ -27,6 +27,27 @@ import zipfile
 import json
 import re
 
+DEPRECATED_ACTIONS = {"dist_wheels", "test", "test_docker"}
+
+DEPRECATION_MESSAGE = """
+ERROR: this rocm-jax build/ci_build action is deprecated.
+
+Use the ROCm/jax repository for JAX wheel builds and tests:
+  https://github.com/ROCm/jax
+
+For wheel builds, use the ROCm/jax artifact workflow and build script:
+  .github/workflows/build_rocm_artifacts.yml
+  ci/build_rocm_artifacts.sh
+  build/build.py
+
+TheRock wheel builds are handled there by selecting a TheRock manylinux image,
+for example:
+  ghcr.io/rocm/jax-manylinux_2_28-therock-latest:latest
+
+This rocm-jax branch is now infrastructure-only. Docker image actions in this
+script remain available for retained rocm-jax Dockerfiles.
+"""
+
 MANYLINUX_IMAGE_BASE_NAME = "ghcr.io/rocm/jax-manylinux_2_28"
 
 
@@ -657,10 +678,7 @@ def test(image_name, test_cmd=None):
         print(f"rocm/xla commit hash: {labels['com.amdgpu.xla_commit']}", flush=True)
 
     if not test_cmd:
-        test_cmd = (
-            "python jax_rocm_plugin/build/rocm/run_single_gpu.py -c && "
-            "python jax_rocm_plugin/build/rocm/run_multi_gpu.py"
-        )
+        test_cmd = "echo 'build/ci_build test is deprecated; use ROCm/jax test workflows'"
 
     gpu_args = [
         "--device=/dev/kfd",
@@ -937,6 +955,10 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    if args.action in DEPRECATED_ACTIONS:
+        print(DEPRECATION_MESSAGE.strip(), file=sys.stderr)
+        sys.exit(1)
 
     if args.action == "build_manylinux_dockers":
         build_manylinux_dockers(

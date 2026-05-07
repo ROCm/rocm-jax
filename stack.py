@@ -1,9 +1,25 @@
 #!/usr/bin/env python3
 """Script for setting up local development environments"""
 
+# pylint: disable=unreachable
+
 import argparse
 import os
 import subprocess
+import sys
+
+DEPRECATION_MESSAGE = """
+ERROR: rocm-jax is deprecated for JAX wheel development.
+
+Use the ROCm/jax fork for development, builds, and tests:
+  https://github.com/ROCm/jax
+
+This repository's rocm-jax-infra branch only retains Dockerfiles and
+infrastructure needed to build ROCm JAX images.
+"""
+
+print(DEPRECATION_MESSAGE.strip(), file=sys.stderr)
+sys.exit(1)
 
 TEST_JAX_REPO_REF = "rocm-jaxlib-v0.9.2"
 XLA_REPO_REF = "rocm-jaxlib-v0.9.2"

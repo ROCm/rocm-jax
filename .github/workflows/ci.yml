@@ -25,6 +25,8 @@ jobs:
       python-versions: "3.11,3.12,3.13,3.14"
       rocm-version: ${{ matrix.rocm-version }}
       runner-label: '["linux-x86-64-1gpu-amd"]'
+      rocm-jax-ref: test/org-gated-ci
+      rocm-release-version: ${{ matrix.rocm-version }}
       builder-image: "search"
     secrets:
       rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
@@ -64,15 +66,6 @@ jobs:
           repository: rocm/jax
           ref: rocm-jaxlib-v0.9.2
           path: jax
-      - name: Apply patches to rocm/jax test repo
-        run: |
-          pushd jax
-          shopt -s nullglob
-          patches=(../ci/patches/jax/*.patch)
-          if [ ${#patches[@]} -gt 0 ]; then
-            git apply "${patches[@]}"
-          fi
-          popd
       - name: Get RBE cluster keys
         env:
           RBE_CI_CERT: ${{ secrets.RBE_CI_CERT }}
@@ -99,15 +92,8 @@ jobs:
       - name: List files in the wheelhouse
         run: |
           ls -alth ./wheelhouse || true
-      - name: Run tests
-        env:
-          GPU_COUNT: "8"
-          GFX: "gfx90a"
-          JAX_SKIP_SLOW_TESTS: "1"
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-        # TODO: Add the tests/linalg_test.py test back once we fix the XLAClient thing.
+      - name: Report deprecated rocm-jax tests
         run: |
-          python3 build/ci_build test \
-            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "bash ci/jax_rbe/pr_setup.sh && ci/jax_rbe/pr_test.sh 0.9.2 3.12"
+          echo "rocm-jax build/ci_build test is deprecated."
+          echo "Use ROCm/jax workflows for JAX wheel validation."
 
