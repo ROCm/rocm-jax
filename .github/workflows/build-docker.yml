@@ -22,6 +22,40 @@ on:
       extra-cr-tag:
         required: false
         type: string
+      wheels-repo:
+        description: |
+          ROCm/jax repository whose CI publishes the plugin/PJRT wheels.
+        required: false
+        type: string
+        default: 'ROCm/jax'
+      wheels-ref:
+        description: |
+          Git ref of the ROCm/jax wheel-producing branch. Used as the second
+          path component of the S3 LATEST pointer.
+        required: false
+        type: string
+        default: 'test/org-gated-ci'
+      rocm-release-version:
+        description: |
+          Full ROCm release version used to resolve the S3 LATEST pointer
+          (e.g. '7.2.0' or 'therock-latest'). Defaults to rocm-version.
+        required: false
+        type: string
+        default: ''
+      wheel-version:
+        description: |
+          Override for the wheel filename namespace. Empty means derive from
+          rocm-version: 6.x -> 60, otherwise the major version (e.g. 7).
+        required: false
+        type: string
+        default: ''
+      python-versions:
+        description: |
+          Comma separated list of Python versions to fetch plugin wheels for.
+          Must match the versions the JAX Dockerfile installs.
+        required: false
+        type: string
+        default: '3.11,3.12,3.13,3.14'
 
 jobs:
   build-docker:
@@ -49,11 +83,89 @@ jobs:
           rocm-smi -a || true
           rocminfo | grep gfx || true
       - uses: actions/checkout@v4
-      - name: Download wheel artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
-          path: ./wheelhouse
+      - name: Download ROCm JAX wheels from CloudFront
+        env:
+          INPUTS_WHEELS_REPO: ${{ inputs.wheels-repo }}
+          INPUTS_WHEELS_REF: ${{ inputs.wheels-ref }}
+          INPUTS_ROCM_VERSION: ${{ inputs.rocm-version }}
+          INPUTS_ROCM_RELEASE_VERSION: ${{ inputs.rocm-release-version }}
+          INPUTS_WHEEL_VERSION: ${{ inputs.wheel-version }}
+          INPUTS_PYTHON_VERSIONS: ${{ inputs.python-versions }}
+        run: |
+          set -euo pipefail
+
+          # ROCm/jax CI publishes plugin/PJRT wheels to s3://jax-ci-amd, fronted
+          # by CloudFront. The build/{repo}/{ref}/{release-version}/LATEST file
+          # holds the s3:// URI of the most recent successful build, which we
+          # resolve to a CloudFront directory and pull matching wheels from.
+          ROCM_WHEELS_BASE_URL="https://d22q5eopkfeftw.cloudfront.net"
+
+          ROCM_FULL_VERSION="${INPUTS_ROCM_RELEASE_VERSION:-${INPUTS_ROCM_VERSION}}"
+
+          if [ -n "${INPUTS_WHEEL_VERSION}" ]; then
+            NAMESPACE="${INPUTS_WHEEL_VERSION}"
+          else
+            ROCM_MAJOR="${INPUTS_ROCM_VERSION%%.*}"
+            NAMESPACE="${ROCM_MAJOR}"
+            if [ "${NAMESPACE}" = "6" ]; then
+              NAMESPACE="60"
+            fi
+          fi
+          echo "Wheel namespace: jax_rocm${NAMESPACE}_*"
+
+          LATEST_KEY="rocm-wheels/${INPUTS_WHEELS_REPO}/${INPUTS_WHEELS_REF}/${ROCM_FULL_VERSION}/LATEST"
+          LATEST_URL="${ROCM_WHEELS_BASE_URL}/${LATEST_KEY}"
+          echo "Resolving LATEST pointer: ${LATEST_URL}"
+
+          RESOLVED_S3_URI=$(curl -fsSL "${LATEST_URL}" | tr -d '[:space:]')
+          if [ -z "${RESOLVED_S3_URI}" ]; then
+            echo "ERROR: empty LATEST pointer at ${LATEST_URL}"
+            exit 1
+          fi
+          echo "Resolved S3 URI: ${RESOLVED_S3_URI}"
+
+          WHEELS_PATH="${RESOLVED_S3_URI#s3://jax-ci-amd/}"
+          WHEELS_URL="${ROCM_WHEELS_BASE_URL}/${WHEELS_PATH%/}"
+          echo "Wheel directory: ${WHEELS_URL}"
+
+          LISTING=$(curl -fsSL "${WHEELS_URL}/")
+          FILES=$(echo "${LISTING}" \
+            | grep -oE 'href="[^"]+\.whl"' \
+            | cut -d'"' -f2 \
+            | sort -u)
+          if [ -z "${FILES}" ]; then
+            echo "ERROR: no wheels listed at ${WHEELS_URL}/"
+            exit 1
+          fi
+          echo "Available wheels:"
+          echo "${FILES}"
+
+          mkdir -p ./wheelhouse
+
+          # CloudFront href is URL-encoded; decode for local filenames so pip
+          # recognizes the wheel.
+          decode() {
+            python3 -c \
+              'import sys,urllib.parse; print(urllib.parse.unquote(sys.argv[1]))' \
+              "$1"
+          }
+
+          PJRT=$(echo "${FILES}" | grep "jax_rocm${NAMESPACE}_pjrt-" | head -n1)
+          [ -n "${PJRT}" ] || { echo "ERROR: no pjrt wheel"; exit 1; }
+          curl -fsSL "${WHEELS_URL}/${PJRT}" -o "./wheelhouse/$(decode "${PJRT}")"
+
+          IFS=',' read -ra PYS <<< "${INPUTS_PYTHON_VERSIONS}"
+          for py in "${PYS[@]}"; do
+            TAG="cp${py//./}-cp${py//./}-"
+            PL=$(echo "${FILES}" \
+              | grep "jax_rocm${NAMESPACE}_plugin-" \
+              | grep -- "${TAG}" \
+              | head -n1)
+            [ -n "${PL}" ] || { echo "ERROR: no plugin wheel for ${py}"; exit 1; }
+            curl -fsSL "${WHEELS_URL}/${PL}" -o "./wheelhouse/$(decode "${PL}")"
+          done
+
+          ls -lah ./wheelhouse
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \

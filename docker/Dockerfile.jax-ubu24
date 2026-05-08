@@ -64,5 +64,5 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     ls -lah /wheelhouse && \
     for py in python3.11 python3.12 python3.13 python3.14; do \
         $py -m pip install -f /wheelhouse --no-deps --no-index "jax_rocm${PLUGIN_NAMESPACE}_plugin" "jax_rocm${PLUGIN_NAMESPACE}_pjrt" && \
-        $py -m pip install --break-system-packages --no-deps --force-reinstall "jaxlib==0.9.2"; \
+        $py -m pip install --break-system-packages --no-deps --force-reinstall "jaxlib==0.10.0"; \
     done

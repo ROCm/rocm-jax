@@ -68,78 +68,12 @@ on:
 
 jobs:
   build-plugin-wheels:
-    runs-on: ${{ fromJSON(inputs.runner-label) }}
-    container:
-      image: >-
-        ${{
-          inputs.manylinux-image ||
-          format('ghcr.io/rocm/jax-manylinux_2_28-rocm-{0}:latest',
-                 inputs.rocm-release-version || inputs.rocm-version)
-        }}
-      options: >-
-        --device=/dev/kfd
-        --device=/dev/dri
-        --security-opt seccomp=unconfined
-        --group-add video
-        --shm-size 64G
-    env:
-      JAXCI_CLONE_MAIN_XLA: '1'
-      JAXCI_OUTPUT_DIR: ${{ github.workspace }}/dist
+    name: build-plugin-wheels (deprecated)
+    runs-on: ubuntu-latest
     steps:
-      - name: Clean up old runs
+      - name: Wheel builds moved to ROCm/jax
         run: |
-          ls -lah
-          # Make sure that we own all of the files so that we have permissions to delete them
-          docker run --rm -v "./:/rocm-jax" ubuntu \
-            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
-          # Remove any old work directories from this machine
-          rm -rf * || true
-          ls -lah
-          # Clean up any docker stuff that's more than a week old
-          docker system prune -a --filter "until=168h"
-          # Stop any containers running for more than 12 hours. No CI job should take this long.
-          docker ps --format="{{.RunningFor}} {{.Names}}" | grep hours \
-              | awk -F: '{if($1>12)print$1}' | awk ' {print $4} ' | xargs docker stop || true
-      - name: Print system info
-        run: |
-          whoami
-          printenv
-          df -h
-          rocm-smi || true
-          rocm-smi -a || true
-          rocminfo | grep gfx || true
-      - name: Checkout ROCm/jax
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.rocm-jax-repo }}
-          ref: ${{ inputs.rocm-jax-ref }}
-          fetch-depth: 0
-      - name: Install Bazelisk
-        run: |
-          curl -fSsL -o /usr/local/bin/bazel \
-            https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64
-          chmod +x /usr/local/bin/bazel
-      - name: Authenticate to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Build ROCm plugin and PJRT wheels
-        env:
-          PYTHON_VERSIONS: ${{ inputs.python-versions }}
-        run: |
-          IFS=',' read -ra PYTHONS <<< "$PYTHON_VERSIONS"
-          mkdir -p "$JAXCI_OUTPUT_DIR"
-
-          for py in "${PYTHONS[@]}"; do
-            JAXCI_HERMETIC_PYTHON_VERSION="$py" ./ci/build_rocm_artifacts.sh jax-rocm-plugin
-          done
-
-          # PJRT is a py3-none wheel; build it once using the first requested Python.
-          JAXCI_HERMETIC_PYTHON_VERSION="${PYTHONS[0]}" ./ci/build_rocm_artifacts.sh jax-rocm-pjrt
-
-          ls -lh "$JAXCI_OUTPUT_DIR"/*.whl
-      - name: Archive plugin wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
-          path: dist/*.whl
+          echo "::warning::rocm-jax wheel builds are deprecated."
+          echo "Use ROCm/jax for JAX ROCm plugin and PJRT wheel builds:"
+          echo "  https://github.com/ROCm/jax"
+          echo "This repository is retained for Docker image infrastructure only."

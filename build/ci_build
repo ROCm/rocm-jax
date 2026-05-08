@@ -111,26 +111,60 @@ def _tag_and_push_latest(local_tag, registry="ghcr.io/rocm"):
 
 
 def _get_commit_info_from_wheel():
-    """Extract commit hashes from commit_info.py inside a jax_rocm*_plugin wheel."""
+    """Extract commit hashes and JAX version for Docker image labels.
 
-    wheel_file = glob.glob("wheelhouse/*jax_rocm*_plugin*.whl")[0]
+    Tries the embedded ``commit_info.py`` first (legacy rocm-jax plugin wheels).
+    Falls back to the wheel filename's local version tag (e.g. ``+abc1234``) for
+    the JAX commit, used by ROCm/jax artifact build wheels.
+    Also derives ``jax_version`` from the wheel filename
+    (PEP 427 ``{distribution}-{version}-...``), stripping the local segment.
+    Always returns the expected keys; missing values are reported as ``""``.
+    """
+
+    info = {
+        "xla_commit": "",
+        "jax_commit": "",
+        "rocm_jax_commit": "",
+        "jax_version": "",
+    }
+
+    wheel_files = glob.glob("wheelhouse/*jax_rocm*_plugin*.whl")
+    if not wheel_files:
+        return info
+    wheel_file = wheel_files[0]
 
     with zipfile.ZipFile(wheel_file, "r") as whl:
         commit_info_file = next(
-            f for f in whl.namelist() if f.endswith("commit_info.py")
+            (f for f in whl.namelist() if f.endswith("commit_info.py")),
+            None,
         )
-        commit_content = whl.read(commit_info_file).decode("utf-8")
+        if commit_info_file is not None:
+            commit_content = whl.read(commit_info_file).decode("utf-8")
+            pattern = re.compile(
+                r'[\'"]([^"\']+)[\'"]\s*:\s*[\'"]([0-9a-fA-F]+)[\'"]'
+            )
+            commits = dict(pattern.findall(commit_content))
+            info["xla_commit"] = commits.get("ROCm/xla", info["xla_commit"])
+            info["jax_commit"] = commits.get("jax", info["jax_commit"])
+            info["rocm_jax_commit"] = commits.get(
+                "ROCm/rocm-jax", info["rocm_jax_commit"]
+            )
 
-    # Parse the commits dictionary from commit_info.py
-    # Matches: "repo/name": "abc123def"
-    pattern = re.compile(r'[\'"]([^"\']+)[\'"]\s*:\s*[\'"]([0-9a-fA-F]+)[\'"]')
-    commits = dict(pattern.findall(commit_content))
+    basename = os.path.basename(wheel_file)
+    # Parse wheel name: {distribution}-{version}(-{build})?-{python}-{abi}-{plat}.whl
+    name_parts = basename[:-4].split("-")
+    if len(name_parts) >= 2:
+        # Strip local version segment (e.g. "+c12c09751") from the version.
+        info["jax_version"] = name_parts[1].split("+", 1)[0]
 
-    return {
-        "xla_commit": commits["ROCm/xla"],
-        "jax_commit": commits["jax"],
-        "rocm_jax_commit": commits["ROCm/rocm-jax"],
-    }
+    if not info["jax_commit"]:
+        # ROCm/jax artifact wheels embed the JAX commit in the local version tag
+        # (e.g. jax_rocm7_plugin-0.10.1.dev20260506+abc1234-...whl).
+        match = re.search(r"\+([0-9a-fA-F]{7,40})", basename)
+        if match:
+            info["jax_commit"] = match.group(1)
+
+    return info
 
 
 def _docker_image_exists(image):
@@ -433,6 +467,7 @@ def build_dockers(
         "--build-arg=XLA_COMMIT=%s" % commit_info["xla_commit"],
         "--build-arg=JAX_COMMIT=%s" % commit_info["jax_commit"],
         "--build-arg=ROCM_JAX_COMMIT=%s" % commit_info["rocm_jax_commit"],
+        "--build-arg=JAX_VERSION=%s" % commit_info.get("jax_version", ""),
         "--build-arg=PLUGIN_NAMESPACE=%s" % plugin_namespace,
         "--build-arg=ROCM_VERSION_TAG=%s" % rocm_version_tag,
     ]

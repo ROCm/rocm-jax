@@ -16,23 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-build-wheels:
-    strategy:
-      matrix:
-        rocm-version: ["7.2.0"]
-    uses: ./.github/workflows/build-wheels.yml
-    with:
-      python-versions: "3.11,3.12,3.13,3.14"
-      rocm-version: ${{ matrix.rocm-version }}
-      runner-label: '["linux-x86-64-1gpu-amd"]'
-      rocm-jax-ref: test/org-gated-ci
-      rocm-release-version: ${{ matrix.rocm-version }}
-      builder-image: "search"
-    secrets:
-      rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
-      rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
   call-build-docker:
-    needs: call-build-wheels
     strategy:
       matrix:
         rocm-version: ["7.2.0"]
@@ -41,59 +25,12 @@ jobs:
       rocm-version: ${{ matrix.rocm-version }}
       runner-label: '["linux-x86-64-1gpu-amd"]'
   run-python-unit-tests:
+    name: run-python-unit-tests (deprecated)
     needs: call-build-docker
-    runs-on: "linux-x86-64-1gpu-amd"
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        rocm-version: ["7.2.0"]
+    runs-on: ubuntu-latest
     steps:
-      - name: Change owners for cleanup
+      - name: JAX wheel validation moved to ROCm/jax
         run: |
-          docker run --rm -v "./:/rocm-jax" ubuntu \
-            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
-      - name: Checkout plugin repo
-        uses: actions/checkout@v4
-        with:
-          clean: false
-      - name: Checkout JAX repo
-        uses: actions/checkout@v4
-        with:
-          # TODO: Load the ref from a file that sets the min and max JAX version
-          # TODO: Change the repo and ref once we figure out how exactly we're going to
-          #       manage tests
-          clean: false
-          repository: rocm/jax
-          ref: rocm-jaxlib-v0.9.2
-          path: jax
-      - name: Get RBE cluster keys
-        env:
-          RBE_CI_CERT: ${{ secrets.RBE_CI_CERT }}
-          RBE_CI_KEY: ${{ secrets.RBE_CI_KEY }}
-        run: |
-          echo "$RBE_CI_CERT" >> ./jax/ci-cert.crt
-          echo "$RBE_CI_KEY" >> ./jax/ci-cert.key
-      - name: Authenticate to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Check ROCm GPUs with rocm-smi
-        env:
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-        run: |
-          docker run --rm --device=/dev/kfd --device=/dev/dri --group-add video \
-            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            rocm-smi -a || true
-      - name: Download wheel artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: plugin_wheels_r${{ matrix.rocm-version }}
-          path: ./wheelhouse
-      - name: List files in the wheelhouse
-        run: |
-          ls -alth ./wheelhouse || true
-      - name: Report deprecated rocm-jax tests
-        run: |
-          echo "rocm-jax build/ci_build test is deprecated."
-          echo "Use ROCm/jax workflows for JAX wheel validation."
+          echo "::warning::rocm-jax JAX wheel validation is deprecated."
+          echo "Use ROCm/jax pytest_rocm.yml / bazel_rocm.yml for JAX wheel testing."
 
