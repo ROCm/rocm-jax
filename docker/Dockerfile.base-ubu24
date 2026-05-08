@@ -122,7 +122,7 @@ RUN --mount=type=cache,target=/var/cache/apt   \
 # Temporarily include a custom built MIOpen. This should be removed
 # as soon as https://github.com/ROCm/rocm-libraries/pull/4472 lands
 # in a ROCm release that we can install as deb package or with therock.
-RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
+RUN [ "${ROCM_VERSION%.*}" != "7.2" ] || (    \
     git clone https://github.com/ROCm/rocm-libraries.git --branch fix/stack-overflow-kernel-init --depth 1 /rocm-libraries && \
     apt update &&                              \
     apt-get install -y --no-install-recommends \
