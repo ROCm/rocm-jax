@@ -43,6 +43,78 @@ produced by the ROCm JAX fork.
 Image users should consume the published ROCm JAX images from the configured
 container registry for their environment.
 
+## Building PJRT and Plugin Wheels
+
+ROCm JAX PJRT and plugin wheels should be built from the ROCm JAX fork, not
+from this infrastructure repository:
+
+```shell
+git clone https://github.com/ROCm/jax.git
+cd jax
+```
+
+For a local wheel build, use the ROCm artifact build script in `ROCm/jax`.
+Set `JAXCI_HERMETIC_PYTHON_VERSION` for the Python ABI you want to build, and
+set `JAXCI_OUTPUT_DIR` to the directory where wheels should be written:
+
+```shell
+export JAXCI_OUTPUT_DIR="$PWD/dist"
+export JAXCI_CLONE_MAIN_XLA=1
+
+# Build one Python-specific ROCm plugin wheel.
+JAXCI_HERMETIC_PYTHON_VERSION=3.12 \
+  ./ci/build_rocm_artifacts.sh jax-rocm-plugin
+
+# Build the py3-none ROCm PJRT wheel.
+JAXCI_HERMETIC_PYTHON_VERSION=3.12 \
+  ./ci/build_rocm_artifacts.sh jax-rocm-pjrt
+```
+
+To build plugin wheels for multiple Python versions, repeat the plugin command
+with each required Python version, for example `3.11`, `3.12`, `3.13`, and
+`3.14`. PJRT is a `py3-none` wheel, so it only needs to be built once for the
+wheel set.
+
+CI wheel production should use the ROCm/jax artifact workflow and scripts,
+including `.github/workflows/build_rocm_artifacts.yml`,
+`ci/build_rocm_artifacts.sh`, and `build/build.py`. The resulting wheels are
+published by ROCm/jax and consumed by this repository's Docker image workflow
+through the configured CloudFront/S3 artifact location.
+
+The `ci/build_rocm_artifacts.sh` script is the preferred wrapper because it
+sets up the ROCm build environment and invokes `build/build.py` with the ROCm
+Bazel configuration. For debugging or custom automation in `ROCm/jax`, the
+equivalent direct `build.py` shape is:
+
+```shell
+export JAXCI_OUTPUT_DIR="$PWD/dist"
+export JAXCI_CLONE_MAIN_XLA=1
+
+python build/build.py build \
+  --wheels=jax-rocm-plugin \
+  --bazel_startup_options="--bazelrc=build/rocm/rocm.bazelrc" \
+  --bazel_options=--config=rocm_release_wheel \
+  --bazel_options=--config=rocm_rbe \
+  --python_version=3.12 \
+  --verbose \
+  --detailed_timestamped_log \
+  --output_path="$JAXCI_OUTPUT_DIR"
+
+python build/build.py build \
+  --wheels=jax-rocm-pjrt \
+  --bazel_startup_options="--bazelrc=build/rocm/rocm.bazelrc" \
+  --bazel_options=--config=rocm_release_wheel \
+  --bazel_options=--config=rocm_rbe \
+  --python_version=3.12 \
+  --verbose \
+  --detailed_timestamped_log \
+  --output_path="$JAXCI_OUTPUT_DIR"
+```
+
+Use `--wheels=jax-rocm-plugin` for Python-specific plugin wheels and
+`--wheels=jax-rocm-pjrt` for the `py3-none` PJRT wheel. Change
+`--python_version` for each plugin ABI that needs to be built.
+
 ## Docker Image Infrastructure
 
 The Dockerfiles in this repository are retained for image construction:
