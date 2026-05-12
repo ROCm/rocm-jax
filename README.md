@@ -3,7 +3,11 @@
 ## Deprecation Notice
 
 The `rocm-jax` repository is deprecated for JAX wheel development, build, and
-test workflows. Teams that build or test JAX wheels must use the ROCm JAX fork:
+test workflows. **Including or any version before 0.9.2, use the release branches 
+of this repository to build or test JAX**. 
+
+**Starting from JAX 0.10.0 Release, teams that build or test JAX 
+wheels must use the ROCm JAX fork**:
 
 ```shell
 git clone https://github.com/ROCm/jax.git
@@ -158,6 +162,26 @@ docker build \
   --build-arg PLUGIN_NAMESPACE=7 \
   -t ghcr.io/rocm/jax-ubu24.rocm720:local \
   .
+```
+## Running Unit Tests
+First  install wheels produced in $JAXCI_OUTPUT_DIR. 
+```shell
+cd dist/
+pip install dist/*.whl
+pip install jax==<version>
+```
+Then confirm if GPU devices are visible
+```shell
+import jax
+print(jax.local_devices())
+```
+Then run tests
+```shell
+
+# Change to jax repository root
+cd jax
+pip install pytest pytest-xdist pytest-html pytest-csv flatbuffers hypothesis uv
+cd jax && mkdir -p dist && JAXCI_PYTHON="$(command -v python)" ./ci/run_pytest_rocm.sh
 ```
 
 ## Retained Automation
