@@ -6,6 +6,14 @@ The `rocm-jax` repository is deprecated for JAX wheel development, build, and
 test workflows. **Including or any version before 0.9.2, use the release branches 
 of this repository to build or test JAX**. 
 
+| JAX Version | Repo used for building | Build jaxlib wheel?        |
+|-------------|------------------------|----------------------------|
+| 0.8.x       | rocm/rocm-jax          | Yes                        |
+| 0.9.x       | rocm/rocm-jax          | Yes                        |
+| 0.10.x      | rocm/jax               | No                         |
+| latest      | rocm/jax or jax-ml/jax | (only when jaxlib changes) |
+
+
 **Starting from JAX 0.10.0 Release, teams that build or test JAX 
 wheels must use the ROCm JAX fork**:
 
