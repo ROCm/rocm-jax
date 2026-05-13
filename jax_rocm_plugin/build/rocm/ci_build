@@ -114,6 +114,11 @@ def dist_wheels(
     # NOTE: GIT_DIR and GIT_WORK_TREE are NOT set because they interfere with
     # Bazel's git_repository rule. Instead, we pass ROCM_JAX_COMMIT explicitly.
     rocm_jax_commit = get_rocm_jax_commit()
+
+    # Strip '+' for PEP 440: setup.py concatenates these env vars into the
+    # wheel version local segment, which only allows a single '+' (cf. #430).
+    rocm_version_pep440 = rocm_version.replace("+", ".")
+
     cmd.extend(
         [
             "--init",
@@ -122,9 +127,9 @@ def dist_wheels(
             "64G",
             "-e",
             "ROCM_VERSION_EXTRA="
-            + (rocm_version if include_rocm_version_extra else ""),
+            + (rocm_version_pep440 if include_rocm_version_extra else ""),
             "-e",
-            "ROCM_VERSION=" + rocm_version,
+            "ROCM_VERSION=" + rocm_version_pep440,
             "-e",
             "THEROCK_BUILD=" + os.environ.get("THEROCK_BUILD", ""),
             "-e",
