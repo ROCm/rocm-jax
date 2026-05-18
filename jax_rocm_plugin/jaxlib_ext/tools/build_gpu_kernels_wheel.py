@@ -21,7 +21,6 @@ build process. Most users should not run this script directly; use build.py inst
 import argparse
 import os
 import pathlib
-import re
 import shutil
 import stat
 import subprocess
@@ -162,20 +161,26 @@ def get_jax_commit_hash():
     return args.jax_commit
 
 
-def get_therock_rocm_sdk_libraries_dir():
-    """Return the TheRock ROCm libraries payload dir for RUNPATH entries."""
-    target_family = os.getenv("ROCM_SDK_TARGET_FAMILY", "").strip().replace("-", "_")
-    # Strip trailing all-digit segments accidentally appended (e.g. "..._7").
-    target_family = re.sub(r"(?:_\d+)+$", "", target_family)
-    if target_family:
-        return f"_rocm_sdk_libraries_{target_family}"
-
-    if os.getenv("THEROCK_BUILD"):
-        raise RuntimeError(
-            "TheRock wheel builds require ROCM_SDK_TARGET_FAMILY. Set it "
-            "directly or pass --therock-path with a gfx target family."
-        )
-    return None
+# Every known TheRock target family. Each user installs one of the matching
+# rocm-sdk-libraries-<family> wheels for their GPU; the loader silently skips
+# the entries whose dirs don't exist in site-packages.
+_THEROCK_TARGET_FAMILIES = (
+    "gfx950-dcgpu",
+    "gfx94X-dcgpu",
+    "gfx90a",
+    "gfx90X-dcgpu",
+    "gfx908",
+    "gfx906",
+    "gfx900",
+    "gfx120X-all",
+    "gfx1153",
+    "gfx1152",
+    "gfx1151",
+    "gfx1150",
+    "gfx110X-all",
+    "gfx103X-all",
+    "gfx101X-dgpu",
+)
 
 
 def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs):
@@ -259,14 +264,10 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         "$ORIGIN/../_rocm_sdk_core/lib/rocm_sysdeps/lib",
         "$ORIGIN/../../_rocm_sdk_core/lib/rocm_sysdeps/lib",
     ]
-    rocm_sdk_libraries_dir = get_therock_rocm_sdk_libraries_dir()
-    if rocm_sdk_libraries_dir:
-        runpath_entries.extend(
-            [
-                f"$ORIGIN/../{rocm_sdk_libraries_dir}/lib",
-                f"$ORIGIN/../../{rocm_sdk_libraries_dir}/lib",
-            ]
-        )
+    for family in _THEROCK_TARGET_FAMILIES:
+        family_dir = "_rocm_sdk_libraries_" + family.replace("-", "_")
+        runpath_entries.append(f"$ORIGIN/../{family_dir}/lib")
+        runpath_entries.append(f"$ORIGIN/../../{family_dir}/lib")
     # Legacy ROCm: flat /opt/rocm/lib install.
     runpath_entries.append("/opt/rocm/lib")
     runpath = ":".join(runpath_entries)
