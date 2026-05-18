@@ -133,6 +133,8 @@ def dist_wheels(
             "-e",
             "THEROCK_BUILD=" + os.environ.get("THEROCK_BUILD", ""),
             "-e",
+            "ROCM_SDK_TARGET_FAMILY=" + os.environ.get("ROCM_SDK_TARGET_FAMILY", ""),
+            "-e",
             "ROCM_JAX_COMMIT=" + rocm_jax_commit,
             builder_image,
             "bash",
