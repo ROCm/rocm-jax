@@ -21,6 +21,7 @@ build process. Most users should not run this script directly; use build.py inst
 import argparse
 import os
 import pathlib
+import re
 import shutil
 import stat
 import subprocess
@@ -107,7 +108,6 @@ parser.add_argument(
     default="",
     help="rocm/jax Git hash. Empty if unknown.",
 )
-
 args = parser.parse_args()
 
 
@@ -211,6 +211,22 @@ def get_jax_commit_hash():
     return args.jax_commit
 
 
+def get_therock_rocm_sdk_libraries_dir():
+    """Return the TheRock ROCm libraries payload dir for RUNPATH entries."""
+    target_family = os.getenv("ROCM_SDK_TARGET_FAMILY", "").strip().replace("-", "_")
+    # Strip trailing all-digit segments accidentally appended (e.g. "..._7").
+    target_family = re.sub(r"(?:_\d+)+$", "", target_family)
+    if target_family:
+        return f"_rocm_sdk_libraries_{target_family}"
+
+    if os.getenv("THEROCK_BUILD"):
+        raise RuntimeError(
+            "TheRock wheel builds require ROCM_SDK_TARGET_FAMILY. Set it "
+            "directly or pass --therock-path with a gfx target family."
+        )
+    return None
+
+
 def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs):
     # pylint: disable=too-many-locals
     """Assembles a source tree for the rocm kernel wheel in `sources_path`."""
@@ -285,16 +301,24 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         f"_triton.{pyext}",
         f"rocm_plugin_extension.{pyext}",
     ]
-    runpath = ":".join(
-        [
-            "$ORIGIN/../rocm/lib",
-            "$ORIGIN/../rocm/lib/rocm_sysdeps/lib",
-            "$ORIGIN/../../rocm/lib",
-            "$ORIGIN/../../rocm/lib/rocm_sysdeps/lib",
-            "/opt/rocm/lib",
-            "/opt/rocm/lib/rocm_sysdeps/lib",
-        ]
-    )
+    # TheRock: libs live under site-packages/_rocm_sdk_{core,libraries_<family>}/lib.
+    runpath_entries = [
+        "$ORIGIN/../_rocm_sdk_core/lib",
+        "$ORIGIN/../../_rocm_sdk_core/lib",
+        "$ORIGIN/../_rocm_sdk_core/lib/rocm_sysdeps/lib",
+        "$ORIGIN/../../_rocm_sdk_core/lib/rocm_sysdeps/lib",
+    ]
+    rocm_sdk_libraries_dir = get_therock_rocm_sdk_libraries_dir()
+    if rocm_sdk_libraries_dir:
+        runpath_entries.extend(
+            [
+                f"$ORIGIN/../{rocm_sdk_libraries_dir}/lib",
+                f"$ORIGIN/../../{rocm_sdk_libraries_dir}/lib",
+            ]
+        )
+    # Legacy ROCm: flat /opt/rocm/lib install.
+    runpath_entries.append("/opt/rocm/lib")
+    runpath = ":".join(runpath_entries)
     # patchelf --set-rpath $RUNPATH $so
     for f in files:
         so_path = os.path.join(plugin_dir, f)
