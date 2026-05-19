@@ -42,6 +42,12 @@ RUN --mount=type=cache,target=/var/cache/dnf \
 # CI scripts currently require this so we symlink Python to Python3.
 RUN ln -s /usr/bin/python3.11 /usr/local/bin/python
 
+# ld.lld (hermetic linker) resolves -lstdc++ by looking for the unversioned
+# libstdc++.so in the sysroot. AlmaLinux 8 only ships libstdc++.so.6 in
+# /usr/lib64; the linker script lives in the non-standard gcc-toolset-14 path.
+# Create the missing symlink so the hermetic linker can find it.
+RUN ln -sf /usr/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so
+
 # Use the symlinked Python to bootstrap pip and install the auditwheel
 # package. This is required for the JAX CI scripts.
 RUN python -m ensurepip && python -m pip install auditwheel
