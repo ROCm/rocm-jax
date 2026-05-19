@@ -45,3 +45,9 @@ RUN ln -s /usr/bin/python3.11 /usr/local/bin/python
 # Use the symlinked Python to bootstrap pip and install the auditwheel
 # package. This is required for the JAX CI scripts.
 RUN python -m ensurepip && python -m pip install auditwheel
+
+# This is not strictly required, but it's here to mitigate an issue
+# triggered by the logic in hermetic builds (hipcc_configure.bzl)
+# that uses the existance of ROCM_PATH to use the local ROCm
+# installation.
+ENV ROCM_PATH=/opt/rocm
