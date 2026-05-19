@@ -194,6 +194,28 @@ def get_jax_commit_hash():
     return args.jax_commit
 
 
+# Every known TheRock target family. Each user installs one of the matching
+# rocm-sdk-libraries-<family> wheels for their GPU; the loader silently skips
+# the entries whose dirs don't exist in site-packages.
+_THEROCK_TARGET_FAMILIES = (
+    "gfx950-dcgpu",
+    "gfx94X-dcgpu",
+    "gfx90a",
+    "gfx90X-dcgpu",
+    "gfx908",
+    "gfx906",
+    "gfx900",
+    "gfx120X-all",
+    "gfx1153",
+    "gfx1152",
+    "gfx1151",
+    "gfx1150",
+    "gfx110X-all",
+    "gfx103X-all",
+    "gfx101X-dgpu",
+)
+
+
 def prepare_rocm_plugin_wheel(
     wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs
 ):
@@ -223,10 +245,11 @@ def prepare_rocm_plugin_wheel(
 
     build_utils.update_setup_with_rocm_version(wheel_sources_path, rocm_version)
     write_setup_cfg(wheel_sources_path, cpu)
-    xla_commit_hash = get_xla_commit_hash()
-    jax_commit_hash = get_jax_commit_hash()
     build_utils.write_commit_info(
-        plugin_dir, xla_commit_hash, jax_commit_hash, get_rocm_jax_git_hash()
+        plugin_dir,
+        get_xla_commit_hash(),
+        get_jax_commit_hash(),
+        get_rocm_jax_git_hash(),
     )
 
     # NOTE(mrodden): this is a hack to change/set rpath values
@@ -247,16 +270,20 @@ def prepare_rocm_plugin_wheel(
         raise RuntimeError(mesg) from ex
 
     shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
-    runpath = ":".join(
-        [
-            "$ORIGIN/../rocm/lib",
-            "$ORIGIN/../rocm/lib/rocm_sysdeps/lib",
-            "$ORIGIN/../../rocm/lib",
-            "$ORIGIN/../../rocm/lib/rocm_sysdeps/lib",
-            "/opt/rocm/lib",
-            "/opt/rocm/lib/rocm_sysdeps/lib",
-        ]
-    )
+    # TheRock: libs live under site-packages/_rocm_sdk_{core,libraries_<family>}/lib.
+    runpath_entries = [
+        "$ORIGIN/../_rocm_sdk_core/lib",
+        "$ORIGIN/../../_rocm_sdk_core/lib",
+        "$ORIGIN/../_rocm_sdk_core/lib/rocm_sysdeps/lib",
+        "$ORIGIN/../../_rocm_sdk_core/lib/rocm_sysdeps/lib",
+    ]
+    for family in _THEROCK_TARGET_FAMILIES:
+        family_dir = "_rocm_sdk_libraries_" + family.replace("-", "_")
+        runpath_entries.append(f"$ORIGIN/../{family_dir}/lib")
+        runpath_entries.append(f"$ORIGIN/../../{family_dir}/lib")
+    # Legacy ROCm: flat /opt/rocm/lib install.
+    runpath_entries.append("/opt/rocm/lib")
+    runpath = ":".join(runpath_entries)
     # patchelf --set-rpath $RUNPATH $so
     fix_perms = False
     perms = os.stat(shared_obj_path).st_mode
