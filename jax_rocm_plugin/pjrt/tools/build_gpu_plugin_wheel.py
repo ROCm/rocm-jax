@@ -234,18 +234,16 @@ def prepare_rocm_plugin_wheel(
         raise RuntimeError(mesg) from ex
 
     shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
-    # TheRock: libs live under site-packages/_rocm_sdk_{core,libraries_<family>}/lib.
+    # TheRock (pip wheels): libs under site-packages/_rocm_sdk_{core,libraries_<family>}/lib.
     runpath_entries = [
         "$ORIGIN/../_rocm_sdk_core/lib",
         "$ORIGIN/../../_rocm_sdk_core/lib",
-        "$ORIGIN/../_rocm_sdk_core/lib/rocm_sysdeps/lib",
-        "$ORIGIN/../../_rocm_sdk_core/lib/rocm_sysdeps/lib",
     ]
     for family in _THEROCK_TARGET_FAMILIES:
         family_dir = "_rocm_sdk_libraries_" + family.replace("-", "_")
         runpath_entries.append(f"$ORIGIN/../{family_dir}/lib")
         runpath_entries.append(f"$ORIGIN/../../{family_dir}/lib")
-    # Legacy ROCm: flat /opt/rocm/lib install.
+    # Legacy ROCm / TheRock tarball extracted to /opt/rocm.
     runpath_entries.append("/opt/rocm/lib")
     runpath = ":".join(runpath_entries)
     # patchelf --set-rpath $RUNPATH $so
