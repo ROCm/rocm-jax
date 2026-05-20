@@ -257,18 +257,16 @@ def prepare_wheel_rocm(wheel_sources_path: pathlib.Path, *, cpu, rocm_version, s
         f"_triton.{pyext}",
         f"rocm_plugin_extension.{pyext}",
     ]
-    # TheRock: libs live under site-packages/_rocm_sdk_{core,libraries_<family>}/lib.
+    # TheRock (pip wheels): libs under site-packages/_rocm_sdk_{core,libraries_<family>}/lib.
     runpath_entries = [
         "$ORIGIN/../_rocm_sdk_core/lib",
         "$ORIGIN/../../_rocm_sdk_core/lib",
-        "$ORIGIN/../_rocm_sdk_core/lib/rocm_sysdeps/lib",
-        "$ORIGIN/../../_rocm_sdk_core/lib/rocm_sysdeps/lib",
     ]
     for family in _THEROCK_TARGET_FAMILIES:
         family_dir = "_rocm_sdk_libraries_" + family.replace("-", "_")
         runpath_entries.append(f"$ORIGIN/../{family_dir}/lib")
         runpath_entries.append(f"$ORIGIN/../../{family_dir}/lib")
-    # Legacy ROCm: flat /opt/rocm/lib install.
+    # Legacy ROCm / TheRock tarball extracted to /opt/rocm.
     runpath_entries.append("/opt/rocm/lib")
     runpath = ":".join(runpath_entries)
     # patchelf --set-rpath $RUNPATH $so
