@@ -121,6 +121,7 @@ jobs:
       fail-fast: false
       matrix:
         install-llvm: [true, false]
+        therock-version: ["", "7.13.0a20260515"]
         include:
           - runner-label: "linux-x86-64-1gpu-amd"
             therock-index-url: "https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/"
@@ -188,6 +189,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        therock-version: ["", "7.13.0a20260515"]
         include:
           - therock-index-url: >-
               https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/
