@@ -49,7 +49,7 @@ RUN apt-get update && \
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     python3 -m pip install --break-system-packages \
         --pre --index-url "${THEROCK_INDEX_URL}" \
-        "rocm[libraries,devel]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
+        "rocm[libraries,devel,device-gfx950]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
     rocm-sdk init && \
     ln -sfn "$(rocm-sdk path --root)" /opt/rocm
 
