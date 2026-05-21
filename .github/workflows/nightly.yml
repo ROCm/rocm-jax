@@ -21,10 +21,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.2.0"]
         include:
-          - rocm-version: "7.1.1"
-            runner-label: '["linux-x86-64-1gpu-amd"]'
           - rocm-version: "7.2.0"
             runner-label: '["linux-x86-64-1gpu-amd"]'
     uses: ./.github/workflows/build-wheels.yml
@@ -43,10 +41,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.2.0"]
         include:
-          - rocm-version: "7.1.1"
-            runner-label: '["linux-x86-64-1gpu-amd"]'
           - rocm-version: "7.2.0"
             runner-label: '["linux-x86-64-1gpu-amd"]'
     uses: ./.github/workflows/build-docker.yml

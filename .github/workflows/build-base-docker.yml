@@ -5,6 +5,12 @@ on:
     # Run every Sunday at midnight UTC
     - cron: '0 0 * * 0'
   workflow_dispatch:
+    inputs:
+      push-latest-tag:
+        description: "Push :latest to ghcr.io; enable only for intentional CI image updates"
+        required: false
+        type: boolean
+        default: false
   pull_request:
     paths:
       - 'build/ci_build'
@@ -26,11 +32,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.2.0"]
         install-llvm: [true, false]
         include:
-          - rocm-version: "7.1.1"
-            runner-label: "linux-x86-64-1gpu-amd"
           - rocm-version: "7.2.0"
             runner-label: "linux-x86-64-1gpu-amd"
     steps:
@@ -98,7 +102,10 @@ jobs:
           docker tag "${image_tag}" "${ghcr_image_sha}"
           docker push "${ghcr_image_sha}"
       - name: Push latest tag
-        if: github.event_name != 'pull_request'
+        if: >-
+          github.event_name != 'pull_request' &&
+          (github.event_name != 'workflow_dispatch' ||
+          inputs.push-latest-tag == true)
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           INSTALL_LLVM: ${{ matrix.install-llvm }}
@@ -123,7 +130,10 @@ jobs:
         install-llvm: [true, false]
         include:
           - runner-label: "linux-x86-64-1gpu-amd"
-            therock-index-url: "https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/"
+            therock-index-url: "https://rocm.nightlies.amd.com/whl-multi-arch/"
+          - runner-label: "linux-x86-64-1gpu-amd"
+            therock-index-url: "https://repo.amd.com/rocm/whl-multi-arch/"
+            therock-version: "7.13.0"
     steps:
       - name: Clean up old runs
         run: |
@@ -170,18 +180,39 @@ jobs:
           else
             image_tag="jax-base-ubu24.therock-${ver_slug}"
           fi
+          ghcr_base="ghcr.io/rocm/${image_tag}"
 
-          # Push with commit SHA tag
-          ghcr_image_sha="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
-          echo "Image name (SHA): ${ghcr_image_sha}"
-          docker tag "${image_tag}" "${ghcr_image_sha}"
-          docker push "${ghcr_image_sha}"
+          # Always push SHA tag
+          echo "Image name (SHA): ${ghcr_base}:${GITHUB_SHA}"
+          docker tag "${image_tag}" "${ghcr_base}:${GITHUB_SHA}"
+          docker push "${ghcr_base}:${GITHUB_SHA}"
 
-          # Push with latest tag
-          ghcr_image_latest="ghcr.io/rocm/${image_tag}:latest"
-          echo "Image name (latest): ${ghcr_image_latest}"
-          docker tag "${image_tag}" "${ghcr_image_latest}"
-          docker push "${ghcr_image_latest}"
+          # Push version tag when pinned (stable reference for downstream CI)
+          if [ -n "${THEROCK_VERSION}" ]; then
+            echo "Image name (version): ${ghcr_base}:${THEROCK_VERSION}"
+            docker tag "${image_tag}" "${ghcr_base}:${THEROCK_VERSION}"
+            docker push "${ghcr_base}:${THEROCK_VERSION}"
+          fi
+      - name: Push latest tag
+        if: >-
+          github.event_name != 'pull_request' &&
+          (github.event_name != 'workflow_dispatch' ||
+          inputs.push-latest-tag == true)
+        env:
+          INSTALL_LLVM: ${{ matrix.install-llvm }}
+          THEROCK_VERSION: ${{ matrix.therock-version }}
+        run: |
+          ver_slug="${THEROCK_VERSION:-latest}"
+          if [ "$INSTALL_LLVM" = "true" ]; then
+            image_tag="jax-dev-ubu24.therock-${ver_slug}"
+          else
+            image_tag="jax-base-ubu24.therock-${ver_slug}"
+          fi
+          ghcr_base="ghcr.io/rocm/${image_tag}"
+
+          echo "Image name (latest): ${ghcr_base}:latest"
+          docker tag "${image_tag}" "${ghcr_base}:latest"
+          docker push "${ghcr_base}:latest"
 
   build-therock-manylinux-images:
     runs-on: linux-x86-64-1gpu-amd
@@ -190,7 +221,9 @@ jobs:
       matrix:
         include:
           - therock-index-url: >-
-              https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/
+              https://rocm.nightlies.amd.com/whl-multi-arch/
+          - therock-index-url: "https://repo.amd.com/rocm/whl-multi-arch/"
+            therock-version: "7.13.0"
     steps:
       - name: Clean up old runs
         run: |
@@ -235,28 +268,42 @@ jobs:
         run: |
           ver_slug="${THEROCK_VERSION:-latest}"
           image_tag="jax-manylinux_2_28-therock-${ver_slug}"
+          ghcr_base="ghcr.io/rocm/${image_tag}"
 
-          # Push with commit SHA tag
-          ghcr_sha="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
-          echo "Image name (SHA): ${ghcr_sha}"
-          docker tag "${image_tag}" "${ghcr_sha}"
-          docker push "${ghcr_sha}"
+          # Always push SHA tag
+          echo "Image name (SHA): ${ghcr_base}:${GITHUB_SHA}"
+          docker tag "${image_tag}" "${ghcr_base}:${GITHUB_SHA}"
+          docker push "${ghcr_base}:${GITHUB_SHA}"
 
-          # Push with latest tag
-          ghcr_latest="ghcr.io/rocm/${image_tag}:latest"
-          echo "Image name (latest): ${ghcr_latest}"
-          docker tag "${image_tag}" "${ghcr_latest}"
-          docker push "${ghcr_latest}"
+          # Push version tag when pinned (stable reference for downstream CI)
+          if [ -n "${THEROCK_VERSION}" ]; then
+            echo "Image name (version): ${ghcr_base}:${THEROCK_VERSION}"
+            docker tag "${image_tag}" "${ghcr_base}:${THEROCK_VERSION}"
+            docker push "${ghcr_base}:${THEROCK_VERSION}"
+          fi
+      - name: Push latest tag
+        if: >-
+          github.event_name != 'pull_request' &&
+          (github.event_name != 'workflow_dispatch' ||
+          inputs.push-latest-tag == true)
+        env:
+          THEROCK_VERSION: ${{ matrix.therock-version }}
+        run: |
+          ver_slug="${THEROCK_VERSION:-latest}"
+          image_tag="jax-manylinux_2_28-therock-${ver_slug}"
+          ghcr_base="ghcr.io/rocm/${image_tag}"
+
+          echo "Image name (latest): ${ghcr_base}:latest"
+          docker tag "${image_tag}" "${ghcr_base}:latest"
+          docker push "${ghcr_base}:latest"
 
   build-manylinux-builder-images:
     runs-on: ${{ matrix.runner-label }}
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ["7.1.1", "7.2.0"]
+        rocm-version: ["7.2.0"]
         include:
-          - rocm-version: "7.1.1"
-            runner-label: "linux-x86-64-1gpu-amd"
           - rocm-version: "7.2.0"
             runner-label: "linux-x86-64-1gpu-amd"
     steps:
@@ -304,7 +351,10 @@ jobs:
           docker tag "${image_tag}" "${sha_image_tag}"
           docker push "${sha_image_tag}"
       - name: Push latest tag
-        if: github.event_name != 'pull_request'
+        if: >-
+          github.event_name != 'pull_request' &&
+          (github.event_name != 'workflow_dispatch' ||
+          inputs.push-latest-tag == true)
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
           ROCM_BUILD_JOB: >-
