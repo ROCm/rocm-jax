@@ -47,6 +47,14 @@ RUN mkdir /tmp/llvm-project && \
 # Copy in our clang configuration file
 COPY ./docker/manylinux/clang.cfg /usr/lib/llvm-18/bin/clang++.cfg
 COPY ./docker/manylinux/clang.cfg /usr/lib/llvm-18/bin/clang.cfg
+COPY ./docker/manylinux/clang.cfg /opt/rocm/llvm/bin/clang++.cfg
+COPY ./docker/manylinux/clang.cfg /opt/rocm/llvm/bin/clang.cfg
+
+# ld.lld (hermetic linker) resolves -lstdc++ by looking for the unversioned
+# libstdc++.so in the sysroot. AlmaLinux 8 only ships libstdc++.so.6 in
+# /usr/lib64; the linker script lives in the non-standard gcc-toolset-14 path.
+# Create the missing symlink so the hermetic linker can find it.
+RUN ln -sf /usr/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so
 
 # Install AWS CLI v2
 RUN --mount=type=cache,target=/var/cache/dnf \
