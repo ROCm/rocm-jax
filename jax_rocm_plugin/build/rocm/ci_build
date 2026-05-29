@@ -26,70 +26,46 @@ import subprocess
 import sys
 
 
-def image_by_name(name):
-    cmd = ["docker", "images", "-q", "-f", "reference=%s" % name]
-    out = subprocess.check_output(cmd)
-    image_id = out.decode("utf8").strip().split("\n")[0] or None
-    return image_id
+def get_rocm_jax_commit():
+    """Get the rocm-jax git commit hash from the parent repo."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=os.path.abspath("../"),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return ""
 
 
 def dist_wheels(
     rocm_version,
     python_versions,
     xla_path,
-    rocm_build_job,
-    rocm_build_num,
-    therock_path,
+    jax_path,
+    rbe,
     compiler,
+    builder_image,
+    wheel_post_release=None,
+    include_rocm_version_extra=True,
 ):
     if xla_path:
         xla_path = os.path.abspath(xla_path)
 
-    # create manylinux image with requested ROCm installed
-    image = "jax-manylinux_2_28_x86_64_rocm%s" % rocm_version.replace(".", "")
-
-    # Try removing the Docker image.
-    try:
-        subprocess.run(["docker", "rmi", image], check=True)
-        print(f"Image {image} removed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to remove Docker image {image}: {e}")
-
-    cmd = [
-        "docker",
-        "build",
-        "-f",
-        "build/rocm/build_wheels/Dockerfile.manylinux_2_28_x86_64.rocm",
-        "--build-arg=ROCM_VERSION=%s" % rocm_version,
-        "--build-arg=ROCM_BUILD_JOB=%s" % rocm_build_job,
-        "--build-arg=ROCM_BUILD_NUM=%s" % rocm_build_num,
-        "--tag=%s" % image,
-    ]
-
-    if os.path.isdir(therock_path):
-        cmd.append("--build-arg=THEROCK_PATH=/tmp/therock/")
-        cmd.append("--build-context=therock=%s" % therock_path)
-    else:
-        if therock_path:
-            cmd.append("--build-arg=THEROCK_PATH=%s" % therock_path)
-        os.makedirs("tmp_therock", exist_ok=True)
-        cmd.append("--build-context=therock=tmp_therock")
-
-    cmd.append(".")
-
-    if not image_by_name(image):
-        _ = subprocess.run(cmd, check=True)
-
-    # use image to build JAX/jaxlib wheels
+    # Use the manylinux image to build JAX/jaxlib wheels
     os.makedirs("wheelhouse", exist_ok=True)
-
     pyver_string = ",".join(python_versions)
-
     container_xla_path = "/xla"
+    container_jax_path = "/jax"
+    container_plugin_path = "/jax_rocm_plugin"
 
+    # Build wheels via plugin's build_wheels.py (plugin + PJRT, optionally jaxlib).
     bw_cmd = [
         "python3",
-        "/jax/build/rocm/tools/build_wheels.py",
+        "/jax_rocm_plugin/build/rocm/tools/build_wheels.py",
         "--rocm-version",
         rocm_version,
         "--python-versions",
@@ -101,15 +77,24 @@ def dist_wheels(
     if xla_path:
         bw_cmd.extend(["--xla-path", container_xla_path])
 
-    bw_cmd.append("/jax")
+    if jax_path:
+        bw_cmd.extend(["--jax-path", container_jax_path])
+
+    if rbe:
+        bw_cmd.append("--rbe")
+
+    if wheel_post_release is not None:
+        bw_cmd.extend(["--wheel-post-release", str(wheel_post_release)])
+
+    bw_cmd.append(container_plugin_path)
+    container_cmd = " ".join(bw_cmd)
 
     cmd = ["docker", "run"]
-
     mounts = [
         "-v",
         os.path.abspath("../") + ":/repo",
         "-v",
-        os.path.abspath("./") + ":/jax",
+        os.path.abspath("./") + ":/jax_rocm_plugin",
         "-v",
         os.path.abspath("./wheelhouse") + ":/wheelhouse",
     ]
@@ -117,26 +102,37 @@ def dist_wheels(
     if xla_path:
         mounts.extend(["-v", "%s:%s" % (xla_path, container_xla_path)])
 
+    if jax_path:
+        mounts.extend(["-v", "%s:%s" % (jax_path, container_jax_path)])
+
     cmd.extend(mounts)
 
     if os.isatty(sys.stdout.fileno()):
         cmd.append("-it")
 
     # NOTE(mrodden): bazel times out without --init, probably blocking on a zombie PID
+    # NOTE: GIT_DIR and GIT_WORK_TREE are NOT set because they interfere with
+    # Bazel's git_repository rule. Instead, we pass ROCM_JAX_COMMIT explicitly.
+    rocm_jax_commit = get_rocm_jax_commit()
     cmd.extend(
         [
             "--init",
             "--rm",
+            "--shm-size",
+            "64G",
             "-e",
-            "GIT_DIR=/repo/.git",
+            "ROCM_VERSION_EXTRA="
+            + (rocm_version.replace("+", ".") if include_rocm_version_extra else ""),
             "-e",
-            "GIT_WORK_TREE=/repo",
+            "ROCM_VERSION=" + rocm_version,
             "-e",
-            "ROCM_VERSION_EXTRA=" + rocm_version,
-            image,
+            "THEROCK_BUILD=" + os.environ.get("THEROCK_BUILD", ""),
+            "-e",
+            "ROCM_JAX_COMMIT=" + rocm_jax_commit,
+            builder_image,
             "bash",
             "-c",
-            " ".join(bw_cmd),
+            container_cmd,
         ]
     )
 
@@ -156,6 +152,8 @@ def test(image_name):
         "seccomp=unconfined",
         "--shm-size",
         "16G",
+        "--env-file",
+        "/etc/podinfo/gha-gpu-isolation-settings",
     ]
 
     cmd = [
@@ -204,32 +202,41 @@ def parse_args():
     )
 
     p.add_argument(
-        "--rocm-build-job",
-        default="",
-        help="ROCm build job for development ROCm builds",
-    )
-
-    p.add_argument(
-        "--rocm-build-num",
-        default="",
-        help="ROCm build number for development ROCm builds",
-    )
-
-    p.add_argument(
-        "--therock-path",
-        default=None,
-        help="Either a URL that points to a tarball containing TheRock or a path to a local directory containing TheRock",
-    )
-
-    p.add_argument(
         "--xla-source-dir",
-        help="Path to XLA source to use during jaxlib build, instead of builtin XLA",
+        help="Path to XLA source to use during plugin and jaxlib build, instead of builtin XLA",
+    )
+
+    p.add_argument(
+        "--jax-source-dir",
+        help="Optional JAX source directory. When provided, builds jaxlib wheel and copies to wheelhouse.",
+    )
+
+    p.add_argument(
+        "--rbe",
+        action="store_true",
+        help="Enable Bazel RBE builds for JAX",
     )
 
     p.add_argument(
         "--compiler",
         choices=["gcc", "clang"],
         help="Compiler backend to use when compiling jax/jaxlib",
+    )
+
+    p.add_argument(
+        "--builder-image",
+        default=None,
+    )
+    p.add_argument(
+        "--wheel-post-release",
+        type=int,
+        default=None,
+        help="Optional post-release suffix number to append as .postX",
+    )
+    p.add_argument(
+        "--no-rocm-version-extra",
+        action="store_true",
+        help="Do not append local '+rocm...' version tag to plugin/PJRT wheels",
     )
 
     subp = p.add_subparsers(dest="action", required=True)
@@ -250,10 +257,12 @@ def main():
             args.rocm_version,
             args.python_versions,
             args.xla_source_dir,
-            args.rocm_build_job,
-            args.rocm_build_num,
-            args.therock_path,
+            args.jax_source_dir,
+            args.rbe,
             args.compiler,
+            args.builder_image,
+            args.wheel_post_release,
+            not args.no_rocm_version_extra,
         )
 
     elif args.action == "test":

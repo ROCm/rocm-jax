@@ -208,3 +208,33 @@ or by doing steps manually.
 NOTE: you need to run `./tools/docker_dev_setup.sh` only once. Remember to run
 `source ./source_venv.sh` (or `source ./.venv/bin/activate` if you prefer)
 in each new terminal session to activate a proper python virtual environment.
+
+### Running tests with asan
+You can use a regular ci script ./jax_rocm_plugin/build/rocm/ci_run_jax_ut.sh to execute u-tests under the asan config
+
+
+Simple command that can be used to execute the tests is: 
+
+```
+build/rocm/ci_run_jax_ut.sh \
+    --config=asan \
+    --config=rocm_sgpu
+```
+--config=asan will enable asan build, --config=rocm_sgpu is used to execute single gpu tests, if you need multigpu tests
+then use --config=rocm_mgpu. 
+
+
+More configs can be found in build/rocm/jax.bazelrc and .bazelrc files. We do plan to merge
+these failes into the .bazelrc file later on!
+
+
+In case you need to run the test on  a specific arch which is not supported by the asan config itself you can override 
+the repo_env like: 
+
+```
+build/rocm/ci_run_jax_ut.sh \
+    --config=asan \
+    --config=rocm_sgpu \
+    --repo_env=TF_ROCM_AMDGPU_TARGETS=gfx945
+```
+this will build and execute the tests for gfx945!

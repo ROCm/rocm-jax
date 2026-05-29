@@ -29,8 +29,8 @@ import shutil
 import ssl
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
-
 
 # pylint: disable=unspecified-encoding
 LOG = logging.getLogger(__name__)
@@ -107,6 +107,8 @@ class System(object):
             "install",
             "-y",
         ]
+        if self.pkgbin == "apt":
+            cmd.append("--no-install-recommends")
         cmd.extend(package_specs)
 
         LOG.info("Running %r", cmd)
@@ -191,6 +193,20 @@ def get_system():
     raise RocmInstallException("No system for %r" % md)
 
 
+def _get_latest_build_num(job_name):
+    """
+    Fetch the latest successful build number from Jenkins.
+
+    Returns a string of the build number (e.g., "16985")
+    """
+    url = "http://rocm-ci.amd.com/job/%s/lastSuccessfulBuild/buildNumber" % job_name
+    LOG.info("Fetching latest build number from %s", url)
+    with urllib.request.urlopen(url) as response:
+        build_num = response.read().decode("utf8").strip()
+        LOG.info("Latest successful build: %s", build_num)
+        return build_num
+
+
 def _install_therock(rocm_version, therock_path):
     """Install TheRock onto the system. This can be done in two different ways,
     1. By copying a directory containing TheRock into the regular ROCm install location
@@ -207,7 +223,10 @@ def _install_therock(rocm_version, therock_path):
     else:
         os.makedirs(rocm_real_path)
         tar_path = "/tmp/therock.tar.gz"
-        with urllib.request.urlopen(therock_path) as response:
+        # Unquote first to avoid double-encoding if URL already encoded (e.g. '%2B' -> '%252B').
+        decoded_url = urllib.parse.unquote(therock_path)
+        encoded_url = urllib.parse.quote(decoded_url, safe=":/?&=")
+        with urllib.request.urlopen(encoded_url) as response:
             if response.status == 200:
                 with open(tar_path, "wb") as tar_file:
                     tar_file.write(response.read())
@@ -218,11 +237,14 @@ def _install_therock(rocm_version, therock_path):
     os.symlink(rocm_real_path, rocm_sym_path, target_is_directory=True)
 
     # Make a symlink to amdgcn to fix LLVM not being able to find binaries
-    os.symlink(
-        rocm_real_path + "/lib/llvm/amdgcn/",
-        rocm_real_path + "/amdgcn",
-        target_is_directory=True,
-    )
+    try:
+        os.symlink(
+            rocm_real_path + "/lib/llvm/amdgcn/",
+            rocm_real_path + "/amdgcn",
+            target_is_directory=True,
+        )
+    except FileExistsError:
+        LOG.info("%s already exists", rocm_sym_path)
 
 
 def _setup_internal_repo(system, rocm_version, job_name, build_num):
@@ -268,7 +290,13 @@ def install_rocm(rocm_version, job_name=None, build_num=None, therock_path=None)
         _install_therock(rocm_version, therock_path)
     else:
         s = get_system()
-        if job_name and build_num:
+        if job_name:
+            # Auto-fetch latest successful build if build_num not provided
+            if not build_num:
+                LOG.info(
+                    "No build number provided, fetching latest successful build..."
+                )
+                build_num = _get_latest_build_num(job_name)
             _setup_internal_repo(s, rocm_version, job_name, build_num)
         else:
             if s == RHEL8:
@@ -396,40 +424,32 @@ def setup_repos_el8(rocm_version_str):
         rocm_version_str = "%d.%d" % (rv.major, rv.minor)
 
     with open("/etc/yum.repos.d/rocm.repo", "w") as rfd:
-        rfd.write(
-            """
+        rfd.write("""
 [ROCm]
 name=ROCm
-baseurl=http://repo.radeon.com/rocm/rhel8/%s/main
+baseurl=https://repo.radeon.com/rocm/rhel8/%s/main
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
 timeout=1000
 minrate=1
-"""
-            % rocm_version_str
-        )
+""" % rocm_version_str)
 
     with open("/etc/yum.repos.d/amdgpu.repo", "w") as afd:
         if rocm_version_str.startswith("7"):
             repodir = "graphics"
-            rhel_minor = 10
         else:
             repodir = "amdgpu"
-            rhel_minor = 8
-        afd.write(
-            """
+        afd.write("""
 [amdgpu]
 name=amdgpu
-baseurl=https://repo.radeon.com/%s/%s/rhel/8.%d/main/x86_64/
+baseurl=https://repo.radeon.com/%s/%s/rhel/8/main/x86_64/
 enabled=1
 gpgcheck=1
 gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
 timeout=1000
 minrate=1
-"""
-            % (repodir, rocm_version_str, rhel_minor)
-        )
+""" % (repodir, rocm_version_str))
 
 
 def parse_args():

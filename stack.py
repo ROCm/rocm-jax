@@ -5,9 +5,8 @@ import argparse
 import os
 import subprocess
 
-
-TEST_JAX_REPO_REF = "rocm-jaxlib-v0.8.0"
-XLA_REPO_REF = "rocm-jaxlib-v0.8.0"
+TEST_JAX_REPO_REF = "rocm-jaxlib-v0.9.2"
+XLA_REPO_REF = "rocm-jaxlib-v0.9.2"
 
 
 JAX_REPL_URL = "https://github.com/rocm/jax"
@@ -18,7 +17,7 @@ DEFAULT_KERNELS_JAX_DIR = "../jax"
 
 MAKE_TEMPLATE = r"""
 # gfx targets for which XLA and jax custom call kernels are built for
-# AMDGPU_TARGETS ?= "gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
+# AMDGPU_TARGETS ?= "gfx908,gfx90a,gfx9-4-generic,gfx10-3-generic,gfx11-generic,gfx12-generic"
 
 # customize to a single arch for local dev builds to reduce compile time
 AMDGPU_TARGETS ?= "$(shell rocminfo | grep -o -m 1 'gfx.*')"
@@ -349,9 +348,7 @@ def setup_development(
 def dev_docker(rm):
     """Start a docker container for local plugin development"""
     cur_abs_path = os.path.abspath(os.curdir)
-    image_name = "ubuntu:22.04"
-
-    ep = "/rocm-jax/tools/docker_dev_setup.sh"
+    image_name = "ubuntu:24.04"
 
     cmd = [
         "docker",
@@ -369,11 +366,7 @@ def dev_docker(rm):
         "seccomp=unconfined",
         "-v",
         "%s:/rocm-jax" % cur_abs_path,
-        "--env",
-        "ROCM_JAX_DIR=/rocm-jax",
-        "--env",
-        "_IS_ENTRYPOINT=1",
-        "--entrypoint=%s" % ep,
+        "--env=ROCM_JAX_DIR=/rocm-jax",
     ]
 
     if rm:

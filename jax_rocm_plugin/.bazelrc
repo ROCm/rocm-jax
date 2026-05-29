@@ -22,6 +22,8 @@ build --repo_env USE_HERMETIC_CC_TOOLCHAIN=1
 # TODO: Migrate for https://github.com/bazelbuild/bazel/issues/7260
 build:clang_local --noincompatible_enable_cc_toolchain_resolution
 build:clang_local --repo_env USE_HERMETIC_CC_TOOLCHAIN=0
+build:clang_local --linkopt="-fuse-ld=lld"
+build:clang_local --host_linkopt="-fuse-ld=lld"
 
 # Do not use C-Ares when building gRPC.
 build --define=grpc_no_ares=true
@@ -89,7 +91,7 @@ build:rocm_base --config=clang_local
 build:rocm_base --crosstool_top=@local_config_rocm//crosstool:toolchain
 build:rocm_base --define=using_rocm=true --define=using_rocm_hipcc=true
 build:rocm_base --repo_env TF_NEED_ROCM=1
-build:rocm_base --action_env TF_ROCM_AMDGPU_TARGETS="gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201"
+build:rocm_base --action_env TF_ROCM_AMDGPU_TARGETS="gfx908,gfx90a,gfx9-4-generic,gfx10-3-generic,gfx11-generic,gfx12-generic"
 
 # Build with hipcc for ROCm and clang for the host.
 build:rocm --config=rocm_base
@@ -97,10 +99,31 @@ build:rocm --action_env=TF_ROCM_CLANG="1"
 build:rocm --action_env=CLANG_COMPILER_PATH="/usr/lib/llvm-18/bin/clang"
 build:rocm --copt=-Wno-gnu-offsetof-extensions
 build:rocm --copt=-Qunused-arguments
+build:rocm --action_env=HIPCC_COMPILE_FLAGS_APPEND=--offload-compress
 build:rocm --action_env=TF_HIPCC_CLANG="1"
 
+build:asan --strip=never
+build:asan --copt -fsanitize=address
+build:asan --copt -DADDRESS_SANITIZER
+#O1 because we need to see the asans callstack
+build:asan --copt -O1
+build:asan --copt -g
+build:asan --copt -gsplit-dwarf
+build:asan --copt -fno-omit-frame-pointer
+build:asan --linkopt -fsanitize=address
+build:asan --linkopt -g1
 
-# Flag to enable remote config
+build:asan --linkopt="-L/usr/lib/llvm-18/lib/clang/18/lib/linux"
+build:asan --linkopt="-Wl,-rpath,/usr/lib/llvm-18/lib/clang/18/lib/linux"
+build:asan --linkopt="-lclang_rt.asan-x86_64"
+build:asan --linkopt="-lclang_rt.asan_cxx-x86_64"
+build:asan --//build/rocm:sanitizer=asan
+build:asan --run_under=//build/rocm:sanitizer_wrapper
+build:asan --action_env TF_ROCM_AMDGPU_TARGETS="gfx908,gfx90a,gfx9-4-generic"
+
+#############################################################################
+# Configuration for running RBE builds and tests
+#############################################################################
 common --experimental_repo_remote_exec
 
 #############################################################################
@@ -126,3 +149,7 @@ try-import %workspace%/.jax_configure.bazelrc
 
 # Load rc file with user-specific options.
 try-import %workspace%/.bazelrc.user
+
+# Fix rules_python 1.8.x %interpreter_args% in WORKSPACE mode
+build --@rules_python//python/config_settings:bootstrap_impl=script
+build --repo_env=RULES_PYTHON_ENABLE_PIPSTAR=0

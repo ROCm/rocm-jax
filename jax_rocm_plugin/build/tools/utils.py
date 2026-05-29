@@ -30,32 +30,32 @@ import urllib.request
 
 logger = logging.getLogger(__name__)
 
-BAZEL_BASE_URI = "https://github.com/bazelbuild/bazel/releases/download/7.4.1/"
+BAZEL_BASE_URI = "https://github.com/bazelbuild/bazel/releases/download/7.7.0/"
 BazelPackage = collections.namedtuple("BazelPackage", ["base_uri", "file", "sha256"])
 bazel_packages = {
     ("Linux", "x86_64"): BazelPackage(
         base_uri=None,
-        file="bazel-7.4.1-linux-x86_64",
-        sha256=("c97f02133adce63f0c28678ac1f21d65fa8255c80429b588aeeba8a1fac6202b"),
+        file="bazel-7.7.0-linux-x86_64",
+        sha256=("fe7e799cbc9140f986b063e06800a3d4c790525075c877d00a7112669824acbf"),
     ),
     ("Linux", "aarch64"): BazelPackage(
         base_uri=None,
-        file="bazel-7.4.1-linux-arm64",
+        file="bazel-7.7.0-linux-arm64",
         sha256=("d7aedc8565ed47b6231badb80b09f034e389c5f2b1c2ac2c55406f7c661d8b88"),
     ),
     ("Darwin", "x86_64"): BazelPackage(
         base_uri=None,
-        file="bazel-7.4.1-darwin-x86_64",
+        file="bazel-7.7.0-darwin-x86_64",
         sha256=("52dd34c17cc97b3aa5bdfe3d45c4e3938226f23dd0bfb47beedd625a953f1f05"),
     ),
     ("Darwin", "arm64"): BazelPackage(
         base_uri=None,
-        file="bazel-7.4.1-darwin-arm64",
+        file="bazel-7.7.0-darwin-arm64",
         sha256=("02b117b97d0921ae4d4f4e11d27e2c0930381df416e373435d5d0419c6a26f24"),
     ),
     ("Windows", "AMD64"): BazelPackage(
         base_uri=None,
-        file="bazel-7.4.1-windows-x86_64.exe",
+        file="bazel-7.7.0-windows-x86_64.exe",
         sha256=("4a76eddf6c5115e1d93355fd11db5ac2fc20e58f197f5d65d3f21da92aa0925b"),
     ),
 }
@@ -238,7 +238,17 @@ def get_jax_configure_bazel_options(bazel_command: list[str]):
 
 
 def get_githash():
-    """dummy docstring"""
+    """Get the rocm-jax git commit hash.
+
+    First checks ROCM_JAX_COMMIT env var (set by ci_build when running in Docker),
+    then falls back to running git rev-parse HEAD.
+    """
+    # Check env var first (set by ci_build for Docker builds).
+    env_hash = os.environ.get("ROCM_JAX_COMMIT", "")
+    if env_hash:
+        return env_hash
+
+    # Fall back to git command.
     try:
         return subprocess.run(
             ["git", "rev-parse", "HEAD"],

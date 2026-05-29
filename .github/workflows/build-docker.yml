@@ -15,7 +15,6 @@ on:
       runner-label:
         required: false
         type: string
-        default: "mi-250"
       artifact-prefix:
         required: false
         default: 'plugin_wheels'
@@ -26,7 +25,7 @@ on:
 
 jobs:
   build-docker:
-    runs-on: ${{ inputs.runner-label }}
+    runs-on: ${{ fromJSON(inputs.runner-label) }}
     steps:
       - name: Clean up old runs
         run: |
@@ -55,6 +54,10 @@ jobs:
         with:
           name: ${{ inputs.artifact-prefix }}_r${{ inputs.rocm-version }}
           path: ./wheelhouse
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Build JAX docker image
         run: |
           ls -lah ./wheelhouse
@@ -63,35 +66,23 @@ jobs:
             --rocm-build-job="${{ inputs.rocm-build-job }}" \
             --rocm-build-num="${{ inputs.rocm-build-num }}" \
             build_dockers
-      - name: Authenticate to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Push docker images
         env:
           EXTRA_CR_TAG: ${{ inputs.extra-cr-tag }}
           ROCM_VERSION: ${{ inputs.rocm-version }}
         run: |
-          ubu22_img="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
           ubu24_img="ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
-          echo "Ubuntu 22 image name: ${ubu22_img}"
           echo "Ubuntu 24 image name: ${ubu24_img}"
-          docker tag "jax-ubu22.rocm${ROCM_VERSION//.}" "${ubu22_img}"
           docker tag "jax-ubu24.rocm${ROCM_VERSION//.}" "${ubu24_img}"
-          docker push "${ubu22_img}"
           docker push "${ubu24_img}"
       - name: Push extra tags
-        if: ${{ inputs.extra-cr-tag }}
+        if: ${{ inputs.extra-cr-tag && github.event_name != 'pull_request' }}
         env:
           EXTRA_CR_TAG: ${{ inputs.extra-cr-tag }}
           ROCM_VERSION: ${{ inputs.rocm-version }}
         run: |
-          ubu22_img="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${EXTRA_CR_TAG}"
           ubu24_img="ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${EXTRA_CR_TAG}"
-          echo "Ubuntu 22 image name: ${ubu22_img}"
           echo "Ubuntu 24 image name: ${ubu24_img}"
-          docker tag "jax-ubu22.rocm${ROCM_VERSION//.}" "${ubu22_img}"
           docker tag "jax-ubu24.rocm${ROCM_VERSION//.}" "${ubu24_img}"
-          docker push "${ubu22_img}"
           docker push "${ubu24_img}"
 

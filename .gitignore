@@ -7,6 +7,17 @@
 # bazel external dependencies directory mapping for individual bazel workspaces that might be used
 /jax_rocm_plugin/external
 
+# bazel symlinks and config
+bazel-bin
+bazel-out
+bazel-rocm-jax
+bazel-testlogs
+.jax_configure.bazelrc
+
+# RBE certificates
+ci-cert.crt
+ci-cert.key
+
 # vim droppings
 *.swp
 

@@ -1,4 +1,3 @@
-#
 #     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -8,34 +7,37 @@
 # limitations under the License.
 
 # buildifier: disable=module-docstring
-load("//third_party:repo.bzl", "amd_http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-# To update XLA to a new revision,
-# a) update XLA_COMMIT to the new git commit hash
-# b) get the sha256 hash of the commit by running:
-#    curl -L https://github.com/openxla/xla/archive/<git hash>.tar.gz | sha256sum
-#    and update XLA_SHA256 with the result.
+# To update XLA:
+#   1. Find the commit hash you want to pin to (e.g., from rocm-jaxlib-v0.9.2 branch)
+#   2. Update XLA_COMMIT below
 
-XLA_COMMIT = "70e0d3f7ce76990fa4bf30a11eb8e5fc2c120a0f"
-XLA_SHA256 = "f723be83eea3cf099bfc1bce4e56b29b782acafd4db75b3fe041fe3e42bc8cbd"
+XLA_COMMIT = "d8b2a5f5ece8af6b45e0fbfd6d3dbea1958d2f7e"
 
 def repo():
-    amd_http_archive(
+    git_repository(
         name = "xla",
-        sha256 = XLA_SHA256,
-        strip_prefix = "xla-{commit}".format(commit = XLA_COMMIT),
-        urls = ["https://github.com/ROCm/xla/archive/{commit}.tar.gz".format(commit = XLA_COMMIT)],
-        patch_file = [],
+        remote = "https://github.com/ROCm/xla.git",
+        commit = XLA_COMMIT,
+        patches = [
+            # Fix for zstd assembly compilation with LLVM-18's cet.h header
+            # The cet.h include path was not in cxx_builtin_include_directories
+            "//third_party/xla:0001-Add-clang-resource-dir-include-path.patch",
+            # Upgrade rules_python 1.8.4 -> 1.8.5 to fix %interpreter_args% SyntaxError
+            "//third_party/xla:0002-upgrade-rules-python-to-1.8.5.patch",
+        ],
+        patch_args = ["-p1"],
     )
 
-    # For development, one often wants to make changes to the TF repository as well
+    # For development, one often wants to make changes to the XLA repository as well
     # as the JAX repository. You can override the pinned repository above with a
     # local checkout by either:
-    # a) overriding the TF repository on the build.py command line by passing a flag
+    # a) overriding the XLA repository on the build.py command line by passing a flag
     #    like:
     #    python build/build.py build --local_xla_path=/path/to/xla
     #    or
-    # b) by commenting out the http_archive above and uncommenting the following:
+    # b) by commenting out the git_repository above and uncommenting the following:
     # local_repository(
     #    name = "xla",
     #    path = "/path/to/xla",

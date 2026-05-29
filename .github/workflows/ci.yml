@@ -19,27 +19,32 @@ jobs:
   call-build-wheels:
     strategy:
       matrix:
-        rocm-version: ["7.1.0"]
+        rocm-version: ["7.2.0"]
     uses: ./.github/workflows/build-wheels.yml
     with:
-      # TODO: Add back Python 3.13 when we're ready to move to a more recent version of XLA. 3.13
-      #       fails with a complaint about the pipes module.
-      python-versions: "3.11,3.12"
+      python-versions: "3.11,3.12,3.13,3.14"
       rocm-version: ${{ matrix.rocm-version }}
+      runner-label: '["linux-x86-64-1gpu-amd"]'
+      builder-image: "search"
+    secrets:
+      rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
+      rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
   call-build-docker:
     needs: call-build-wheels
     strategy:
       matrix:
-        rocm-version: ["7.1.0"]
+        rocm-version: ["7.2.0"]
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
+      runner-label: '["linux-x86-64-1gpu-amd"]'
   run-python-unit-tests:
     needs: call-build-docker
-    runs-on: mi-250
+    runs-on: "linux-x86-64-1gpu-amd"
+    timeout-minutes: 60
     strategy:
       matrix:
-        rocm-version: ["7.1.0"]
+        rocm-version: ["7.2.0"]
     steps:
       - name: Change owners for cleanup
         run: |
@@ -57,8 +62,24 @@ jobs:
           #       manage tests
           clean: false
           repository: rocm/jax
-          ref: rocm-jaxlib-v0.8.0
+          ref: rocm-jaxlib-v0.9.2
           path: jax
+      - name: Apply patches to rocm/jax test repo
+        run: |
+          pushd jax
+          shopt -s nullglob
+          patches=(../ci/patches/jax/*.patch)
+          if [ ${#patches[@]} -gt 0 ]; then
+            git apply "${patches[@]}"
+          fi
+          popd
+      - name: Get RBE cluster keys
+        env:
+          RBE_CI_CERT: ${{ secrets.RBE_CI_CERT }}
+          RBE_CI_KEY: ${{ secrets.RBE_CI_KEY }}
+        run: |
+          echo "$RBE_CI_CERT" >> ./jax/ci-cert.crt
+          echo "$RBE_CI_KEY" >> ./jax/ci-cert.key
       - name: Authenticate to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
@@ -79,12 +100,16 @@ jobs:
         env:
           ROCM_VERSION: ${{ matrix.rocm-version }}
         run: |
-          IMAGE="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}"
           docker run --rm --device=/dev/kfd ${{ steps.gpu-config.outputs.device_flag }} \
-          --group-add video \
-          "$IMAGE" \
-          rocm-smi -a || true
-      - name: list files in the wheelhouse
+            --group-add video \
+            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
+            rocm-smi -a || true
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin_wheels_r${{ matrix.rocm-version }}
+          path: ./wheelhouse
+      - name: List files in the wheelhouse
         run: |
           ls -alth ./wheelhouse || true
       - name: Run tests
@@ -96,5 +121,6 @@ jobs:
         # TODO: Add the tests/linalg_test.py test back once we fix the XLAClient thing.
         run: |
           python3 build/ci_build test \
-            "ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
-            --test-cmd "pytest jax/tests/core_test.py"
+            "ghcr.io/rocm/jax-ubu24.rocm${ROCM_VERSION//.}:${GITHUB_SHA}" \
+            --test-cmd "bash ci/jax_rbe/pr_setup.sh && ci/jax_rbe/pr_test.sh 0.9.2 3.12"
+

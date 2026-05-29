@@ -165,10 +165,10 @@ else
   # run get_rocm.py with appropriate arguments based on major version.
   if [ "$major_version" -ge 7 ]; then
     info "Running get_rocm.py with rocm_version $rocm_version, build number $rocm_build_number and build name $rocm_job_name"
-    "$PYTHON_BINARY_PATH" build/tools/get_rocm.py --rocm-version "$rocm_version"  --job-name "$rocm_job_name" --build-num "$rocm_build_number"|| die "error while installing rocm"
+    "$PYTHON_BINARY_PATH" tools/get_rocm.py --rocm-version "$rocm_version"  --job-name "$rocm_job_name" --build-num "$rocm_build_number"|| die "error while installing rocm"
   else
     info "Running get_rocm.py with version $rocm_version only..."
-    "$PYTHON_BINARY_PATH" build/tools/get_rocm.py --rocm-version "$rocm_version" || die "error while installing rocm"
+    "$PYTHON_BINARY_PATH" tools/get_rocm.py --rocm-version "$rocm_version" || die "error while installing rocm"
   fi
 fi
 

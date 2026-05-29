@@ -23,8 +23,106 @@ import shutil
 import sys
 import subprocess
 import glob
-from collections.abc import Sequence
 import textwrap
+
+
+def _append_post_release_suffix(version: str, post_release: str) -> str:
+    """Return version with .postX inserted before any local suffix."""
+    public, sep, local = version.partition("+")
+    return (
+        f"{public}.post{post_release}+{local}"
+        if sep
+        else f"{public}.post{post_release}"
+    )
+
+
+def _apply_wheel_post_release(  # pylint: disable=too-many-locals
+    wheel_path: str, post_release: str | None
+) -> str:
+    """Append a .postX version suffix into wheel filename and internal metadata.
+
+    Rewrites RECORD with valid PEP 376 hash/size entries. The original
+    implementation emitted ``path,,`` for every file, which downstream tooling
+    such as ``wheel tags`` (used by ``fixwheel.py``) rejects with
+    ``No hash found for file '<...>/WHEEL'``.
+    """
+    if not post_release:
+        return wheel_path
+    import base64  # pylint: disable=import-outside-toplevel
+    import hashlib  # pylint: disable=import-outside-toplevel
+    import re  # pylint: disable=import-outside-toplevel
+    import zipfile  # pylint: disable=import-outside-toplevel
+
+    base = os.path.basename(wheel_path)
+    parts = base[:-4].split("-")
+    if len(parts) != 5:
+        raise ValueError(f"Unexpected wheel filename format: {base}")
+    old_version = parts[1]
+    new_version = _append_post_release_suffix(old_version, post_release)
+    parts[1] = new_version
+
+    old_dist_info = None
+    new_dist_info = None
+
+    def _record_hash(payload: bytes) -> str:
+        digest = hashlib.sha256(payload).digest()
+        return "sha256=" + base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+
+    tmp_path = wheel_path + ".tmp"
+    record_entries: list[tuple[str, str, int]] = []
+    with zipfile.ZipFile(wheel_path, "r") as zin, zipfile.ZipFile(
+        tmp_path, "w", compression=zipfile.ZIP_DEFLATED
+    ) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            new_name = item.filename
+
+            if ".dist-info/" in new_name:
+                dist_dir = new_name.split("/")[0]
+                if old_dist_info is None:
+                    old_dist_info = dist_dir
+                    name_ver = dist_dir[: -len(".dist-info")]
+                    pkg_name = name_ver.rpartition("-")[0]
+                    new_dist_info = f"{pkg_name}-{new_version}.dist-info"
+                new_name = new_name.replace(old_dist_info, new_dist_info, 1)
+
+                if item.filename.endswith("/METADATA"):
+                    text = data.decode("utf-8")
+                    text = re.sub(
+                        r"^Version:\s*.*$",
+                        f"Version: {new_version}",
+                        text,
+                        count=1,
+                        flags=re.MULTILINE,
+                    )
+                    text = re.sub(
+                        r"^(Requires-Dist:\s+jax-rocm\d+-pjrt==)"
+                        + re.escape(old_version)
+                        + r"(\s*(?:;.*)?)$",
+                        rf"\g<1>{new_version}\2",
+                        text,
+                        flags=re.MULTILINE,
+                    )
+                    data = text.encode("utf-8")
+                elif item.filename.endswith("/RECORD"):
+                    continue
+
+            info = zipfile.ZipInfo(new_name, date_time=item.date_time)
+            info.compress_type = item.compress_type
+            zout.writestr(info, data)
+            record_entries.append((new_name, _record_hash(data), len(data)))
+
+        record_name = f"{new_dist_info}/RECORD"
+        record_lines = [f"{name},{h},{size}" for name, h, size in record_entries]
+        # PEP 376: hash/size for the RECORD file itself MUST be empty.
+        record_lines.append(f"{record_name},,")
+        zout.writestr(record_name, "\n".join(record_lines) + "\n")
+
+    os.replace(tmp_path, wheel_path)
+    renamed = f"{'-'.join(parts)}.whl"
+    renamed_path = os.path.join(os.path.dirname(wheel_path), renamed)
+    os.rename(wheel_path, renamed_path)
+    return renamed_path
 
 
 def is_windows() -> bool:
@@ -32,35 +130,14 @@ def is_windows() -> bool:
     return sys.platform.startswith("win32")
 
 
-def copy_file(
-    src_files: str | Sequence[str],
-    dst_dir: pathlib.Path,
-    dst_filename=None,
-    runfiles=None,
-) -> None:
-    """Copy source files to destination directory using runfiles."""
-    dst_dir.mkdir(parents=True, exist_ok=True)
-    if isinstance(src_files, str):
-        src_files = [src_files]
-    for src_file in src_files:
-        src_file_rloc = runfiles.Rlocation(src_file)
-        if src_file_rloc is None:
-            raise ValueError(f"Unable to find wheel source file {src_file}")
-        src_filename = os.path.basename(src_file_rloc)
-        dst_file = os.path.join(dst_dir, dst_filename or src_filename)
-        if is_windows():
-            shutil.copyfile(src_file_rloc, dst_file)
-        else:
-            shutil.copy(src_file_rloc, dst_file)
-
-
 def platform_tag(cpu: str) -> str:
     """Generate platform-specific wheel tag based on CPU architecture."""
+    # Match the platform tags from @jax//jaxlib:jax.bzl PLATFORM_TAGS_DICT
     platform_name, cpu_name = {
-        ("Linux", "x86_64"): ("manylinux2014", "x86_64"),
-        ("Linux", "aarch64"): ("manylinux2014", "aarch64"),
-        ("Linux", "ppc64le"): ("manylinux2014", "ppc64le"),
-        ("Darwin", "x86_64"): ("macosx_10_14", "x86_64"),
+        ("Linux", "x86_64"): ("manylinux_2_27", "x86_64"),
+        ("Linux", "aarch64"): ("manylinux_2_27", "aarch64"),
+        ("Linux", "ppc64le"): ("manylinux_2_27", "ppc64le"),
+        ("Darwin", "x86_64"): ("macosx_11_0", "x86_64"),
         ("Darwin", "arm64"): ("macosx_11_0", "arm64"),
         ("Windows", "AMD64"): ("win", "amd64"),
     }[(platform.system(), cpu)]
@@ -88,7 +165,9 @@ def build_wheel(
         cwd=sources_path,
         env=env,
     )
+    post_release = env.get("WHEEL_POST_RELEASE")
     for wheel in glob.glob(os.path.join(sources_path, "dist", "*.whl")):
+        wheel = _apply_wheel_post_release(wheel, post_release)
         output_file = os.path.join(output_path, os.path.basename(wheel))
         sys.stderr.write(f"Output wheel: {output_file}\n\n")
         sys.stderr.write(
@@ -147,16 +226,15 @@ def update_setup_with_rocm_version(file_dir: pathlib.Path, rocm_version: str):
 def write_commit_info(plugin_dir, xla_commit, jax_commit, rocm_jax_commit):
     """Write commit hash information into commit_info.py inside `plugin_dir`."""
     os.makedirs(plugin_dir, exist_ok=True)
-    commit_info_content = textwrap.dedent(
-        f"""
-      # auto-generated; do not edit
+    commit_info_content = textwrap.dedent(f"""
+        # auto-generated; do not edit
 
-      # Commit information
-      xla_commit = "{xla_commit}"
-      jax_commit = "{jax_commit}"
-      rocm_jax_commit = "{rocm_jax_commit}"
-  """
-    )
+        commits = {{
+            "ROCm/xla": "{xla_commit}",
+            "ROCm/rocm-jax": "{rocm_jax_commit}",
+            "jax": "{jax_commit}",
+        }}
+    """)
 
     commit_info_path = plugin_dir / "commit_info.py"
 

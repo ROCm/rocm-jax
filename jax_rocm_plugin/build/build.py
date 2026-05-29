@@ -30,7 +30,6 @@ import re
 
 from tools import command, utils
 
-
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -167,6 +166,12 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
       """,
     )
 
+    parser.add_argument(
+        "--rbe",
+        action="store_true",
+        help="If set, uses Bazel Remote Build Execution",
+    )
+
     # CUDA Options
     cuda_group = parser.add_argument_group("CUDA Options")
     cuda_group.add_argument(
@@ -235,7 +240,7 @@ def add_artifact_subcommand_arguments(parser: argparse.ArgumentParser):
     rocm_group.add_argument(
         "--rocm_amdgpu_targets",
         type=str,
-        default="gfx906,gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1200,gfx1201",
+        default="gfx908,gfx90a,gfx9-4-generic,gfx10-3-generic,gfx11-generic,gfx12-generic",
         help="A comma-separated list of ROCm amdgpu targets to support.",
     )
 
@@ -394,6 +399,9 @@ async def main():
 
     args = parser.parse_args()
 
+    if args.rbe:
+        args.bazel_startup_options.append("--bazelrc=/jax_rocm_plugin/rbe.bazelrc")
+
     logger.info("%s", BANNER)
 
     if args.verbose:
@@ -477,6 +485,10 @@ async def main():
         "aarch64": "aarch64",
     }
     target_cpu = wheel_cpus[args.target_cpu] if args.target_cpu is not None else arch
+
+    if args.rbe:
+        logging.debug("Using RBE")
+        wheel_build_command_base.append("--config=rocm_rbe")
 
     if args.local_xla_path:
         logging.debug("Local XLA path: %s", args.local_xla_path)
@@ -610,18 +622,7 @@ async def main():
                 f'--action_env=ROCM_PATH="{args.rocm_path}"'
             )
         if args.rocm_amdgpu_targets:
-            rocm_version_str = get_rocm_version(args.rocm_path)
-            rocm_version = (
-                tuple(map(int, rocm_version_str.split(".")))
-                if rocm_version_str
-                else None
-            )
-
             targets = args.rocm_amdgpu_targets.split(",")
-            if rocm_version and rocm_version < (7, 0, 0):
-                if "gfx950" in targets:
-                    logging.debug("Removing gfx950 since ROCm version is < 7.0.0")
-                    targets.remove("gfx950")
 
             args.rocm_amdgpu_targets = ",".join(targets)
 

@@ -28,7 +28,7 @@ import pathlib
 import subprocess
 
 # pylint: disable=invalid-name
-_version = "0.8.0"
+_version = "0.9.2"
 # The following line is overwritten by build scripts in distributions &
 # releases. Do not modify this manually, or jax/jaxlib build will fail.
 _release_version: str | None = None
@@ -57,18 +57,18 @@ def _version_from_git_tree(base_version: str) -> str | None:
 
         # Get date string from date of most recent git commit, and the abbreviated
         # hash of that commit.
-        p = subprocess.Popen(
+        with subprocess.Popen(
             ["git", "show", "-s", "--format=%at-%h", "HEAD"],
             cwd=root_directory,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-        )
-        stdout, _ = p.communicate()
-        timestamp, commit_hash = stdout.decode().strip().split("-", 1)
-        datestring = datetime.date.fromtimestamp(int(timestamp)).strftime("%Y%m%d")
-        assert datestring.isnumeric()
-        assert commit_hash.isalnum()
-    except Exception:
+        ) as p:
+            stdout, _ = p.communicate()
+            timestamp, commit_hash = stdout.decode().strip().split("-", 1)
+            datestring = datetime.date.fromtimestamp(int(timestamp)).strftime("%Y%m%d")
+            assert datestring.isnumeric()
+            assert commit_hash.isalnum()
+    except Exception:  # pylint: disable=broad-except
         return None
 
     version = f"{base_version}.dev{datestring}+{commit_hash}"
@@ -79,15 +79,21 @@ def _version_from_git_tree(base_version: str) -> str | None:
 
 
 def _get_version_for_build() -> str:
+    # pylint: disable=line-too-long
     """Determine the version at build time.
 
     The returned version string depends on which environment variables are set:
+    - if WHEEL_VERSION_SUFFIX is set: version looks like "0.4.16" + suffix (e.g., "0.4.16.dev0+selfbuilt")
     - if JAX_RELEASE or JAXLIB_RELEASE are set: version looks like "0.4.16"
     - if JAX_NIGHTLY or JAXLIB_NIGHTLY are set: version looks like "0.4.16.dev20230906"
     - if none are set: version looks like "0.4.16.dev20230906+ge58560fdc
     """
     if _release_version is not None:
         return _release_version
+    # Check for WHEEL_VERSION_SUFFIX first (used by Bazel jax_wheel rule)
+    wheel_version_suffix = os.environ.get("WHEEL_VERSION_SUFFIX")
+    if wheel_version_suffix is not None:
+        return _version + wheel_version_suffix
     if os.environ.get("JAX_NIGHTLY") or os.environ.get("JAXLIB_NIGHTLY"):
         return _version_from_todays_date(_version)
     if os.environ.get("JAX_RELEASE") or os.environ.get("JAXLIB_RELEASE"):
@@ -101,7 +107,7 @@ def _write_version(fname: str) -> None:
     old_version_string = "_release_version: str | None = None"
     new_version_string = f"_release_version: str = {release_version!r}"
     fhandle = pathlib.Path(fname)
-    contents = fhandle.read_text()
+    contents = fhandle.read_text(encoding="utf-8")
     # Expect two occurrences: one above, and one here.
     if contents.count(old_version_string) != 2:
         raise RuntimeError(f"Build: could not find {old_version_string!r} in {fname}")
@@ -116,7 +122,7 @@ def _write_version(fname: str) -> None:
                 f"Build: could not find {old_githash_string!r} in {fname}"
             )
         contents = contents.replace(old_githash_string, new_githash_string)
-    fhandle.write_text(contents)
+    fhandle.write_text(contents, encoding="utf-8")
 
 
 def _get_cmdclass(pkg_source_path):
@@ -153,11 +159,11 @@ def _get_cmdclass(pkg_source_path):
                     os.path.join(base_dir, pkg_source_path, os.path.basename(__file__))
                 )
 
-    return dict(sdist=_sdist, build_py=_build_py)
+    return {"sdist": _sdist, "build_py": _build_py}
 
 
 __version__ = _get_version_string()
-_minimum_jaxlib_version = "0.8.0"
+_minimum_jaxlib_version = "0.9.2"
 
 
 def _version_as_tuple(version_str):
