@@ -161,14 +161,16 @@ RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
 # This mitigates crashes related to the kernel database.
 ENV MIOPEN_FIND_ENFORCE=SEARCH_DB_UPDATE
 
-# Temporarily include a custom built ROCR-Runtime. This should be removed
-# as soon as https://github.com/ROCm/rocm-systems/pull/2185 lands
-# in a ROCm release that we can install as deb package or with therock.
+# ROCR-Runtime intercept queue workaround — needed for ROCm < 7.14.
+# Upstream fix: https://github.com/ROCm/rocm-systems/pull/2185
+# (merged 2025-12-05, ships in ROCm 7.14+).
 # The profiler SDK's intercept queue corrupts AQL packets when they wrap
 # around the ring buffer boundary, causing HSA_STATUS_ERROR_INVALID_PACKET_FORMAT
 # aborts under parallel GPU workloads.
+# Skip for 7.1.1 (no profiler SDK) and for 7.14+ (fix included).
 RUN --mount=type=bind,source=docker/patches/rocr-intercept-queue-fix.patch,target=/tmp/rocr-fix.patch \
-    [ "$ROCM_VERSION" = "7.1.1" ] || (                 \
+    [ "$ROCM_VERSION" = "7.1.1" ] ||                   \
+    dpkg --compare-versions "$ROCM_VERSION" ge "7.14.0" || ( \
     apt-get update && apt-get install -y --no-install-recommends \
         cmake pkg-config libelf-dev libdrm-dev libnuma-dev rocm-llvm-dev xxd && \
     git clone --filter=blob:none --no-checkout --depth=1 \
