@@ -39,16 +39,11 @@ RUN mkdir /tmp/llvm-project && \
     cmake -DLLVM_ENABLE_PROJECTS='clang;lld' \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=/usr/lib/llvm-18/ \
+          -DGCC_INSTALL_PREFIX=/opt/rh/gcc-toolset-14/root/usr \
           ../llvm && \
     make -j$(nproc) && \
     make -j$(nproc) install && \
     rm -rf /tmp/llvm-project
-
-# Copy in our clang configuration file
-COPY ./docker/manylinux/clang.cfg /usr/lib/llvm-18/bin/clang++.cfg
-COPY ./docker/manylinux/clang.cfg /usr/lib/llvm-18/bin/clang.cfg
-COPY ./docker/manylinux/clang.cfg /opt/rocm/llvm/bin/clang++.cfg
-COPY ./docker/manylinux/clang.cfg /opt/rocm/llvm/bin/clang.cfg
 
 # ld.lld (hermetic linker) resolves -lstdc++ by looking for the unversioned
 # libstdc++.so in the sysroot. AlmaLinux 8 only ships libstdc++.so.6 in
