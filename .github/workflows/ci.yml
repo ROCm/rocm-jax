@@ -16,28 +16,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-build-wheels:
-    strategy:
-      matrix:
-        rocm-version: ["7.2.0"]
-    uses: ./.github/workflows/build-wheels.yml
-    with:
-      python-versions: "3.11,3.12,3.13,3.14"
-      rocm-version: ${{ matrix.rocm-version }}
-      runner-label: '["linux-x86-64-1gpu-amd"]'
-      builder-image: "search"
-    secrets:
-      rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
-      rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
-  call-build-docker:
-    needs: call-build-wheels
-    strategy:
-      matrix:
-        rocm-version: ["7.2.0"]
-    uses: ./.github/workflows/build-docker.yml
-    with:
-      rocm-version: ${{ matrix.rocm-version }}
-      runner-label: '["linux-x86-64-1gpu-amd"]'
+  #call-build-wheels:
+  #  strategy:
+  #    matrix:
+  #      rocm-version: ["7.2.0"]
+  #  uses: ./.github/workflows/build-wheels.yml
+  #  with:
+  #    python-versions: "3.11,3.12,3.13,3.14"
+  #    rocm-version: ${{ matrix.rocm-version }}
+  #    runner-label: '["linux-x86-64-1gpu-amd"]'
+  #    builder-image: "search"
+  #  secrets:
+  #    rbe_ci_cert: ${{ secrets.RBE_CI_CERT }}
+  #    rbe_ci_key: ${{ secrets.RBE_CI_KEY }}
+  #call-build-docker:
+  #  needs: call-build-wheels
+  #  strategy:
+  #    matrix:
+  #      rocm-version: ["7.2.0"]
+  #  uses: ./.github/workflows/build-docker.yml
+  #  with:
+  #    rocm-version: ${{ matrix.rocm-version }}
+  #    runner-label: '["linux-x86-64-1gpu-amd"]'
   run-python-unit-tests:
     needs: call-build-docker
     runs-on: "linux-x86-64-1gpu-amd"
@@ -50,6 +50,10 @@ jobs:
         run: |
           docker run --rm -v "./:/rocm-jax" ubuntu \
             /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+      - name: OSSCI GPU Test
+        run: |
+          rocm-smi
+          docker run --rm ubuntu /bin/bash -c rocm-smi
       - name: Checkout plugin repo
         uses: actions/checkout@v4
         with:
