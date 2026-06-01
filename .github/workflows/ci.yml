@@ -53,7 +53,7 @@ jobs:
       - name: OSSCI GPU Test
         run: |
           rocm-smi
-          docker run --rm ghcr.io/rocm/jax-ubu24.rocm720 rocm-smi
+          docker run --rm ghcr.io/rocm/jax-ubu24.rocm720 ls /dev/dri
       - name: Checkout plugin repo
         uses: actions/checkout@v4
         with:
