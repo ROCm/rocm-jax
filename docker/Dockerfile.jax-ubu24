@@ -23,9 +23,9 @@ ARG PLUGIN_NAMESPACE
 
 # Install common dependencies for all Python versions
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
-    for py in python3.11 python3.12 python3.13 python3.14; do \
+    set -e && for py in python3.11 python3.12 python3.13 python3.14; do \
         $py -m pip install --break-system-packages \
-            "numpy<2" \
+            numpy \
             build \
             wheel \
             six \
@@ -48,7 +48,7 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
 # Install jax and jaxlib from requirements file for all Python versions
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=build/requirements.txt,target=requirements.txt \
-    for py in python3.11 python3.12 python3.13 python3.14; do \
+    set -e && for py in python3.11 python3.12 python3.13 python3.14; do \
         $py -m pip install --break-system-packages -r requirements.txt; \
     done
 
@@ -61,7 +61,7 @@ LABEL com.amdgpu.jax_version="$JAX_VERSION" \
 # Install ROCm JAX wheels for all Python versions
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=wheelhouse,target=/wheelhouse \
-    ls -lah /wheelhouse && \
+    set -e && ls -lah /wheelhouse && \
     for py in python3.11 python3.12 python3.13 python3.14; do \
         $py -m pip install -f /wheelhouse --no-deps --no-index "jax_rocm${PLUGIN_NAMESPACE}_plugin" "jax_rocm${PLUGIN_NAMESPACE}_pjrt" && \
         $py -m pip install -f /wheelhouse --no-deps --no-index --force-reinstall "jaxlib"; \
