@@ -1,4 +1,4 @@
-name: Build ROCm JAX Docker image
+name: Build ROCm and TheRock JAX and XLA Docker images
 
 on:
   push:
@@ -23,6 +23,8 @@ jobs:
     runs-on: ${{ inputs.runner-label || 'linux-x86-64-1gpu-amd' }}
     env:
       ROCM_VERSION: ${{ inputs.rocm-version || '7.2.4' }}
+      THEROCK_VERSION: ${{ inputs.theRock-version || '7.13.0' }}
+      THEROCK_INDEX_URL: ${{ inputs.theRock-index-url || 'https://repo.amd.com/rocm/whl/gfx950-dcgpu/' }}
     steps:
       - name: Print system info
         run: |
@@ -38,7 +40,7 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Build JAX docker image
+      - name: Build ROCm JAX docker image
         working-directory: ./build/rocm/docker
         run: |
           IMAGE="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION}"
@@ -47,9 +49,25 @@ jobs:
             --build-arg ROCM_VERSION="${ROCM_VERSION}" \
             -t "${IMAGE}:latest" .
 
-      - name: Push JAX docker image
+      - name: Push ROCm JAX docker image
         working-directory: ./build/rocm/docker
         run: |
           IMAGE="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION}"
+
+          docker push "${IMAGE}:latest"
+      - name: Build TheRock JAX docker image
+        working-directory: ./build/rocm/docker
+        run: |
+          IMAGE="ghcr.io/rocm/jax-ubu22.theRock${THEROCK_VERSION}"
+
+          docker build -f Dockerfile.theRock \
+            --build-arg THEROCK_INDEX_URL="${THEROCK_INDEX_URL}" \
+            --build-arg THEROCK_VERSION="${THEROCK_VERSION}" \
+            -t "${IMAGE}:latest" .
+
+      - name: Push TheRock JAX docker image
+        working-directory: ./build/rocm/docker
+        run: |
+          IMAGE="ghcr.io/rocm/jax-ubu22.theRock${THEROCK_VERSION}"
 
           docker push "${IMAGE}:latest"
