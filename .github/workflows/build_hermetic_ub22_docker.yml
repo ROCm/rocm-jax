@@ -58,7 +58,7 @@ jobs:
       - name: Build TheRock JAX docker image
         working-directory: ./docker
         run: |
-          IMAGE="ghcr.io/rocm/jax-ubu22.theRock${THEROCK_VERSION}"
+          IMAGE="ghcr.io/rocm/jax-ubu22.therock${THEROCK_VERSION}"
 
           docker build -f Dockerfile.theRock \
             --build-arg THEROCK_INDEX_URL="${THEROCK_INDEX_URL}" \
@@ -68,6 +68,6 @@ jobs:
       - name: Push TheRock JAX docker image
         working-directory: ./docker
         run: |
-          IMAGE="ghcr.io/rocm/jax-ubu22.theRock${THEROCK_VERSION}"
+          IMAGE="ghcr.io/rocm/jax-ubu22.therock${THEROCK_VERSION}"
 
           docker push "${IMAGE}:latest"
