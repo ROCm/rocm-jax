@@ -10,20 +10,19 @@ ARG THEROCK_VERSION=""
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y patchelf numactl-devel vim-common
 
-# Install TheRock (ROCm via pip), initialize the SDK, and create a
-# conventional /opt/rocm symlink so ENV directives use a known path.
-# manylinux_2_28's system python3 (3.6) lacks pip; use a /opt/python/ build.
+# Install TheRock (ROCm via pip) and initialize the SDK. Stay /opt/rocm-less
+# (like the ubuntu base image): ROCm resolves via the JAX wheel's RUNPATHs into
+# the pip _rocm_sdk_* packages, and the build reads the SDK root from
+# `rocm-sdk path --root` (see ci/build_rocm_artifacts.sh) -- no /opt/rocm and no
+# ROCm env vars needed. manylinux_2_28's system python3 (3.6) lacks pip, so use
+# a /opt/python/ build and symlink its rocm-sdk onto PATH (not a /opt/rocm
+# symlink, just build plumbing so `rocm-sdk` is callable below).
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     /opt/python/cp312-cp312/bin/python3 -m pip install \
         --pre --index-url "${THEROCK_INDEX_URL}" \
         "rocm[libraries,devel,device-gfx950]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
     ln -sf /opt/python/cp312-cp312/bin/rocm-sdk /usr/local/bin/rocm-sdk && \
-    rocm-sdk init && \
-    ln -sfn "$(rocm-sdk path --root)" /opt/rocm
-
-ENV ROCM_HOME=/opt/rocm
-ENV PATH="/opt/rocm/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/opt/rocm/lib"
+    rocm-sdk init
 
 RUN ln -s /opt/python/cp312-cp312/bin/python3 /usr/local/bin/python && \
     python -m ensurepip && python -m pip install auditwheel
