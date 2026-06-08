@@ -46,23 +46,22 @@ RUN apt-get update && \
 
 # Install TheRock (ROCm via pip) and initialize the SDK. Don't create a
 # /opt/rocm symlink: ROCm/jax PR #781's $ORIGIN-relative RUNPATHs resolve
-# ROCm libs from site-packages directly. Consumers that explicitly require
-# /opt/rocm should make the symlink at runtime, and set LD_LIBRARY_PATH
-# if their tooling needs it:
-#   ln -sfn "$(rocm-sdk path --root)" /opt/rocm
-#   export LD_LIBRARY_PATH=/opt/rocm/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+# ROCm libs from site-packages directly (see the env note below for why we
+# also export no ROCm env vars here).
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     python3 -m pip install --break-system-packages \
         --pre --index-url "${THEROCK_INDEX_URL}" \
         "rocm[libraries,devel,device-gfx950]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
     rocm-sdk init
 
-ENV ROCM_HOME=/opt/rocm
-ENV PATH="/opt/rocm/bin:${PATH}"
-# Don't bake LD_LIBRARY_PATH=/opt/rocm/lib: on multi-arch installs that
-# routes libhipblaslt/librccl through _rocm_sdk_devel/lib, which is
-# missing per-arch device files (bridging gap). Leaving it unset lets
-# user-set LD_LIBRARY_PATH win and the wheel's RUNPATH otherwise.
+# Export NO ROCm env: this image is intentionally /opt/rocm-less. ROCm resolves
+# via the JAX wheel's $ORIGIN-relative RUNPATHs into the pip _rocm_sdk_* packages
+# (ROCm/jax PR #781); `rocm-sdk path` gives the root/binaries. Pointing
+# ROCM_HOME/PATH at a nonexistent /opt/rocm breaks .info/version lookups and
+# re-masks the RUNPATH gaps this image exists to surface. Consumers needing
+# /opt/rocm can `ln -sfn "$(rocm-sdk path --root)" /opt/rocm` at runtime (but not
+# LD_LIBRARY_PATH=/opt/rocm/lib: that routes libhipblaslt/librccl through
+# _rocm_sdk_devel/lib, which lacks per-arch device files).
 
 # Install GitHub CLI (gh):
 RUN --mount=type=cache,target=/var/cache/apt \
