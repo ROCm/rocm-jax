@@ -24,7 +24,8 @@ jobs:
     env:
       ROCM_VERSION: ${{ inputs.rocm-version || '7.2.4' }}
       THEROCK_VERSION: ${{ inputs.theRock-version || '7.13.0' }}
-      THEROCK_INDEX_URL: ${{ inputs.theRock-index-url || 'https://repo.amd.com/rocm/whl/gfx950-dcgpu/' }}
+      THEROCK_INDEX_URL: ${{ inputs.theRock-index-url ||
+                         'https://repo.amd.com/rocm/whl/gfx950-dcgpu/' }}
     steps:
       - name: Print system info
         run: |
@@ -33,7 +34,7 @@ jobs:
           df -h
           rocm-smi -a || true
           rocminfo | grep gfx || true
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
       - name: Authenticate to GitHub Container Registry

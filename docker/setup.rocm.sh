@@ -36,7 +36,7 @@ if [[ -n "${2:-}" ]]; then
         DISTRO=$2
     else
         echo "Distro not supported"
-        echo "Supported distros are:\n focal\n jammy\n noble\n el7\n el8"
+        printf "Supported distros are:\n focal\n jammy\n noble\n el7\n el8"
         exit 1
     fi
 fi
@@ -75,7 +75,8 @@ if [[ "$DISTRO" == "focal" ]] || [[ "$DISTRO" == "jammy" ]] || [[ "$DISTRO" == "
 
         # Make the directory if it doesn't exist yet.
         # This location is recommended by the distribution maintainers.
-        mkdir --parents --mode=0755 /etc/apt/keyrings
+        mkdir --parents /etc/apt/keyrings
+        chmod 0755 /etc/apt/keyrings
 
         # Download the key, convert the signing-key to a full
         # keyring required by apt and store in the keyring directory
