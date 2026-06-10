@@ -183,6 +183,7 @@ _THEROCK_TARGET_FAMILIES = (
 def prepare_rocm_plugin_wheel(
     wheel_sources_path: pathlib.Path, *, cpu, rocm_version, srcs
 ):
+    # pylint: disable=too-many-locals
     """Assembles a source tree for the ROCm wheel in `sources_path`."""
     plugin_dir = wheel_sources_path / "jax_plugins" / f"xla_rocm{rocm_version}"
     os.makedirs(plugin_dir, exist_ok=True)
@@ -234,16 +235,38 @@ def prepare_rocm_plugin_wheel(
         raise RuntimeError(mesg) from ex
 
     shared_obj_path = os.path.join(plugin_dir, "xla_rocm_plugin.so")
-    # TheRock (pip wheels): libs under site-packages/_rocm_sdk_{core,libraries_<family>}/lib.
-    runpath_entries = [
-        "$ORIGIN/../_rocm_sdk_core/lib",
-        "$ORIGIN/../../_rocm_sdk_core/lib",
+    # Resolves ROCm for multi-arch + per-family pip wheels, TheRock tarballs, and /opt/rocm.
+    multi_arch_libs = ["_rocm_sdk_core/lib", "_rocm_sdk_libraries/lib"]
+    site_libs = multi_arch_libs + [
+        "_rocm_sdk_libraries_%s/lib" % family.replace("-", "_")
+        for family in _THEROCK_TARGET_FAMILIES
     ]
-    for family in _THEROCK_TARGET_FAMILIES:
-        family_dir = "_rocm_sdk_libraries_" + family.replace("-", "_")
-        runpath_entries.append(f"$ORIGIN/../{family_dir}/lib")
-        runpath_entries.append(f"$ORIGIN/../../{family_dir}/lib")
-    # Legacy ROCm / TheRock tarball extracted to /opt/rocm.
+    # Kernel .so is 1-deep ($ORIGIN/..) and pjrt is 2-deep ($ORIGIN/../..);
+    # emit both since the loader skips wrong-depth entries.
+    origin_to_site = ["$ORIGIN/..", "$ORIGIN/../.."]
+    py_minors = range(9, 16)
+    # TheRock tarball / extracted /opt/rocm-<ver> layout.
+    runpath_entries = [
+        "$ORIGIN/../rocm/lib",
+        "$ORIGIN/../../rocm/lib",
+    ]
+    # Same-Python pip layouts (multi-arch + per-family) and cross-Python pip
+    # layouts (multi-arch only, under a sibling python3.<m>/dist-packages).
+    for ots in origin_to_site:
+        runpath_entries += ["%s/%s" % (ots, lib) for lib in site_libs]
+        runpath_entries += [
+            "%s/../../python3.%d/dist-packages/%s" % (ots, m, lib)
+            for m in py_minors
+            for lib in multi_arch_libs
+        ]
+    # Absolute system-Python fallback (ROCm pip-installed into the system
+    # interpreter while the JAX wheel runs under a different one).
+    runpath_entries += [
+        "/usr/local/lib/python3.%d/dist-packages/%s" % (m, lib)
+        for m in py_minors
+        for lib in multi_arch_libs
+    ]
+    # Legacy ROCm fallback; keep last so the wheel's own paths are preferred.
     runpath_entries.append("/opt/rocm/lib")
     runpath = ":".join(runpath_entries)
     # patchelf --set-rpath $RUNPATH $so
