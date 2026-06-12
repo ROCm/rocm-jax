@@ -158,9 +158,6 @@ RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
     make -j10 && make install &&                                      \
     rm -rf /rocm-libraries && apt-get clean && rm -rf /var/lib/apt/lists/* )
 
-# This mitigates crashes related to the kernel database.
-ENV MIOPEN_FIND_ENFORCE=SEARCH_DB_UPDATE
-
 # Temporarily include a custom built ROCR-Runtime. This should be removed
 # as soon as https://github.com/ROCm/rocm-systems/pull/2185 lands
 # in a ROCm release that we can install as deb package or with therock.
