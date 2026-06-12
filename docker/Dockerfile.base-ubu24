@@ -160,6 +160,7 @@ RUN [ "$ROCM_VERSION" = "7.1.1" ] || (       \
 
 # This mitigates crashes related to the kernel database.
 ENV MIOPEN_FIND_ENFORCE=SEARCH_DB_UPDATE
+ENV MIOPEN_USER_DB_PATH=/dev/null
 
 # Temporarily include a custom built ROCR-Runtime. This should be removed
 # as soon as https://github.com/ROCm/rocm-systems/pull/2185 lands
