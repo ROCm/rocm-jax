@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - hhs/add_docker_for_jax_xla
+  workflow_dispatch:
+    inputs:
+      rocm-version:
+        required: false
+        type: string
+      runner-label:
+        required: false
+        default: linux-x86-64-1gpu-amd
+        type: string
   workflow_call:
     inputs:
       rocm-version:
