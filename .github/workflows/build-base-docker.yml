@@ -57,7 +57,7 @@ jobs:
         install-llvm: [true, false]
         include:
           - rocm-version: "7.2.0"
-            runner-label: "linux-x86-64-1gpu-amd"
+            runner-label: "amd-do-linux.rocm-jax.gpu.gfx950.1"
     steps:
       - name: Clean up old runs
         run: |
@@ -160,7 +160,7 @@ jobs:
         install-llvm: [true, false]
         therock-version: ["", "7.13.0"]
         include:
-          - runner-label: "linux-x86-64-1gpu-amd"
+          - runner-label: "amd-do-linux.rocm-jax.gpu.gfx950.1"
           - therock-version: ""
             therock-index-url: "https://rocm.nightlies.amd.com/whl-multi-arch/"
           - therock-version: "7.13.0"
@@ -252,7 +252,7 @@ jobs:
       inputs.image-set == 'therock' ||
       inputs.image-set == 'both'
     name: "TheRock ${{ matrix.therock-version || 'latest' }}, manylinux"
-    runs-on: linux-x86-64-1gpu-amd
+    runs-on: amd-do-linux.rocm-jax.gpu.gfx950.1
     strategy:
       fail-fast: false
       matrix:
@@ -349,7 +349,7 @@ jobs:
         rocm-version: ["7.2.0"]
         include:
           - rocm-version: "7.2.0"
-            runner-label: "linux-x86-64-1gpu-amd"
+            runner-label: "amd-do-linux.rocm-jax.gpu.gfx950.1"
     steps:
       - name: Clean up old runs
         run: |
