@@ -5,6 +5,8 @@ FROM quay.io/pypa/manylinux_2_28_x86_64
 ARG THEROCK_INDEX_URL=https://rocm.nightlies.amd.com/v2/gfx950-dcgpu/
 # TheRock version number (e.g. "7.13.0a20260401" or "" for latest).
 ARG THEROCK_VERSION=""
+# GPU architecture / device family (selects the rocm[device-<arch>] extra).
+ARG GFX_ARCH=gfx950
 
 # Install patchelf and headers for numactl
 RUN --mount=type=cache,target=/var/cache/dnf \
@@ -20,7 +22,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
 RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     /opt/python/cp312-cp312/bin/python3 -m pip install \
         --pre --index-url "${THEROCK_INDEX_URL}" \
-        "rocm[libraries,devel,device-gfx950]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
+        "rocm[libraries,devel,device-${GFX_ARCH}]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
     ln -sf /opt/python/cp312-cp312/bin/rocm-sdk /usr/local/bin/rocm-sdk && \
     rocm-sdk init
 
@@ -61,4 +63,5 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     dnf clean all
 
 LABEL com.amdgpu.therock_index_url="$THEROCK_INDEX_URL" \
-      com.amdgpu.therock_version="$THEROCK_VERSION"
+      com.amdgpu.therock_version="$THEROCK_VERSION" \
+      com.amdgpu.gfx_arch="$GFX_ARCH"
