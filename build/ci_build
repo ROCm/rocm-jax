@@ -129,12 +129,12 @@ def _docker_image_exists(image):
     return True
 
 
-def _construct_manylinux_builder_image_name(rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None):
+def _construct_manylinux_builder_image_name(rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None, therock_index_url=None):
     """Create an image name that includes the ROCm ersion, build job, build number, etc"""
     sanitized_version = rocm_version.replace("+", ".")
     return "{base_name}-{rocm_type}-{rocm_version}{rocm_build_job}{rocm_build_num}".format(
         base_name=MANYLINUX_IMAGE_BASE_NAME,
-        rocm_type="therock" if therock_path else "rocm",
+        rocm_type="therock" if (therock_path or therock_index_url) else "rocm",
         rocm_version=sanitized_version,
         rocm_build_job="-%s" % rocm_build_job if rocm_build_job else "",
         rocm_build_num="-%s" % rocm_build_num if rocm_build_num else "",
@@ -142,15 +142,30 @@ def _construct_manylinux_builder_image_name(rocm_version, rocm_build_job="", roc
 
 
 def build_manylinux_dockers(
-    rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None, tag=None
+    rocm_version, rocm_build_job="", rocm_build_num="", therock_path=None, tag=None,
+    therock_index_url=None, therock_version="", therock_gfx_arch=None,
 ):
     """Build a manylinux image that can be used for building release-ready JAX wheels"""
     if tag:
         constructed_tag = tag
     else:
-        constructed_tag = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+        constructed_tag = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path, therock_index_url)
 
-    if therock_path:
+    if therock_index_url:
+        # Install ROCm from a TheRock pip index (e.g. the multi-arch index).
+        cmd = [
+            "docker",
+            "build",
+            "-t=%s" % constructed_tag,
+            "--file=docker/manylinux/Dockerfile.jax-manylinux_2_28-therock",
+            "--build-arg=ROCM_VERSION=%s" % rocm_version,
+            "--build-arg=THEROCK_INDEX_URL=%s" % therock_index_url,
+            "--build-arg=THEROCK_VERSION=%s" % therock_version,
+        ]
+        if therock_gfx_arch:
+            cmd.append("--build-arg=GFX_ARCH=%s" % therock_gfx_arch)
+        cmd.append(".")
+    elif therock_path:
         cmd = [
             "docker",
             "build",
@@ -189,6 +204,9 @@ def dist_wheels(
     builder_image=None,
     wheel_post_release=None,
     include_rocm_version_extra=True,
+    therock_index_url=None,
+    therock_version="",
+    therock_gfx_arch=None,
 ):
     jax_plugin_dir = "jax_rocm_plugin"
 
@@ -201,11 +219,14 @@ def dist_wheels(
             rocm_build_job=rocm_build_job,
             rocm_build_num=rocm_build_num,
             therock_path=therock_path,
+            therock_index_url=therock_index_url,
+            therock_version=therock_version,
+            therock_gfx_arch=therock_gfx_arch,
         )
     # If builder-image is set to 'search', try and find one based off of the passed ROCm info
     elif local_builder_image == "search":
         print("Searching for manylinux builder image...")
-        local_builder_image = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path)
+        local_builder_image = _construct_manylinux_builder_image_name(rocm_version, rocm_build_job, rocm_build_num, therock_path, therock_index_url)
         if not _docker_image_exists(local_builder_image):
             print(f"ERROR: Builder image '{local_builder_image}' does not exist")
             exit(1)
@@ -240,7 +261,7 @@ def dist_wheels(
     cmd.append("dist_wheels")
 
     env = os.environ.copy()
-    if therock_path:
+    if therock_path or therock_index_url:
         env["THEROCK_BUILD"] = "1"
     subprocess.check_call(cmd, cwd=jax_plugin_dir, env=env)
 
@@ -619,6 +640,24 @@ def parse_args():
     )
 
     p.add_argument(
+        "--therock-index-url",
+        default="",
+        help="TheRock pip index URL (e.g. https://rocm.nightlies.amd.com/whl-multi-arch/). When set, ROCm is pip-installed from this index instead of a tarball. Mutually exclusive with --therock-path, --rocm-build-job, and --rocm-build-num.",
+    )
+
+    p.add_argument(
+        "--therock-version",
+        default="",
+        help="Optional TheRock version pin for --therock-index-url (e.g. 7.14.0a20260623). Defaults to latest.",
+    )
+
+    p.add_argument(
+        "--therock-gfx-arch",
+        default="",
+        help="GPU device extra to pull for --therock-index-url (selects rocm[device-<arch>], e.g. device-gfx950).",
+    )
+
+    p.add_argument(
         "--xla-source-dir",
         help="Path to XLA source to use during plugin and jaxlib build, instead of builtin XLA",
     )
@@ -713,6 +752,16 @@ def parse_args():
             "You cannot set both --therock-path and --rocm-build-job/--rocm-build-num."
         )
 
+    # --therock-index-url is its own ROCm source; it cannot be combined with the
+    # tarball flow or the internal dev-build (Jenkins) flow.
+    if args.therock_index_url and (
+        args.therock_path or args.rocm_build_job or args.rocm_build_num
+    ):
+        p.error(
+            "You cannot set --therock-index-url together with --therock-path or "
+            "--rocm-build-job/--rocm-build-num."
+        )
+
     # Note: --rocm-build-job can be used alone - build_num will be auto-fetched
     # from Jenkins. But --rocm-build-num requires --rocm-build-job.
     if args.rocm_build_num and not args.rocm_build_job:
@@ -731,6 +780,9 @@ def main():
             rocm_build_num=args.rocm_build_num,
             therock_path=args.therock_path,
             tag=args.tag,
+            therock_index_url=args.therock_index_url,
+            therock_version=args.therock_version,
+            therock_gfx_arch=args.therock_gfx_arch,
         )
 
     if args.action == "dist_wheels":
@@ -747,6 +799,9 @@ def main():
             builder_image=args.builder_image,
             wheel_post_release=args.wheel_post_release,
             include_rocm_version_extra=not args.no_rocm_version_extra,
+            therock_index_url=args.therock_index_url,
+            therock_version=args.therock_version,
+            therock_gfx_arch=args.therock_gfx_arch,
         )
 
     if args.action == "build_dockers":

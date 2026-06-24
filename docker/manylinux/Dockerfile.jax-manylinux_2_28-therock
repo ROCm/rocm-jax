@@ -1,19 +1,48 @@
 FROM quay.io/pypa/manylinux_2_28_x86_64
 
-
+### Container Build Arguments:
+# ROCm version, used to name the tarball install location (/opt/rocm-<version>).
 ARG ROCM_VERSION
-ARG THEROCK_PATH
+# URL of (or local path to) a flat TheRock release tarball to install. Used by
+# the legacy single-arch tarball flow (mutually exclusive with THEROCK_INDEX_URL).
+ARG THEROCK_PATH=""
+# TheRock pip index URL (e.g. https://rocm.nightlies.amd.com/whl-multi-arch/).
+# When set, ROCm is installed via pip from this index instead of a tarball.
+ARG THEROCK_INDEX_URL=""
+# Optional TheRock version pin for the pip flow (e.g. "7.14.0a20260623").
+ARG THEROCK_VERSION=""
+# GPU device extra to pull for the pip flow (selects rocm[device-<arch>]).
+ARG GFX_ARCH=device-gfx950
 ENV GPU_DEVICE_TARGETS="gfx906 gfx908 gfx90a gfx9-4-generic gfx10-3-generic gfx11-generic gfx12-generic"
 
 # Install patchelf and headers for numactl
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y patchelf numactl-devel vim-common
 
-# Install ROCm
+# Install ROCm. Two modes:
+#   1. THEROCK_INDEX_URL set -> pip install the multi-arch rocm[...] packages and
+#      symlink /opt/rocm to the SDK root reported by `rocm-sdk path --root`. The
+#      symlink keeps this branch's /opt/rocm-based build plumbing
+#      (build_wheels.py / build.py) working without a full refactor.
+#   2. otherwise -> download and unpack a flat TheRock tarball via get_rocm.py.
+# manylinux_2_28's system python3 (3.6) lacks pip, so the pip flow uses a
+# /opt/python/ interpreter and puts its rocm-sdk on PATH (build plumbing only).
 RUN --mount=type=cache,target=/var/cache/dnf \
+    --mount=type=cache,mode=0755,target=/root/.cache/pip \
     --mount=type=bind,source=./tools/get_rocm.py,target=get_rocm.py \
-    python3 get_rocm.py --rocm-version=$ROCM_VERSION --therock-path=$THEROCK_PATH
+    if [ -n "${THEROCK_INDEX_URL}" ]; then \
+        /opt/python/cp312-cp312/bin/python3 -m pip install \
+            --pre --index-url "${THEROCK_INDEX_URL}" \
+            "rocm[libraries,devel,${GFX_ARCH}]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
+        ln -sf /opt/python/cp312-cp312/bin/rocm-sdk /usr/local/bin/rocm-sdk && \
+        rocm-sdk init && \
+        ln -sfn "$(rocm-sdk path --root)" /opt/rocm; \
+    else \
+        python3 get_rocm.py --rocm-version=$ROCM_VERSION --therock-path=$THEROCK_PATH; \
+    fi
+ENV ROCM_HOME=/opt/rocm
 ENV PATH="$PATH:/opt/rocm/bin:/opt/rocm/llvm/bin"
+ENV LD_LIBRARY_PATH="/opt/rocm/lib"
 RUN printf '%s\n' > /opt/rocm/bin/target.lst ${GPU_DEVICE_TARGETS}
 
 # Install LLVM 18 and dependencies.
@@ -23,11 +52,16 @@ RUN mkdir /tmp/llvm-project && wget -qO - https://github.com/llvm/llvm-project/a
     mkdir /tmp/llvm-project/build && cd /tmp/llvm-project/build && cmake -DLLVM_ENABLE_PROJECTS='clang;lld' -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/lib/llvm-18/ ../llvm && \
     make -j$(nproc) && make -j$(nproc) install && rm -rf /tmp/llvm-project
 
-# Copy in our clang configuiration file
-COPY ./docker/manylinux/clang.cfg /usr/lib/llvm-18/bin/clang++.cfg
-COPY ./docker/manylinux/clang.cfg /usr/lib/llvm-18/bin/clang.cfg
-COPY ./docker/manylinux/clang.cfg /opt/rocm/llvm/bin/clang++.cfg
-COPY ./docker/manylinux/clang.cfg /opt/rocm/llvm/bin/clang.cfg
+# Copy in our clang configuration file. The /opt/rocm/llvm/bin copies only apply
+# to layouts that ship a bundled LLVM (the tarball flow); guard them so the pip
+# flow (where /opt/rocm/llvm/bin may not exist) does not fail.
+COPY ./docker/manylinux/clang.cfg /tmp/clang.cfg
+RUN cp /tmp/clang.cfg /usr/lib/llvm-18/bin/clang++.cfg && \
+    cp /tmp/clang.cfg /usr/lib/llvm-18/bin/clang.cfg && \
+    if [ -d /opt/rocm/llvm/bin ]; then \
+        cp /tmp/clang.cfg /opt/rocm/llvm/bin/clang++.cfg && \
+        cp /tmp/clang.cfg /opt/rocm/llvm/bin/clang.cfg; \
+    fi
 
 # Install AWS CLI v2
 RUN --mount=type=cache,target=/var/cache/dnf \
@@ -38,3 +72,8 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     rm -rf /tmp/aws /tmp/awscliv2.zip && \
     dnf clean all
 
+LABEL com.amdgpu.therock_path="$THEROCK_PATH" \
+      com.amdgpu.therock_index_url="$THEROCK_INDEX_URL" \
+      com.amdgpu.therock_version="$THEROCK_VERSION" \
+      com.amdgpu.gfx_arch="$GFX_ARCH" \
+      com.amdgpu.rocm_version="$ROCM_VERSION"
