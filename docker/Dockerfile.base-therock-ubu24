@@ -54,6 +54,11 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
         "rocm[libraries,devel,device-gfx950]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
     rocm-sdk init
 
+# ROCm/HIP runtime tuning:
+ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
+    DEBUG_HIP_DYNAMIC_QUEUES=0 \
+    HSA_NO_SCRATCH_RECLAIM=1
+
 # Export NO ROCm env: this image is intentionally /opt/rocm-less. ROCm resolves
 # via the JAX wheel's $ORIGIN-relative RUNPATHs into the pip _rocm_sdk_* packages
 # (ROCm/jax PR #781); `rocm-sdk path` gives the root/binaries. Pointing
