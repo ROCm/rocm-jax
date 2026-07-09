@@ -1,3 +1,0 @@
-# All required ROCM packages
-rocm-ml-sdk
-rocm-dev

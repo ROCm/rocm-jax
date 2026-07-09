@@ -5,21 +5,44 @@ FROM $BASE_IMAGE AS devel
 # on why we cannot reference BASE_IMAGE again unless we declare it again.
 ################################################################################
 
-# Install devtoolset build dependencies
-COPY setup.sources.sh /setup.sources.sh
-COPY setup.packages.sh /setup.packages.sh
-COPY builder.packages.txt /builder.packages.txt
+# Prevent apt install tzinfo from asking our location (assumes UTC)
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN /setup.sources.sh && /setup.packages.sh /builder.packages.txt
+# Setup apt sources and install builder packages
+RUN apt-get update --allow-insecure-repositories && \
+    apt-get install -y gnupg ca-certificates && \
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
+    echo "deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" > /etc/apt/sources.list.d/custom.list && \
+    echo "deb-src http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" >> /etc/apt/sources.list.d/custom.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        build-essential \
+        curl \
+        file \
+        git \
+        libatomic1 \
+        libquadmath0 \
+        libtool \
+        unzip \
+        vim \
+        wget \
+        zip \
+        zlib1g-dev
 
-# Setup Python
-COPY setup.python.sh /setup.python.sh
-COPY builder.requirements.txt /builder.requirements.txt
+# Setup Python 3.12
+COPY python_requirements.txt /python_requirements.txt
 
-# Since we are using python3.12 as the default python version, we need to
-# install python3.12 last for now.
-# TODO(b/376338367): switch to pyenv.
-RUN /setup.python.sh python3.12 /builder.requirements.txt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3.12 \
+        python3.12-dev \
+        python3.12-venv && \
+    wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --tries=5 https://bootstrap.pypa.io/get-pip.py && \
+    python3.12 get-pip.py && \
+    rm -f get-pip.py && \
+    python3.12 -m pip install --no-cache-dir -r /python_requirements.txt
 
 # bazelisk
 RUN wget https://github.com/bazelbuild/bazelisk/releases/download/v1.21.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel && chmod +x /usr/local/bin/bazel
@@ -28,12 +51,29 @@ RUN wget https://github.com/bazelbuild/bazelisk/releases/download/v1.21.0/bazeli
 ARG GPU_DEVICE_TARGETS="gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1102,gfx1200,gfx1201"
 ENV GPU_DEVICE_TARGETS=${GPU_DEVICE_TARGETS}
 ENV TF_ROCM_AMDGPU_TARGETS=${GPU_DEVICE_TARGETS}
-ARG ROCM_VERSION=6.2.0
-ARG ROCM_PATH=/opt/rocm-${ROCM_VERSION}
-ENV ROCM_PATH=${ROCM_PATH}
-COPY setup.rocm.sh /setup.rocm.sh
-COPY devel.packages.rocm.txt /devel.packages.rocm.txt
-RUN /setup.rocm.sh $ROCM_VERSION jammy
+ARG ROCM_VERSION=7.2.4
+ENV ROCM_PATH=/opt/rocm
+
+# Setup ROCm repositories and install ROCm packages
+RUN ROCM_VERS=${ROCM_VERSION} && \
+    AMDGPU_REPO_VERS=7.0.2 && \
+    ROCM_DEB_REPO=https://repo.radeon.com/rocm/apt/${ROCM_VERS}/ && \
+    AMDGPU_DEB_REPO=https://repo.radeon.com/amdgpu/${AMDGPU_REPO_VERS}/ && \
+    apt-get update --allow-unauthenticated && \
+    apt-get install -y wget software-properties-common && \
+    apt-get clean all && \
+    mkdir --parents /etc/apt/keyrings && \
+    chmod 0755 /etc/apt/keyrings && \
+    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] ${AMDGPU_DEB_REPO}/ubuntu jammy main" | tee /etc/apt/sources.list.d/amdgpu.list && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] ${ROCM_DEB_REPO} jammy main" | tee /etc/apt/sources.list.d/rocm.list && \
+    printf 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600\n' | tee /etc/apt/preferences.d/rocm-pin-600 && \
+    apt-get update --allow-insecure-repositories && \
+    apt-get install -y --no-install-recommends \
+        rocm-dev \
+        rocm-ml-sdk && \
+    apt-get install -y --allow-unauthenticated miopen-hip-gfx || echo "failed to install miopen-hip-gfx" && \
+    apt-get install -y --allow-unauthenticated hipblaslt-dev || echo "failed to install hipblaslt-dev"
 
 # Setup links for TensorFlow to compile.
 # Referenced in devel.usertools/*.bazelrc.
@@ -47,7 +87,3 @@ RUN ln -sf /usr/lib/python3.12 /usr/lib/tf_python
 ENV TF_NEED_ROCM=1
 ENV TF_ROCM_GCC=1
 ENV ROCM_TOOLKIT_PATH=${ROCM_PATH}
-
-# Don't use the bazel cache when a new docker image is created.
-RUN echo build --action_env=DOCKER_CACHEBUSTER=$(date +%s%N)$RANDOM >> /etc/bazel.bazelrc
-RUN echo build --host_action_env=DOCKER_HOST_CACHEBUSTER=$(date +%s%N)$RANDOM >> /etc/bazel.bazelrc
