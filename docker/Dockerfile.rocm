@@ -1,9 +1,5 @@
 ################################################################################
-ARG BASE_IMAGE=ubuntu:22.04@sha256:58b87898e82351c6cf9cf5b9f3c20257bb9e2dcf33af051e12ce532d7f94e3fe
-FROM $BASE_IMAGE AS devel
-# See https://docs.docker.com/reference/dockerfile/#understand-how-arg-and-from-interact
-# on why we cannot reference BASE_IMAGE again unless we declare it again.
-################################################################################
+FROM ubuntu:24.04
 
 # Prevent apt install tzinfo from asking our location (assumes UTC)
 ENV DEBIAN_FRONTEND=noninteractive
@@ -39,6 +35,7 @@ RUN apt-get update && \
         python3.12-dev \
         python3.12-venv && \
     rm -rf /var/lib/apt/lists/* && \
+    rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED && \
     wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --tries=5 https://bootstrap.pypa.io/get-pip.py && \
     python3.12 get-pip.py && \
     rm -f get-pip.py && \
@@ -87,8 +84,7 @@ RUN ROCM_VERS=${ROCM_VERSION} && \
         rocm-core-dbgsym \
         rocm-smi-lib-dbgsym \
         rocprofiler-sdk-dbgsym \
-        rocsparse-dbgsym \
-        roctracer-dbgsym \
+        rocsparse-dbgsym
 
 # Setup links for TensorFlow to compile.
 # Referenced in devel.usertools/*.bazelrc.

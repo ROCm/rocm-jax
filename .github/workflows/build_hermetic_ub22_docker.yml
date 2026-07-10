@@ -45,11 +45,11 @@ jobs:
       matrix:
         include:
           - dockerfile: Dockerfile.rocm
-            image-name: jax-build-ubu22.rocm
+            image-name: jax-build-ubu24.rocm
             version-arg: ROCM_VERSION
             version-value: ${{ inputs.rocm-version || '7.2.4' }}
           - dockerfile: Dockerfile.theRock
-            image-name: jax-build-ubu22.therock
+            image-name: jax-build-ubu24.therock
             version-arg: THEROCK_VERSION
             version-value: ${{ inputs.theRock-version || '7.13.0' }}
             extra-args: THEROCK_INDEX_URL=${{ inputs.theRock-index-url || 'https://repo.amd.com/rocm/whl/gfx950-dcgpu/' }}
