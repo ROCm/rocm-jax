@@ -3,7 +3,7 @@ name: Build ROCm and TheRock JAX and XLA Docker images
 on:
   push:
     branches:
-      - hhs/add_docker_for_jax_xla
+      - rocm-jax-infra
     paths:
       - 'docker/Dockerfile.rocm'
       - 'docker/Dockerfile.theRock'
