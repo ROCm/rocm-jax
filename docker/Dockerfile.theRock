@@ -9,7 +9,7 @@ FROM $BASE_IMAGE AS devel
 #ARG THEROCK_INDEX_URL="https://repo.amd.com/rocm/whl-multi-arch/"
 ARG THEROCK_INDEX_URL="https://repo.amd.com/rocm/whl/gfx950-dcgpu/"
 # TheRock version number (e.g. "7.13.0a20260401" or "" for latest).
-ARG THEROCK_VERSION="7.14.0"
+ARG THEROCK_VERSION="7.13.0"
 
 # Prevent apt install tzinfo from asking our location (assumes UTC)
 ENV DEBIAN_FRONTEND=noninteractive
