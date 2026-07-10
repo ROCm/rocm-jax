@@ -11,7 +11,7 @@ on:
         type: string
       runner-label:
         required: false
-        default: linux-x86-64-1gpu-amd
+        default: amd-do-linux.jax.gpu.gfx950.1
         type: string
   workflow_call:
     inputs:
@@ -20,7 +20,7 @@ on:
         type: string
       runner-label:
         required: false
-        default: linux-x86-64-1gpu-amd
+        default: amd-do-linux.jax.gpu.gfx950.1
         type: string
 
 permissions:
