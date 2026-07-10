@@ -20,6 +20,15 @@ on:
       rocm-version:
         required: false
         type: string
+        default: '7.2.4'
+      theRock-version:
+        required: false
+        type: string
+        default: '7.13.0'
+      theRock-index-url:
+        required: false
+        type: string
+        default: 'https://repo.amd.com/rocm/whl/gfx950-dcgpu/'
       runner-label:
         required: false
         default: amd-do-linux.jax.gpu.gfx950.1
@@ -29,6 +38,15 @@ on:
       rocm-version:
         required: false
         type: string
+        default: '7.2.4'
+      theRock-version:
+        required: false
+        type: string
+        default: '7.13.0'
+      theRock-index-url:
+        required: false
+        type: string
+        default: 'https://repo.amd.com/rocm/whl/gfx950-dcgpu/'
       runner-label:
         required: false
         default: amd-do-linux.jax.gpu.gfx950.1
@@ -40,19 +58,19 @@ permissions:
 
 jobs:
   build-docker:
-    runs-on: ${{ inputs.runner-label || 'amd-do-linux.jax.gpu.gfx950.1' }}
+    runs-on: ${{ inputs.runner-label }}
     strategy:
       matrix:
         include:
           - dockerfile: Dockerfile.rocm
             image-name: jax-build-ubu24.rocm
             version-arg: ROCM_VERSION
-            version-value: ${{ inputs.rocm-version || '7.2.4' }}
+            version-value: ${{ inputs.rocm-version }}
           - dockerfile: Dockerfile.theRock
             image-name: jax-build-ubu24.therock
             version-arg: THEROCK_VERSION
-            version-value: ${{ inputs.theRock-version || '7.13.0' }}
-            extra-args: THEROCK_INDEX_URL=${{ inputs.theRock-index-url || 'https://repo.amd.com/rocm/whl/gfx950-dcgpu/' }}
+            version-value: ${{ inputs.theRock-version }}
+            extra-args: THEROCK_INDEX_URL=${{ inputs.theRock-index-url }}
     steps:
       - name: Print system info
         run: |
