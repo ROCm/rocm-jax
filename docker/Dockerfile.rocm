@@ -73,7 +73,20 @@ RUN ROCM_VERS=${ROCM_VERSION} && \
         rocm-dev \
         rocm-ml-sdk && \
     (apt-get install -y miopen-hip-gfx || echo "failed to install miopen-hip-gfx") && \
-    (apt-get install -y hipblaslt-dev || echo "failed to install hipblaslt-dev")
+    (apt-get install -y hipblaslt-dev || echo "failed to install hipblaslt-dev") && \
+    apt-get install -y \
+        hsa-rocr-asan-dbgsym \
+        hsa-rocr-dbgsym \
+        rocm-core-asan-dbgsym \
+        rocm-core-dbgsym \
+        roctracer-asan-dbgsym \
+        roctracer-dbgsym \
+        rocfft-asan-dbgsym \
+        rocfft-dbgsym \
+        rocrand-asan-dbgsym \
+        rocrand-dbgsym \
+        rocsparse-asan-dbgsym \
+        rocsparse-dbgsym
 
 # Setup links for TensorFlow to compile.
 # Referenced in devel.usertools/*.bazelrc.
