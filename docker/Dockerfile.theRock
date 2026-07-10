@@ -15,11 +15,9 @@ ARG THEROCK_VERSION="7.14.0"
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Setup apt sources and install builder packages
-RUN apt-get update --allow-insecure-repositories && \
-    apt-get install -y gnupg ca-certificates && \
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
-    echo "deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" > /etc/apt/sources.list.d/custom.list && \
-    echo "deb-src http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" >> /etc/apt/sources.list.d/custom.list && \
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         autoconf \

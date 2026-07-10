@@ -9,11 +9,9 @@ FROM $BASE_IMAGE AS devel
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Setup apt sources and install builder packages
-RUN apt-get update --allow-insecure-repositories && \
-    apt-get install -y gnupg ca-certificates && \
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
-    echo "deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" > /etc/apt/sources.list.d/custom.list && \
-    echo "deb-src http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" >> /etc/apt/sources.list.d/custom.list && \
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         autoconf \
@@ -29,7 +27,8 @@ RUN apt-get update --allow-insecure-repositories && \
         vim \
         wget \
         zip \
-        zlib1g-dev
+        zlib1g-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 # Setup Python 3.12
 COPY python_requirements.txt /python_requirements.txt
@@ -39,6 +38,7 @@ RUN apt-get update && \
         python3.12 \
         python3.12-dev \
         python3.12-venv && \
+    rm -rf /var/lib/apt/lists/* && \
     wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --tries=5 https://bootstrap.pypa.io/get-pip.py && \
     python3.12 get-pip.py && \
     rm -f get-pip.py && \
@@ -59,21 +59,21 @@ RUN ROCM_VERS=${ROCM_VERSION} && \
     AMDGPU_REPO_VERS=7.0.2 && \
     ROCM_DEB_REPO=https://repo.radeon.com/rocm/apt/${ROCM_VERS}/ && \
     AMDGPU_DEB_REPO=https://repo.radeon.com/amdgpu/${AMDGPU_REPO_VERS}/ && \
-    apt-get update --allow-unauthenticated && \
+    apt-get update && \
     apt-get install -y wget software-properties-common && \
-    apt-get clean all && \
+    apt-get clean && \
     mkdir --parents /etc/apt/keyrings && \
     chmod 0755 /etc/apt/keyrings && \
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null && \
     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] ${AMDGPU_DEB_REPO}/ubuntu jammy main" | tee /etc/apt/sources.list.d/amdgpu.list && \
     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] ${ROCM_DEB_REPO} jammy main" | tee /etc/apt/sources.list.d/rocm.list && \
     printf 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600\n' | tee /etc/apt/preferences.d/rocm-pin-600 && \
-    apt-get update --allow-insecure-repositories && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         rocm-dev \
         rocm-ml-sdk && \
-    apt-get install -y --allow-unauthenticated miopen-hip-gfx || echo "failed to install miopen-hip-gfx" && \
-    apt-get install -y --allow-unauthenticated hipblaslt-dev || echo "failed to install hipblaslt-dev"
+    (apt-get install -y miopen-hip-gfx || echo "failed to install miopen-hip-gfx") && \
+    (apt-get install -y hipblaslt-dev || echo "failed to install hipblaslt-dev")
 
 # Setup links for TensorFlow to compile.
 # Referenced in devel.usertools/*.bazelrc.
