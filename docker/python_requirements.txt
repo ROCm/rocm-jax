@@ -1,6 +1,10 @@
+# pip and setuptools
+pip
+setuptools
+
 # For wheel verification, and uploading
-auditwheel ~= 6.1.0
-twine ~= 6.1.0
+auditwheel~=6.1.0
+twine~=6.1.0
 id
 urllib3
 requests
@@ -9,10 +13,10 @@ requests
 pyyaml
 
 # For JAX
-build ~= 1.2.2
+build~=1.2.2
 # uv is faster than pip for installing Python packages.
-uv ~= 0.5.30
+uv~=0.5.30
 pytest-json-report
 
 # For running wheel verification script
-immutabledict ~= 4.2.1
+immutabledict~=4.2.1

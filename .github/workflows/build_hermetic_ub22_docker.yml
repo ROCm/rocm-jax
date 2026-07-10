@@ -4,6 +4,17 @@ on:
   push:
     branches:
       - hhs/add_docker_for_jax_xla
+    paths:
+      - 'docker/Dockerfile.rocm'
+      - 'docker/Dockerfile.theRock'
+      - 'docker/python_requirements.txt'
+      - '.github/workflows/build_hermetic_ub22_docker.yml'
+  pull_request:
+    paths:
+      - 'docker/Dockerfile.rocm'
+      - 'docker/Dockerfile.theRock'
+      - 'docker/python_requirements.txt'
+      - '.github/workflows/build_hermetic_ub22_docker.yml'
   workflow_dispatch:
     inputs:
       rocm-version:
@@ -11,7 +22,7 @@ on:
         type: string
       runner-label:
         required: false
-        default: linux-x86-64-1gpu-amd
+        default: amd-do-linux.jax.gpu.gfx950.1
         type: string
   workflow_call:
     inputs:
@@ -20,7 +31,7 @@ on:
         type: string
       runner-label:
         required: false
-        default: linux-x86-64-1gpu-amd
+        default: amd-do-linux.jax.gpu.gfx950.1
         type: string
 
 permissions:
@@ -29,7 +40,7 @@ permissions:
 
 jobs:
   build-docker:
-    runs-on: ${{ inputs.runner-label || 'linux-x86-64-1gpu-amd' }}
+    runs-on: ${{ inputs.runner-label || 'amd-do-linux.jax.gpu.gfx950.1' }}
     env:
       ROCM_VERSION: ${{ inputs.rocm-version || '7.2.4' }}
       THEROCK_VERSION: ${{ inputs.theRock-version || '7.13.0' }}
@@ -60,6 +71,7 @@ jobs:
             -t "${IMAGE}:latest" .
 
       - name: Push ROCm JAX docker image
+        if: github.event_name != 'pull_request'
         working-directory: ./docker
         run: |
           IMAGE="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION}"
@@ -76,6 +88,7 @@ jobs:
             -t "${IMAGE}:latest" .
 
       - name: Push TheRock JAX docker image
+        if: github.event_name != 'pull_request'
         working-directory: ./docker
         run: |
           IMAGE="ghcr.io/rocm/jax-ubu22.therock${THEROCK_VERSION}"

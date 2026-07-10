@@ -9,23 +9,49 @@ FROM $BASE_IMAGE AS devel
 #ARG THEROCK_INDEX_URL="https://repo.amd.com/rocm/whl-multi-arch/"
 ARG THEROCK_INDEX_URL="https://repo.amd.com/rocm/whl/gfx950-dcgpu/"
 # TheRock version number (e.g. "7.13.0a20260401" or "" for latest).
-ARG THEROCK_VERSION="7.14.0"
+ARG THEROCK_VERSION="7.13.0"
 
-# Install devtoolset build dependencies
-COPY setup.sources.sh /setup.sources.sh
-COPY setup.packages.sh /setup.packages.sh
-COPY builder.packages.txt /builder.packages.txt
+# Prevent apt install tzinfo from asking our location (assumes UTC)
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN /setup.sources.sh && /setup.packages.sh /builder.packages.txt
+# Setup apt sources and install builder packages
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        build-essential \
+        curl \
+        file \
+        git \
+        libatomic1 \
+        libquadmath0 \
+        libtool \
+        unzip \
+        vim \
+        wget \
+        zip \
+        zlib1g-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-# Setup Python
-COPY setup.python.sh /setup.python.sh
-COPY builder.requirements.txt /builder.requirements.txt
+# Setup Python 3.12
+COPY python_requirements.txt /python_requirements.txt
 
-# Since we are using python3.12 as the default python version, we need to
-# install python3.12 last for now.
-# TODO(b/376338367): switch to pyenv.
-RUN /setup.python.sh python3.12 /builder.requirements.txt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3.12 \
+        python3.12-dev \
+        python3.12-venv && \
+    rm -rf /var/lib/apt/lists/* && \
+    ln -sf /usr/include/python3.12 /usr/local/include/python3.12 && \
+    wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --tries=5 https://bootstrap.pypa.io/get-pip.py && \
+    python3.12 get-pip.py && \
+    python3.12 -m pip install --no-cache-dir --upgrade pip && \
+    python3.12 -m pip install --no-cache-dir -U setuptools && \
+    python3.12 -m pip install --no-cache-dir -r /python_requirements.txt && \
+    rm -f get-pip.py
 
 # bazelisk
 RUN wget https://github.com/bazelbuild/bazelisk/releases/download/v1.21.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel && chmod +x /usr/local/bin/bazel
