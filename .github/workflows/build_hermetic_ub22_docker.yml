@@ -41,11 +41,18 @@ permissions:
 jobs:
   build-docker:
     runs-on: ${{ inputs.runner-label || 'amd-do-linux.jax.gpu.gfx950.1' }}
-    env:
-      ROCM_VERSION: ${{ inputs.rocm-version || '7.2.4' }}
-      THEROCK_VERSION: ${{ inputs.theRock-version || '7.13.0' }}
-      THEROCK_INDEX_URL: ${{ inputs.theRock-index-url ||
-                         'https://repo.amd.com/rocm/whl/gfx950-dcgpu/' }}
+    strategy:
+      matrix:
+        include:
+          - dockerfile: Dockerfile.rocm
+            image-name: jax-build-ubu22.rocm
+            version-arg: ROCM_VERSION
+            version-value: ${{ inputs.rocm-version || '7.2.4' }}
+          - dockerfile: Dockerfile.theRock
+            image-name: jax-build-ubu22.therock
+            version-arg: THEROCK_VERSION
+            version-value: ${{ inputs.theRock-version || '7.13.0' }}
+            extra-args: THEROCK_INDEX_URL=${{ inputs.theRock-index-url || 'https://repo.amd.com/rocm/whl/gfx950-dcgpu/' }}
     steps:
       - name: Print system info
         run: |
@@ -61,36 +68,20 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Build ROCm JAX docker image
+      - name: Build ${{ matrix.image-name }} docker image
         working-directory: ./docker
         run: |
-          IMAGE="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION}"
+          IMAGE="ghcr.io/rocm/${{ matrix.image-name }}"
 
-          docker build -f Dockerfile.rocm \
-            --build-arg ROCM_VERSION="${ROCM_VERSION}" \
+          docker build -f ${{ matrix.dockerfile }} \
+            --build-arg ${{ matrix.version-arg }}="${{ matrix.version-value }}" \
+            ${{ matrix.extra-args && format('--build-arg {0}', matrix.extra-args) || '' }} \
             -t "${IMAGE}:latest" .
 
-      - name: Push ROCm JAX docker image
+      - name: Push ${{ matrix.image-name }} docker image
         if: github.event_name != 'pull_request'
         working-directory: ./docker
         run: |
-          IMAGE="ghcr.io/rocm/jax-ubu22.rocm${ROCM_VERSION}"
-
-          docker push "${IMAGE}:latest"
-      - name: Build TheRock JAX docker image
-        working-directory: ./docker
-        run: |
-          IMAGE="ghcr.io/rocm/jax-ubu22.therock${THEROCK_VERSION}"
-
-          docker build -f Dockerfile.theRock \
-            --build-arg THEROCK_INDEX_URL="${THEROCK_INDEX_URL}" \
-            --build-arg THEROCK_VERSION="${THEROCK_VERSION}" \
-            -t "${IMAGE}:latest" .
-
-      - name: Push TheRock JAX docker image
-        if: github.event_name != 'pull_request'
-        working-directory: ./docker
-        run: |
-          IMAGE="ghcr.io/rocm/jax-ubu22.therock${THEROCK_VERSION}"
+          IMAGE="ghcr.io/rocm/${{ matrix.image-name }}"
 
           docker push "${IMAGE}:latest"
