@@ -58,19 +58,24 @@ permissions:
 
 jobs:
   build-docker:
-    runs-on: ${{ inputs.runner-label }}
+    runs-on: ${{ inputs.runner-label || 'amd-do-linux.jax.gpu.gfx950.1' }}
+    env:
+      ROCM_VERSION: ${{ inputs.rocm-version || '7.2.4' }}
+      THEROCK_VERSION: ${{ inputs.theRock-version || '7.13.0' }}
+      THEROCK_INDEX_URL: >-
+        ${{ inputs.theRock-index-url ||
+        'https://repo.amd.com/rocm/whl/gfx950-dcgpu/' }}
     strategy:
       matrix:
         include:
           - dockerfile: Dockerfile.rocm
             image-name: jax-build-ubu24.rocm
-            version-arg: ROCM_VERSION
-            version-value: ${{ inputs.rocm-version }}
+            build-args: --build-arg ROCM_VERSION=${{ env.ROCM_VERSION }}
           - dockerfile: Dockerfile.theRock
             image-name: jax-build-ubu24.therock
-            version-arg: THEROCK_VERSION
-            version-value: ${{ inputs.theRock-version }}
-            extra-args: THEROCK_INDEX_URL=${{ inputs.theRock-index-url }}
+            build-args: >-
+              --build-arg THEROCK_VERSION=${{ env.THEROCK_VERSION }}
+              --build-arg THEROCK_INDEX_URL=${{ env.THEROCK_INDEX_URL }}
     steps:
       - name: Print system info
         run: |
@@ -92,8 +97,7 @@ jobs:
           IMAGE="ghcr.io/rocm/${{ matrix.image-name }}"
 
           docker build -f ${{ matrix.dockerfile }} \
-            --build-arg ${{ matrix.version-arg }}="${{ matrix.version-value }}" \
-            ${{ matrix.extra-args && format('--build-arg {0}', matrix.extra-args) || '' }} \
+            ${{ matrix.build-args }} \
             -t "${IMAGE}:latest" .
 
       - name: Push ${{ matrix.image-name }} docker image
