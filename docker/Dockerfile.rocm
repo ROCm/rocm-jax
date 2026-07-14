@@ -7,7 +7,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Setup apt sources and install builder packages
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         autoconf \
@@ -99,7 +98,8 @@ RUN ROCM_VERS=${ROCM_VERSION} && \
         rocm-core-dbgsym \
         rocm-smi-lib-dbgsym \
         rocprofiler-sdk-dbgsym \
-        rocsparse-dbgsym
+        rocsparse-dbgsym && \
+    rm -rf /var/lib/apt/lists/*
 
 # Setup links for TensorFlow to compile.
 # Referenced in devel.usertools/*.bazelrc.
