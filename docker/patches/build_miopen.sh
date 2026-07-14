@@ -6,8 +6,8 @@
 
 set -euxo pipefail
 
-ROCM_VERSION=${ROCM_VERSION:-}
-ROCM_PATH=${ROCM_PATH:-/opt/rocm}
+ROCM_VERSION="${ROCM_VERSION:-}"
+ROCM_PATH="${ROCM_PATH:-/opt/rocm}"
 
 # Skip for ROCm 7.1.1
 if [ "$ROCM_VERSION" = "7.1.1" ]; then
@@ -39,10 +39,10 @@ git clone https://github.com/ROCm/rocm-libraries.git \
     /tmp/rocm-libraries
 
 # Prevent apt and ldconfig from overriding the symlinks
-dpkg-divert --no-rename --remove ${ROCM_PATH}/lib/libMIOpen.so.1 || true
+dpkg-divert --no-rename --remove "${ROCM_PATH}/lib/libMIOpen.so.1" || true
 dpkg-divert --add --package local \
-    --divert ${ROCM_PATH}/lib/libMIOpen.bak.1.0.70200 \
-    --rename ${ROCM_PATH}/lib/libMIOpen.so.1.0.70200
+    --divert "${ROCM_PATH}/lib/libMIOpen.bak.1.0.70200" \
+    --rename "${ROCM_PATH}/lib/libMIOpen.so.1.0.70200"
 
 # Build MIOpen
 cd /tmp/rocm-libraries/projects/miopen/
@@ -50,11 +50,11 @@ mkdir build && cd build
 
 # Add ROCm paths to environment
 export PATH="${ROCM_PATH}/llvm/bin:${ROCM_PATH}/bin:${PATH}"
-export CXX=${ROCM_PATH}/llvm/bin/amdclang++
+export CXX="${ROCM_PATH}/llvm/bin/amdclang++"
 
 cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
       -DMIOPEN_BACKEND=HIP \
-      -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/amdclang++ \
+      -DCMAKE_CXX_COMPILER="${ROCM_PATH}/llvm/bin/amdclang++" \
       -DBUILD_TESTING=OFF \
       -DCMAKE_PREFIX_PATH="${ROCM_PATH}" \
       -DMIOPEN_USE_MLIR=OFF \
@@ -62,7 +62,7 @@ cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
       -DMIOPEN_ENABLE_AI_IMMED_MODE_FALLBACK=OFF \
       ..
 
-make -j$(nproc)
+make -j"$(nproc)"
 make install
 
 # Cleanup
