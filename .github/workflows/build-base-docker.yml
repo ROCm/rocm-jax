@@ -38,6 +38,31 @@ on:
       - 'docker/manylinux/*'
 
 jobs:
+  therock-config:
+    # Single source of truth for the TheRock ROCm version + pip index, consumed
+    # by both the base and manylinux TheRock jobs so they can't drift.
+    # TODO: when TheRock 7.14 is GA, bump the pinned entry to the final version
+    # and switch its index back to https://repo.amd.com/rocm/whl-multi-arch/
+    # (the prereleases index is for rc builds only).
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      inputs.image-set == 'therock' ||
+      inputs.image-set == 'both'
+    runs-on: ubuntu-latest
+    outputs:
+      entries: ${{ steps.set.outputs.entries }}
+    steps:
+      - id: set
+        run: |
+          NIGHTLY="https://rocm.nightlies.amd.com/whl-multi-arch/"
+          PREREL="https://rocm.prereleases.amd.com/whl-multi-arch/"
+          {
+            echo 'entries<<JSON'
+            echo "[{\"therock-version\": \"\", \"therock-index-url\": \"$NIGHTLY\"},"
+            echo " {\"therock-version\": \"7.14.0rc3\", \"therock-index-url\": \"$PREREL\"}]"
+            echo 'JSON'
+          } >> "$GITHUB_OUTPUT"
+
   build-base-images:
     # Legacy apt-ROCm (rocm720) base/dev images, shared with jax-ml/jax upstream
     # (its pytest_rocm/bazel_rocm pin rocm-tag=rocm720). On manual dispatch only
@@ -146,25 +171,22 @@ jobs:
   build-therock-base-images:
     # TheRock base/dev images. On manual dispatch only build when 'therock' or
     # 'both' is selected.
+    needs: therock-config
     if: >-
       github.event_name != 'workflow_dispatch' ||
       inputs.image-set == 'therock' ||
       inputs.image-set == 'both'
     name: >-
-      TheRock ${{ matrix.therock-version || 'latest' }},
+      TheRock ${{ matrix.therock.therock-version || 'latest' }},
       ${{ matrix.install-llvm && 'with' || 'without' }} LLVM
     runs-on: ${{ matrix.runner-label }}
     strategy:
       fail-fast: false
       matrix:
         install-llvm: [true, false]
-        therock-version: ["", "7.13.0"]
+        therock: ${{ fromJSON(needs.therock-config.outputs.entries) }}
         include:
           - runner-label: "amd-do-linux.jax.gpu.gfx950.1"
-          - therock-version: ""
-            therock-index-url: "https://rocm.nightlies.amd.com/whl-multi-arch/"
-          - therock-version: "7.13.0"
-            therock-index-url: "https://repo.amd.com/rocm/whl-multi-arch/"
     steps:
       - name: Clean up old runs
         run: |
@@ -187,10 +209,10 @@ jobs:
           python3 build/ci_build \
             build_base_therock_dockers \
             --filter="therock-ubu24" \
-            --therock-index-url="${{ matrix.therock-index-url }}" \
+            --therock-index-url="${{ matrix.therock.therock-index-url }}" \
             ${{
-              matrix.therock-version
-              && format('--therock-version="{0}"', matrix.therock-version)
+              matrix.therock.therock-version
+              && format('--therock-version="{0}"', matrix.therock.therock-version)
               || ''
             }} \
             ${{ matrix.install-llvm && '--install-llvm --llvm-version 18' || '' }}
@@ -203,7 +225,7 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           INSTALL_LLVM: ${{ matrix.install-llvm }}
-          THEROCK_VERSION: ${{ matrix.therock-version }}
+          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
         run: |
           ver_slug="${THEROCK_VERSION:-latest}"
           if [ "$INSTALL_LLVM" = "true" ]; then
@@ -231,7 +253,7 @@ jobs:
           inputs.push-latest-tag == true)
         env:
           INSTALL_LLVM: ${{ matrix.install-llvm }}
-          THEROCK_VERSION: ${{ matrix.therock-version }}
+          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
         run: |
           ver_slug="${THEROCK_VERSION:-latest}"
           if [ "$INSTALL_LLVM" = "true" ]; then
@@ -247,21 +269,17 @@ jobs:
 
   build-therock-manylinux-images:
     # TheRock manylinux builder image. Part of the 'therock' set.
+    needs: therock-config
     if: >-
       github.event_name != 'workflow_dispatch' ||
       inputs.image-set == 'therock' ||
       inputs.image-set == 'both'
-    name: "TheRock ${{ matrix.therock-version || 'latest' }}, manylinux"
+    name: "TheRock ${{ matrix.therock.therock-version || 'latest' }}, manylinux"
     runs-on: amd-do-linux.jax.gpu.gfx950.1
     strategy:
       fail-fast: false
       matrix:
-        therock-version: ["", "7.13.0"]
-        include:
-          - therock-version: ""
-            therock-index-url: "https://rocm.nightlies.amd.com/whl-multi-arch/"
-          - therock-version: "7.13.0"
-            therock-index-url: "https://repo.amd.com/rocm/whl-multi-arch/"
+        therock: ${{ fromJSON(needs.therock-config.outputs.entries) }}
     steps:
       - name: Clean up old runs
         run: |
@@ -286,11 +304,11 @@ jobs:
         run: |
           python3 build/ci_build \
             build_manylinux_therock_dockers \
-            --therock-index-url="${{ matrix.therock-index-url }}" \
+            --therock-index-url="${{ matrix.therock.therock-index-url }}" \
             ${{
-              matrix.therock-version
+              matrix.therock.therock-version
               && format('--therock-version="{0}"',
-                        matrix.therock-version)
+                        matrix.therock.therock-version)
               || ''
             }}
       - name: Authenticate to GitHub Container Registry
@@ -302,7 +320,7 @@ jobs:
       - name: Push docker images
         if: github.event_name != 'pull_request'
         env:
-          THEROCK_VERSION: ${{ matrix.therock-version }}
+          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
         run: |
           ver_slug="${THEROCK_VERSION:-latest}"
           image_tag="jax-manylinux_2_28-therock-${ver_slug}"
@@ -325,7 +343,7 @@ jobs:
           (github.event_name != 'workflow_dispatch' ||
           inputs.push-latest-tag == true)
         env:
-          THEROCK_VERSION: ${{ matrix.therock-version }}
+          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
         run: |
           ver_slug="${THEROCK_VERSION:-latest}"
           image_tag="jax-manylinux_2_28-therock-${ver_slug}"
