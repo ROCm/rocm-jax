@@ -1,0 +1,105 @@
+FROM ubuntu:24.04
+
+# TheRock nightly index URL (GPU-family-specific).
+ARG THEROCK_INDEX_URL="https://repo.amd.com/rocm/whl/gfx950-dcgpu/"
+ARG THEROCK_VERSION="7.13.0"
+
+# Prevent apt install tzinfo from asking our location (assumes UTC)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Setup apt sources and install builder packages
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        build-essential \
+        curl \
+        file \
+        git \
+        libatomic1 \
+        libquadmath0 \
+        libtool \
+        unzip \
+        vim \
+        wget \
+        zip \
+        zlib1g-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Setup Python 3.12
+COPY python_requirements.txt /python_requirements.txt
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3.12 \
+        python3.12-dev \
+        python3.12-venv && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED && \
+    ln -sf /usr/include/python3.12 /usr/local/include/python3.12 && \
+    wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --tries=5 https://bootstrap.pypa.io/get-pip.py && \
+    python3.12 get-pip.py && \
+    python3.12 -m pip install --no-cache-dir --upgrade pip && \
+    python3.12 -m pip install --no-cache-dir -U setuptools && \
+    python3.12 -m pip install --no-cache-dir -r /python_requirements.txt && \
+    rm -f get-pip.py
+
+# bazelisk
+RUN wget https://github.com/bazelbuild/bazelisk/releases/download/v1.21.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel && chmod +x /usr/local/bin/bazel
+
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip aws
+
+# Install Google Cloud CLI
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
+    tee /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    apt-get update && \
+    apt-get install -y google-cloud-cli && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install ROCm packages
+ARG GPU_DEVICE_TARGETS="gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1102,gfx1200,gfx1201"
+ENV GPU_DEVICE_TARGETS=${GPU_DEVICE_TARGETS}
+ENV TF_ROCM_AMDGPU_TARGETS=${GPU_DEVICE_TARGETS}
+
+# Setup links for TensorFlow to compile.
+# Referenced in devel.usertools/*.bazelrc.
+# Set python3.12 as the default python version.
+# TF does not support python3.13.
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python3
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python
+RUN ln -sf /usr/lib/python3.12 /usr/lib/tf_python
+
+# Install TheRock (ROCm via pip), initialize the SDK, and create a
+# conventional /opt/rocm symlink so ENV directives use a known path.
+RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
+    python3 -m pip install --break-system-packages \
+        --pre --index-url "${THEROCK_INDEX_URL}" \
+        "rocm[libraries,devel]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
+    rocm-sdk init && \
+    ln -sfn "$(rocm-sdk path --root)" /opt/rocm
+
+# Fix broken link to ld.lld in theRock
+RUN ln -sf /opt/rocm/llvm/bin/lld /opt/rocm/llvm/bin/ld.lld
+
+ENV ROCM_PATH=/opt/rocm
+ENV PATH="/opt/rocm/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/rocm/lib"
+
+
+# Setup ENV variables for tensorflow pip build
+ENV TF_NEED_ROCM=1
+ENV TF_ROCM_GCC=1
+ENV ROCM_TOOLKIT_PATH=${ROCM_PATH}
+
+# Don't use the bazel cache when a new docker image is created.
+RUN echo build --action_env=DOCKER_CACHEBUSTER=$(date +%s%N)$RANDOM >> /etc/bazel.bazelrc
+RUN echo build --host_action_env=DOCKER_HOST_CACHEBUSTER=$(date +%s%N)$RANDOM >> /etc/bazel.bazelrc

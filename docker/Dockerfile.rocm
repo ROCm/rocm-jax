@@ -1,0 +1,124 @@
+################################################################################
+FROM ubuntu:24.04
+
+# Prevent apt install tzinfo from asking our location (assumes UTC)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Setup apt sources and install builder packages
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        build-essential \
+        curl \
+        file \
+        git \
+        libatomic1 \
+        libquadmath0 \
+        libtool \
+        unzip \
+        vim \
+        wget \
+        zip \
+        zlib1g-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Setup Python 3.12
+COPY python_requirements.txt /python_requirements.txt
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3.12 \
+        python3.12-dev \
+        python3.12-venv && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED && \
+    wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --tries=5 https://bootstrap.pypa.io/get-pip.py && \
+    python3.12 get-pip.py && \
+    rm -f get-pip.py && \
+    python3.12 -m pip install --no-cache-dir -r /python_requirements.txt
+
+# bazelisk
+RUN wget https://github.com/bazelbuild/bazelisk/releases/download/v1.21.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel && chmod +x /usr/local/bin/bazel
+
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip aws
+
+# Install Google Cloud CLI
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
+    tee /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    apt-get update && \
+    apt-get install -y google-cloud-cli && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install ROCm packages
+ARG GPU_DEVICE_TARGETS="gfx908,gfx90a,gfx942,gfx950,gfx1030,gfx1100,gfx1101,gfx1102,gfx1200,gfx1201"
+ENV GPU_DEVICE_TARGETS=${GPU_DEVICE_TARGETS}
+ENV TF_ROCM_AMDGPU_TARGETS=${GPU_DEVICE_TARGETS}
+ARG ROCM_VERSION=7.2.4
+ENV ROCM_VERSION=${ROCM_VERSION}
+ENV ROCM_PATH=/opt/rocm
+
+# Setup ROCm repositories and install ROCm packages
+RUN ROCM_VERS=${ROCM_VERSION} && \
+    AMDGPU_REPO_VERS=7.0.2 && \
+    ROCM_DEB_REPO=https://repo.radeon.com/rocm/apt/${ROCM_VERS}/ && \
+    AMDGPU_DEB_REPO=https://repo.radeon.com/amdgpu/${AMDGPU_REPO_VERS}/ && \
+    apt-get update && \
+    apt-get install -y wget software-properties-common && \
+    apt-get clean && \
+    mkdir --parents /etc/apt/keyrings && \
+    chmod 0755 /etc/apt/keyrings && \
+    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] ${AMDGPU_DEB_REPO}/ubuntu jammy main" | tee /etc/apt/sources.list.d/amdgpu.list && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] ${ROCM_DEB_REPO} jammy main" | tee /etc/apt/sources.list.d/rocm.list && \
+    printf 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600\n' | tee /etc/apt/preferences.d/rocm-pin-600 && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        rocm-dev \
+        rocm-ml-sdk && \
+    (apt-get install -y miopen-hip-gfx || echo "failed to install miopen-hip-gfx") && \
+    (apt-get install -y hipblaslt-dev || echo "failed to install hipblaslt-dev") && \
+    apt-get install -y \
+        comgr-dbgsym \
+        hip-runtime-amd-dbgsym \
+        hipblas-dbgsym \
+        hipfft-dbgsym \
+        hipsolver-dbgsym \
+        hipsparse-dbgsym \
+        hsa-rocr-dbgsym \
+        rccl-dbgsym \
+        rocfft-dbgsym \
+        rocm-core-dbgsym \
+        rocm-smi-lib-dbgsym \
+        rocprofiler-sdk-dbgsym \
+        rocsparse-dbgsym && \
+    rm -rf /var/lib/apt/lists/*
+
+# Setup links for TensorFlow to compile.
+# Referenced in devel.usertools/*.bazelrc.
+# Set python3.12 as the default python version.
+# TF does not support python3.13.
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python3
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python
+RUN ln -sf /usr/lib/python3.12 /usr/lib/tf_python
+
+# Setup ENV variables for tensorflow pip build
+ENV TF_NEED_ROCM=1
+ENV TF_ROCM_GCC=1
+ENV ROCM_TOOLKIT_PATH=${ROCM_PATH}
+
+# Copy custom ROCm build scripts and patches
+COPY patches/ /tmp/patches/
+
+# Apply ROCm libraries patches
+RUN for script in /tmp/patches/*.sh; do \
+        [ -f "$script" ] && ROCM_VERSION=${ROCM_VERSION} "$script"; \
+    done

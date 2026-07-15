@@ -1,0 +1,80 @@
+name: Build ROCm and TheRock JAX and XLA Docker images
+
+on:
+  push:
+    branches:
+      - rocm-jax-infra
+    paths:
+      - 'docker/Dockerfile.rocm'
+      - 'docker/Dockerfile.theRock'
+      - 'docker/python_requirements.txt'
+      - 'docker/patches/**'
+      - '.github/workflows/build_hermetic_ub22_docker.yml'
+  pull_request:
+    paths:
+      - 'docker/Dockerfile.rocm'
+      - 'docker/Dockerfile.theRock'
+      - 'docker/python_requirements.txt'
+      - '.github/workflows/build_hermetic_ub22_docker.yml'
+  workflow_dispatch:
+    inputs:
+      runner-label:
+        required: false
+        default: amd-do-linux.jax.gpu.gfx950.1
+        type: string
+  workflow_call:
+    inputs:
+      runner-label:
+        required: false
+        default: amd-do-linux.jax.gpu.gfx950.1
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-docker:
+    runs-on: ${{ inputs.runner-label || 'amd-do-linux.jax.gpu.gfx950.1' }}
+    env:
+      THEROCK_VERSION: '7.13.0'
+      THEROCK_INDEX_URL: 'https://repo.amd.com/rocm/whl/gfx950-dcgpu/'
+    strategy:
+      matrix:
+        include:
+          - dockerfile: Dockerfile.rocm
+            image-name: jax-build-ubu24.rocm
+          - dockerfile: Dockerfile.theRock
+            image-name: jax-build-ubu24.therock
+    steps:
+      - name: Print system info
+        run: |
+          whoami
+          printenv
+          df -h
+          rocm-smi -a || true
+          rocminfo | grep gfx || true
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build ${{ matrix.image-name }} docker image
+        working-directory: ./docker
+        run: |
+          IMAGE="ghcr.io/rocm/${{ matrix.image-name }}"
+
+          docker build -f ${{ matrix.dockerfile }} \
+            --build-arg THEROCK_VERSION=${THEROCK_VERSION} \
+            --build-arg THEROCK_INDEX_URL=${THEROCK_INDEX_URL} \
+            -t "${IMAGE}:latest" .
+
+      - name: Push ${{ matrix.image-name }} docker image
+        if: github.event_name != 'pull_request'
+        working-directory: ./docker
+        run: |
+          IMAGE="ghcr.io/rocm/${{ matrix.image-name }}"
+
+          docker push "${IMAGE}:latest"
