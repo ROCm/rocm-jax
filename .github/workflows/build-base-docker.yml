@@ -41,9 +41,7 @@ jobs:
   therock-config:
     # Single source of truth for the TheRock ROCm version + pip index, consumed
     # by both the base and manylinux TheRock jobs so they can't drift.
-    # TODO: when TheRock 7.14 is GA, bump the pinned entry to the final version
-    # and switch its index back to https://repo.amd.com/rocm/whl-multi-arch/
-    # (the prereleases index is for rc builds only).
+    # Pinned to TheRock 7.14 GA, served from the stable repo.amd.com index.
     if: >-
       github.event_name != 'workflow_dispatch' ||
       inputs.image-set == 'therock' ||
@@ -55,11 +53,11 @@ jobs:
       - id: set
         run: |
           NIGHTLY="https://rocm.nightlies.amd.com/whl-multi-arch/"
-          PREREL="https://rocm.prereleases.amd.com/whl-multi-arch/"
+          GA="https://repo.amd.com/rocm/whl-multi-arch/"
           {
             echo 'entries<<JSON'
             echo "[{\"therock-version\": \"\", \"therock-index-url\": \"$NIGHTLY\"},"
-            echo " {\"therock-version\": \"7.14.0rc3\", \"therock-index-url\": \"$PREREL\"}]"
+            echo " {\"therock-version\": \"7.14\", \"therock-index-url\": \"$GA\"}]"
             echo 'JSON'
           } >> "$GITHUB_OUTPUT"
 
