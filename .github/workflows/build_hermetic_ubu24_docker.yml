@@ -20,13 +20,13 @@ on:
     inputs:
       runner-label:
         required: false
-        default: amd-do-linux.jax.gpu.gfx950.1
+        default: amd-do-linux.jax.cpu
         type: string
   workflow_call:
     inputs:
       runner-label:
         required: false
-        default: amd-do-linux.jax.gpu.gfx950.1
+        default: amd-do-linux.jax.cpu
         type: string
 
 permissions:
@@ -35,7 +35,7 @@ permissions:
 
 jobs:
   build-docker:
-    runs-on: ${{ inputs.runner-label || 'amd-do-linux.jax.gpu.gfx950.1' }}
+    runs-on: ${{ inputs.runner-label || 'amd-do-linux.jax.cpu' }}
     env:
       THEROCK_VERSION: '7.13.0'
       THEROCK_INDEX_URL: 'https://repo.amd.com/rocm/whl/gfx950-dcgpu/'

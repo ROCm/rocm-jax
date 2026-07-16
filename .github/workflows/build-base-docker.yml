@@ -82,7 +82,7 @@ jobs:
         install-llvm: [true, false]
         include:
           - rocm-version: "7.2.0"
-            runner-label: "amd-do-linux.jax.gpu.gfx950.1"
+            runner-label: "amd-do-linux.jax.cpu"
     steps:
       - name: Clean up old runs
         run: |
@@ -186,7 +186,7 @@ jobs:
         install-llvm: [true, false]
         therock: ${{ fromJSON(needs.therock-config.outputs.entries) }}
         include:
-          - runner-label: "amd-do-linux.jax.gpu.gfx950.1"
+          - runner-label: "amd-do-linux.jax.cpu"
     steps:
       - name: Clean up old runs
         run: |
@@ -275,7 +275,7 @@ jobs:
       inputs.image-set == 'therock' ||
       inputs.image-set == 'both'
     name: "TheRock ${{ matrix.therock.therock-version || 'latest' }}, manylinux"
-    runs-on: amd-do-linux.jax.gpu.gfx950.1
+    runs-on: amd-do-linux.jax.cpu
     strategy:
       fail-fast: false
       matrix:
@@ -367,7 +367,7 @@ jobs:
         rocm-version: ["7.2.0"]
         include:
           - rocm-version: "7.2.0"
-            runner-label: "amd-do-linux.jax.gpu.gfx950.1"
+            runner-label: "amd-do-linux.jax.cpu"
     steps:
       - name: Clean up old runs
         run: |
