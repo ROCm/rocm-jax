@@ -9,7 +9,8 @@ name: Llama Performance Benchmarks
 # Tested on Ubuntu 24 for both wheels
 
 env:
-  TE_REF_DEFAULT: "veergopu/integrate-small-seq-mfma"
+  # veergopu/integrate-small-seq-mfma
+  TE_REF_DEFAULT: "11c9c38bc904b939b6656b539dfedb262dcb616b"
 
 on:
   schedule:
@@ -50,7 +51,8 @@ jobs:
             # before building TE. For the application workload Bazel installs
             # its own Jax
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
-            te-ref: "yewang12/small_cross_attn_v2.4"
+            # yewang12/small_cross_attn_v2.4
+            te-ref: "5e87bde39480cd350c4719758c9621edec4dd003"
           - jax-version: "0.10.2"
             jaxlib-version: "0.10.2"
             docker-image: "ghcr.io/rocm/jax-dev-ubu24.therock-7.14:7.14"
@@ -282,6 +284,10 @@ jobs:
             cd /workspace
             bazel version
             apt update && apt install -y libglib2.0-0 libgl1
+            if [ "${{ matrix.jax-version }}" == "0.10.2" ]; then
+              # TheRock has no /opt/rocm; point loader at rocm-sdk libs for libroctx64.
+              export LD_LIBRARY_PATH="$(rocm-sdk path --root)/lib:$LD_LIBRARY_PATH"
+            fi
             export EXECUTOR="base_executor_config"
             export TRAIN_SETTING="${{ matrix.model-name }}"
             export XLA_FLAGS="--xla_gpu_enable_latency_hiding_scheduler=True \
