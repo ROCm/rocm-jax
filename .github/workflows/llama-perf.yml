@@ -10,7 +10,7 @@ name: Llama Performance Benchmarks
 
 env:
   # veergopu/integrate-small-seq-mfma
-  TE_REF_DEFAULT: "11c9c38bc904b939b6656b539dfedb262dcb616b"
+  TE_REF_DEFAULT: "d003cf5106558d8347dd25ff21698d8551bff8e2"
 
 on:
   schedule:
@@ -132,7 +132,7 @@ jobs:
               # TheRock ships ROCm via the rocm-sdk pip package (no /opt/rocm)
               export ROCM_PATH="$(rocm-sdk path --root)"
               export CMAKE_PREFIX_PATH="${ROCM_PATH}/lib/cmake"
-              # Use the official TheRock 7.14 JAX wheels from the rocm-jax v0.10.2
+              # Use the official TheRock 7.14 JAX wheels from the rocm/jax v0.10.2
               # release. cp312 wheels for the image`s Python 3.12.
               apt install -y unzip wget
               REL="https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.10.2"
@@ -195,7 +195,7 @@ jobs:
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
           elif [ "${{ matrix.jax-version }}" == "0.10.2" ]; then
             mkdir -p wheelhouse
-            # Official TheRock 7.14 JAX wheels from the rocm-jax v0.10.2 release.
+            # Official TheRock 7.14 JAX wheels from the rocm/jax v0.10.2 release.
             REL="https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.10.2"
             curl -L -o wheelhouse_theRock7.14.zip "$REL/wheelhouse_theRock7.14.zip"
             python3 -m zipfile -e wheelhouse_theRock7.14.zip .
