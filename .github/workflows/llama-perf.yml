@@ -1,10 +1,10 @@
 name: Llama Performance Benchmarks
 
 # This workflow runs Llama performance benchmarks
-# using two different JAX versions: 0.6.0 & 0.10.2
+# using two different JAX versions: 0.6.0 & 0.11.0
 # For JAX 0.6.0: uses official released wheels
-# For JAX 0.10.2: uses ROCm 7.14.0 base image from the
-#                   rocm-jax and v0.10.2 GitHub release
+# For JAX 0.11.0: uses ROCm 7.14.0 base image from the
+#                   rocm-jax and v0.11.0 GitHub release
 #
 # Tested on Ubuntu 24 for both wheels
 
@@ -42,19 +42,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        jax-version: ["0.6.0", "0.10.2"]
+        jax-version: ["0.6.0", "0.11.0"]
         include:
           - jax-version: "0.6.0"
             jaxlib-version: "0.6.0"
             # There is no docker image with ROCm 7.2.0 and Jax 0.6.0
-            # use a ROCm 7.2.0 / Jax 0.10.2 docker image and update Jax
+            # use a ROCm 7.2.0 / Jax 0.11.0 docker image and update Jax
             # before building TE. For the application workload Bazel installs
             # its own Jax
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
             # yewang12/small_cross_attn_v2.4
             te-ref: "5e87bde39480cd350c4719758c9621edec4dd003"
-          - jax-version: "0.10.2"
-            jaxlib-version: "0.10.2"
+          - jax-version: "0.11.0"
+            jaxlib-version: "0.11.0"
             docker-image: "ghcr.io/rocm/jax-dev-ubu24.therock-7.14:7.14"
     env:
       NVTE_FRAMEWORK: jax
@@ -126,22 +126,22 @@ jobs:
                 jaxlib==0.6.0 \
                 "$PJRT_URL" \
                 "$PLUGIN_URL"
-            elif [ "${{ matrix.jax-version }}" == "0.10.2" ]; then
+            elif [ "${{ matrix.jax-version }}" == "0.11.0" ]; then
               apt update
               apt install libdw1 libglib2.0-0
               # TheRock ships ROCm via the rocm-sdk pip package (no /opt/rocm)
               export ROCM_PATH="$(rocm-sdk path --root)"
               export CMAKE_PREFIX_PATH="${ROCM_PATH}/lib/cmake"
-              # Use the official TheRock 7.14 JAX wheels from the rocm/jax v0.10.2
+              # Use the official TheRock 7.14 JAX wheels from the rocm/jax v0.11.0
               # release. cp312 wheels for the image`s Python 3.12.
               apt install -y unzip wget
-              REL="https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.10.2"
+              REL="https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.11.0"
               wget -q "$REL/wheelhouse_theRock7.14.zip"
               unzip -o wheelhouse_theRock7.14.zip
               cd wheelhouse_theRock7.14
-              pip install --force-reinstall jax==0.10.2 \
-                jax_rocm7_pjrt-0.10.2.post1-py3-none-manylinux_2_27_x86_64.whl \
-                jax_rocm7_plugin-0.10.2.post1-cp312-cp312-manylinux_2_27_x86_64.whl
+              pip install --force-reinstall jax==0.11.0 \
+                jax_rocm7_pjrt-0.11.0-py3-none-manylinux_2_27_x86_64.whl \
+                jax_rocm7_plugin-0.11.0-cp312-cp312-manylinux_2_27_x86_64.whl
             fi
             cd /workspace/transformerengine
             sed -i '\''s/jax\.extend/jax/g'\'' build_tools/jax.py
@@ -167,16 +167,16 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        jax-version: ["0.6.0", "0.10.2"]
+        jax-version: ["0.6.0", "0.11.0"]
         model-name: ["train_dense"]
         include:
           - jax-version: "0.6.0"
             model-name: "train_dense"
             jaxlib-version: "0.6.0"
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
-          - jax-version: "0.10.2"
+          - jax-version: "0.11.0"
             model-name: "train_dense"
-            jaxlib-version: "0.10.2"
+            jaxlib-version: "0.11.0"
             docker-image: "ghcr.io/rocm/jax-dev-ubu24.therock-7.14:7.14"
     steps:
       - name: Checkout source repo
@@ -193,10 +193,10 @@ jobs:
             "$REL_URL/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
             curl -L --output-dir wheelhouse -O \
             "$REL_URL/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
-          elif [ "${{ matrix.jax-version }}" == "0.10.2" ]; then
+          elif [ "${{ matrix.jax-version }}" == "0.11.0" ]; then
             mkdir -p wheelhouse
-            # Official TheRock 7.14 JAX wheels from the rocm/jax v0.10.2 release.
-            REL="https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.10.2"
+            # Official TheRock 7.14 JAX wheels from the rocm/jax v0.11.0 release.
+            REL="https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.11.0"
             curl -L -o wheelhouse_theRock7.14.zip "$REL/wheelhouse_theRock7.14.zip"
             python3 -m zipfile -e wheelhouse_theRock7.14.zip .
             cp wheelhouse_theRock7.14/jax_rocm7_pjrt-*.whl wheelhouse/
@@ -241,8 +241,8 @@ jobs:
           # flax <=0.12.0 unconditionally forwards concrete= to jax.remat (breaks the
           # model`s lifted remat). flax 0.12.7 fixes this but adds a hard dependency
           # on treescope, which is missing from the resolved lock. Pin both for the
-          # JAX 0.10.2 leg only; the 0.6.0 leg keeps its existing flax.
-          if [ "${{ matrix.jax-version }}" == "0.10.2" ]; then
+          # JAX 0.11.0 job only; the 0.6.0 job keeps its existing flax.
+          if [ "${{ matrix.jax-version }}" == "0.11.0" ]; then
             sed -i '/^flax==/ s/^/# /' kylix/third_party/requirements.lock
             sed -i '/^treescope==/ s/^/# /' kylix/third_party/requirements.lock
             echo 'flax==0.12.7' >> kylix/third_party/requirements.lock
@@ -284,7 +284,7 @@ jobs:
             cd /workspace
             bazel version
             apt update && apt install -y libglib2.0-0 libgl1
-            if [ "${{ matrix.jax-version }}" == "0.10.2" ]; then
+            if [ "${{ matrix.jax-version }}" == "0.11.0" ]; then
               # TheRock has no /opt/rocm; point loader at rocm-sdk libs for libroctx64.
               export LD_LIBRARY_PATH="$(rocm-sdk path --root)/lib:$LD_LIBRARY_PATH"
             fi
@@ -323,7 +323,7 @@ jobs:
             model-name: "train_dense"
             rocm-version: "7.2.0"
             python-version: "3.12"
-          - jax-version: "0.10.2"
+          - jax-version: "0.11.0"
             model-name: "train_dense"
             rocm-version: "7.14.0"
             python-version: "3.12"
