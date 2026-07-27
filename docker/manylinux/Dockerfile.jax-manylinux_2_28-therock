@@ -12,24 +12,6 @@ ARG GFX_ARCH=device-gfx950
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y patchelf numactl-devel vim-common
 
-# Install TheRock (ROCm via pip) and initialize the SDK. Stay /opt/rocm-less
-# (like the ubuntu base image): ROCm resolves via the JAX wheel's RUNPATHs into
-# the pip _rocm_sdk_* packages, and the build reads the SDK root from
-# `rocm-sdk path --root` (see ci/build_rocm_artifacts.sh) -- no /opt/rocm and no
-# ROCm env vars needed. manylinux_2_28's system python3 (3.6) lacks pip, so use
-# a /opt/python/ build and symlink its rocm-sdk onto PATH (not a /opt/rocm
-# symlink, just build plumbing so `rocm-sdk` is callable below).
-RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
-    case "${THEROCK_INDEX_URL}" in \
-        *.html) PIP_SRC="--find-links" ;; \
-        *)      PIP_SRC="--index-url" ;; \
-    esac && \
-    /opt/python/cp312-cp312/bin/python3 -m pip install \
-        --pre "${PIP_SRC}" "${THEROCK_INDEX_URL}" \
-        "rocm[libraries,devel,${GFX_ARCH}]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
-    ln -sf /opt/python/cp312-cp312/bin/rocm-sdk /usr/local/bin/rocm-sdk && \
-    rocm-sdk init
-
 RUN ln -s /opt/python/cp312-cp312/bin/python3 /usr/local/bin/python && \
     ln -s /opt/python/cp312-cp312/bin/python3 /usr/local/bin/python3 && \
     python -m ensurepip && python -m pip install auditwheel
@@ -66,6 +48,29 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     /tmp/aws/install && \
     rm -rf /tmp/aws /tmp/awscliv2.zip && \
     dnf clean all
+
+# Install TheRock (ROCm via pip) and initialize the SDK. Stay /opt/rocm-less
+# (like the ubuntu base image): ROCm resolves via the JAX wheel's RUNPATHs into
+# the pip _rocm_sdk_* packages, and the build reads the SDK root from
+# `rocm-sdk path --root` (see ci/build_rocm_artifacts.sh) -- no /opt/rocm and no
+# ROCm env vars needed. manylinux_2_28's system python3 (3.6) lacks pip, so use
+# a /opt/python/ build and symlink its rocm-sdk onto PATH (not a /opt/rocm
+# symlink, just build plumbing so `rocm-sdk` is callable below).
+#
+# Keep this step last (nothing but metadata may follow it): THEROCK_VERSION is
+# the most frequently bumped input, and every step downstream of it is rebuilt
+# on each bump -- including the from-source LLVM 18 build above. It only needs
+# the /opt/python/ interpreter that the base image already ships.
+RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
+    case "${THEROCK_INDEX_URL}" in \
+        *.html) PIP_SRC="--find-links" ;; \
+        *)      PIP_SRC="--index-url" ;; \
+    esac && \
+    /opt/python/cp312-cp312/bin/python3 -m pip install \
+        --pre "${PIP_SRC}" "${THEROCK_INDEX_URL}" \
+        "rocm[libraries,devel,${GFX_ARCH}]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
+    ln -sf /opt/python/cp312-cp312/bin/rocm-sdk /usr/local/bin/rocm-sdk && \
+    rocm-sdk init
 
 LABEL com.amdgpu.therock_index_url="$THEROCK_INDEX_URL" \
       com.amdgpu.therock_version="$THEROCK_VERSION" \

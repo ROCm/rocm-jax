@@ -46,30 +46,6 @@ RUN apt-get update && \
         zip && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install TheRock (ROCm via pip) and initialize the SDK. Don't create a
-# /opt/rocm symlink: ROCm/jax PR #781's $ORIGIN-relative RUNPATHs resolve
-# ROCm libs from site-packages directly (see the env note below for why we
-# also export no ROCm env vars here).
-RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
-    python3 -m pip install --break-system-packages \
-        --pre --index-url "${THEROCK_INDEX_URL}" \
-        "rocm[libraries,devel,${GFX_ARCH}]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
-    rocm-sdk init
-
-# ROCm/HIP runtime tuning:
-ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
-    DEBUG_HIP_DYNAMIC_QUEUES=0 \
-    HSA_NO_SCRATCH_RECLAIM=1
-
-# Export NO ROCm env: this image is intentionally /opt/rocm-less. ROCm resolves
-# via the JAX wheel's $ORIGIN-relative RUNPATHs into the pip _rocm_sdk_* packages
-# (ROCm/jax PR #781); `rocm-sdk path` gives the root/binaries. Pointing
-# ROCM_HOME/PATH at a nonexistent /opt/rocm breaks .info/version lookups and
-# re-masks the RUNPATH gaps this image exists to surface. Consumers needing
-# /opt/rocm can `ln -sfn "$(rocm-sdk path --root)" /opt/rocm` at runtime (but not
-# LD_LIBRARY_PATH=/opt/rocm/lib: that routes libhipblaslt/librccl through
-# _rocm_sdk_devel/lib, which lacks per-arch device files).
-
 # Install GitHub CLI (gh):
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
@@ -135,6 +111,34 @@ RUN --mount=type=cache,target=/var/cache/apt   \
     ./llvm.sh $LLVM_VERSION clang lld &&       \
     rm llvm.sh &&                              \
     apt-get clean && rm -rf /var/lib/apt/lists/* )
+
+# Install TheRock (ROCm via pip) and initialize the SDK. Don't create a
+# /opt/rocm symlink: ROCm/jax PR #781's $ORIGIN-relative RUNPATHs resolve
+# ROCm libs from site-packages directly (see the env note below for why we
+# also export no ROCm env vars here).
+#
+# Keep this step last (nothing but metadata may follow it): THEROCK_VERSION is
+# the most frequently bumped input, and every step downstream of it is rebuilt
+# and re-digested on each bump. It only needs the python3/pip steps above.
+RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
+    python3 -m pip install --break-system-packages \
+        --pre --index-url "${THEROCK_INDEX_URL}" \
+        "rocm[libraries,devel,${GFX_ARCH}]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
+    rocm-sdk init
+
+# ROCm/HIP runtime tuning:
+ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
+    DEBUG_HIP_DYNAMIC_QUEUES=0 \
+    HSA_NO_SCRATCH_RECLAIM=1
+
+# Export NO ROCm env: this image is intentionally /opt/rocm-less. ROCm resolves
+# via the JAX wheel's $ORIGIN-relative RUNPATHs into the pip _rocm_sdk_* packages
+# (ROCm/jax PR #781); `rocm-sdk path` gives the root/binaries. Pointing
+# ROCM_HOME/PATH at a nonexistent /opt/rocm breaks .info/version lookups and
+# re-masks the RUNPATH gaps this image exists to surface. Consumers needing
+# /opt/rocm can `ln -sfn "$(rocm-sdk path --root)" /opt/rocm` at runtime (but not
+# LD_LIBRARY_PATH=/opt/rocm/lib: that routes libhipblaslt/librccl through
+# _rocm_sdk_devel/lib, which lacks per-arch device files).
 
 LABEL com.amdgpu.therock_index_url="$THEROCK_INDEX_URL" \
       com.amdgpu.therock_version="$THEROCK_VERSION" \
