@@ -59,7 +59,7 @@ RUN sudo apt update -y \
 # -----------------------------
 # Add ARC Git Cache Scripts
 # -----------------------------
-COPY scripts/git-caching /opt/arc/git-cache
+# COPY scripts/git-caching /opt/arc/git-cache
 
 # Make runnable + readable by the runner user
 # RUN sudo chown -R runner:runner /opt/arc \
