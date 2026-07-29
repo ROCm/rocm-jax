@@ -136,7 +136,7 @@ jobs:
         run: |
           # Construct image tag based on matrix values
           # ROCm version tag removes dots (7.1.1 -> 711, 7.2.0 -> 720)
-          rocm_tag="rocm${ROCM_VERSION//.}"
+          rocm_tag="gha-rocm${ROCM_VERSION//.}"
           if [ "$INSTALL_LLVM" = "true" ]; then
             image_tag="jax-dev-ubu24.${rocm_tag}"
           else
