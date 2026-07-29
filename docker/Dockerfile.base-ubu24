@@ -21,6 +21,7 @@ ARG LLVM_VERSION="none"
 ### Build-time only variables:
 ARG DEBIAN_FRONTEND=noninteractive
 
+USER root
 ### Build Steps:
 # Install all Python versions from deadsnakes PPA:
 RUN --mount=type=cache,target=/var/cache/apt \
