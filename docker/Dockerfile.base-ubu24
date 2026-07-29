@@ -62,8 +62,8 @@ RUN sudo apt update -y \
 COPY scripts/git-caching /opt/arc/git-cache
 
 # Make runnable + readable by the runner user
-RUN sudo chown -R runner:runner /opt/arc \
-    && sudo find /opt/arc/git-cache -type f -name "*.sh" -exec chmod 755 {} +
+# RUN sudo chown -R runner:runner /opt/arc \
+#     && sudo find /opt/arc/git-cache -type f -name "*.sh" -exec chmod 755 {} +
 
 
 # Set default Python to 3.12 (most stable):
