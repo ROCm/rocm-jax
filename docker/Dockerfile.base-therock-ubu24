@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ghcr.io/nod-ai/ossci-gitops/ghascale-rocm-dev:main
 
 ### Container Build Arguments:
 # TheRock nightly multi-arch index URL.
