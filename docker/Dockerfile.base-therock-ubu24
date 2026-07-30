@@ -16,7 +16,7 @@ ARG LLVM_VERSION="none"
 ARG DEBIAN_FRONTEND=noninteractive
 
 ### Build Steps:
-
+USER root
 # Install all Python versions from deadsnakes PPA:
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
@@ -125,6 +125,8 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
         --pre --index-url "${THEROCK_INDEX_URL}" \
         "rocm[libraries,devel,${GFX_ARCH}]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
     rocm-sdk init
+
+USER runner
 
 # ROCm/HIP runtime tuning:
 ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
