@@ -138,9 +138,9 @@ jobs:
           # ROCm version tag removes dots (7.1.1 -> 711, 7.2.0 -> 720)
           rocm_tag="gha-rocm${ROCM_VERSION//.}"
           if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="jax-dev-ubu24.${rocm_tag}"
+            image_tag="jax-dev-gha-ubu24.${rocm_tag}"
           else
-            image_tag="jax-base-ubu24.${rocm_tag}"
+            image_tag="jax-base-gha-ubu24.${rocm_tag}"
           fi
 
           # Push with commit SHA tag
@@ -210,9 +210,9 @@ jobs:
           ver_slug="${{ matrix.therock.therock-version || 'latest' }}"
           ver_slug="${ver_slug//+/.}"; ver_slug="${ver_slug// /}" # Match ci_build's sanitizing
           if [ "${{ matrix.install-llvm }}" = "true" ]; then
-            image_tag="jax-dev-ubu24.therock-${ver_slug}"
+            image_tag="jax-dev-gha-ubu24.therock-${ver_slug}"
           else
-            image_tag="jax-base-ubu24.therock-${ver_slug}"
+            image_tag="jax-base-gha-ubu24.therock-${ver_slug}"
           fi
           docker build -f docker/Dockerfile.base-therock-ubu24 \
             --build-arg=GFX_ARCH="${{ matrix.therock.gfx-arch }}" \
@@ -237,7 +237,7 @@ jobs:
           if [ "$INSTALL_LLVM" = "true" ]; then
             image_tag="jax-dev-ubu24.therock-${ver_slug}"
           else
-            image_tag="jax-base-ubu24.therock-${ver_slug}"
+            image_tag="jax-base-gha-ubu24.therock-${ver_slug}"
           fi
           ghcr_base="ghcr.io/rocm/${image_tag}"
 
@@ -266,7 +266,7 @@ jobs:
           if [ "$INSTALL_LLVM" = "true" ]; then
             image_tag="jax-dev-ubu24.therock-${ver_slug}"
           else
-            image_tag="jax-base-ubu24.therock-${ver_slug}"
+            image_tag="jax-base-gha-ubu24.therock-${ver_slug}"
           fi
           ghcr_base="ghcr.io/rocm/${image_tag}"
 
@@ -330,7 +330,7 @@ jobs:
         run: |
           ver_slug="${THEROCK_VERSION:-latest}"
           ver_slug="${ver_slug//+/.}"; ver_slug="${ver_slug// /}" # Match ci_build's sanitizing
-          image_tag="jax-manylinux_2_28-therock-${ver_slug}"
+          image_tag="jax-manylinux_2_28-gha-therock-${ver_slug}"
           ghcr_base="ghcr.io/rocm/${image_tag}"
 
           # Always push SHA tag
@@ -354,7 +354,7 @@ jobs:
         run: |
           ver_slug="${THEROCK_VERSION:-latest}"
           ver_slug="${ver_slug//+/.}"; ver_slug="${ver_slug// /}" # Match ci_build's sanitizing
-          image_tag="jax-manylinux_2_28-therock-${ver_slug}"
+          image_tag="jax-manylinux_2_28-gha-therock-${ver_slug}"
           ghcr_base="ghcr.io/rocm/${image_tag}"
 
           echo "Image name (latest): ${ghcr_base}:latest"
@@ -413,7 +413,7 @@ jobs:
           ROCM_BUILD_NUM: >-
             ${{ matrix.rocm-build-num && format('-{0}', inputs.rocm-build-num) || '' }}
         run: |
-          image_tag="ghcr.io/rocm/jax-manylinux_2_28-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
+          image_tag="ghcr.io/rocm/jax-manylinux_2_28-gha-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
 
           # Push with commit SHA tag
           sha_image_tag="${image_tag}:${GITHUB_SHA}"
@@ -432,7 +432,7 @@ jobs:
           ROCM_BUILD_NUM: >-
             ${{ matrix.rocm-build-num && format('-{0}', inputs.rocm-build-num) || '' }}
         run: |
-          image_tag="ghcr.io/rocm/jax-manylinux_2_28-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
+          image_tag="ghcr.io/rocm/jax-manylinux_2_28-gha-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
 
           latest_image_tag="${image_tag}:latest"
           echo "Image Name (latest): ${latest_image_tag}"
