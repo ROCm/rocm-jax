@@ -1,9 +1,5 @@
 FROM ubuntu:24.04
 
-# TheRock nightly index URL (GPU-family-specific).
-ARG THEROCK_INDEX_URL="https://repo.amd.com/rocm/whl/gfx950-dcgpu/"
-ARG THEROCK_VERSION="7.13.0"
-
 # Prevent apt install tzinfo from asking our location (assumes UTC)
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -79,28 +75,6 @@ ENV TF_ROCM_AMDGPU_TARGETS=${GPU_DEVICE_TARGETS}
 RUN ln -sf /usr/bin/python3.12 /usr/bin/python3
 RUN ln -sf /usr/bin/python3.12 /usr/bin/python
 RUN ln -sf /usr/lib/python3.12 /usr/lib/tf_python
-
-# Install TheRock (ROCm via pip), initialize the SDK, and create a
-# conventional /opt/rocm symlink so ENV directives use a known path.
-RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
-    python3 -m pip install --break-system-packages \
-        --pre --index-url "${THEROCK_INDEX_URL}" \
-        "rocm[libraries,devel]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
-    rocm-sdk init && \
-    ln -sfn "$(rocm-sdk path --root)" /opt/rocm
-
-# Fix broken link to ld.lld in theRock
-RUN ln -sf /opt/rocm/llvm/bin/lld /opt/rocm/llvm/bin/ld.lld
-
-ENV ROCM_PATH=/opt/rocm
-ENV PATH="/opt/rocm/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/opt/rocm/lib"
-
-
-# Setup ENV variables for tensorflow pip build
-ENV TF_NEED_ROCM=1
-ENV TF_ROCM_GCC=1
-ENV ROCM_TOOLKIT_PATH=${ROCM_PATH}
 
 # Don't use the bazel cache when a new docker image is created.
 RUN echo build --action_env=DOCKER_CACHEBUSTER=$(date +%s%N)$RANDOM >> /etc/bazel.bazelrc

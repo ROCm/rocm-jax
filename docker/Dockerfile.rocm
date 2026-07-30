@@ -18,6 +18,8 @@ RUN apt-get update && \
         libatomic1 \
         libquadmath0 \
         libtool \
+        strace \
+        ltrace \
         unzip \
         vim \
         wget \
