@@ -45,16 +45,17 @@ RUN --mount=type=cache,target=/var/cache/apt \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 
-RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash && \
-    sudo apt-get install git-lfs
+RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
+     apt-get install git-lfs
 
-RUN sudo groupadd -g 109 render
+# RUN sudo groupadd -g 109 render
+RUN groupadd -g 109 render
 
-RUN sudo apt update -y \
-    && sudo apt install -y python3-setuptools python3-wheel libpython3.12 \
-    && sudo usermod -a -G render,video runner \
-    && wget https://repo.radeon.com/amdgpu-install/6.4.1/ubuntu/noble/amdgpu-install_6.4.60401-1_all.deb \
-    && sudo apt install -y ./amdgpu-install_6.4.60401-1_all.deb 
+# RUN sudo apt update -y \
+#     && sudo apt install -y python3-setuptools python3-wheel libpython3.12 \
+#     && sudo usermod -a -G render,video runner \
+#     && wget https://repo.radeon.com/amdgpu-install/6.4.1/ubuntu/noble/amdgpu-install_6.4.60401-1_all.deb \
+#     && sudo apt install -y ./amdgpu-install_6.4.60401-1_all.deb 
 
 # -----------------------------
 # Add ARC Git Cache Scripts
