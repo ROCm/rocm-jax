@@ -1,0 +1,41 @@
+diff --git a/projects/clr/rocclr/os/os_posix.cpp b/projects/clr/rocclr/os/os_posix.cpp
+index ad0a39a82d..c1dbcd5e06 100644
+--- a/projects/clr/rocclr/os/os_posix.cpp
++++ b/projects/clr/rocclr/os/os_posix.cpp
+@@ -910,9 +910,34 @@ bool amd::Os::FindFileNameFromAddress(const void* image, std::string* fname_ptr,
+       tokens >> permissions >> std::hex >> offset >> std::dec >> device >> inode;
+       std::getline(tokens >> std::ws, uri_file_path);
+ 
+-      // Readable bytes from image to the end of this mapping (anonymous or not).
++      // A buffer can span several adjacent VMAs, since the kernel does not always
++      // merge them. Coalesce forward over contiguous readable mappings and stop at
++      // the first gap or non-readable one.
+       if (region_bound_ptr != nullptr && !permissions.empty() && permissions[0] == 'r') {
+-        *region_bound_ptr = static_cast<size_t>(high_address - address);
++        uintptr_t readable_end = high_address;
++        std::streampos resume_pos = proc_maps.tellg();
++        std::string next_line;
++        while (std::getline(proc_maps, next_line)) {
++          char next_dash;
++          std::stringstream next_tokens(next_line);
++          uintptr_t next_low, next_high;
++          std::string next_permissions;
++          next_tokens >> std::hex >> next_low >> std::dec >> next_dash >> std::hex >> next_high >>
++              std::dec;
++          if (next_dash != '-') {
++            continue;
++          }
++          next_tokens >> next_permissions;
++          if (next_low != readable_end || next_permissions.empty() ||
++              next_permissions[0] != 'r') {
++            break;
++          }
++          readable_end = next_high;
++        }
++        *region_bound_ptr = static_cast<size_t>(readable_end - address);
++        // Rewind so the file-name lookup below still sees this entry.
++        proc_maps.clear();
++        proc_maps.seekg(resume_pos);
+       }
+ 
+       if (inode == 0 || uri_file_path.empty()) {

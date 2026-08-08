@@ -11,6 +11,17 @@ ARG GFX_ARCH=device-gfx942,device-gfx950
 ARG INSTALL_LLVM=0
 # Version of LLVM to be installed.
 ARG LLVM_VERSION="none"
+# Rebuild CLR from source with the fat-binary bound fix and splice it over the
+# copy shipped in the TheRock wheels. See the CLR hotpatch step at the end.
+ARG APPLY_CLR_PATCH=0
+# Ref of ROCm/rocm-systems to build CLR from when APPLY_CLR_PATCH=1: the head of
+# release/therock-10.0 as of 2026-08-08. That is the HIP 7.15 line the TheRock
+# nightly itself ships (the wheels report HIP 7.15.26306), so its HSA header
+# expectations match the installed SDK; `develop` has moved on to 7.16 and no
+# longer compiles against a nightly a few days old. Pinned to a full SHA rather
+# than tracking the branch so a mid-experiment upstream commit cannot change what
+# gets built.
+ARG CLR_SOURCE_REF=6ccde5dbc2714a95f4fa92a7f2d3aa185ed2174b
 
 ### Build-time only variables:
 ARG DEBIAN_FRONTEND=noninteractive
@@ -126,6 +137,17 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
         "rocm[libraries,devel,${GFX_ARCH}]${THEROCK_VERSION:+==}${THEROCK_VERSION}" && \
     rocm-sdk init
 
+# Temporarily replace the libamdhip64 shipped in the TheRock wheels with one
+# built from source with a corrected fat-binary bound, so that code objects
+# spanning a VMA boundary are no longer rejected with hipErrorInvalidImage.
+# See docker/patches/build_clr_hotpatch.sh for the full rationale. This has to
+# come after the ROCm install because it patches what that installs, which means
+# a THEROCK_VERSION bump also re-runs the CLR build -- intended, since the two
+# must match.
+RUN --mount=type=bind,source=docker/patches/build_clr_hotpatch.sh,target=/tmp/build_clr_hotpatch.sh \
+    --mount=type=bind,source=docker/patches/clr-coalesce-readable-vmas.patch,target=/tmp/clr-fix.patch \
+    [ "$APPLY_CLR_PATCH" != "1" ] || bash /tmp/build_clr_hotpatch.sh
+
 # ROCm/HIP runtime tuning:
 ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
     DEBUG_HIP_DYNAMIC_QUEUES=0 \
@@ -145,4 +167,6 @@ LABEL com.amdgpu.therock_index_url="$THEROCK_INDEX_URL" \
       com.amdgpu.gfx_arch="$GFX_ARCH" \
       com.amdgpu.python_versions="3.11,3.12,3.13,3.13-nogil,3.14,3.14-nogil" \
       com.amdgpu.install_llvm="$INSTALL_LLVM" \
-      com.amdgpu.llvm_version="$LLVM_VERSION"
+      com.amdgpu.llvm_version="$LLVM_VERSION" \
+      com.amdgpu.clr_hotpatch="$APPLY_CLR_PATCH" \
+      com.amdgpu.clr_source_ref="$CLR_SOURCE_REF"
