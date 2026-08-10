@@ -102,14 +102,26 @@ fi
 # paths are hardlinks to the core copy and some are separate inodes, so patching
 # only one of them has no effect on a normally-run container.
 SP="$(python3 -c 'import site; print(site.getsitepackages()[0])')"
+CORE_LIB="$SP/_rocm_sdk_core/lib/libamdhip64.so.7"
 mapfile -t TARGETS < <(
     find "$SP/_rocm_sdk_core/lib" "$SP/_rocm_sdk_devel/lib" \
         -name 'libamdhip64.so*' -type f | sort
 )
-if [ "${#TARGETS[@]}" -lt 4 ]; then
-    printf 'ERROR: found %d libamdhip64 copies, expected at least 4:\n' \
-        "${#TARGETS[@]}" >&2
-    printf '  %s\n' "${TARGETS[@]}" >&2
+
+# Check for the copies by name rather than by count. How many regular files the
+# wheels ship varies between nightlies -- 10.1.0a20260805 had four, while
+# 10.1.0a20260810 has three because _rocm_sdk_devel/lib/libamdhip64.so became a
+# symlink, which `find -type f` does not return. What actually matters is that
+# the core copy is present, since that is the one JAX maps, and that the devel
+# tree gets rewritten too.
+if [ ! -f "$CORE_LIB" ]; then
+    echo "ERROR: $CORE_LIB not found; the wheel layout changed." >&2
+    printf '  found: %s\n' "${TARGETS[@]}" >&2
+    exit 1
+fi
+if ! printf '%s\n' "${TARGETS[@]}" | grep -q "_rocm_sdk_devel/lib/libamdhip64.so"; then
+    echo "ERROR: no libamdhip64 copy under _rocm_sdk_devel; the wheel layout changed." >&2
+    printf '  found: %s\n' "${TARGETS[@]}" >&2
     exit 1
 fi
 
