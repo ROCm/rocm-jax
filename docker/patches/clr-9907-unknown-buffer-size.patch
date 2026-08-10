@@ -1,0 +1,231 @@
+diff --git a/projects/clr/hipamd/src/hip_fatbin.cpp b/projects/clr/hipamd/src/hip_fatbin.cpp
+index 66c46ca45d..af5af258ac 100644
+--- a/projects/clr/hipamd/src/hip_fatbin.cpp
++++ b/projects/clr/hipamd/src/hip_fatbin.cpp
+@@ -444,18 +444,14 @@ hipError_t FatBinaryInfo::ExtractFatBinaryUsingCOMGR(const std::vector<hip::Devi
+     if (fdesc != amd::Os::FDescInit()) amd::Os::CloseFileHandle(fdesc);
+   });
+ 
+-  // hipModuleLoadData has no length parameter. For pointer inputs, the remaining
+-  // readable mapping is a safety ceiling; file loads have an exact size.
+-  size_t image_bound = 0;
++  // Pointer inputs (hipModuleLoadData) carry no length, so no bound is known.
++  // File loads below set the exact size.
++  size_t image_bound = amd::Elf::kUnknownSize;
+   if (image_ != nullptr) {
+-    if (!amd::Os::FindFileNameFromAddress(image_, &fname_, &foffset_, &image_bound)) {
++    if (!amd::Os::FindFileNameFromAddress(image_, &fname_, &foffset_)) {
+       fname_ = std::string("");
+       foffset_ = 0;
+     }
+-    if (image_bound == 0) {
+-      LogError("Cannot determine a readable bound for fat binary input");
+-      return hipErrorInvalidImage;
+-    }
+   } else {
+     size_t fsize = 0;
+     if (!amd::Os::GetFileHandle(fname_.c_str(), &fdesc, &fsize)) {
+@@ -484,9 +480,12 @@ hipError_t FatBinaryInfo::ExtractFatBinaryUsingCOMGR(const std::vector<hip::Devi
+       auto elf_size = amd::Elf::getElfSize(image_, image_bound);
+       // If we got 0, validation has failed.
+       if (elf_size == 0) {
+-        LogPrintfError(
+-            "Invalid ELF code object: failed size/bounds validation, image bound is: %zu",
+-            image_bound);
++        if (image_bound == amd::Elf::kUnknownSize) {
++          LogError("Invalid ELF code object: failed self-consistency validation");
++        } else {
++          LogPrintfError("Invalid ELF code object: failed size/bounds validation, image size: %zu",
++                         image_bound);
++        }
+         return hipErrorInvalidImage;
+       }
+       for (auto* device : devices) {
+diff --git a/projects/clr/rocclr/elf/elf.cpp b/projects/clr/rocclr/elf/elf.cpp
+index 1fbb09ef2a..77c3be2d7f 100644
+--- a/projects/clr/rocclr/elf/elf.cpp
++++ b/projects/clr/rocclr/elf/elf.cpp
+@@ -800,17 +800,25 @@ bool Elf::dumpImage(std::istream& is, char** buff, size_t* len) const {
+   return true;
+ }
+ 
++// Returns the extent of the ELF image at `emi`, or 0 if validation fails.
++// With kUnknownSize only length-independent checks apply, so a malformed image
++// on that path is undefined behavior (see hipModuleLoadData).
+ uint64_t Elf::getElfSize(const void* emi, const size_t buf_size) {
+-  // Fail closed: never parse without a known upper bound on the buffer.
+   if (emi == nullptr || buf_size <= EI_CLASS) {
+     return 0;
+   }
++  const bool size_known = (buf_size != kUnknownSize);
+   const unsigned char eclass = static_cast<const unsigned char*>(emi)[EI_CLASS];
+   // Only 64-bit AMDGPU code objects are supported.
+   if (eclass != ELFCLASS64 || buf_size < sizeof(Elf64_Ehdr)) {
+     return 0;
+   }
+ 
++  // Handle for unknown cap size
++  const uint64_t addr_space_limit =
++      ~uint64_t(0) - reinterpret_cast<uintptr_t>(emi);
++  const uint64_t limit = size_known ? buf_size : addr_space_limit;
++
+   // end = off + sz, returns false on overflow.
+   auto checked_end = [](uint64_t off, uint64_t sz, uint64_t& end) -> bool {
+ #if __has_builtin(__builtin_add_overflow)
+@@ -827,47 +835,49 @@ uint64_t Elf::getElfSize(const void* emi, const size_t buf_size) {
+ 
+   // Validate and bound the section-header table before any dereference.
+   if (ehdr->e_shnum != 0) {
+-    if (ehdr->e_shentsize != sizeof(Elf64_Shdr) || ehdr->e_shoff >= buf_size) {
++    if (ehdr->e_shentsize != sizeof(Elf64_Shdr) || ehdr->e_shoff >= limit) {
+       return 0;
+     }
+     uint64_t shtab = static_cast<uint64_t>(ehdr->e_shnum) * sizeof(Elf64_Shdr);
+-    if (shtab > buf_size - ehdr->e_shoff) {
++    uint64_t shtab_end;
++    if (!checked_end(ehdr->e_shoff, shtab, shtab_end) || shtab_end > limit) {
+       return 0;
+     }
+-    if (ehdr->e_shoff + shtab > total_size) total_size = ehdr->e_shoff + shtab;
++    if (shtab_end > total_size) total_size = shtab_end;
+ 
+     auto shdr = reinterpret_cast<const Elf64_Shdr*>(static_cast<const char*>(emi) + ehdr->e_shoff);
+     for (uint64_t i = 0; i < ehdr->e_shnum; ++i) {
+       if (SHT_NOBITS == shdr[i].sh_type) continue;
+       uint64_t end;
+       if (!checked_end(shdr[i].sh_offset, shdr[i].sh_size, end)) return 0;
+-      if (end > buf_size) return 0;
++      if (end > limit) return 0;
+       if (end > total_size) total_size = end;
+     }
+   }
+ 
+   // Validate and bound the program-header table before any dereference.
+   if (ehdr->e_phnum != 0) {
+-    if (ehdr->e_phentsize != sizeof(Elf64_Phdr) || ehdr->e_phoff >= buf_size) {
++    if (ehdr->e_phentsize != sizeof(Elf64_Phdr) || ehdr->e_phoff >= limit) {
+       return 0;
+     }
+     uint64_t phtab = static_cast<uint64_t>(ehdr->e_phnum) * sizeof(Elf64_Phdr);
+-    if (phtab > buf_size - ehdr->e_phoff) {
++    uint64_t phtab_end;
++    if (!checked_end(ehdr->e_phoff, phtab, phtab_end) || phtab_end > limit) {
+       return 0;
+     }
+-    if (ehdr->e_phoff + phtab > total_size) total_size = ehdr->e_phoff + phtab;
++    if (phtab_end > total_size) total_size = phtab_end;
+ 
+     auto phdr = reinterpret_cast<const Elf64_Phdr*>(static_cast<const char*>(emi) + ehdr->e_phoff);
+     for (uint64_t i = 0; i < ehdr->e_phnum; ++i) {
+       if (PT_NULL == phdr[i].p_type) continue;
+       uint64_t end;
+       if (!checked_end(phdr[i].p_offset, phdr[i].p_filesz, end)) return 0;
+-      if (end > buf_size) return 0;
++      if (end > limit) return 0;
+       if (end > total_size) total_size = end;
+     }
+   }
+ 
+-  return (total_size > buf_size) ? 0 : total_size;
++  return (total_size > limit) ? 0 : total_size;
+ }
+ 
+ bool Elf::isElfMagic(const char* p) {
+diff --git a/projects/clr/rocclr/elf/elf.hpp b/projects/clr/rocclr/elf/elf.hpp
+index 4575312f37..daaf35a098 100644
+--- a/projects/clr/rocclr/elf/elf.hpp
++++ b/projects/clr/rocclr/elf/elf.hpp
+@@ -299,6 +299,10 @@ class Elf {
+   /* Return segment at index */
+   bool getSegment(const unsigned int index, segment*& seg) const;
+ 
++  /* Pass as getElfSize()'s `size` when the buffer length is unknown, e.g.
++     hipModuleLoadData, which takes a pointer with no length. */
++  static constexpr size_t kUnknownSize = static_cast<size_t>(-1);
++
+   /* Return size of elf file */
+   static uint64_t getElfSize(const void* emi, const size_t size);
+ 
+diff --git a/projects/clr/rocclr/os/os.hpp b/projects/clr/rocclr/os/os.hpp
+index 4cf66e8f3b..45611c0e82 100644
+--- a/projects/clr/rocclr/os/os.hpp
++++ b/projects/clr/rocclr/os/os.hpp
+@@ -55,11 +55,8 @@ class Os : AllStatic {
+   static bool GetFileHandle(const char* fname, FileDesc* fd_ptr, size_t* sz_ptr);
+ 
+   // Returns the file name & file offset of mapped memory if the file is mapped.
+-  // If region_bound_ptr is non-null and 'image' lies in a readable mapping, it is
+-  // set to the number of readable bytes from 'image' to the end of that mapping
+-  // (populated for anonymous mappings too, even when no file name is resolved).
+   static bool FindFileNameFromAddress(const void* image, std::string* fname_ptr,
+-                                      size_t* foffset_ptr, size_t* region_bound_ptr = nullptr);
++                                      size_t* foffset_ptr);
+ 
+   // Given a valid file descriptor returns mmaped memory for size and offset
+   static bool MemoryMapFileDesc(FileDesc fdesc, size_t fsize, size_t foffset,
+diff --git a/projects/clr/rocclr/os/os_posix.cpp b/projects/clr/rocclr/os/os_posix.cpp
+index ad0a39a82d..20e6857be8 100644
+--- a/projects/clr/rocclr/os/os_posix.cpp
++++ b/projects/clr/rocclr/os/os_posix.cpp
+@@ -876,11 +876,7 @@ bool Os::GetFileHandle(const char* fname, FileDesc* fd_ptr, size_t* sz_ptr) {
+ }
+ 
+ bool amd::Os::FindFileNameFromAddress(const void* image, std::string* fname_ptr,
+-                                      size_t* foffset_ptr, size_t* region_bound_ptr) {
+-  // Fail closed: callers must never read a stale bound on any early-return path.
+-  if (region_bound_ptr != nullptr) {
+-    *region_bound_ptr = 0;
+-  }
++                                      size_t* foffset_ptr) {
+   // Get the list of mapped file list
+   bool ret_value = false;
+   std::ifstream proc_maps;
+@@ -910,11 +906,6 @@ bool amd::Os::FindFileNameFromAddress(const void* image, std::string* fname_ptr,
+       tokens >> permissions >> std::hex >> offset >> std::dec >> device >> inode;
+       std::getline(tokens >> std::ws, uri_file_path);
+ 
+-      // Readable bytes from image to the end of this mapping (anonymous or not).
+-      if (region_bound_ptr != nullptr && !permissions.empty() && permissions[0] == 'r') {
+-        *region_bound_ptr = static_cast<size_t>(high_address - address);
+-      }
+-
+       if (inode == 0 || uri_file_path.empty()) {
+         return ret_value;
+       }
+diff --git a/projects/clr/rocclr/os/os_win32.cpp b/projects/clr/rocclr/os/os_win32.cpp
+index d9ca69552a..e5778dae00 100644
+--- a/projects/clr/rocclr/os/os_win32.cpp
++++ b/projects/clr/rocclr/os/os_win32.cpp
+@@ -675,31 +675,7 @@ bool Os::MemoryMapFileTruncated(const char* fname, const void** mmap_ptr, size_t
+   return true;
+ }
+ 
+-bool Os::FindFileNameFromAddress(const void* image, std::string* fname_ptr, size_t* foffset_ptr,
+-                                 size_t* region_bound_ptr) {
+-  // Fail closed: callers must never read a stale bound if we can't compute one.
+-  if (region_bound_ptr != nullptr) {
+-    *region_bound_ptr = 0;
+-  }
+-  // Readable bytes from image to the end of its committed region (anonymous or not).
+-  if (region_bound_ptr != nullptr && image != nullptr) {
+-    MEMORY_BASIC_INFORMATION mbi = {};
+-    if (VirtualQuery(image, &mbi, sizeof(mbi)) == sizeof(mbi) && mbi.State == MEM_COMMIT &&
+-        (mbi.Protect & (PAGE_GUARD | PAGE_NOACCESS)) == 0) {
+-      const DWORD protection = mbi.Protect & 0xFF;
+-      const bool readable = protection == PAGE_READONLY || protection == PAGE_READWRITE ||
+-                            protection == PAGE_WRITECOPY || protection == PAGE_EXECUTE_READ ||
+-                            protection == PAGE_EXECUTE_READWRITE ||
+-                            protection == PAGE_EXECUTE_WRITECOPY;
+-      const uintptr_t base = reinterpret_cast<uintptr_t>(mbi.BaseAddress);
+-      const uintptr_t address = reinterpret_cast<uintptr_t>(image);
+-      const uintptr_t end = base + static_cast<uintptr_t>(mbi.RegionSize);
+-      if (readable && address >= base && end >= base && end > address) {
+-        *region_bound_ptr = static_cast<size_t>(end - address);
+-      }
+-    }
+-  }
+-
++bool Os::FindFileNameFromAddress(const void* image, std::string* fname_ptr, size_t* foffset_ptr) {
+   HMODULE hm = NULL;
+   if (!GetModuleHandleExA(
+           GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,

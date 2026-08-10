@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 #
-# Rebuild CLR (libamdhip64) with a corrected fat-binary bound and splice it over
-# the copy shipped in the TheRock ROCm wheels.
+# Rebuild CLR (libamdhip64) with a candidate fat-binary bound fix and splice it
+# over the copy shipped in the TheRock ROCm wheels.
 #
 # rocm-systems PR #9019 derives the length of the image passed to
 # hipModuleLoadData() from the single /proc/self/maps entry that contains the
 # image's first byte, and rejects the load when the code object does not fit
 # inside it. A malloc'd buffer can span several contiguous but unmerged [heap]
 # VMAs, so valid and fully readable code objects are rejected with
-# hipErrorInvalidImage. clr-coalesce-readable-vmas.patch coalesces forward over
-# adjacent readable mappings instead.
+# hipErrorInvalidImage.
+#
+# The patch currently wired in is the CLR team's own proposal, rocm-systems PR
+# #9907, which stops deriving a bound for pointer inputs altogether and treats a
+# malformed code object on that path as undefined behavior.
 #
 # Remove this script, the patch and the Dockerfile step once the fix reaches a
 # TheRock nightly.

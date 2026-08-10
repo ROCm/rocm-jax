@@ -14,14 +14,13 @@ ARG LLVM_VERSION="none"
 # Rebuild CLR from source with the fat-binary bound fix and splice it over the
 # copy shipped in the TheRock wheels. See the CLR hotpatch step at the end.
 ARG APPLY_CLR_PATCH=0
-# Ref of ROCm/rocm-systems to build CLR from when APPLY_CLR_PATCH=1: the head of
-# release/therock-10.0 as of 2026-08-08. That is the HIP 7.15 line the TheRock
-# nightly itself ships (the wheels report HIP 7.15.26306), so its HSA header
-# expectations match the installed SDK; `develop` has moved on to 7.16 and no
-# longer compiles against a nightly a few days old. Pinned to a full SHA rather
-# than tracking the branch so a mid-experiment upstream commit cannot change what
-# gets built.
-ARG CLR_SOURCE_REF=6ccde5dbc2714a95f4fa92a7f2d3aa185ed2174b
+# Ref of ROCm/rocm-systems to build CLR from when APPLY_CLR_PATCH=1: the base
+# commit of rocm-systems PR #9907, so the CLR team's own patch applies verbatim.
+# This is on the develop line (HIP 7.16), which matches what the nightly now
+# ships; it also builds against a 7.15 SDK, verified locally. Pinned to a full
+# SHA rather than tracking a branch so a mid-experiment upstream commit cannot
+# change what gets built.
+ARG CLR_SOURCE_REF=869427ff070ec6799b8646a9c5ec694c8ffc6a92
 
 ### Build-time only variables:
 ARG DEBIAN_FRONTEND=noninteractive
@@ -138,14 +137,15 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     rocm-sdk init
 
 # Temporarily replace the libamdhip64 shipped in the TheRock wheels with one
-# built from source with a corrected fat-binary bound, so that code objects
-# spanning a VMA boundary are no longer rejected with hipErrorInvalidImage.
+# built from source carrying rocm-systems PR #9907, which stops deriving a
+# length for pointer inputs at all, so that code objects spanning a VMA boundary
+# are no longer rejected with hipErrorInvalidImage.
 # See docker/patches/build_clr_hotpatch.sh for the full rationale. This has to
 # come after the ROCm install because it patches what that installs, which means
 # a THEROCK_VERSION bump also re-runs the CLR build -- intended, since the two
 # must match.
 RUN --mount=type=bind,source=docker/patches/build_clr_hotpatch.sh,target=/tmp/build_clr_hotpatch.sh \
-    --mount=type=bind,source=docker/patches/clr-coalesce-readable-vmas.patch,target=/tmp/clr-fix.patch \
+    --mount=type=bind,source=docker/patches/clr-9907-unknown-buffer-size.patch,target=/tmp/clr-fix.patch \
     [ "$APPLY_CLR_PATCH" != "1" ] || bash /tmp/build_clr_hotpatch.sh
 
 # ROCm/HIP runtime tuning:
