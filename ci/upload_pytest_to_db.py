@@ -448,6 +448,7 @@ def find_existing_run_id(  # pylint: disable=too-many-arguments, too-many-positi
     is_nightly: str,
     run_key: str,
     combo: str,
+    rocm_tag: Optional[str],
 ) -> Optional[int]:
     """Return run id for an existing logical run, if present."""
     cur.execute(
@@ -459,9 +460,17 @@ def find_existing_run_id(  # pylint: disable=too-many-arguments, too-many-positi
          AND is_nightly = %s
          AND run_key = %s
          AND combo = %s
+         AND rocm_tag <=> %s
        LIMIT 1
        """,
-        (github_repository, github_ref_name, is_nightly, run_key, combo),
+        (
+            github_repository,
+            github_ref_name,
+            is_nightly,
+            run_key,
+            combo,
+            rocm_tag,
+        ),
     )
     row = cur.fetchone()
     return int(row[0]) if row else None
@@ -671,6 +680,7 @@ def upload_pytest_results(  # pylint: disable=too-many-locals, disable=too-many-
             fields["is_nightly"],
             fields["run_key"],
             fields["combo"],
+            fields["rocm_tag"],
         )
         if existing_run_id is not None:
             conn.rollback()
@@ -681,7 +691,8 @@ def upload_pytest_results(  # pylint: disable=too-many-locals, disable=too-many-
                 f"ref={fields['github_ref_name']} "
                 f"is_nightly={fields['is_nightly']} "
                 f"run_key={fields['run_key']} "
-                f"combo={fields['combo']}"
+                f"combo={fields['combo']} "
+                f"rocm_tag={fields['rocm_tag']}"
             )
             return
         run_id = insert_run(cur, report_created_at, fields)
@@ -731,6 +742,7 @@ def upload_pytest_results(  # pylint: disable=too-many-locals, disable=too-many-
                 f"is_nightly={fields['is_nightly']} "
                 f"run_key={fields['run_key']} "
                 f"combo={fields['combo']} "
+                f"rocm_tag={fields['rocm_tag']} "
                 f"artifact_uri={fields['artifact_uri']}"
             )
             return
