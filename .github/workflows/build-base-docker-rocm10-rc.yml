@@ -6,7 +6,8 @@ name: Build ROCm 10 RC Base Docker Images
 # build-base-docker.yml uses. Kept in its own workflow so the RC images can be
 # rebuilt and re-pinned independently of the image sets CI depends on today.
 #
-# Images produced (all tagged :<rocm-version> and :<commit-sha>, never :latest):
+# Images produced, each tagged :<rocm-version>, :<commit-sha> and the short
+# :<extra-tag> handle (default 'rc2'). Never :latest -- see the push step.
 #   ghcr.io/rocm/jax-base-ubu24.therock-<ver>
 #   ghcr.io/rocm/jax-dev-ubu24.therock-<ver>            (+ LLVM 18)
 #   ghcr.io/rocm/jax-manylinux_2_28-therock-<ver>
@@ -29,6 +30,13 @@ on:
         required: false
         type: string
         default: 'device-gfx942,device-gfx950'
+      extra-tag:
+        description: >-
+          Short handle published alongside the full version, e.g. 'rc2'.
+          Leave empty to publish only the version and commit SHA tags.
+        required: false
+        type: string
+        default: 'rc2'
       image-set:
         description: >-
           Which images to build: 'all', 'base' (ubu24 base + dev) or
@@ -64,6 +72,7 @@ env:
   ROCM_VERSION: ${{ inputs.rocm-version || '10.0.0rc2' }}
   INDEX_URL: ${{ inputs.index-url || 'https://rocm.prereleases.amd.com/whl-multi-arch/' }}
   GFX_ARCH: ${{ inputs.gfx-arch || 'device-gfx942,device-gfx950' }}
+  EXTRA_TAG: ${{ inputs.extra-tag || 'rc2' }}
 
 jobs:
   build-base-images:
@@ -138,7 +147,7 @@ jobs:
           # No :latest -- an RC must never become the default image that CI
           # and downstream consumers resolve to.
           ghcr_base="ghcr.io/rocm/${IMAGE_TAG}"
-          for tag in "$ROCM_VERSION" "$GITHUB_SHA"; do
+          for tag in "$ROCM_VERSION" "$GITHUB_SHA" ${EXTRA_TAG:+"$EXTRA_TAG"}; do
             echo "Image name: ${ghcr_base}:${tag}"
             docker tag "$IMAGE_TAG" "${ghcr_base}:${tag}"
             docker push "${ghcr_base}:${tag}"
@@ -195,7 +204,7 @@ jobs:
       - name: Push docker images
         run: |
           ghcr_base="ghcr.io/rocm/${IMAGE_TAG}"
-          for tag in "$ROCM_VERSION" "$GITHUB_SHA"; do
+          for tag in "$ROCM_VERSION" "$GITHUB_SHA" ${EXTRA_TAG:+"$EXTRA_TAG"}; do
             echo "Image name: ${ghcr_base}:${tag}"
             docker tag "$IMAGE_TAG" "${ghcr_base}:${tag}"
             docker push "${ghcr_base}:${tag}"
