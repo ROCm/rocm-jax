@@ -1,0 +1,202 @@
+name: Build ROCm 10 RC Base Docker Images
+
+# ROCm 10 release-candidate images. These come from TheRock's *prerelease*
+# channel (https://rocm.prereleases.amd.com/whl-multi-arch/), which serves
+# X.Y.ZrcN versions -- a different index from the nightly and GA channels that
+# build-base-docker.yml uses. Kept in its own workflow so the RC images can be
+# rebuilt and re-pinned independently of the image sets CI depends on today.
+#
+# Images produced (all tagged :<rocm-version> and :<commit-sha>, never :latest):
+#   ghcr.io/rocm/jax-base-ubu24.therock-<ver>
+#   ghcr.io/rocm/jax-dev-ubu24.therock-<ver>            (+ LLVM 18)
+#   ghcr.io/rocm/jax-manylinux_2_28-therock-<ver>
+
+on:
+  workflow_dispatch:
+    inputs:
+      rocm-version:
+        description: "TheRock prerelease version to install, e.g. 10.0.0rc2"
+        required: false
+        type: string
+        default: '10.0.0rc2'
+      index-url:
+        description: "PEP 503 index serving the prerelease wheels"
+        required: false
+        type: string
+        default: 'https://rocm.prereleases.amd.com/whl-multi-arch/'
+      gfx-arch:
+        description: "Comma-separated rocm[device-<arch>] extras to install"
+        required: false
+        type: string
+        default: 'device-gfx942,device-gfx950'
+      image-set:
+        description: >-
+          Which images to build: 'all', 'base' (ubu24 base + dev) or
+          'manylinux' (wheel builder).
+        required: false
+        type: choice
+        options:
+          - all
+          - base
+          - manylinux
+        default: all
+  push:
+    # The RC images are bootstrapped from a feature branch: workflow_dispatch
+    # only lists workflows present on the default branch, so until this file
+    # lands on rocm-jax-infra a push is the way to trigger a build.
+    branches:
+      - 'rocm-jax-infra'
+      - 'feature/rocm10-rc-base-docker'
+    paths:
+      - '.github/workflows/build-base-docker-rocm10-rc.yml'
+      - 'docker/Dockerfile.base-therock-ubu24'
+      - 'docker/manylinux/Dockerfile.jax-manylinux_2_28-therock'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  ROCM_VERSION: ${{ inputs.rocm-version || '10.0.0rc2' }}
+  INDEX_URL: ${{ inputs.index-url || 'https://rocm.prereleases.amd.com/whl-multi-arch/' }}
+  GFX_ARCH: ${{ inputs.gfx-arch || 'device-gfx942,device-gfx950' }}
+
+jobs:
+  build-base-images:
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      inputs.image-set == 'all' ||
+      inputs.image-set == 'base'
+    name: >-
+      ROCm ${{ inputs.rocm-version || '10.0.0rc2' }},
+      ${{ matrix.install-llvm && 'with' || 'without' }} LLVM
+    runs-on: amd-do-linux.jax.cpu
+    strategy:
+      fail-fast: false
+      matrix:
+        install-llvm: [true, false]
+    steps:
+      - name: Clean up old runs
+        run: |
+          ls -lah
+          # Take ownership of leftovers so they can be deleted
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+          rm -rf * || true
+          ls -lah
+          docker system prune -a --filter "until=168h"
+          # Stop containers running over 12h. No CI job should take this long.
+          docker ps --format="{{.RunningFor}} {{.Names}}" | grep hours \
+            | awk -F: '{if($1>12)print$1}' | awk '{print $4}' | xargs docker stop || true
+      - name: Print system info
+        run: |
+          whoami
+          printenv
+          df -h
+      - uses: actions/checkout@v4
+      - name: Resolve image tag
+        env:
+          INSTALL_LLVM: ${{ matrix.install-llvm }}
+        run: |
+          # Match ci_build's sanitizing so tags stay valid Docker references
+          ver_slug="${ROCM_VERSION//+/.}"; ver_slug="${ver_slug// /}"
+          if [ "$INSTALL_LLVM" = "true" ]; then
+            echo "IMAGE_TAG=jax-dev-ubu24.therock-${ver_slug}" >> "$GITHUB_ENV"
+          else
+            echo "IMAGE_TAG=jax-base-ubu24.therock-${ver_slug}" >> "$GITHUB_ENV"
+          fi
+      - name: Build ROCm 10 RC base docker image
+        run: |
+          docker build -f docker/Dockerfile.base-therock-ubu24 \
+            --build-arg=GFX_ARCH="$GFX_ARCH" \
+            --build-arg=THEROCK_INDEX_URL="$INDEX_URL" \
+            --build-arg=THEROCK_VERSION="$ROCM_VERSION" \
+            --build-arg=INSTALL_LLVM=${{ matrix.install-llvm && '1' || '0' }} \
+            --build-arg=LLVM_VERSION=${{ matrix.install-llvm && '18' || 'none' }} \
+            -t "$IMAGE_TAG" .
+      - name: Verify installed ROCm version
+        run: |
+          # Guards against pip silently resolving to some other version when
+          # the requested RC is absent from the index.
+          installed=$(docker run --rm "$IMAGE_TAG" \
+            python3 -c "import rocm_sdk; print(rocm_sdk.__version__)")
+          echo "requested=$ROCM_VERSION installed=$installed"
+          [ "$installed" = "$ROCM_VERSION" ] || {
+            echo "::error::rocm-sdk is $installed, expected $ROCM_VERSION"
+            exit 1
+          }
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push docker images
+        run: |
+          # No :latest -- an RC must never become the default image that CI
+          # and downstream consumers resolve to.
+          ghcr_base="ghcr.io/rocm/${IMAGE_TAG}"
+          for tag in "$ROCM_VERSION" "$GITHUB_SHA"; do
+            echo "Image name: ${ghcr_base}:${tag}"
+            docker tag "$IMAGE_TAG" "${ghcr_base}:${tag}"
+            docker push "${ghcr_base}:${tag}"
+          done
+
+  build-manylinux-image:
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      inputs.image-set == 'all' ||
+      inputs.image-set == 'manylinux'
+    name: "ROCm ${{ inputs.rocm-version || '10.0.0rc2' }}, manylinux"
+    runs-on: amd-do-linux.jax.cpu
+    steps:
+      - name: Clean up old runs
+        run: |
+          ls -lah
+          docker run --rm -v "./:/rocm-jax" ubuntu \
+            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
+          rm -rf * || true
+          ls -lah
+          docker system prune -a --filter "until=168h"
+          docker ps --format="{{.RunningFor}} {{.Names}}" | grep hours \
+            | awk -F: '{if($1>12)print$1}' | awk '{print $4}' | xargs docker stop || true
+      - name: Print system info
+        run: |
+          whoami
+          printenv
+          df -h
+      - uses: actions/checkout@v4
+      - name: Resolve image tag
+        run: |
+          ver_slug="${ROCM_VERSION//+/.}"; ver_slug="${ver_slug// /}"
+          echo "IMAGE_TAG=jax-manylinux_2_28-therock-${ver_slug}" >> "$GITHUB_ENV"
+      - name: Build ROCm 10 RC manylinux docker image
+        run: |
+          docker build -f docker/manylinux/Dockerfile.jax-manylinux_2_28-therock \
+            --build-arg=GFX_ARCH="$GFX_ARCH" \
+            --build-arg=THEROCK_INDEX_URL="$INDEX_URL" \
+            --build-arg=THEROCK_VERSION="$ROCM_VERSION" \
+            -t "$IMAGE_TAG" .
+      - name: Verify installed ROCm version
+        run: |
+          installed=$(docker run --rm "$IMAGE_TAG" \
+            python3 -c "import rocm_sdk; print(rocm_sdk.__version__)")
+          echo "requested=$ROCM_VERSION installed=$installed"
+          [ "$installed" = "$ROCM_VERSION" ] || {
+            echo "::error::rocm-sdk is $installed, expected $ROCM_VERSION"
+            exit 1
+          }
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push docker images
+        run: |
+          ghcr_base="ghcr.io/rocm/${IMAGE_TAG}"
+          for tag in "$ROCM_VERSION" "$GITHUB_SHA"; do
+            echo "Image name: ${ghcr_base}:${tag}"
+            docker tag "$IMAGE_TAG" "${ghcr_base}:${tag}"
+            docker push "${ghcr_base}:${tag}"
+          done
