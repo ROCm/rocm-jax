@@ -53,7 +53,7 @@ RUN wget -q \
       > /usr/lib/llvm-18/bin/clang.cfg && \
     cp /usr/lib/llvm-18/bin/clang.cfg \
       /usr/lib/llvm-18/bin/clang++.cfg && \
-    /usr/lib/llvm-18/bin/clang --version
+    /usr/lib/llvm-18/bin/clang --version | grep -Fq "Configuration file: /usr/lib/llvm-18/bin/clang.cfg"
 
 # ld.lld (hermetic linker) resolves -lstdc++ by looking for the unversioned
 # libstdc++.so in the sysroot. AlmaLinux 8 only ships libstdc++.so.6 in
