@@ -17,6 +17,7 @@ on:
       - 'docker/Dockerfile.theRock'
       - 'docker/Dockerfile.rocmless'
       - 'docker/python_requirements.txt'
+      - 'docker/patches/**'
       - '.github/workflows/build_hermetic_ubu24_docker.yml'
   workflow_dispatch:
     inputs:
