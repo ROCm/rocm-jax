@@ -14,13 +14,12 @@ on:
       image-set:
         description: >-
           Which image set to build/repush on manual dispatch: 'all',
-          'legacy' (apt ROCm 7.2.0), 'therock-pinned' (TheRock GA pin) or
-          'therock-latest' (TheRock nightly). Scheduled/push/PR build all.
+          'therock-pinned' (TheRock GA pin) or 'therock-latest' (TheRock
+          nightly). Scheduled/push/PR build all.
         required: false
         type: choice
         options:
           - all
-          - legacy
           - therock-pinned
           - therock-latest
         default: all
@@ -45,9 +44,6 @@ jobs:
     # by both the base and manylinux TheRock jobs so they can't drift.
     # Pinned to TheRock 7.14 GA, served from the stable repo.amd.com index.
     # The selected image set decides which TheRock entries end up in the matrix.
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      inputs.image-set != 'legacy'
     runs-on: ubuntu-latest
     outputs:
       entries: ${{ steps.set.outputs.entries }}
@@ -75,118 +71,10 @@ jobs:
             echo 'JSON'
           } >> "$GITHUB_OUTPUT"
 
-  build-base-images:
-    # Legacy apt-ROCm (rocm720) base/dev images, shared with jax-ml/jax upstream
-    # (its pytest_rocm/bazel_rocm pin rocm-tag=rocm720). On manual dispatch only
-    # build when 'legacy' or 'all' is selected; scheduled/push/PR build all.
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      inputs.image-set == 'all' ||
-      inputs.image-set == 'legacy'
-    name: >-
-      ROCm ${{ matrix.rocm-version }},
-      ${{ matrix.install-llvm && 'with' || 'without' }} LLVM
-    runs-on: ${{ matrix.runner-label }}
-    strategy:
-      fail-fast: false
-      matrix:
-        rocm-version: ["7.2.0"]
-        install-llvm: [true, false]
-        include:
-          - rocm-version: "7.2.0"
-            runner-label: "amd-do-linux.jax.cpu"
-    steps:
-      - name: Clean up old runs
-        run: |
-          ls -lah
-          # Make sure that we own all of the files so that we have permissions to delete them
-          docker run --rm -v "./:/rocm-jax" ubuntu \
-            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
-          # Remove any old work directories from this machine
-          rm -rf * || true
-          ls -lah
-          # Clean up any docker stuff that's more than a week old
-          docker system prune -a --filter "until=168h"
-          # Stop any containers running for more than 12 hours. No CI job should take this long.
-          docker ps --format="{{.RunningFor}} {{.Names}}" | grep hours \
-              | awk -F: '{if($1>12)print$1}' | awk ' {print $4} ' | xargs docker stop || true
-      - name: Print system info
-        run: |
-          whoami
-          printenv
-          df -h
-          rocm-smi -a || true
-          rocminfo | grep gfx || true
-      - uses: actions/checkout@v4
-      - name: Build base docker image
-        env:
-          ROCM_BUILD_JOB: ${{ matrix.rocm-build-job }}
-          ROCM_BUILD_NUM: ${{ matrix.rocm-build-num }}
-        run: |
-          BUILD_ARGS=""
-          if [ -n "$ROCM_BUILD_JOB" ]; then
-            BUILD_ARGS="$BUILD_ARGS --rocm-build-job=$ROCM_BUILD_JOB"
-          fi
-          if [ -n "$ROCM_BUILD_NUM" ]; then
-            BUILD_ARGS="$BUILD_ARGS --rocm-build-num=$ROCM_BUILD_NUM"
-          fi
-          python3 build/ci_build \
-            --rocm-version="${{ matrix.rocm-version }}" \
-            $BUILD_ARGS \
-            build_base_dockers \
-            --filter="ubu24" \
-            ${{ matrix.install-llvm && '--install-llvm --llvm-version 18' || '' }}
-      - name: Authenticate to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Push docker images
-        env:
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-          INSTALL_LLVM: ${{ matrix.install-llvm }}
-        run: |
-          # Construct image tag based on matrix values
-          # ROCm version tag removes dots (7.1.1 -> 711, 7.2.0 -> 720)
-          rocm_tag="rocm${ROCM_VERSION//.}"
-          if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="jax-dev-ubu24.${rocm_tag}"
-          else
-            image_tag="jax-base-ubu24.${rocm_tag}"
-          fi
-
-          # Push with commit SHA tag
-          ghcr_image_sha="ghcr.io/rocm/${image_tag}:${GITHUB_SHA}"
-          echo "Image name (SHA): ${ghcr_image_sha}"
-          docker tag "${image_tag}" "${ghcr_image_sha}"
-          docker push "${ghcr_image_sha}"
-      - name: Push latest tag
-        if: >-
-          github.event_name != 'pull_request' &&
-          (github.event_name != 'workflow_dispatch' ||
-          inputs.push-latest-tag == true)
-        env:
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-          INSTALL_LLVM: ${{ matrix.install-llvm }}
-        run: |
-          rocm_tag="rocm${ROCM_VERSION//.}"
-          if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="jax-dev-ubu24.${rocm_tag}"
-          else
-            image_tag="jax-base-ubu24.${rocm_tag}"
-          fi
-
-          ghcr_image_latest="ghcr.io/rocm/${image_tag}:latest"
-          echo "Image name (latest): ${ghcr_image_latest}"
-          docker tag "${image_tag}" "${ghcr_image_latest}"
-          docker push "${ghcr_image_latest}"
-
   build-therock-base-images:
-    # TheRock base/dev images. On manual dispatch skipped for 'legacy'; which
-    # TheRock versions run is decided by the therock-config matrix.
+    # TheRock base/dev images. Which TheRock versions run is decided by the
+    # therock-config matrix.
     needs: therock-config
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      inputs.image-set != 'legacy'
     name: >-
       TheRock ${{ matrix.therock.therock-version || 'latest' }},
       ${{ matrix.install-llvm && 'with' || 'without' }} LLVM
@@ -285,12 +173,9 @@ jobs:
           docker push "${ghcr_base}:latest"
 
   build-therock-manylinux-images:
-    # TheRock manylinux builder image. Follows the same image-set gating and
-    # therock-config matrix as the TheRock base images.
+    # TheRock manylinux builder image. Follows the same therock-config matrix
+    # as the TheRock base images.
     needs: therock-config
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      inputs.image-set != 'legacy'
     name: "TheRock ${{ matrix.therock.therock-version || 'latest' }}, manylinux"
     runs-on: amd-do-linux.jax.cpu
     strategy:
@@ -370,82 +255,3 @@ jobs:
           echo "Image name (latest): ${ghcr_base}:latest"
           docker tag "${image_tag}" "${ghcr_base}:latest"
           docker push "${ghcr_base}:latest"
-
-  build-manylinux-builder-images:
-    # Legacy apt-ROCm 7.2.0 manylinux builder image. Part of the 'legacy' set.
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      inputs.image-set == 'all' ||
-      inputs.image-set == 'legacy'
-    name: "ROCm ${{ matrix.rocm-version }}, manylinux"
-    runs-on: ${{ matrix.runner-label }}
-    strategy:
-      fail-fast: false
-      matrix:
-        rocm-version: ["7.2.0"]
-        include:
-          - rocm-version: "7.2.0"
-            runner-label: "amd-do-linux.jax.cpu"
-    steps:
-      - name: Clean up old runs
-        run: |
-          ls -lah
-          # Make sure that we own all of the files so that we have permissions to delete them
-          docker run --rm -v "./:/rocm-jax" ubuntu \
-            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
-          # Remove any old work directories from this machine
-          rm -rf * || true
-          ls -lah
-          # Clean up any docker stuff that's more than a week old
-          docker system prune -a --filter "until=168h"
-          # Stop any containers running for more than 12 hours. No CI job should take this long.
-          docker ps --format="{{.RunningFor}} {{.Names}}" | grep hours \
-            | awk -F: '{if($1>12)print$1}' | awk ' {print $4} ' | xargs docker stop || true
-      - uses: actions/checkout@v4
-      - name: Build docker images
-        run: |
-          python3 build/ci_build \
-            --rocm-version="${{ matrix.rocm-version }}" \
-            --rocm-build-job="${{ matrix.rocm-build-job }}" \
-            --rocm-build-num="${{ matrix.rocm-build-num }}" \
-            build_manylinux_dockers
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push docker images
-        env:
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-          ROCM_BUILD_JOB: >-
-            ${{ matrix.rocm-build-job && format('-{0}', inputs.rocm-build-job) || '' }}
-          ROCM_BUILD_NUM: >-
-            ${{ matrix.rocm-build-num && format('-{0}', inputs.rocm-build-num) || '' }}
-        run: |
-          image_tag="ghcr.io/rocm/jax-manylinux_2_28-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
-
-          # Push with commit SHA tag
-          sha_image_tag="${image_tag}:${GITHUB_SHA}"
-          echo "Image name (SHA): ${sha_image_tag}"
-          docker tag "${image_tag}" "${sha_image_tag}"
-          docker push "${sha_image_tag}"
-      - name: Push latest tag
-        if: >-
-          github.event_name != 'pull_request' &&
-          (github.event_name != 'workflow_dispatch' ||
-          inputs.push-latest-tag == true)
-        env:
-          ROCM_VERSION: ${{ matrix.rocm-version }}
-          ROCM_BUILD_JOB: >-
-            ${{ matrix.rocm-build-job && format('-{0}', inputs.rocm-build-job) || '' }}
-          ROCM_BUILD_NUM: >-
-            ${{ matrix.rocm-build-num && format('-{0}', inputs.rocm-build-num) || '' }}
-        run: |
-          image_tag="ghcr.io/rocm/jax-manylinux_2_28-rocm-${ROCM_VERSION}${ROCM_BUILD_JOB}${ROCM_BUILD_NUM}"
-
-          latest_image_tag="${image_tag}:latest"
-          echo "Image Name (latest): ${latest_image_tag}"
-          docker tag "${image_tag}" "${latest_image_tag}"
-          docker push "${latest_image_tag}"
-
