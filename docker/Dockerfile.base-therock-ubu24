@@ -127,9 +127,7 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     rocm-sdk init
 
 # ROCm/HIP runtime tuning:
-ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
-    DEBUG_HIP_DYNAMIC_QUEUES=0 \
-    HSA_NO_SCRATCH_RECLAIM=1
+ENV ROCPROFILER_QUEUE_INTERPOSITION=0
 
 # Export NO ROCm env: this image is intentionally /opt/rocm-less. ROCm resolves
 # via the JAX wheel's $ORIGIN-relative RUNPATHs into the pip _rocm_sdk_* packages

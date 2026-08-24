@@ -7,7 +7,7 @@ name: Build ROCm 10 RC Base Docker Images
 # rebuilt and re-pinned independently of the image sets CI depends on today.
 #
 # Images produced, each tagged :<rocm-version>, :<commit-sha> and the short
-# :<extra-tag> handle (default 'rc2'). Never :latest -- see the push step.
+# :<extra-tag> handle (default 'rc4'). Never :latest -- see the push step.
 #   ghcr.io/rocm/jax-base-ubu24.therock-<ver>
 #   ghcr.io/rocm/jax-dev-ubu24.therock-<ver>            (+ LLVM 18)
 #   ghcr.io/rocm/jax-manylinux_2_28-therock-<ver>
@@ -16,10 +16,10 @@ on:
   workflow_dispatch:
     inputs:
       rocm-version:
-        description: "TheRock prerelease version to install, e.g. 10.0.0rc2"
+        description: "TheRock prerelease version to install, e.g. 10.0.0rc4"
         required: false
         type: string
-        default: '10.0.0rc2'
+        default: '10.0.0rc4'
       index-url:
         description: "PEP 503 index serving the prerelease wheels"
         required: false
@@ -32,11 +32,11 @@ on:
         default: 'device-gfx942,device-gfx950'
       extra-tag:
         description: >-
-          Short handle published alongside the full version, e.g. 'rc2'.
+          Short handle published alongside the full version, e.g. 'rc4'.
           Leave empty to publish only the version and commit SHA tags.
         required: false
         type: string
-        default: 'rc2'
+        default: 'rc4'
       image-set:
         description: >-
           Which images to build: 'all', 'base' (ubu24 base + dev) or
@@ -69,10 +69,10 @@ permissions:
   packages: write
 
 env:
-  ROCM_VERSION: ${{ inputs.rocm-version || '10.0.0rc2' }}
+  ROCM_VERSION: ${{ inputs.rocm-version || '10.0.0rc4' }}
   INDEX_URL: ${{ inputs.index-url || 'https://rocm.prereleases.amd.com/whl-multi-arch/' }}
   GFX_ARCH: ${{ inputs.gfx-arch || 'device-gfx942,device-gfx950' }}
-  EXTRA_TAG: ${{ inputs.extra-tag || 'rc2' }}
+  EXTRA_TAG: ${{ inputs.extra-tag || 'rc4' }}
 
 jobs:
   build-base-images:
@@ -81,7 +81,7 @@ jobs:
       inputs.image-set == 'all' ||
       inputs.image-set == 'base'
     name: >-
-      ROCm ${{ inputs.rocm-version || '10.0.0rc2' }},
+      ROCm ${{ inputs.rocm-version || '10.0.0rc4' }},
       ${{ matrix.install-llvm && 'with' || 'without' }} LLVM
     runs-on: amd-do-linux.jax.cpu
     strategy:
@@ -158,7 +158,7 @@ jobs:
       github.event_name != 'workflow_dispatch' ||
       inputs.image-set == 'all' ||
       inputs.image-set == 'manylinux'
-    name: "ROCm ${{ inputs.rocm-version || '10.0.0rc2' }}, manylinux"
+    name: "ROCm ${{ inputs.rocm-version || '10.0.0rc4' }}, manylinux"
     runs-on: amd-do-linux.jax.cpu
     steps:
       - name: Clean up old runs
