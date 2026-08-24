@@ -49,7 +49,9 @@ jobs:
             # There is no docker image with ROCm 7.2.0 and Jax 0.6.0
             # use a ROCm 7.2.0 / Jax 0.11.0 docker image and update Jax
             # before building TE. For the application workload Bazel installs
-            # its own Jax
+            # its own Jax.
+            # NOTE: the legacy apt-ROCm 7.2.0 image family was retired, so this
+            # tag is frozen at its last nightly push and is no longer rebuilt.
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
             # yewang12/small_cross_attn_v2.4
             te-ref: "5e87bde39480cd350c4719758c9621edec4dd003"
@@ -173,6 +175,7 @@ jobs:
           - jax-version: "0.6.0"
             model-name: "train_dense"
             jaxlib-version: "0.6.0"
+            # Frozen legacy apt-ROCm 7.2.0 image; no longer rebuilt.
             docker-image: "ghcr.io/rocm/jax-ubu24.rocm720:nightly"
           - jax-version: "0.11.0"
             model-name: "train_dense"

@@ -10,14 +10,15 @@ on:
       - 'docker/Dockerfile.rocmless'
       - 'docker/python_requirements.txt'
       - 'docker/patches/**'
-      - '.github/workflows/build_hermetic_ub22_docker.yml'
+      - '.github/workflows/build_hermetic_ubu24_docker.yml'
   pull_request:
     paths:
       - 'docker/Dockerfile.rocm'
       - 'docker/Dockerfile.theRock'
       - 'docker/Dockerfile.rocmless'
       - 'docker/python_requirements.txt'
-      - '.github/workflows/build_hermetic_ub22_docker.yml'
+      - 'docker/patches/**'
+      - '.github/workflows/build_hermetic_ubu24_docker.yml'
   workflow_dispatch:
     inputs:
       runner-label:

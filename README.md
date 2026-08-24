@@ -90,8 +90,8 @@ wheel set.
 CI wheel production should use the ROCm/jax artifact workflow and scripts,
 including `.github/workflows/build_rocm_artifacts.yml`,
 `ci/build_rocm_artifacts.sh`, and `build/build.py`. The resulting wheels are
-published by ROCm/jax and consumed by this repository's Docker image workflow
-through the configured CloudFront/S3 artifact location.
+published by ROCm/jax and consumed from the configured CloudFront/S3 artifact
+location.
 
 The `ci/build_rocm_artifacts.sh` script is the preferred wrapper because it
 sets up the ROCm build environment and invokes `build/build.py` with the ROCm
@@ -129,48 +129,46 @@ Use `--wheels=jax-rocm-plugin` for Python-specific plugin wheels and
 
 ## Docker Image Infrastructure
 
-The Dockerfiles in this repository are retained for image construction:
+The Dockerfiles in this repository are retained for image construction. ROCm is
+installed from TheRock pip wheels; the legacy apt-ROCm (7.2.0) images have been
+removed.
 
-- `docker/Dockerfile.base-ubu24`
+Base and builder images:
+
 - `docker/Dockerfile.base-therock-ubu24`
-- `docker/Dockerfile.jax-ubu24`
-- `docker/manylinux/Dockerfile.jax-manylinux_2_28-rocm`
 - `docker/manylinux/Dockerfile.jax-manylinux_2_28-therock`
 
+Hermetic JAX/XLA build images:
+
+- `docker/Dockerfile.rocm`
+- `docker/Dockerfile.theRock`
+- `docker/Dockerfile.rocmless`
+
 The Dockerfiles depend on the small set of retained infrastructure inputs,
-including `tools/get_rocm.py`, `build/requirements.txt`,
-`docker/manylinux/clang.cfg`, `docker/patches/rocr-intercept-queue-fix.patch`,
-and a local `wheelhouse/` containing ROCm JAX wheels.
+including `docker/python_requirements.txt` and `docker/patches/`.
 
 Example image build shape:
 
 ```shell
-# Build or obtain wheels from https://github.com/ROCm/jax first.
-mkdir -p wheelhouse
-cp /path/to/jax/wheels/*.whl wheelhouse/
-
-# Build a base image.
+# Build a TheRock base image.
 docker build \
-  -f docker/Dockerfile.base-ubu24 \
-  --build-arg ROCM_VERSION=7.2.0 \
-  --build-arg ROCM_VERSION_TAG=720 \
-  -t ghcr.io/rocm/jax-base-ubu24.rocm720:local \
+  -f docker/Dockerfile.base-therock-ubu24 \
+  --build-arg GFX_ARCH=device-gfx942,device-gfx950 \
+  --build-arg THEROCK_INDEX_URL=https://repo.amd.com/rocm/whl-multi-arch/ \
+  --build-arg THEROCK_VERSION=7.14 \
+  -t ghcr.io/rocm/jax-base-ubu24.therock-7.14:local \
   .
 
-# Build a JAX image from those wheels.
+# Build a TheRock manylinux builder image.
 docker build \
-  -f docker/Dockerfile.jax-ubu24 \
-  --build-arg ROCM_VERSION_TAG=720 \
-  --build-arg BASE_IMAGE_TAG=local \
-  --build-arg ROCM_VERSION=7.2.0 \
-  --build-arg JAX_VERSION=<jax-version> \
-  --build-arg XLA_COMMIT=<xla-commit> \
-  --build-arg JAX_COMMIT=<jax-commit> \
-  --build-arg ROCM_JAX_COMMIT=<rocm-jax-commit> \
-  --build-arg PLUGIN_NAMESPACE=7 \
-  -t ghcr.io/rocm/jax-ubu24.rocm720:local \
+  -f docker/manylinux/Dockerfile.jax-manylinux_2_28-therock \
+  --build-arg GFX_ARCH=device-gfx942,device-gfx950 \
+  --build-arg THEROCK_INDEX_URL=https://repo.amd.com/rocm/whl-multi-arch/ \
+  --build-arg THEROCK_VERSION=7.14 \
+  -t ghcr.io/rocm/jax-manylinux_2_28-therock-7.14:local \
   .
 ```
+
 ## Running Unit Tests
 First  install wheels produced in $JAXCI_OUTPUT_DIR. 
 ```shell
@@ -195,12 +193,14 @@ cd jax && mkdir -p dist && JAXCI_PYTHON="$(command -v python)" ./ci/run_pytest_r
 ## Retained Automation
 
 The `.github/workflows` directory and scripts used by those workflows are kept
-so existing infrastructure can be migrated deliberately. Existing Docker image
-workflows continue to use this repository and `build/ci_build` for Docker
-image construction. Wheel-build and JAX-test workflows should move to the
-ROCm/jax artifact model, where `.github/workflows/build_rocm_artifacts.yml`
-runs `ci/build_rocm_artifacts.sh` and `build/build.py`. TheRock wheel builds
-should use the ROCm/jax TheRock manylinux image override, such as
+so existing infrastructure can be migrated deliberately. Docker image builds
+live in `.github/workflows/build-base-docker.yml` (TheRock base, dev, and
+manylinux images) and `.github/workflows/build_hermetic_ubu24_docker.yml`
+(hermetic JAX/XLA build images). Wheel-build and JAX-test workflows have moved
+to the ROCm/jax artifact model, where
+`.github/workflows/build_rocm_artifacts.yml` runs `ci/build_rocm_artifacts.sh`
+and `build/build.py`. TheRock wheel builds should use the ROCm/jax TheRock
+manylinux image override, such as
 `ghcr.io/rocm/jax-manylinux_2_28-therock-latest:latest`.
 
 The reporting workflows for pytest results and Llama performance remain in this
