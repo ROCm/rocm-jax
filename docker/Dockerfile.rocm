@@ -99,7 +99,6 @@ RUN ROCM_VERS=${ROCM_VERSION} && \
         rccl-dbgsym \
         rocfft-dbgsym \
         rocm-core-dbgsym \
-        rocm-smi-lib-dbgsym \
         rocprofiler-sdk-dbgsym \
         rocsparse-dbgsym && \
     rm -rf /var/lib/apt/lists/*
