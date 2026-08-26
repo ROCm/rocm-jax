@@ -24,7 +24,7 @@ jobs:
         rocm-version: ["7.2.0"]
         include:
           - rocm-version: "7.2.0"
-            runner-label: '["amd-do-linux.rocm-jax.gpu.gfx950.1"]'
+            runner-label: '["amd-do-linux.jax.cpu"]'
     uses: ./.github/workflows/build-wheels.yml
     with:
       python-versions: "3.11,3.12,3.13,3.14"
@@ -44,7 +44,7 @@ jobs:
         rocm-version: ["7.2.0"]
         include:
           - rocm-version: "7.2.0"
-            runner-label: '["amd-do-linux.rocm-jax.gpu.gfx950.1"]'
+            runner-label: '["amd-do-linux.jax.cpu"]'
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
