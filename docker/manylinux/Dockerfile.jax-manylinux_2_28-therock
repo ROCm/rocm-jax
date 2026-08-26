@@ -16,22 +16,6 @@ RUN ln -s /opt/python/cp312-cp312/bin/python3 /usr/local/bin/python && \
     ln -s /opt/python/cp312-cp312/bin/python3 /usr/local/bin/python3 && \
     python -m ensurepip && python -m pip install auditwheel
 
-# Install LLVM 18 from source (manylinux has no apt):
-RUN --mount=type=cache,target=/var/cache/dnf \
-    dnf install -y wget && dnf clean all
-RUN mkdir /tmp/llvm-project && \
-    wget -qO - https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-18.1.8.tar.gz \
-        | tar -xz -C /tmp/llvm-project --strip-components 1 && \
-    mkdir /tmp/llvm-project/build && \
-    cd /tmp/llvm-project/build && \
-    cmake -DLLVM_ENABLE_PROJECTS='clang;lld' \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=/usr/lib/llvm-18/ \
-          -DGCC_INSTALL_PREFIX=/opt/rh/gcc-toolset-14/root/usr \
-          ../llvm && \
-    make -j$(nproc) && \
-    make -j$(nproc) install && \
-    rm -rf /tmp/llvm-project
 
 # ld.lld (hermetic linker) resolves -lstdc++ by looking for the unversioned
 # libstdc++.so in the sysroot. AlmaLinux 8 only ships libstdc++.so.6 in
