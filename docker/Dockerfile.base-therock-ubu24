@@ -1,8 +1,8 @@
 FROM ubuntu:24.04
 
 ### Container Build Arguments:
-# TheRock nightly multi-arch index URL.
-ARG THEROCK_INDEX_URL=https://rocm.nightlies.amd.com/whl-multi-arch/
+# TheRock nightly aggregate index URL.
+ARG THEROCK_INDEX_URL=https://nightly.repo.amd.com/rocm/whl-next/
 # TheRock version number (e.g. "7.13.0a20260401" or "" for latest).
 ARG THEROCK_VERSION=""
 # GPU architecture / device family (selects the rocm[device-<arch>] extra).

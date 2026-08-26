@@ -45,10 +45,16 @@ jobs:
   therock-config:
     # Single source of truth for the TheRock ROCm version + pip index, consumed
     # by both the base and manylinux TheRock jobs so they can't drift.
-    # Two GA pins (7.14 and 10.0) served from the stable repo.amd.com index,
-    # plus an unpinned entry tracking the nightly index. The pins use the short
-    # X.Y form: PEP 440 zero-pads, so ==10.0 resolves the 10.0.0 release, but it
-    # deliberately will not pick up a 10.0.0.postN respin without a pin bump.
+    #
+    # Two GA pins (7.14 and 10.0) plus an unpinned entry tracking the nightlies.
+    # The three don't share one index: TheRock rewired publishing to per-product
+    # repo.amd.com buckets (TheRock #7547), and the new layout starts at ROCm
+    # 10.1 nightlies and ROCm 10.0 stable. Nothing older is mirrored forward, so
+    # 7.14 stays on the legacy index while the other two move.
+    #
+    # The pins use the short X.Y form: PEP 440 zero-pads, so ==10.0 resolves the
+    # 10.0.0 release, but it deliberately will not pick up a 10.0.0.postN respin
+    # without a pin bump.
     # The selected image set decides which TheRock entries end up in the matrix.
     runs-on: ubuntu-latest
     outputs:
@@ -58,12 +64,13 @@ jobs:
         env:
           IMAGE_SET: ${{ inputs.image-set || 'all' }}
         run: |
-          NIGHTLY="https://rocm.nightlies.amd.com/whl-multi-arch/"
-          GA="https://repo.amd.com/rocm/whl-multi-arch/"
+          NIGHTLY="https://nightly.repo.amd.com/rocm/whl-next/"
+          GA="https://stable.repo.amd.com/rocm/whl-next/"
+          GA_LEGACY="https://repo.amd.com/rocm/whl-multi-arch/"
           GFX_ARCH="device-gfx942,device-gfx950"
           latest="{\"therock-version\": \"\", \"therock-index-url\": \"$NIGHTLY\","
           latest="$latest \"gfx-arch\": \"$GFX_ARCH\"}"
-          pinned714="{\"therock-version\": \"7.14\", \"therock-index-url\": \"$GA\","
+          pinned714="{\"therock-version\": \"7.14\", \"therock-index-url\": \"$GA_LEGACY\","
           pinned714="$pinned714 \"gfx-arch\": \"$GFX_ARCH\"}"
           pinned100="{\"therock-version\": \"10.0\", \"therock-index-url\": \"$GA\","
           pinned100="$pinned100 \"gfx-arch\": \"$GFX_ARCH\"}"
