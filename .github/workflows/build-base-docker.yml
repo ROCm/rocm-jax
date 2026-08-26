@@ -14,13 +14,16 @@ on:
       image-set:
         description: >-
           Which image set to build/repush on manual dispatch: 'all',
-          'therock-pinned' (TheRock GA pin) or 'therock-latest' (TheRock
-          nightly). Scheduled/push/PR build all.
+          'therock-pinned' (both GA pins), 'therock-7.14' or 'therock-10.0'
+          (a single GA pin) or 'therock-latest' (TheRock nightly).
+          Scheduled/push/PR build all.
         required: false
         type: choice
         options:
           - all
           - therock-pinned
+          - therock-7.14
+          - therock-10.0
           - therock-latest
         default: all
   pull_request:
@@ -42,7 +45,16 @@ jobs:
   therock-config:
     # Single source of truth for the TheRock ROCm version + pip index, consumed
     # by both the base and manylinux TheRock jobs so they can't drift.
-    # Pinned to TheRock 7.14 GA, served from the stable repo.amd.com index.
+    #
+    # Two GA pins (7.14 and 10.0) plus an unpinned entry tracking the nightlies.
+    # The three don't share one index: TheRock rewired publishing to per-product
+    # repo.amd.com buckets (TheRock #7547), and the new layout starts at ROCm
+    # 10.1 nightlies and ROCm 10.0 stable. Nothing older is mirrored forward, so
+    # 7.14 stays on the legacy index while the other two move.
+    #
+    # The pins use the short X.Y form: PEP 440 zero-pads, so ==10.0 resolves the
+    # 10.0.0 release, but it deliberately will not pick up a 10.0.0.postN respin
+    # without a pin bump.
     # The selected image set decides which TheRock entries end up in the matrix.
     runs-on: ubuntu-latest
     outputs:
@@ -52,17 +64,22 @@ jobs:
         env:
           IMAGE_SET: ${{ inputs.image-set || 'all' }}
         run: |
-          NIGHTLY="https://rocm.nightlies.amd.com/whl-multi-arch/"
-          GA="https://repo.amd.com/rocm/whl-multi-arch/"
+          NIGHTLY="https://nightly.repo.amd.com/rocm/whl-next/"
+          GA="https://stable.repo.amd.com/rocm/whl-next/"
+          GA_LEGACY="https://repo.amd.com/rocm/whl-multi-arch/"
           GFX_ARCH="device-gfx942,device-gfx950"
           latest="{\"therock-version\": \"\", \"therock-index-url\": \"$NIGHTLY\","
           latest="$latest \"gfx-arch\": \"$GFX_ARCH\"}"
-          pinned="{\"therock-version\": \"7.14\", \"therock-index-url\": \"$GA\","
-          pinned="$pinned \"gfx-arch\": \"$GFX_ARCH\"}"
+          pinned714="{\"therock-version\": \"7.14\", \"therock-index-url\": \"$GA_LEGACY\","
+          pinned714="$pinned714 \"gfx-arch\": \"$GFX_ARCH\"}"
+          pinned100="{\"therock-version\": \"10.0\", \"therock-index-url\": \"$GA\","
+          pinned100="$pinned100 \"gfx-arch\": \"$GFX_ARCH\"}"
           case "$IMAGE_SET" in
             therock-latest) entries="[$latest]" ;;
-            therock-pinned) entries="[$pinned]" ;;
-            *) entries="[$latest, $pinned]" ;;
+            therock-7.14) entries="[$pinned714]" ;;
+            therock-10.0) entries="[$pinned100]" ;;
+            therock-pinned) entries="[$pinned714, $pinned100]" ;;
+            *) entries="[$latest, $pinned714, $pinned100]" ;;
           esac
           echo "Image set '$IMAGE_SET' selects: $entries"
           {
@@ -119,6 +136,30 @@ jobs:
             --build-arg=INSTALL_LLVM=${{ matrix.install-llvm && '1' || '0' }} \
             --build-arg=LLVM_VERSION=${{ matrix.install-llvm && '18' || 'none' }} \
             -t "$image_tag" .
+      - name: Verify installed ROCm version
+        # Only pinned entries have something to check; the nightly entry
+        # resolves to whatever is newest by design.
+        if: matrix.therock.therock-version != ''
+        env:
+          INSTALL_LLVM: ${{ matrix.install-llvm }}
+          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
+        run: |
+          ver_slug="${THEROCK_VERSION//+/.}"; ver_slug="${ver_slug// /}"
+          if [ "$INSTALL_LLVM" = "true" ]; then
+            image_tag="jax-dev-ubu24.therock-${ver_slug}"
+          else
+            image_tag="jax-base-ubu24.therock-${ver_slug}"
+          fi
+          installed=$(docker run --rm "$image_tag" \
+            python3 -c "import rocm_sdk; print(rocm_sdk.__version__)")
+          echo "pinned=$THEROCK_VERSION installed=$installed"
+          # Guards against pip silently falling back to another release when the
+          # pinned one is missing from the index. Accept an exact match or a
+          # dot-suffixed extension, since PEP 440 zero-pads a short X.Y pin.
+          case "$installed" in
+            "$THEROCK_VERSION"|"$THEROCK_VERSION".*) ;;
+            *) echo "::error::rocm-sdk is $installed, expected $THEROCK_VERSION"; exit 1 ;;
+          esac
       - name: Authenticate to GitHub Container Registry
         if: github.event_name != 'pull_request'
         run: |
@@ -212,6 +253,25 @@ jobs:
             --build-arg=THEROCK_VERSION="${{ matrix.therock.therock-version }}" \
             --build-arg=GFX_ARCH="${{ matrix.therock.gfx-arch }}" \
             -t "$image_tag" .
+      - name: Verify installed ROCm version
+        # Only pinned entries have something to check; the nightly entry
+        # resolves to whatever is newest by design.
+        if: matrix.therock.therock-version != ''
+        env:
+          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
+        run: |
+          ver_slug="${THEROCK_VERSION//+/.}"; ver_slug="${ver_slug// /}"
+          image_tag="jax-manylinux_2_28-therock-${ver_slug}"
+          installed=$(docker run --rm "$image_tag" \
+            python3 -c "import rocm_sdk; print(rocm_sdk.__version__)")
+          echo "pinned=$THEROCK_VERSION installed=$installed"
+          # Guards against pip silently falling back to another release when the
+          # pinned one is missing from the index. Accept an exact match or a
+          # dot-suffixed extension, since PEP 440 zero-pads a short X.Y pin.
+          case "$installed" in
+            "$THEROCK_VERSION"|"$THEROCK_VERSION".*) ;;
+            *) echo "::error::rocm-sdk is $installed, expected $THEROCK_VERSION"; exit 1 ;;
+          esac
       - name: Authenticate to GitHub Container Registry
         if: github.event_name != 'pull_request'
         run: |

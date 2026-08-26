@@ -1,8 +1,8 @@
 FROM ubuntu:24.04
 
 ### Container Build Arguments:
-# TheRock nightly multi-arch index URL.
-ARG THEROCK_INDEX_URL=https://rocm.nightlies.amd.com/whl-multi-arch/
+# TheRock nightly aggregate index URL.
+ARG THEROCK_INDEX_URL=https://nightly.repo.amd.com/rocm/whl-next/
 # TheRock version number (e.g. "7.13.0a20260401" or "" for latest).
 ARG THEROCK_VERSION=""
 # GPU architecture / device family (selects the rocm[device-<arch>] extra).
@@ -128,8 +128,7 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
 
 # ROCm/HIP runtime tuning:
 ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
-    DEBUG_HIP_DYNAMIC_QUEUES=0 \
-    HSA_NO_SCRATCH_RECLAIM=1
+    DEBUG_HIP_DYNAMIC_QUEUES=0
 
 # Export NO ROCm env: this image is intentionally /opt/rocm-less. ROCm resolves
 # via the JAX wheel's $ORIGIN-relative RUNPATHs into the pip _rocm_sdk_* packages
