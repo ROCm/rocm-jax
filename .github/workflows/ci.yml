@@ -23,7 +23,7 @@ jobs:
     uses: ./.github/workflows/build-docker.yml
     with:
       rocm-version: ${{ matrix.rocm-version }}
-      runner-label: '["amd-do-linux.rocm-jax.gpu.gfx950.1"]'
+      runner-label: '["amd-do-linux.jax.cpu"]'
   run-python-unit-tests:
     name: run-python-unit-tests (deprecated)
     needs: call-build-docker

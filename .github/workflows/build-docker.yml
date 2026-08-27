@@ -34,7 +34,7 @@ on:
           path component of the S3 LATEST pointer.
         required: false
         type: string
-        default: 'test/org-gated-ci'
+        default: 'rocm-jaxlib-v0.10.0'
       rocm-release-version:
         description: |
           Full ROCm release version used to resolve the S3 LATEST pointer
