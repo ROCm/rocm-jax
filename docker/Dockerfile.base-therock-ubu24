@@ -138,7 +138,10 @@ RUN --mount=type=cache,mode=0755,target=/root/.cache/pip \
     rocm-sdk init
 
 # ROCm/HIP runtime tuning:
+# ROCPROFILER_LOG_LEVEL is a workaround until the fix from the SDK team lands
+# in ROCm. TODO:magaonka-amd remove this once the fix is landed.
 ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
+    ROCPROFILER_LOG_LEVEL=error \
     DEBUG_HIP_DYNAMIC_QUEUES=0
 
 # Export NO ROCm env: this image is intentionally /opt/rocm-less. ROCm resolves
