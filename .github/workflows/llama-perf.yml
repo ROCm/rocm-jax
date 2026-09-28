@@ -10,7 +10,7 @@ name: Llama Performance Benchmarks
 
 env:
   # veergopu/integrate-small-seq-mfma
-  TE_REF_DEFAULT: "d003cf5106558d8347dd25ff21698d8551bff8e2"
+  TE_REF_DEFAULT: "e3bc7ad50f4fcfc6510b5b7ccbdbbb120e46c235"
 
 on:
   schedule:
@@ -295,7 +295,7 @@ jobs:
             export TRAIN_SETTING="${{ matrix.model-name }}"
             export XLA_FLAGS="--xla_gpu_enable_latency_hiding_scheduler=True \
                                 --xla_gpu_enable_triton_gemm=False --xla_gpu_enable_cublaslt=True \
-                                --xla_gpu_enable_command_buffer='' --xla_gpu_autotune_level=4"
+                                --xla_gpu_autotune_level=4"
             export PROJECT=byllama
             bash -i bazel_run_anynode.sh 2>&1 | tee logs.log
             # The DB parser only consumes "train step" lines. aiter can emit a lot
