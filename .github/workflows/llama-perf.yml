@@ -108,15 +108,15 @@ jobs:
       - name: Build TE-wheel
         run: |
           docker exec te-build-jax${{ matrix.jax-version }} bash -lc '
-            pip install setuptools ninja pybind11
-            pip install cmake==4.1.0
-            pip install packaging psutil pandas
+            export PIP_BREAK_SYSTEM_PACKAGES=1
+            python3 -m pip install setuptools ninja pybind11
+            python3 -m pip install cmake==4.1.0
+            python3 -m pip install packaging psutil pandas
             export NVTE_FRAMEWORK="${{ env.NVTE_FRAMEWORK }}"
             export NVTE_USE_ROCM="${{ env.NVTE_USE_ROCM }}"
             export HIP_PLATFORM="${{ env.HIP_PLATFORM }}"
             export NVTE_ROCM_ARCH="${{ env.ROCM_ARCH }}"
             export NVTE_FUSED_ATTN_AOTRITON="${{ env.NVTE_FUSED_ATTN_AOTRITON }}"
-            export PIP_BREAK_SYSTEM_PACKAGES=1
             export NVTE_AITER_PREBUILT_BASE_URL="${{ env.NVTE_AITER_PREBUILT_BASE_URL }}"
             if [ "${{ matrix.jax-version }}" == "0.6.0" ]; then
               apt update
@@ -124,7 +124,7 @@ jobs:
               ROCM_JAX_BASE=https://github.com/ROCm/rocm-jax/releases/download/rocm-jax-v0.6.0
               PJRT_URL="$ROCM_JAX_BASE/jax_rocm7_pjrt-0.6.0-py3-none-manylinux_2_28_x86_64.whl"
               PLUGIN_URL="$ROCM_JAX_BASE/jax_rocm7_plugin-0.6.0-cp312-cp312-manylinux_2_28_x86_64.whl"
-              pip install --force-reinstall jax==0.6.0 \
+              python3 -m pip install --force-reinstall jax==0.6.0 \
                 jaxlib==0.6.0 \
                 "$PJRT_URL" \
                 "$PLUGIN_URL"
@@ -141,7 +141,7 @@ jobs:
               wget -q "$REL/wheelhouse_theRock7.14.zip"
               unzip -o wheelhouse_theRock7.14.zip
               cd wheelhouse_theRock7.14
-              pip install --force-reinstall jax==0.11.0 \
+              python3 -m pip install --force-reinstall jax==0.11.0 \
                 jax_rocm7_pjrt-0.11.0-py3-none-manylinux_2_27_x86_64.whl \
                 jax_rocm7_plugin-0.11.0-cp312-cp312-manylinux_2_27_x86_64.whl
             fi
