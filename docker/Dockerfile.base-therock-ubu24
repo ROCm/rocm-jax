@@ -49,6 +49,16 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
     update-alternatives --install /usr/bin/python python /usr/bin/python3.12 100 && \
     mv /usr/lib/python3.12/EXTERNALLY-MANAGED /usr/lib/python3.12/EXTERNALLY-MANAGED.old
 
+# The 3.15 pip bootstrap above also drops `pip`/`pip3` console scripts into
+# /usr/local/bin, where they shadow the system ones and make a bare `pip` run
+# under 3.15. Put shims for the default interpreter earlier on PATH.
+RUN mkdir -p /opt/python-default/bin && \
+    printf '#!/bin/sh\nexec /usr/bin/python3 -m pip "$@"\n' \
+        > /opt/python-default/bin/pip && \
+    chmod +x /opt/python-default/bin/pip && \
+    ln -s pip /opt/python-default/bin/pip3
+ENV PATH="/opt/python-default/bin:${PATH}"
+
 # Install system libraries needed at runtime:
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
