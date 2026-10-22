@@ -1,110 +1,32 @@
 name: Build Base Docker Images
 
+# custom_10_0 branch: builds only the TheRock 10.0 base/dev images, with the
+# patched ROCR-Runtime from docker/Dockerfile.base-therock-ubu24, and pushes
+# them as :custom_10_0. It never pushes the SHA, version or latest tags, so the
+# images that CI pulls from rocm-jax-infra stay untouched.
 on:
-  schedule:
-    # Run every Sunday at midnight UTC
-    - cron: '0 0 * * 0'
   workflow_dispatch:
-    inputs:
-      push-latest-tag:
-        description: "Push :latest to ghcr.io; enable only for intentional CI image updates"
-        required: false
-        type: boolean
-        default: false
-      image-set:
-        description: >-
-          Build all ROCm base images, or only a specific ROCm version.
-          Scheduled, push and PR runs always build all.
-        required: false
-        type: choice
-        options:
-          - all
-          - therock-pinned
-          - therock-7.14
-          - therock-10.0
-          - therock-10.1
-          - therock-latest
-        default: all
-  pull_request:
-    paths:
-      - 'build/ci_build'
-      - '.github/workflows/build-base-docker.yml'
-      - 'docker/Dockerfile*'
-      - 'docker/manylinux/*'
-  push:
-    branches:
-      - 'master'
-    paths:
-      - 'build/ci_build'
-      - '.github/workflows/build-base-docker.yml'
-      - 'docker/Dockerfile*'
-      - 'docker/manylinux/*'
+
+env:
+  CUSTOM_TAG: custom_10_0
 
 jobs:
-  therock-config:
-    # Single source of truth for the TheRock ROCm version + pip index, consumed
-    # by both the base and manylinux TheRock jobs so they can't drift.
-    #
-    # GA pins (7.14, 10.0, 10.1) plus an unpinned entry tracking the nightlies.
-    # They don't share one index: TheRock rewired publishing to per-product
-    # repo.amd.com buckets (TheRock #7547), and the new layout starts at ROCm
-    # 10.1 nightlies and ROCm 10.0 stable. Nothing older is mirrored forward, so
-    # 7.14 stays on the legacy index while the others move.
-    #
-    # The pins use the short X.Y form: PEP 440 zero-pads, so ==10.0 resolves the
-    # 10.0.0 release, but it deliberately will not pick up a 10.0.0.postN respin
-    # without a pin bump.
-    # The selected image set decides which TheRock entries end up in the matrix.
-    runs-on: ubuntu-latest
-    outputs:
-      entries: ${{ steps.set.outputs.entries }}
-    steps:
-      - id: set
-        env:
-          IMAGE_SET: ${{ inputs.image-set || 'all' }}
-        run: |
-          NIGHTLY="https://nightly.repo.amd.com/rocm/whl-next/"
-          GA="https://stable.repo.amd.com/rocm/whl-next/"
-          GA_LEGACY="https://repo.amd.com/rocm/whl-multi-arch/"
-          GFX_ARCH="device-gfx942,device-gfx950"
-          latest="{\"therock-version\": \"\", \"therock-index-url\": \"$NIGHTLY\","
-          latest="$latest \"gfx-arch\": \"$GFX_ARCH\"}"
-          pinned714="{\"therock-version\": \"7.14\", \"therock-index-url\": \"$GA_LEGACY\","
-          pinned714="$pinned714 \"gfx-arch\": \"$GFX_ARCH\"}"
-          pinned100="{\"therock-version\": \"10.0\", \"therock-index-url\": \"$GA\","
-          pinned100="$pinned100 \"gfx-arch\": \"$GFX_ARCH\"}"
-          pinned101="{\"therock-version\": \"10.1\", \"therock-index-url\": \"$GA\","
-          pinned101="$pinned101 \"gfx-arch\": \"$GFX_ARCH\"}"
-          case "$IMAGE_SET" in
-            therock-latest) entries="[$latest]" ;;
-            therock-7.14) entries="[$pinned714]" ;;
-            therock-10.0) entries="[$pinned100]" ;;
-            therock-10.1) entries="[$pinned101]" ;;
-            therock-pinned) entries="[$pinned714, $pinned100, $pinned101]" ;;
-            *) entries="[$latest, $pinned714, $pinned100, $pinned101]" ;;
-          esac
-          echo "Image set '$IMAGE_SET' selects: $entries"
-          {
-            echo 'entries<<JSON'
-            echo "$entries"
-            echo 'JSON'
-          } >> "$GITHUB_OUTPUT"
-
   build-therock-base-images:
-    # TheRock base/dev images. Which TheRock versions run is decided by the
-    # therock-config matrix.
-    needs: therock-config
     name: >-
-      TheRock ${{ matrix.therock.therock-version || 'latest' }},
+      TheRock ${{ matrix.therock.therock-version }},
       ${{ matrix.install-llvm && 'with' || 'without' }} LLVM
-    runs-on: ${{ matrix.runner-label }}
+    runs-on: amd-do-linux.jax.cpu
     strategy:
       fail-fast: false
       matrix:
         install-llvm: [true, false]
-        therock: ${{ fromJSON(needs.therock-config.outputs.entries) }}
-        include:
-          - runner-label: "amd-do-linux.jax.cpu"
+        therock:
+          - therock-version: "10.0"
+            therock-index-url: "https://stable.repo.amd.com/rocm/whl-next/"
+            gfx-arch: "device-gfx942,device-gfx950"
+    env:
+      INSTALL_LLVM: ${{ matrix.install-llvm }}
+      THEROCK_VERSION: ${{ matrix.therock.therock-version }}
     steps:
       - name: Clean up old runs
         run: |
@@ -122,37 +44,26 @@ jobs:
           printenv
           df -h
       - uses: actions/checkout@v4
+      - name: Set image name
+        run: |
+          if [ "$INSTALL_LLVM" = "true" ]; then
+            image_tag="jax-dev-ubu24.therock-${THEROCK_VERSION}"
+          else
+            image_tag="jax-base-ubu24.therock-${THEROCK_VERSION}"
+          fi
+          echo "IMAGE_TAG=${image_tag}" >> "$GITHUB_ENV"
       - name: Build TheRock base docker image
         run: |
-          ver_slug="${{ matrix.therock.therock-version || 'latest' }}"
-          ver_slug="${ver_slug//+/.}"; ver_slug="${ver_slug// /}" # Match ci_build's sanitizing
-          if [ "${{ matrix.install-llvm }}" = "true" ]; then
-            image_tag="jax-dev-ubu24.therock-${ver_slug}"
-          else
-            image_tag="jax-base-ubu24.therock-${ver_slug}"
-          fi
           docker build -f docker/Dockerfile.base-therock-ubu24 \
             --build-arg=GFX_ARCH="${{ matrix.therock.gfx-arch }}" \
             --build-arg=THEROCK_INDEX_URL="${{ matrix.therock.therock-index-url }}" \
-            --build-arg=THEROCK_VERSION="${{ matrix.therock.therock-version }}" \
+            --build-arg=THEROCK_VERSION="${THEROCK_VERSION}" \
             --build-arg=INSTALL_LLVM=${{ matrix.install-llvm && '1' || '0' }} \
             --build-arg=LLVM_VERSION=${{ matrix.install-llvm && '18' || 'none' }} \
-            -t "$image_tag" .
+            -t "$IMAGE_TAG" .
       - name: Verify installed ROCm version
-        # Only pinned entries have something to check; the nightly entry
-        # resolves to whatever is newest by design.
-        if: matrix.therock.therock-version != ''
-        env:
-          INSTALL_LLVM: ${{ matrix.install-llvm }}
-          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
         run: |
-          ver_slug="${THEROCK_VERSION//+/.}"; ver_slug="${ver_slug// /}"
-          if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="jax-dev-ubu24.therock-${ver_slug}"
-          else
-            image_tag="jax-base-ubu24.therock-${ver_slug}"
-          fi
-          installed=$(docker run --rm "$image_tag" \
+          installed=$(docker run --rm "$IMAGE_TAG" \
             python3 -c "import rocm_sdk; print(rocm_sdk.__version__)")
           echo "pinned=$THEROCK_VERSION installed=$installed"
           # Guards against pip silently falling back to another release when the
@@ -163,157 +74,12 @@ jobs:
             *) echo "::error::rocm-sdk is $installed, expected $THEROCK_VERSION"; exit 1 ;;
           esac
       - name: Authenticate to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
             | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Push docker images
-        if: github.event_name != 'pull_request'
-        env:
-          INSTALL_LLVM: ${{ matrix.install-llvm }}
-          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
+      - name: Push custom tag
         run: |
-          ver_slug="${THEROCK_VERSION:-latest}"
-          ver_slug="${ver_slug//+/.}"; ver_slug="${ver_slug// /}" # Match ci_build's sanitizing
-          if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="jax-dev-ubu24.therock-${ver_slug}"
-          else
-            image_tag="jax-base-ubu24.therock-${ver_slug}"
-          fi
-          ghcr_base="ghcr.io/rocm/${image_tag}"
-
-          # Always push SHA tag
-          echo "Image name (SHA): ${ghcr_base}:${GITHUB_SHA}"
-          docker tag "${image_tag}" "${ghcr_base}:${GITHUB_SHA}"
-          docker push "${ghcr_base}:${GITHUB_SHA}"
-
-          # Push version tag when pinned (stable reference for downstream CI)
-          if [ -n "${THEROCK_VERSION}" ]; then
-            echo "Image name (version): ${ghcr_base}:${THEROCK_VERSION}"
-            docker tag "${image_tag}" "${ghcr_base}:${THEROCK_VERSION}"
-            docker push "${ghcr_base}:${THEROCK_VERSION}"
-          fi
-      - name: Push latest tag
-        if: >-
-          github.event_name != 'pull_request' &&
-          (github.event_name != 'workflow_dispatch' ||
-          inputs.push-latest-tag == true)
-        env:
-          INSTALL_LLVM: ${{ matrix.install-llvm }}
-          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
-        run: |
-          ver_slug="${THEROCK_VERSION:-latest}"
-          ver_slug="${ver_slug//+/.}"; ver_slug="${ver_slug// /}" # Match ci_build's sanitizing
-          if [ "$INSTALL_LLVM" = "true" ]; then
-            image_tag="jax-dev-ubu24.therock-${ver_slug}"
-          else
-            image_tag="jax-base-ubu24.therock-${ver_slug}"
-          fi
-          ghcr_base="ghcr.io/rocm/${image_tag}"
-
-          echo "Image name (latest): ${ghcr_base}:latest"
-          docker tag "${image_tag}" "${ghcr_base}:latest"
-          docker push "${ghcr_base}:latest"
-
-  build-therock-manylinux-images:
-    # TheRock manylinux builder image. Follows the same therock-config matrix
-    # as the TheRock base images.
-    needs: therock-config
-    name: "TheRock ${{ matrix.therock.therock-version || 'latest' }}, manylinux"
-    runs-on: amd-do-linux.jax.cpu
-    strategy:
-      fail-fast: false
-      matrix:
-        therock: ${{ fromJSON(needs.therock-config.outputs.entries) }}
-    steps:
-      - name: Clean up old runs
-        run: |
-          ls -lah
-          docker run --rm -v "./:/rocm-jax" ubuntu \
-            /bin/bash -c "shopt -s dotglob; chown -R $UID /rocm-jax/* || true"
-          rm -rf * || true
-          ls -lah
-          docker system prune -a --filter "until=168h"
-          docker ps --format="{{.RunningFor}} {{.Names}}" \
-            | grep hours \
-            | awk -F: '{if($1>12)print$1}' \
-            | awk '{print $4}' \
-            | xargs docker stop || true
-      - name: Print system info
-        run: |
-          whoami
-          printenv
-          df -h
-      - uses: actions/checkout@v4
-      - name: Build TheRock manylinux docker image
-        run: |
-          ver_slug="${{ matrix.therock.therock-version || 'latest' }}"
-          ver_slug="${ver_slug//+/.}"; ver_slug="${ver_slug// /}" # Match ci_build's sanitizing
-          image_tag="jax-manylinux_2_28-therock-${ver_slug}"
-          docker build -f docker/manylinux/Dockerfile.jax-manylinux_2_28-therock \
-            --build-arg=THEROCK_INDEX_URL="${{ matrix.therock.therock-index-url }}" \
-            --build-arg=THEROCK_VERSION="${{ matrix.therock.therock-version }}" \
-            --build-arg=GFX_ARCH="${{ matrix.therock.gfx-arch }}" \
-            -t "$image_tag" .
-      - name: Verify installed ROCm version
-        # Only pinned entries have something to check; the nightly entry
-        # resolves to whatever is newest by design.
-        if: matrix.therock.therock-version != ''
-        env:
-          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
-        run: |
-          ver_slug="${THEROCK_VERSION//+/.}"; ver_slug="${ver_slug// /}"
-          image_tag="jax-manylinux_2_28-therock-${ver_slug}"
-          installed=$(docker run --rm "$image_tag" \
-            python3 -c "import rocm_sdk; print(rocm_sdk.__version__)")
-          echo "pinned=$THEROCK_VERSION installed=$installed"
-          # Guards against pip silently falling back to another release when the
-          # pinned one is missing from the index. Accept an exact match or a
-          # dot-suffixed extension, since PEP 440 zero-pads a short X.Y pin.
-          case "$installed" in
-            "$THEROCK_VERSION"|"$THEROCK_VERSION".*) ;;
-            *) echo "::error::rocm-sdk is $installed, expected $THEROCK_VERSION"; exit 1 ;;
-          esac
-      - name: Authenticate to GitHub Container Registry
-        if: github.event_name != 'pull_request'
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io \
-              -u ${{ github.actor }} --password-stdin
-      - name: Push docker images
-        if: github.event_name != 'pull_request'
-        env:
-          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
-        run: |
-          ver_slug="${THEROCK_VERSION:-latest}"
-          ver_slug="${ver_slug//+/.}"; ver_slug="${ver_slug// /}" # Match ci_build's sanitizing
-          image_tag="jax-manylinux_2_28-therock-${ver_slug}"
-          ghcr_base="ghcr.io/rocm/${image_tag}"
-
-          # Always push SHA tag
-          echo "Image name (SHA): ${ghcr_base}:${GITHUB_SHA}"
-          docker tag "${image_tag}" "${ghcr_base}:${GITHUB_SHA}"
-          docker push "${ghcr_base}:${GITHUB_SHA}"
-
-          # Push version tag when pinned (stable reference for downstream CI)
-          if [ -n "${THEROCK_VERSION}" ]; then
-            echo "Image name (version): ${ghcr_base}:${THEROCK_VERSION}"
-            docker tag "${image_tag}" "${ghcr_base}:${THEROCK_VERSION}"
-            docker push "${ghcr_base}:${THEROCK_VERSION}"
-          fi
-      - name: Push latest tag
-        if: >-
-          github.event_name != 'pull_request' &&
-          (github.event_name != 'workflow_dispatch' ||
-          inputs.push-latest-tag == true)
-        env:
-          THEROCK_VERSION: ${{ matrix.therock.therock-version }}
-        run: |
-          ver_slug="${THEROCK_VERSION:-latest}"
-          ver_slug="${ver_slug//+/.}"; ver_slug="${ver_slug// /}" # Match ci_build's sanitizing
-          image_tag="jax-manylinux_2_28-therock-${ver_slug}"
-          ghcr_base="ghcr.io/rocm/${image_tag}"
-
-          echo "Image name (latest): ${ghcr_base}:latest"
-          docker tag "${image_tag}" "${ghcr_base}:latest"
-          docker push "${ghcr_base}:latest"
+          image="ghcr.io/rocm/${IMAGE_TAG}:${CUSTOM_TAG}"
+          echo "Image name: ${image}"
+          docker tag "${IMAGE_TAG}" "${image}"
+          docker push "${image}"

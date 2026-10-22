@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS therock
 
 ### Container Build Arguments:
 # TheRock nightly aggregate index URL.
@@ -157,3 +157,78 @@ LABEL com.amdgpu.therock_index_url="$THEROCK_INDEX_URL" \
       com.amdgpu.python_versions="3.11,3.12,3.13,3.13-nogil,3.14,3.14-nogil,3.15,3.15-nogil" \
       com.amdgpu.install_llvm="$INSTALL_LLVM" \
       com.amdgpu.llvm_version="$LLVM_VERSION"
+
+### Custom ROCR-Runtime (custom_10_0 branch only):
+# TheRock 10.0 ships without https://github.com/ROCm/rocm-systems/commit/3e8d12f0ea
+# ("Publish blit kernel code after AssembleShader"): blit kernel code is written
+# by the CPU and dispatched without a write-combine flush or code cache
+# invalidate, so the first blit dispatch on gfx950 can execute stale
+# instructions. Rebuild libhsa-runtime64 from the rocm-systems commit recorded
+# in TheRock's manifest with that fix applied, linking the same bundled
+# rocm_sysdeps libraries and RPATH as the shipped library, and swap it in for
+# the pip-installed copies. The build tools stay in this throwaway stage.
+#
+# The dynamic section check ignores libdl, libpthread and librt: TheRock links
+# against glibc 2.28, where they are separate libraries, while glibc 2.34+
+# folds them into libc, so the rebuilt library no longer lists them.
+FROM therock AS rocr-build
+ARG DEBIAN_FRONTEND=noninteractive
+RUN --mount=type=bind,source=docker/patches/rocr-blit-kernel-publish.patch,target=/tmp/rocr-fix.patch \
+    set -eu; \
+    sdk_root="$(rocm-sdk path --root)"; \
+    sysdeps="$sdk_root/lib/rocm_sysdeps"; \
+    core="$(dirname "$sdk_root")/_rocm_sdk_core"; \
+    systems_sha="$(python3 -c 'import json, sys; \
+        m = json.load(open(sys.argv[1])); \
+        s = [s for s in m["submodules"] if s["submodule_name"] == "rocm-systems"][0]; \
+        assert not s["patches"], s["patches"]; \
+        print(s["pin_sha"])' "$core/share/therock/therock_manifest.json")"; \
+    rpath="$(readelf -d "$core/lib/libhsa-runtime64.so.1" \
+        | sed -n 's/.*(RPATH).*\[\(.*\)\]$/\1/p')"; \
+    test -n "$rpath"; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends cmake pkgconf xxd; \
+    git init -q /tmp/rocm-systems; \
+    cd /tmp/rocm-systems; \
+    git remote add origin https://github.com/ROCm/rocm-systems.git; \
+    git sparse-checkout set projects/rocr-runtime; \
+    git fetch -q --depth=1 --filter=blob:none origin "$systems_sha"; \
+    git checkout -q FETCH_HEAD; \
+    git apply /tmp/rocr-fix.patch; \
+    PKG_CONFIG_PATH="$sysdeps/lib/pkgconfig" cmake -S projects/rocr-runtime -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=ON \
+        -DCMAKE_PREFIX_PATH="$sdk_root/lib/llvm;$sdk_root;$sysdeps" \
+        -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+        -DCMAKE_INSTALL_RPATH="$rpath" \
+        -DCMAKE_SHARED_LINKER_FLAGS=-Wl,--disable-new-dtags; \
+    cmake --build build --target hsa-runtime64 -j"$(nproc)"; \
+    mkdir /rocr; \
+    cp "$(readlink -f build/rocr/lib/libhsa-runtime64.so.1)" /rocr/libhsa-runtime64.so.1; \
+    dynamic() { \
+        readelf -d "$1" | grep -E '\((NEEDED|RPATH|RUNPATH|SONAME)\)' \
+            | grep -vE '\[(libdl\.so\.2|libpthread\.so\.0|librt\.so\.1)\]' \
+            | sed 's/^ *0x[0-9a-f]* *//' | sort; \
+    }; \
+    dynamic "$core/lib/libhsa-runtime64.so.1" > /tmp/dynamic-shipped.txt; \
+    dynamic /rocr/libhsa-runtime64.so.1 > /tmp/dynamic-rebuilt.txt; \
+    test -s /tmp/dynamic-shipped.txt; \
+    diff -u /tmp/dynamic-shipped.txt /tmp/dynamic-rebuilt.txt
+
+FROM therock
+# libhsa-runtime64 is hard-linked between _rocm_sdk_core and _rocm_sdk_devel,
+# and overlayfs breaks hard links on copy-up, so overwrite every copy.
+RUN --mount=type=bind,from=rocr-build,source=/rocr,target=/tmp/rocr \
+    set -eu; \
+    site="$(dirname "$(rocm-sdk path --root)")"; \
+    core_lib="$site/_rocm_sdk_core/lib/libhsa-runtime64.so.1"; \
+    find "$site/_rocm_sdk_core/lib" "$site/_rocm_sdk_devel/lib" -maxdepth 1 \
+        -type f -name 'libhsa-runtime64.so*' -print \
+        -exec cp /tmp/rocr/libhsa-runtime64.so.1 {} \; ; \
+    cmp /tmp/rocr/libhsa-runtime64.so.1 "$core_lib"; \
+    for lib in "$site"/_rocm_sdk_*/lib/libhsa-runtime64.so*; do \
+        cmp /tmp/rocr/libhsa-runtime64.so.1 "$lib"; \
+    done; \
+    if ldd "$core_lib" | grep 'not found'; then exit 1; fi
+
+LABEL com.amdgpu.rocr_patch="ROCm/rocm-systems@3e8d12f0ea"
