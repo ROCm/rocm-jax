@@ -94,3 +94,8 @@ RUN ln -sf /usr/lib/python3.12 /usr/lib/tf_python
 # Don't use the bazel cache when a new docker image is created.
 RUN echo build --action_env=DOCKER_CACHEBUSTER=$(date +%s%N)$RANDOM >> /etc/bazel.bazelrc
 RUN echo build --host_action_env=DOCKER_HOST_CACHEBUSTER=$(date +%s%N)$RANDOM >> /etc/bazel.bazelrc
+
+# ROCm/HIP runtime tuning, kept in sync with Dockerfile.base-therock-ubu24.
+ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
+    DEBUG_HIP_DYNAMIC_QUEUES=0 \
+    DEBUG_HIP_IGNORE_STREAM_PRIORITY=0
