@@ -23,6 +23,7 @@ on:
           - therock-7.14
           - therock-10.0
           - therock-10.1
+          - therock-10.2
           - therock-latest
         default: all
   pull_request:
@@ -45,7 +46,7 @@ jobs:
     # Single source of truth for the TheRock ROCm version + pip index, consumed
     # by both the base and manylinux TheRock jobs so they can't drift.
     #
-    # GA pins (7.14, 10.0, 10.1) plus an unpinned entry tracking the nightlies.
+    # GA pins (7.14, 10.0, 10.1, 10.2) plus an unpinned entry tracking the nightlies.
     # They don't share one index: TheRock rewired publishing to per-product
     # repo.amd.com buckets (TheRock #7547), and the new layout starts at ROCm
     # 10.1 nightlies and ROCm 10.0 stable. Nothing older is mirrored forward, so
@@ -75,13 +76,16 @@ jobs:
           pinned100="$pinned100 \"gfx-arch\": \"$GFX_ARCH\"}"
           pinned101="{\"therock-version\": \"10.1\", \"therock-index-url\": \"$GA\","
           pinned101="$pinned101 \"gfx-arch\": \"$GFX_ARCH\"}"
+          pinned102="{\"therock-version\": \"10.2\", \"therock-index-url\": \"$GA\","
+          pinned102="$pinned102 \"gfx-arch\": \"$GFX_ARCH\"}"
           case "$IMAGE_SET" in
             therock-latest) entries="[$latest]" ;;
             therock-7.14) entries="[$pinned714]" ;;
             therock-10.0) entries="[$pinned100]" ;;
             therock-10.1) entries="[$pinned101]" ;;
-            therock-pinned) entries="[$pinned714, $pinned100, $pinned101]" ;;
-            *) entries="[$latest, $pinned714, $pinned100, $pinned101]" ;;
+            therock-10.2) entries="[$pinned102]" ;;
+            therock-pinned) entries="[$pinned714, $pinned100, $pinned101, $pinned102]" ;;
+            *) entries="[$latest, $pinned714, $pinned100, $pinned101, $pinned102]" ;;
           esac
           echo "Image set '$IMAGE_SET' selects: $entries"
           {
