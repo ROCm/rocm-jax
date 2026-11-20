@@ -27,6 +27,21 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
+# Extra Python versions for jobs that test wheels on them. Installed before
+# Python 3.12 so its get-pip.py runs last and keeps pip/pip3 on 3.12.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3.13 python3.13-dev python3.13-venv \
+        python3.14 python3.14-dev python3.14-venv \
+        python3.15 python3.15-dev python3.15-venv && \
+    rm -rf /var/lib/apt/lists/* && \
+    wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --tries=5 https://bootstrap.pypa.io/get-pip.py && \
+    for v in 3.13 3.14 3.15; do \
+        rm -f "/usr/lib/python${v}/EXTERNALLY-MANAGED" && \
+        "python${v}" get-pip.py || exit 1; \
+    done && \
+    rm -f get-pip.py
+
 # Setup Python 3.12
 COPY python_requirements.txt /python_requirements.txt
 
@@ -79,3 +94,8 @@ RUN ln -sf /usr/lib/python3.12 /usr/lib/tf_python
 # Don't use the bazel cache when a new docker image is created.
 RUN echo build --action_env=DOCKER_CACHEBUSTER=$(date +%s%N)$RANDOM >> /etc/bazel.bazelrc
 RUN echo build --host_action_env=DOCKER_HOST_CACHEBUSTER=$(date +%s%N)$RANDOM >> /etc/bazel.bazelrc
+
+# ROCm/HIP runtime tuning, kept in sync with Dockerfile.base-therock-ubu24.
+ENV ROCPROFILER_QUEUE_INTERPOSITION=0 \
+    DEBUG_HIP_DYNAMIC_QUEUES=0 \
+    DEBUG_HIP_IGNORE_STREAM_PRIORITY=0
